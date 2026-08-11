@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BLIS Навигатор v7</title>
+<style>
+:root{
+  --bg:#f7f9fc;--card:#fff;--ink:#0c2547;--ink2:#1c3150;--muted:#6f7e92;
+  --line:#d9e3ee;--blue:#0e58be;--blue2:#0b87d0;--cyan:#29a9dc;--green:#16a873;
+  --amber:#c58728;--red:#c55757;--soft:#f8fbff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:#fbfcfe;color:var(--ink)}
+button,select{font:inherit}
+header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.98);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar{height:100px;padding:0 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.brandwrap{display:flex;align-items:center;gap:24px}
+.brand{font-family:Georgia,"Times New Roman",serif;font-size:68px;font-weight:700;line-height:1;letter-spacing:.01em;color:#0b2447}
+.brandsub{font-size:29px;color:#111f32}
+.clientarea{display:flex;align-items:center;gap:16px}
+.clientcopy{text-align:right}
+.clientcopy b{display:block;font-size:25px;color:#0b2447}
+.clientcopy span{display:block;font-size:14px;color:var(--muted);margin-top:5px}
+.clientselect{border:1px solid #b9cce3;border-radius:999px;background:#fff;color:var(--ink);padding:8px 12px;font-weight:700;max-width:220px}
+.avatar img{max-width:78%;max-height:48%;display:block}.avatar{width:64px;height:64px;border:2px solid var(--blue);border-radius:50%;display:grid;place-items:center;color:var(--blue);font:700 27px Georgia,serif}
+.navbar{height:59px;padding:0 44px;display:flex;align-items:stretch;background:#fff;overflow:auto}
+.navbtn{flex:1;min-width:max-content;border:0;background:#fff;color:#273a57;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;font-size:17px;border-bottom:3px solid transparent}
+.navbtn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+.navicon{font-size:22px}
+main{padding:13px 29px 44px}
+.info{height:53px;border:1px solid #c8ddf3;background:#f8fbff;border-radius:13px;display:flex;align-items:center;justify-content:space-between;padding:0 18px 0 22px;margin-bottom:14px}
+.infoleft{display:flex;align-items:center;gap:13px;font-size:16px}
+.infoico{width:27px;height:27px;border:2px solid var(--blue);border-radius:50%;display:grid;place-items:center;color:var(--blue);font-weight:800}
+.refresh{border:1px solid #bcd2ed;background:#fff;color:var(--blue);border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer}
+.refresh:disabled{opacity:.55}
+.view{display:none}.view.active{display:block}
+
+.hero{height:188px;background:#fff;border:1px solid var(--line);border-radius:18px;display:grid;grid-template-columns:1.25fr repeat(4,1fr);box-shadow:0 5px 18px rgba(11,36,71,.05);overflow:hidden}
+.heroMain{padding:24px 73px}.heroTitle{font-size:26px}.heroNum{font:700 84px/1 Georgia,"Times New Roman",serif;margin-top:8px}
+.heroKpi{border-left:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px}
+.heroIcon{font-size:31px;margin-bottom:8px}.heroLabel{font-size:17px;line-height:1.24}.heroValue{font-size:31px;font-weight:500;margin-top:10px}.heroValue.green{color:var(--green);font-weight:700}
+
+.indices{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-top:11px}
+.idx{height:181px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 20px 16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 4px 12px rgba(11,36,71,.035);cursor:pointer}
+.idx:hover{border-color:#a8c5e8;background:#fbfdff}
+.idxTop{display:flex;gap:15px;align-items:flex-start}
+.idxIcon{width:52px;height:52px;border:1px solid #bdd6f0;border-radius:50%;display:grid;place-items:center;font-size:24px;color:var(--blue);flex:0 0 auto}
+.idxLabel{font-size:17px;line-height:1.35}.idxValue{font-size:31px;font-weight:700;margin-left:80px}
+.bar{height:4px;background:#edf1f5;border-radius:10px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+
+.bottom{display:grid;grid-template-columns:1fr .95fr 1.1fr;gap:11px;margin-top:11px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 17px;min-height:259px;box-shadow:0 4px 12px rgba(11,36,71,.035)}
+.panelTitle{font-size:19px;font-weight:500;display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.signal{display:grid;grid-template-columns:42px 1fr;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.signal:last-child{border-bottom:0}
+.sigIcon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--green);font-weight:800}
+.sigText{font-size:15px;line-height:1.35}
+.source{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.source:last-child{border:0}.source:hover{background:#fafcff}
+.logo{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#1768ca;font-weight:800}
+.logo.g{background:conic-gradient(#4285f4,#34a853,#fbbc05,#ea4335,#4285f4)}
+.logo.t{background:#20c7a5;color:#063c34}
+.sourceName{font-size:15px}.sourceVal{font-size:15px;color:var(--blue);font-weight:600;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 9px;border:1px solid var(--line);text-align:left}
+th{background:#f7f9fc;color:#53627a;font-weight:500}
+td:last-child,th:last-child{text-align:right}
+
+.trendPanel{margin-top:11px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 4px 12px rgba(11,36,71,.035)}
+.trendHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
+.trendHead h2{margin:0;font-size:19px;font-weight:500}
+.range{display:flex;gap:7px}.range button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 9px;cursor:pointer;font-size:12px}
+.range button.active{background:#edf5ff;color:var(--blue);border-color:#bad2ee}
+.chart{height:280px}.chart svg{width:100%;height:100%}.gridline{stroke:#e4ebf3}.line{stroke:var(--blue);fill:none;stroke-width:3}.line2{stroke:var(--cyan);fill:none;stroke-width:2;stroke-dasharray:5 5}.dot{fill:#fff;stroke:var(--blue);stroke-width:2}.axis{fill:#768497;font-size:10px}
+.legend{display:flex;gap:18px;font-size:12px;color:var(--muted)}.legend i{width:16px;height:3px;display:inline-block;background:var(--blue);margin-right:6px;vertical-align:middle}.legend i.alt{background:var(--cyan)}
+
+.subpage{display:grid;grid-template-columns:1.12fr .88fr;gap:14px}
+.subcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 14px rgba(11,36,71,.04)}
+.subcard h2{margin:0 0 12px}.metric{display:grid;grid-template-columns:1fr auto auto;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);align-items:center}
+.metric:last-child{border:0}.metric b{font-size:14px}.metric span{font-size:13px}.weight{color:var(--blue);font-weight:700}
+.formula{border:1px dashed #cbd8e7;background:#f8fafc;border-radius:10px;padding:12px;font-family:Consolas,monospace;font-size:12px;line-height:1.5}
+.sourceCards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.sourceCard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:17px}.sourceCard a{color:var(--blue);text-decoration:none}.sourceCard a:hover{text-decoration:underline}
+.status{font-size:12px;color:var(--muted)}
+@media(max-width:1150px){.topbar{padding:0 24px}.brand{font-size:50px}.brandsub{font-size:23px}.hero{height:auto;grid-template-columns:1fr 1fr 1fr}.heroMain{grid-column:1/-1;padding:22px 30px}.indices{grid-template-columns:repeat(2,1fr)}.bottom,.subpage{grid-template-columns:1fr}}
+@media(max-width:700px){.topbar{height:auto;padding:14px}.clientcopy{display:none}.brand{font-size:40px}.brandsub{font-size:18px}.navbar{padding:0 12px}.hero{grid-template-columns:1fr}.heroKpi{border-left:0;border-top:1px solid var(--line)}.indices,.sourceCards{grid-template-columns:1fr}.idxValue{margin-left:0}.bottom{grid-template-columns:1fr}}
+
+.descblock{padding:12px 0;border-bottom:1px solid var(--line)}
+.descblock:last-child{border-bottom:0}
+.descblock strong{display:block;font-size:14px;color:var(--ink);margin-bottom:4px}
+.descblock p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.reportsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.reportCard{background:#fff;border:1px solid var(--line);border-radius:13px;padding:18px;display:flex;justify-content:space-between;gap:18px;align-items:center}
+.reportCard h3{margin:0 0 5px;font-size:17px}.reportCard p{margin:0;color:var(--muted);font-size:12px}
+.downloadBtn{border:1px solid #b9d1ee;background:#f6faff;color:var(--blue);border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.downloadBtn:hover{background:#eaf4ff}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.statbox{background:#f8fbff;border:1px solid #d6e5f4;border-radius:12px;padding:14px}
+.statbox b{display:block;font-size:26px;color:var(--blue)}.statbox span{font-size:12px;color:var(--muted)}
+@media(max-width:700px){.reportsGrid,.statrow{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <div class="brandwrap"><div class="brand">BLIS</div><div class="brandsub">Навигатор</div></div>
+    <div class="clientarea">
+      <div class="clientcopy"><b id="clientName"></b><span id="clientNote"></span></div>
+      
+      <div class="avatar" id="avatar">A</div>
+    </div>
+  </div>
+  <div class="navbar" id="navbar"></div>
+</header>
+
+<main>
+  <div class="info">
+    <div class="infoleft"><div class="infoico">i</div><span>Реален тест: всички числови показатели са изчислени само от публично достъпни източници.</span></div>
+    <button id="refreshBtn" class="refresh">↻ Обнови данните</button>
+  </div>
+
+  <section id="overview" class="view active">
+    <div class="hero">
+      <div class="heroMain"><div class="heroTitle">Индекс BLIS™</div><div class="heroNum" id="blis">—</div></div>
+      <div class="heroKpi"><div class="heroIcon">◔</div><div class="heroLabel">Средна стойност<br>за категорията</div><div class="heroValue" id="benchmark">—</div></div>
+      <div class="heroKpi"><div class="heroIcon">▥</div><div class="heroLabel">Сравнителен<br>индекс</div><div class="heroValue" id="relative">—</div></div>
+      <div class="heroKpi"><div class="heroIcon">♢</div><div class="heroLabel">Надеждност на<br>данните</div><div class="heroValue" id="confidence">—</div></div>
+      <div class="heroKpi"><div class="heroIcon">↗</div><div class="heroLabel">Тенденция за<br>90 дни</div><div class="heroValue green" id="trend">—</div></div>
+    </div>
+
+    <div class="indices" id="indices"></div>
+
+    <div class="bottom">
+      <div class="panel"><div class="panelTitle"><span>◔</span> Ключови сигнали</div><div id="signals"></div></div>
+      <div class="panel"><div class="panelTitle"><span>◎</span> Публични източници</div><div id="sourcesOverview"></div></div>
+      <div class="panel"><div class="panelTitle"><span>♧</span> Сравнение с конкурентите</div><div id="competitorsOverview"></div></div>
+    </div>
+
+    <div class="trendPanel">
+      <div class="trendHead"><h2>Динамика на Индекс BLIS™</h2><div class="range"><button class="active" data-range="30">30 дни</button><button data-range="90">90 дни</button><button data-range="365">12 месеца</button></div></div>
+      <div class="chart" id="historyChart"></div>
+      <div class="legend"><span><i></i> Индекс BLIS™</span><span><i class="alt"></i> Средна стойност за категорията</span></div>
+    </div>
+  </section>
+
+  <section id="reputation" class="view"></section>
+  <section id="experience" class="view"></section>
+  <section id="presence" class="view"></section>
+  <section id="content" class="view"></section>
+  <section id="competitors" class="view"></section>
+  <section id="digital" class="view"></section>
+  <section id="reports" class="view"></section>
+  <section id="method" class="view"></section>
+</main>
+
+<script>
+let current=null,d=null,history=[],sources=[],rangeDays=30;
+const $=id=>document.getElementById(id),fmt=v=>v==null?"—":Number(v).toFixed(1).replace(".",",");
+async function api(u,o){const r=await fetch(u,o);if(!r.ok)throw new Error(await r.text());return r.json()}
+async function init(){current="aroma";await load()}
+async function load(){[d,history,sources]=await Promise.all([api(`/api/clients/${current}/dashboard`),api(`/api/clients/${current}/history`),api(`/api/clients/${current}/sources`)]);render()}
+function render(){
+  $("clientName").textContent=d.name;$("clientNote").textContent=d.note;
+  if(current==="aroma"){
+    $("avatar").innerHTML='<img src="https://aroma.bg/cdn/shop/files/logo-aroma-dark.svg?v=1767860435&width=500" alt="Aroma" onerror="this.parentElement.textContent=\'AROMA\'">';
+  }else{$("avatar").textContent=d.name.charAt(0);}
+  $("blis").textContent=fmt(d.blis_index);$("benchmark").textContent=d.benchmark==null?"—":fmt(d.benchmark);$("relative").textContent=d.relative==null?"—":fmt(d.relative);$("confidence").textContent=fmt(d.confidence)+"%";$("trend").textContent=(d.trend>0?"↑ +":"")+fmt(d.trend);
+
+  $("navbar").innerHTML=d.nav.map((x,i)=>`<button class="navbtn ${i===0?"active":""}" data-key="${x.key}"><span class="navicon">${x.icon}</span>${x.label}</button>`).join("");
+  document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.key,b)));
+
+  const icons=["◉","♙","✦","◎","▦","🏆"];
+  $("indices").innerHTML=d.indices.map((x,i)=>`<div class="idx" data-key="${x.key}"><div class="idxTop"><div class="idxIcon">${icons[i]||"•"}</div><div class="idxLabel">${x.label}</div></div><div><div class="idxValue">${fmt(x.value)}</div><div class="bar"><i style="width:${x.value}%"></i></div></div></div>`).join("");
+  document.querySelectorAll(".idx").forEach(c=>c.addEventListener("click",()=>goFromIndex(c.dataset.key)));
+
+  $("signals").innerHTML=d.signals.map((s,i)=>`<div class="signal"><div class="sigIcon">${i===0?"★":i===1?"●":"⚖"}</div><div class="sigText">${s.title}</div></div>`).join("");
+  renderOverviewSources();
+  renderOverviewCompetitors();
+  renderSubpages();
+  drawHistory();
+}
+function renderOverviewSources(){
+  const labels=current==="astor-garden"?["G","B.","T"]:["in","A","•","•"];
+  $("sourcesOverview").innerHTML=d.metrics.map((m,i)=>`<div class="source" data-i="${i}"><div class="logo ${current==="astor-garden"&&i===0?"g":current==="astor-garden"&&i===2?"t":""}">${labels[i]||"•"}</div><div class="sourceName">${m.label}</div><div class="sourceVal">${m.value}</div></div>`).join("");
+  document.querySelectorAll("#sourcesOverview .source").forEach(el=>el.addEventListener("click",()=>{const s=sources[Number(el.dataset.i)]||sources[0];if(s?.url)window.open(s.url,"_blank")}));
+}
+function renderOverviewCompetitors(){
+  if(current==="astor-garden"){
+    $("competitorsOverview").innerHTML=`<table><thead><tr><th></th><th>Хотел</th><th>Индекс на публичната репутация</th></tr></thead><tbody>${d.competitors.map((x,i)=>`<tr><td>${i+1}</td><td>${x.name}</td><td>${fmt(x.score)}</td></tr>`).join("")}</tbody></table>`;
+  } else {
+    $("competitorsOverview").innerHTML=`<table><thead><tr><th>Марка</th><th>Дигитална зрялост</th><th>Публична аудитория</th><th>Активност</th><th>Репутационен капитал</th><th>Портфолио / видимост</th><th>Конкурентен индекс</th></tr></thead><tbody>${d.competitors.map(x=>`<tr><td>${x.name}</td><td>${fmt(x.digital)}</td><td>${fmt(x.audience)}</td><td>${fmt(x.activity)}</td><td>${fmt(x.reviews)}</td><td>${fmt(x.portfolio)}</td><td><b>${fmt(x.score)}</b></td></tr>`).join("")}</tbody></table>`;
+  }
+}
+function showView(key,btn){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  const target=$(key)||$("overview");target.classList.add("active");
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.remove("active"));
+  if(btn)btn.classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function goFromIndex(key){
+  const map=current==="astor-garden"
+    ? {reputation:"reputation",experience:"experience",digital:"digital",interest:"reputation",competitive:"competitors"}
+    : {digital:"digital",presence:"presence",content:"content",information:"digital",product:"digital",competitive:"competitors"};
+  const target=map[key]||"overview";
+  const btn=[...document.querySelectorAll(".navbtn")].find(b=>b.dataset.key===target);
+  showView(target,btn);
+}
+function idx(key){return d.indices.find(x=>x.key===key)}
+function componentExplanation(name){
+ const map={
+  "Активен официален сайт":"Оценява наличието, достъпността и актуалното функциониране на основния собствен дигитален актив. Самото наличие на сайт не е достатъчно за максимална оценка – важни са структурата, съдържанието и потребителският път.",
+  "Електронна търговия":"Проследява възможността потребителят да премине от продуктова информация към реална покупка, както и последователността на търговския процес.",
+  "Техническа платформа":"Оценява публично проверими технически елементи, стабилност и функционална готовност на средата, без да замества пълен технически одит.",
+  "Езиково покритие":"Показва доколко съдържанието е достъпно за различни публики и пазари. По-широкото международно покритие повишава стойността.",
+  "Категорийно покритие":"Оценява яснота на продуктовата архитектура и доколко основните продуктови направления са лесно откриваеми.",
+  "Видими цени":"Показва прозрачността на продуктовото представяне и наличието на достатъчно ясна ценова информация.",
+  "Функция за покупка":"Оценява доколко потребителят може без прекъсване да премине от разглеждане към поръчка.",
+  "LinkedIn аудитория":"Публичният размер на аудиторията се разглежда като сигнал за натрупано фирмено присъствие, а не като самостоятелна оценка за качество.",
+  "Видими публикации за 90 дни":"Измерва регулярността на текущото публично съдържание и показва дали профилът се поддържа активно.",
+  "Публични участия / събития":"Отчита видими участия, отличия, събития и други публични прояви, които поддържат информационното присъствие.",
+  "История и позициониране":"Оценява доколко историята, отличителните характеристики и основното позициониране са ясно представени и лесно откриваеми.",
+  "Корпоративни контакти":"Оценява достъпността и последователността на официалната фирмена информация и контактните точки.",
+  "Публично портфолио":"Показва яснота на марковото и продуктовото портфолио в публичната среда.",
+  "Браншово присъствие":"Отчита присъствието на марката в релевантни специализирани и браншови източници.",
+  "Продуктова информация":"Оценява пълнотата и полезността на информацията на продуктовите страници – характеристики, предназначение, количество и други важни детайли.",
+  "Добавяне в количка":"Проверява дали потребителският път до покупка е наличен и последователен.",
+  "Лоялна програма":"Отчита наличието и видимостта на механизми за повторна покупка и дългосрочна връзка с потребителя.",
+  "Функция за отзиви":"Оценява възможността за натрупване и видимост на реална потребителска обратна връзка, която е важен репутационен актив."
+ };
+ return map[name]||"Показателят се проследява по еднаква методика във времето и се оценява спрямо наличните проверими публични данни.";
+}
+function metricPage(x){
+  if(!x)return "";
+  return `<div class="subpage"><div class="subcard"><h2>${x.label}</h2><div class="chart" id="chart_${x.key}"></div><p class="status">${x.description}</p></div><div class="subcard"><h2>Показатели и тежести</h2>${(x.components||[]).map(c=>`<div class="descblock"><strong>${c[0]} — ${c[1]??"—"} <span class="weight">(${c[2]||""})</span></strong><p>${componentExplanation(c[0])}</p></div>`).join("")}<h2 style="margin-top:18px">Формула / правило</h2><div class="formula">${x.formula}</div><p class="status">Източници: ${(x.sources||[]).join(" • ")}</p></div></div>`;
+}
+function renderSubpages(){
+  if(current==="astor-garden"){
+    $("reputation").innerHTML=metricPage(idx("reputation"));
+    $("experience").innerHTML=metricPage(idx("experience"));
+  }else{
+    $("presence").innerHTML=metricPage(idx("presence"));
+    $("content").innerHTML=metricPage(idx("content"));
+  }
+  $("digital").innerHTML=current==="astor-garden"
+    ? metricPage(idx("digital"))
+    : metricPage(idx("digital"))+`<div style="height:14px"></div>`+metricPage(idx("information"))+`<div style="height:14px"></div>`+metricPage(idx("product"));
+
+  $("competitors").innerHTML=`<div class="subcard"><h2>Конкурентно позициониране</h2><p>Сравнението използва пет еднакви измерения за всяка марка: дигитална зрялост, публична аудитория, активност на съдържанието, репутационен капитал и портфолио/пазарна видимост. Полученият конкурентен индекс е претеглена стойност от 0 до 100 и служи за проследяване на относителната позиция във времето.</p>${$("competitorsOverview").innerHTML}</div>`;
+
+  $("method").innerHTML=`<div class="subpage">
+    <div class="subcard">
+      <h2>Методология на BLIS™</h2>
+      <p>BLIS™ работи по фиксирана последователност: <b>събиране → проверка → нормализация → претегляне → сравнение → индекс → тенденция → сигнал → анализ.</b> Целта е всеки индекс да бъде проследим до конкретни публични данни и източници.</p>
+      <h3>Формиране на Индекс BLIS™</h3>
+      <div class="formula">Индекс BLIS™ = сбор от секторните индекси × предварително определените им тегла. За Aroma пилотният модел включва: дигитално присъствие 22% + публично присъствие 16% + съдържание 16% + информационна последователност 16% + продуктово представяне 15% + конкурентно позициониране 15%.</div>
+      <h3>Нормализация</h3>
+      <p>Показатели с различни мерни единици се преобразуват към скала 0–100. Абсолютни количества като аудитория, брой публикации или видими отзиви се нормализират спрямо конкурентната група и не се приемат автоматично за 100.</p>
+      <h3>Средна стойност за категорията</h3>
+      <p>Средната стойност се изчислява върху избраната сравнима група по същата методика. За текущия пилот на Aroma тя е <b>${fmt(d.benchmark)}</b>.</p>
+      <h3>Сравнителен индекс</h3>
+      <p>Сравнителният индекс показва позицията спрямо средната стойност за категорията: <b>Индекс BLIS ÷ Средна стойност × 100</b>. Стойност над 100 означава позиция над средната за групата, а под 100 – под нея. Текущата стойност е <b>${fmt(d.relative)}</b>.</p>
+      <h3>Надеждност на данните</h3>
+      <p>Оценява покритието на активните източници, тяхната надеждност, актуалността на данните и наличието на съпоставими стойности. Източник с официален или регулаторен характер получава по-висока тежест от единична публична публикация.</p>
+      <h3>Конкурентен индекс</h3>
+      <div class="formula">Дигитална зрялост 25% + Публична аудитория 20% + Активност на съдържанието 20% + Репутационен капитал 15% + Портфолио и пазарна видимост 20%.</div>
+      <p class="status">Методиката е секторна: при друг тип клиент показателите и теглата се адаптират към пазара, но логиката за проверимост остава еднаква.</p>
+    </div>
+    <div class="subcard">
+      <h2>Източници за ${d.name}</h2>
+      <p>Регистърът включва активни, периодични, референтни и лицензирани източници. Не всеки източник участва във всеки индекс; използва се само когато е релевантен и данните са съпоставими.</p>
+      <div class="sourceCards">${sources.map(s=>`<div class="sourceCard"><b>${s.label}</b><div class="status">${s.method}<br>Надеждност: ${Math.round(s.reliability*100)}%</div><p><a href="${s.url}" target="_blank">Отвори източника</a></p></div>`).join("")}</div>
+    </div></div>`;
+  renderReports();
+  setTimeout(drawSubCharts,20);
+}
+
+async function renderReports(){
+  if(!$("reports")) return;
+  const rs=await api(`/api/clients/${current}/reports`);
+  $("reports").innerHTML=`<div class="subcard"><h2>Месечни анализи</h2><p>Всеки месец услугата включва четири аналитични доклада, месечно обобщение и актуализиран BLIS Навигатор™. Докладите се натрупват по периоди и остават достъпни от клиентския профил.</p><div class="reportsGrid">${rs.map(r=>`<div class="reportCard"><div><h3>${r.title}</h3><p>${r.period}</p></div><button class="downloadBtn" data-report="${r.id}">Свали анализа</button></div>`).join("")}</div></div>`;
+  $("reports").querySelectorAll(".downloadBtn").forEach(b=>b.addEventListener("click",()=>window.location.href=`/api/clients/${current}/reports/${b.dataset.report}`));
+}
+
+function drawSubCharts(){d.indices.forEach(x=>{const el=$("chart_"+x.key);if(el)drawBars(el,x.components||[])})}
+function drawBars(el,comps){
+  const vals=comps.filter(c=>typeof c[1]==="number").slice(0,8);
+  if(!vals.length){el.innerHTML='<p class="status" style="padding:100px 0;text-align:center">Няма достатъчно числови компоненти.</p>';return}
+  const w=720,row=46,left=250,right=55,h=vals.length*row+25;
+  let rows="";
+  vals.forEach((c,i)=>{
+    const v=Math.max(0,Math.min(100,Number(c[1]))),y=18+i*row,barW=(w-left-right)*v/100;
+    const label=String(c[0]);
+    rows+=`<text x="5" y="${y+15}" class="axis" style="font-size:12px;fill:#263a57">${label}</text>
+      <rect x="${left}" y="${y}" width="${w-left-right}" height="18" rx="7" fill="#edf2f7"/>
+      <rect x="${left}" y="${y}" width="${barW}" height="18" rx="7" fill="var(--blue)"/>
+      <text x="${left+barW+8}" y="${y+14}" class="axis" style="font-size:11px">${fmt(v)}</text>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" style="min-height:${Math.max(250,h)}px">${rows}</svg>`;
+}
+function drawHistory(){
+  const cutoff=Date.now()-rangeDays*86400000;
+  const hs=history.filter(h=>new Date(h.created_at).getTime()>=cutoff);
+  if(hs.length<2){$("historyChart").innerHTML='<p class="status" style="padding:110px 0;text-align:center">Има базова точка. Натиснете „Обнови данните“, за да се запише нов backend snapshot и да се появи реалната крива.</p>';return}
+  const vals=hs.map(h=>Number(h.payload.blis_index)),benches=hs.map(h=>Number(h.payload.benchmark||h.payload.blis_index));
+  const w=1200,h=260,p=42,min=Math.max(0,Math.min(...vals,...benches)-5),max=Math.min(100,Math.max(...vals,...benches)+5);
+  const X=i=>p+i*(w-2*p)/(hs.length-1),Y=v=>h-p-(v-min)*(h-2*p)/(max-min||1);
+  let grid="";[min,(min+max)/2,max].forEach(v=>grid+=`<line x1="${p}" x2="${w-p}" y1="${Y(v)}" y2="${Y(v)}" class="gridline"/><text x="4" y="${Y(v)+3}" class="axis">${fmt(v)}</text>`);
+  const path=vals.map((v,i)=>(i?"L":"M")+X(i)+","+Y(v)).join(" ");
+  const path2=benches.map((v,i)=>(i?"L":"M")+X(i)+","+Y(v)).join(" ");
+  const dots=vals.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="4" class="dot"/><text x="${X(i)}" y="${h-7}" text-anchor="middle" class="axis">${new Date(hs[i].created_at).toLocaleDateString("bg-BG",{day:"2-digit",month:"2-digit"})}</text>`).join("");
+  $("historyChart").innerHTML=`<svg viewBox="0 0 ${w} ${h}">${grid}<path d="${path}" class="line"/><path d="${path2}" class="line2"/>${dots}</svg>`;
+}
+async function refresh(){
+  $("refreshBtn").disabled=true;$("refreshBtn").textContent="Обновяване…";
+  try{await api(`/api/clients/${current}/refresh`,{method:"POST"});await load();$("refreshBtn").textContent="✓ Обновено"}
+  catch(e){$("refreshBtn").textContent="Грешка"}
+  finally{setTimeout(()=>{$("refreshBtn").disabled=false;$("refreshBtn").textContent="↻ Обнови данните"},1200)}
+}
+document.querySelectorAll(".range button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".range button").forEach(x=>x.classList.remove("active"));b.classList.add("active");rangeDays=Number(b.dataset.range);drawHistory()}));
+$("refreshBtn").addEventListener("click",refresh);
+init();
+</script>
+</body>
+</html>
