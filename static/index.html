@@ -163,7 +163,7 @@ table{font-size:11px;border-collapse:separate;border-spacing:0}th,td{padding:8px
 
 <main>
   <div class="info">
-    <div class="infoleft"><div class="infoico">i</div><span>Реален тест: всички числови показатели са изчислени само от публично достъпни източници.</span></div>
+    <div class="infoleft"><div class="infoico">i</div><span id="engineInfo">BLIS Engine: зареждане на текущите публични данни…</span></div>
     <button id="refreshBtn" class="refresh">↻ Обнови данните</button>
   </div>
 
@@ -213,6 +213,7 @@ function render(){
     $("avatar").innerHTML='<img src="https://aroma.bg/cdn/shop/files/logo-aroma-dark.svg?v=1767860435&width=500" alt="Aroma" onerror="this.parentElement.textContent=\'AROMA\'">';
   }else{$("avatar").textContent=d.name.charAt(0);}
   $("blis").textContent=fmt(d.blis_index);$("benchmark").textContent=d.benchmark==null?"—":fmt(d.benchmark);$("relative").textContent=d.relative==null?"—":fmt(d.relative);$("confidence").textContent=fmt(d.confidence)+"%";$("trend").textContent=(d.trend>0?"↑ +":"")+fmt(d.trend);
+  const ei=$("engineInfo");if(ei){const e=d.engine||{},ts=d.data_updated?new Date(d.data_updated).toLocaleString("bg-BG"):"—";ei.textContent=`BLIS Engine • последни данни: ${ts}${e.running?" • обновяване…":e.last_run?` • connectors: ${e.successful||0} активни / ${e.failed||0} недостъпни`:""}`;}
 
   $("navbar").innerHTML=d.nav.map((x,i)=>`<button class="navbtn ${i===0?"active":""}" data-key="${x.key}"><span class="navicon">${x.icon}</span>${x.label}</button>`).join("");
   document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.key,b)));
