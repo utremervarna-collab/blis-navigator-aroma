@@ -1,0 +1,61 @@
+name: BLIS Daily Engine v2 Multi-client
+
+on:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-and-persist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wake Render and refresh all client profiles
+        run: |
+          set -e
+          BASE="https://blis-navigator-aroma.onrender.com"
+          for CLIENT in aroma bolyarka astor-garden; do
+            echo "Refreshing $CLIENT"
+            curl --fail --retry 5 --retry-delay 10 --max-time 240 \
+              -X POST "$BASE/api/clients/$CLIENT/refresh" \
+              -o "/tmp/blis-$CLIENT.json"
+            python - <<PY
+          import json
+          p='/tmp/blis-$CLIENT.json'
+          d=json.load(open(p,encoding='utf-8'))
+          e=d.get('engine',{})
+          print('$CLIENT', 'successful=',e.get('successful'), 'failed=',e.get('failed'), 'version=',e.get('version'))
+          PY
+          done
+
+      - name: Export persistent BLIS store
+        run: |
+          mkdir -p data
+          curl --fail --retry 5 --retry-delay 8 --max-time 120 \
+            "https://blis-navigator-aroma.onrender.com/api/store/export" \
+            -o data/live_store.json
+          python - <<'PY'
+          import json
+          p='data/live_store.json'
+          d=json.load(open(p,encoding='utf-8'))
+          clients=d.get('clients',{})
+          for slug in ('aroma','bolyarka','astor-garden'):
+              assert slug in clients, f'{slug} missing from exported store'
+              print(slug, 'snapshots=',len(clients[slug].get('snapshots',[])), 'observations=',len(clients[slug].get('observations',[])))
+          PY
+
+      - name: Commit daily data snapshot
+        run: |
+          git config user.name "BLIS Engine"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/live_store.json
+          if git diff --cached --quiet; then
+            echo "No data changes"
+          else
+            git commit -m "BLIS daily multi-client data $(date -u +%F)"
+            git push
+          fi
