@@ -22,7 +22,7 @@ import (
 //go:embed static/index.html
 var indexHTML string
 
-//go:embed static/*.html
+//go:embed static/*
 var staticFS embed.FS
 
 type Source struct {
@@ -1814,10 +1814,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		jsonOut(w, map[string]interface{}{"ok": true, "id": in.ID, "created_at": in.CreatedAt})
 		return
 	}
-	if strings.HasSuffix(path, ".html") && !strings.Contains(path, "..") {
+	if !strings.Contains(path, "..") && (strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".svg")) {
 		b, err := staticFS.ReadFile("static/" + path)
 		if err == nil {
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			ct := http.DetectContentType(b)
+			if strings.HasSuffix(path, ".css") {
+				ct = "text/css; charset=utf-8"
+			}
+			if strings.HasSuffix(path, ".html") {
+				ct = "text/html; charset=utf-8"
+			}
+			w.Header().Set("Content-Type", ct)
 			w.Write(b)
 			return
 		}
