@@ -1186,7 +1186,7 @@ func aromaOwnCompetitiveScore(c *Client) float64 {
 }
 func runAromaEngine(c *Client, createSnapshot bool) EngineStatus {
 	started := time.Now()
-	setEngineStatus(EngineStatus{Version: "2.8-expanded-competition", Running: true, LastRun: engineSnapshot().LastRun, NextRun: started.Add(24 * time.Hour).Format(time.RFC3339)})
+	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", Running: true, LastRun: engineSnapshot().LastRun, NextRun: started.Add(24 * time.Hour).Format(time.RFC3339)})
 	results := []ConnectorResult{probeOfficialAroma(c), probeLinkedInAroma(c), probeNewsAroma(c), probeContentPage(c, "corporate", []string{"aroma", "арома", "contact", "контакт", "history", "история", "product", "продукт"}), probeContentPage(c, "cosmetics_bg", []string{"aroma", "арома", "cosmetics", "product", "brand"})}
 	keys := []string{"nsi", "registry", "bpo", "kzp", "bda", "euipo", "wipo", "eurostat", "cosmetics_europe", "cosing", "ec_cosmetics", "facebook_official", "instagram_official", "youtube_official", "google_trends", "google_ads", "meta_ads"}
 	ch := make(chan ConnectorResult, len(keys)+5+len(aromaCompetitors))
@@ -1223,7 +1223,7 @@ func runAromaEngine(c *Client, createSnapshot bool) EngineStatus {
 		}
 		saveStore()
 	}
-	st := EngineStatus{Version: "2.8-expanded-competition", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: successful, Failed: failed, Results: results}
+	st := EngineStatus{Version: "2.9-portal-finalqa", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: successful, Failed: failed, Results: results}
 	setEngineStatus(st)
 	return st
 }
@@ -1327,7 +1327,7 @@ func competitorBeerScore(c *Client, siteKey, beerKey, newsKey string) (float64, 
 	return score, map[string]float64{"website": web, "content": wordsRaw, "brand_signals": termsRaw, "news": newsRaw, "rating": ratingRaw, "ratings": ratingsRaw, "activity": activityRaw, "evidence": float64(evidence)}
 }
 func runBolyarkaEngine(c *Client, createSnapshot bool) EngineStatus {
-	setEngineStatus(EngineStatus{Version: "2.8-expanded-competition", Running: true, LastRun: engineSnapshot().LastRun, NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
+	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", Running: true, LastRun: engineSnapshot().LastRun, NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
 	genericKeys := []string{"official_site", "brand_site", "linkedin", "untappd", "untappd_beers", "registry", "nsi", "brewers_bg", "world_beer_awards", "facebook", "instagram", "youtube", "beeradvocate", "pintplease", "beertasting", "google_trends", "meta_ads", "kaufland", "billa", "metro", "competitor_kamenitza", "competitor_zagorka", "competitor_shumensko"}
 	beerKeys := []string{"untappd_bolyarka_flagship", "untappd_kamenitza", "untappd_zagorka", "untappd_shumensko"}
 	results := []ConnectorResult{}
@@ -1385,7 +1385,7 @@ func runBolyarkaEngine(c *Client, createSnapshot bool) EngineStatus {
 		}
 		saveStore()
 	}
-	st := EngineStatus{Version: "2.8-expanded-competition", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: suc, Failed: fail, Results: results}
+	st := EngineStatus{Version: "2.9-portal-finalqa", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: suc, Failed: fail, Results: results}
 	setEngineStatus(st)
 	return st
 }
@@ -1428,7 +1428,7 @@ func probeBookingComparable(c *Client, key string) ConnectorResult {
 }
 
 func runAstorEngine(c *Client, createSnapshot bool) EngineStatus {
-	setEngineStatus(EngineStatus{Version: "2.8-expanded-competition", Running: true, LastRun: engineSnapshot().LastRun, NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
+	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", Running: true, LastRun: engineSnapshot().LastRun, NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
 	results := []ConnectorResult{}
 	generic := []string{"official_site", "google_hotels", "tripadvisor", "facebook", "instagram", "youtube", "expedia", "hotels", "trivago", "holidaycheck", "trip_com", "skyscanner"}
 	bookingKeys := []string{"booking", "cmp_rosslyn_booking", "cmp_international_booking", "cmp_aquahouse_booking", "cmp_palace_booking"}
@@ -1464,14 +1464,14 @@ func runAstorEngine(c *Client, createSnapshot bool) EngineStatus {
 		}
 		saveStore()
 	}
-	st := EngineStatus{Version: "2.8-expanded-competition", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: suc, Failed: fail, Results: results}
+	st := EngineStatus{Version: "2.9-portal-finalqa", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: suc, Failed: fail, Results: results}
 	setEngineStatus(st)
 	return st
 }
 
 func runClientEngine(c *Client, snapshot bool) EngineStatus {
 	if c == nil {
-		return EngineStatus{Version: "2.8-expanded-competition"}
+		return EngineStatus{Version: "2.9-portal-finalqa"}
 	}
 	switch c.Slug {
 	case "bolyarka":
@@ -1947,7 +1947,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 func main() {
 	ensureStore()
-	setEngineStatus(EngineStatus{Version: "2.8-expanded-competition", NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
+	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
 	startEngineScheduler()
 	port := os.Getenv("PORT")
 	if port == "" {
