@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BLIS Навигатор v7</title>
+<title>BLIS Навигатор — Aroma</title>
 <style>
 :root{
   --bg:#f7f9fc;--card:#fff;--ink:#0c2547;--ink2:#1c3150;--muted:#6f7e92;
@@ -101,19 +101,64 @@ td:last-child,th:last-child{text-align:right}
 .statbox b{display:block;font-size:26px;color:var(--blue)}.statbox span{font-size:12px;color:var(--muted)}
 @media(max-width:700px){.reportsGrid,.statrow{grid-template-columns:1fr}}
 
+
+/* === BLIS NAVIGATOR MOBILE-DESIGN SYSTEM / DESKTOP ADAPTATION === */
+:root{
+  --navy:#071f47;--navy2:#16335e;--teal:#079b91;--tealSoft:#e5f6f4;
+  --blue:#1768e5;--blueSoft:#eaf1ff;--gold:#e0a11a;--goldSoft:#fff4dc;
+  --purple:#7c45d8;--purpleSoft:#f1e9ff;--canvas:#f7f9fc;--card:#fff;
+  --muted:#71809a;--line:#e5eaf1;--shadow:0 10px 30px rgba(20,44,80,.065);
+}
+body{background:linear-gradient(180deg,#fbfcfe 0,#f6f9fc 100%);color:var(--navy);font-family:Inter,"Segoe UI",Arial,sans-serif}
+header{position:static;border:0;background:transparent;backdrop-filter:none}
+.topbar{position:fixed;z-index:60;top:0;left:0;right:0;height:94px;padding:0 34px 0 270px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(18px)}
+.brandwrap{gap:14px}.brandmark{width:54px;height:54px;border-radius:18px;background:linear-gradient(145deg,#063b86,#0e69ca);display:grid;place-items:center;color:#fff;font-weight:800;font-size:16px;letter-spacing:.05em;box-shadow:0 8px 20px rgba(14,88,190,.20)}
+.brand{font-family:inherit;font-size:29px;font-weight:750;letter-spacing:-.025em;color:var(--navy);line-height:1.05}.brandsub{font-size:12px;margin-top:6px;color:var(--muted);letter-spacing:.01em}
+.clientarea{gap:13px}.clientcopy b{font-size:15px}.clientcopy span{font-size:11px}.avatar{width:52px;height:52px;border:0;background:linear-gradient(145deg,#0b9f95,#05786f);box-shadow:0 8px 20px rgba(7,143,132,.18);color:#fff;font-family:inherit;font-size:13px;overflow:hidden}.avatar img{filter:brightness(0) invert(1);max-width:70%;max-height:34%}
+.statusbell{position:relative;width:42px;height:42px;border-radius:14px;border:1px solid var(--line);display:grid;place-items:center;background:#fff;font-size:22px;color:var(--navy2)}.statusbell i{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--gold);right:6px;top:5px;border:2px solid #fff}
+.sidebar{position:fixed;z-index:70;top:0;left:0;bottom:0;width:238px;background:rgba(255,255,255,.985);border-right:1px solid var(--line);padding:24px 15px 18px;display:flex;flex-direction:column}
+.sidebar:before{content:"BLIS";height:55px;display:flex;align-items:center;padding:0 14px;margin-bottom:38px;color:var(--navy);font-size:28px;font-weight:850;letter-spacing:-.04em}
+.navbar{height:auto;padding:0;display:flex;flex-direction:column;align-items:stretch;background:transparent;overflow:auto;gap:7px}
+.navbtn{flex:none;min-height:54px;border:0;border-radius:15px;background:transparent;color:#52647f;padding:0 14px;justify-content:flex-start;gap:13px;font-size:14px;border-bottom:0;text-align:left;transition:.18s ease}
+.navbtn:hover{background:#f5f8fd;color:var(--navy)}.navbtn.active{color:var(--blue);background:#f7faff;border-bottom:0;font-weight:700;box-shadow:inset 3px 0 0 var(--blue),0 5px 18px rgba(29,94,190,.06)}
+.navicon{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:#f1f4f9;color:#657794}.navbtn.active .navicon{background:var(--blueSoft);color:var(--blue)}
+.sidebarFoot{margin-top:auto;border-top:1px solid var(--line);padding:16px 12px 4px;font-size:11px;font-weight:700;color:#586b87}.sidebarFoot span{display:block;margin-top:4px;color:#99a4b4;font-size:10px;font-weight:400}
+main{padding:116px 28px 46px;margin-left:238px;max-width:1900px}
+.info{height:auto;min-height:56px;border:1px solid var(--line);background:#fff;border-radius:18px;padding:9px 12px 9px 18px;margin-bottom:15px;box-shadow:0 6px 20px rgba(25,55,94,.035)}
+.infoleft{gap:11px;font-size:12px;color:#667792}.infoico{width:30px;height:30px;border:0;background:var(--blueSoft);color:var(--blue);font-size:13px}.refresh{border:0;background:linear-gradient(135deg,#1768e5,#0f56c0);color:#fff;border-radius:13px;padding:10px 16px;font-weight:700;box-shadow:0 8px 18px rgba(23,104,229,.16)}
+.hero{height:172px;border:1px solid var(--line);border-radius:24px;grid-template-columns:1.55fr repeat(4,.82fr);box-shadow:var(--shadow);overflow:hidden;background:#fff}
+.heroMain{padding:24px 34px;display:flex;align-items:center;gap:25px;background:linear-gradient(120deg,#fff 0,#fbfdff 100%)}
+.compass{width:96px;height:96px;min-width:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#0c5bb8,#063d86 66%,#052d65);box-shadow:0 0 0 11px #f3f7fb,0 10px 25px rgba(6,62,133,.20);position:relative}.compass:before,.compass:after{content:"";position:absolute;left:50%;top:50%;transform-origin:center;border-style:solid}.compass:before{border-width:0 8px 42px 8px;border-color:transparent transparent #fff transparent;transform:translate(-50%,-50%) rotate(43deg)}.compass:after{width:13px;height:13px;border-radius:50%;background:#e2a515;border:4px solid #fff;transform:translate(-50%,-50%)}
+.heroCopy{min-width:0}.heroTitle{font-size:15px;color:#6c7b92;font-weight:650}.heroScore{display:flex;align-items:center;gap:14px}.heroNum{font-family:inherit;font-size:68px;letter-spacing:-.06em;font-weight:780;margin-top:2px;color:var(--navy)}.heroArrow{font-size:34px;color:var(--teal);font-weight:400}.heroHint{font-size:11px;color:#8996a8;margin-top:-3px}
+.heroKpi{border-left:1px solid var(--line);padding:14px}.heroIcon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--blueSoft);color:var(--blue);font-size:19px;margin-bottom:10px}.heroKpi:nth-child(3) .heroIcon{background:var(--tealSoft);color:var(--teal)}.heroKpi:nth-child(4) .heroIcon{background:var(--goldSoft);color:var(--gold)}.heroKpi:nth-child(5) .heroIcon{background:var(--purpleSoft);color:var(--purple)}
+.heroLabel{font-size:11px;line-height:1.35;color:#718098}.heroValue{font-size:26px;font-weight:720;margin-top:7px;color:var(--navy)}.heroValue.green{color:var(--teal)}
+.indices{grid-template-columns:repeat(3,1fr);gap:13px;margin-top:13px}.idx{height:150px;border:1px solid var(--line);border-radius:20px;padding:18px 18px 14px;box-shadow:0 7px 24px rgba(20,44,80,.045);background:#fff;transition:.18s ease}.idx:hover{transform:translateY(-2px);border-color:#d5e0ef;box-shadow:0 12px 30px rgba(20,44,80,.075);background:#fff}.idxTop{gap:13px}.idxIcon{width:45px;height:45px;border:0;border-radius:15px;background:var(--blueSoft);color:var(--blue);font-size:18px}.idx:nth-child(2) .idxIcon{background:var(--tealSoft);color:var(--teal)}.idx:nth-child(3) .idxIcon{background:var(--goldSoft);color:var(--gold)}.idx:nth-child(4) .idxIcon{background:var(--purpleSoft);color:var(--purple)}.idx:nth-child(5) .idxIcon{background:#eaf7ee;color:#43a45a}.idx:nth-child(6) .idxIcon{background:#fff1ea;color:#df7644}.idxLabel{font-size:13px;line-height:1.3;font-weight:650;color:#273c5e}.idxValue{font-size:28px;margin-left:58px;letter-spacing:-.03em}.bar{height:5px;background:#eef2f7;margin-left:58px}.bar i{background:linear-gradient(90deg,var(--blue),#55a6ff)}.idx:nth-child(2) .bar i{background:linear-gradient(90deg,var(--teal),#57c9c1)}.idx:nth-child(3) .bar i{background:linear-gradient(90deg,var(--gold),#f4c65e)}.idx:nth-child(4) .bar i{background:linear-gradient(90deg,var(--purple),#aa7bea)}
+.bottom{grid-template-columns:1fr 1fr 1.25fr;gap:13px;margin-top:13px}.panel,.trendPanel,.subcard,.sourceCard,.reportCard{border:1px solid var(--line);border-radius:20px;box-shadow:0 7px 24px rgba(20,44,80,.045);background:#fff}.panel{padding:18px;min-height:270px}.panelTitle{font-size:16px;font-weight:700;margin-bottom:10px;color:var(--navy)}.panelIco{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;background:var(--goldSoft);color:var(--gold)}.panelSources .panelIco{background:var(--tealSoft);color:var(--teal)}.panelComp .panelIco{background:var(--purpleSoft);color:var(--purple)}
+.signal{grid-template-columns:38px 1fr;padding:11px 0;border-color:#edf0f4}.sigIcon{width:31px;height:31px;border-radius:11px;background:var(--tealSoft);color:var(--teal);font-size:12px}.signal:nth-child(3) .sigIcon{background:var(--goldSoft);color:var(--gold)}.sigText{font-size:12px;color:#475c79}
+.source{grid-template-columns:38px 1fr auto;padding:10px 0;border-color:#edf0f4}.logo{width:31px;height:31px;border-radius:11px;font-size:11px}.sourceName,.sourceVal{font-size:12px}.sourceVal{color:var(--blue)}
+table{font-size:11px;border-collapse:separate;border-spacing:0}th,td{padding:8px;border:0;border-bottom:1px solid #edf0f4}th{background:transparent;color:#8290a4;font-size:10px}
+.trendPanel{margin-top:13px;padding:20px}.trendHead h2{font-size:17px;font-weight:700}.range button{border-color:var(--line);border-radius:11px;padding:7px 10px}.range button.active{background:var(--blueSoft);border-color:#d9e7ff}.chart{height:250px}.line{stroke:var(--blue);stroke-width:2.5}.line2{stroke:#5dc8c1}.dot{stroke:var(--blue)}
+.subpage{gap:13px}.subcard{padding:20px}.sourceCard{padding:17px}.formula{border:1px solid #e4eaf2;background:#f8fafc;border-radius:13px}.reportCard{padding:17px}.downloadBtn{border:0;background:var(--blueSoft);color:var(--blue);border-radius:12px}.statbox{border-color:var(--line);background:#fafcff;border-radius:15px}
+@media(max-width:1350px){.hero{grid-template-columns:1.35fr repeat(2,1fr);height:auto}.heroMain{grid-row:span 2}.heroKpi:nth-child(4),.heroKpi:nth-child(5){border-top:1px solid var(--line)}.indices{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr 1fr}.panelComp{grid-column:1/-1}}
+@media(max-width:980px){.topbar{left:0;padding:0 18px;height:78px}.sidebar{top:78px;width:78px;padding:12px 8px}.sidebar:before,.sidebarFoot{display:none}.navbar{gap:5px}.navbtn{padding:0;justify-content:center}.navbtn .navicon{margin:0}.navbtn{font-size:0}.main{}main{margin-left:78px;padding:96px 16px 36px}.clientcopy{display:none}.brandmark{width:46px;height:46px}.brand{font-size:24px}.brandsub{display:none}.hero{grid-template-columns:1fr 1fr}.heroMain{grid-column:1/-1;grid-row:auto}.heroKpi{border-top:1px solid var(--line)}.bottom,.subpage{grid-template-columns:1fr}.panelComp{grid-column:auto}}
+@media(max-width:700px){.topbar{position:sticky;height:72px;padding:0 12px}.sidebar{position:static;width:auto;height:auto;padding:8px 10px;border:0;border-bottom:1px solid var(--line)}.navbar{flex-direction:row;overflow-x:auto}.navbtn{min-width:54px}.sidebarFoot{display:none}main{margin-left:0;padding:12px}.infoleft span{display:none}.hero{grid-template-columns:1fr}.heroMain{padding:22px}.compass{width:74px;height:74px;min-width:74px}.heroNum{font-size:54px}.heroKpi{border-left:0}.indices{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <header>
   <div class="topbar">
-    <div class="brandwrap"><div class="brand">BLIS</div><div class="brandsub">Навигатор</div></div>
+    <div class="brandwrap">
+      <div class="brandmark">BLIS</div>
+      <div><div class="brand">Навигатор</div><div class="brandsub">Интелигентна система за бранд анализ</div></div>
+    </div>
     <div class="clientarea">
       <div class="clientcopy"><b id="clientName"></b><span id="clientNote"></span></div>
-      
+      <div class="statusbell" aria-hidden="true">♢<i></i></div>
       <div class="avatar" id="avatar">A</div>
     </div>
   </div>
-  <div class="navbar" id="navbar"></div>
+  <aside class="sidebar"><div class="navbar" id="navbar"></div><div class="sidebarFoot">BLIS Navigator™<span>Проверими публични данни</span></div></aside>
 </header>
 
 <main>
@@ -124,7 +169,7 @@ td:last-child,th:last-child{text-align:right}
 
   <section id="overview" class="view active">
     <div class="hero">
-      <div class="heroMain"><div class="heroTitle">Индекс BLIS™</div><div class="heroNum" id="blis">—</div></div>
+      <div class="heroMain"><div class="compass" aria-hidden="true"><span></span></div><div class="heroCopy"><div class="heroTitle">Индекс BLIS™</div><div class="heroScore"><div class="heroNum" id="blis">—</div><div class="heroArrow">↗</div></div><div class="heroHint">Обща оценка на позиционирането на марката</div></div></div>
       <div class="heroKpi"><div class="heroIcon">◔</div><div class="heroLabel">Средна стойност<br>за категорията</div><div class="heroValue" id="benchmark">—</div></div>
       <div class="heroKpi"><div class="heroIcon">▥</div><div class="heroLabel">Сравнителен<br>индекс</div><div class="heroValue" id="relative">—</div></div>
       <div class="heroKpi"><div class="heroIcon">♢</div><div class="heroLabel">Надеждност на<br>данните</div><div class="heroValue" id="confidence">—</div></div>
@@ -134,9 +179,9 @@ td:last-child,th:last-child{text-align:right}
     <div class="indices" id="indices"></div>
 
     <div class="bottom">
-      <div class="panel"><div class="panelTitle"><span>◔</span> Ключови сигнали</div><div id="signals"></div></div>
-      <div class="panel"><div class="panelTitle"><span>◎</span> Публични източници</div><div id="sourcesOverview"></div></div>
-      <div class="panel"><div class="panelTitle"><span>♧</span> Сравнение с конкурентите</div><div id="competitorsOverview"></div></div>
+      <div class="panel panelSignals"><div class="panelTitle"><span class="panelIco">✓</span> Ключови сигнали</div><div id="signals"></div></div>
+      <div class="panel panelSources"><div class="panelTitle"><span class="panelIco">◎</span> Публични източници</div><div id="sourcesOverview"></div></div>
+      <div class="panel panelComp"><div class="panelTitle"><span class="panelIco">↗</span> Сравнение с конкурентите</div><div id="competitorsOverview"></div></div>
     </div>
 
     <div class="trendPanel">
