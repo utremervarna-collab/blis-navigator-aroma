@@ -34,3 +34,6 @@
 След активиране на `brandlab.bg` може да се свърже например:
 `navigator.brandlab.bg`
 към същия Render service.
+
+## UI update — 11 Aug 2026
+Desktop interface restyled to the BLIS Navigator mobile visual system. Backend/API, data model, sources, history snapshots, refresh workflow, competitor calculations, methodology and monthly report endpoints are unchanged.
