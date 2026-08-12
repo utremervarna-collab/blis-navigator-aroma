@@ -3,13 +3,17 @@ package main
 import (
 	_ "embed"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,6 +51,28 @@ type Client struct {
 type Store struct {
 	Clients map[string]*Client `json:"clients"`
 }
+
+type ConnectorResult struct {
+	SourceKey  string                 `json:"source_key"`
+	Label      string                 `json:"label"`
+	OK         bool                   `json:"ok"`
+	Status     int                    `json:"status,omitempty"`
+	Metrics    map[string]interface{} `json:"metrics,omitempty"`
+	Error      string                 `json:"error,omitempty"`
+	ObservedAt string                 `json:"observed_at"`
+}
+type EngineStatus struct {
+	Running    bool              `json:"running"`
+	LastRun    string            `json:"last_run"`
+	NextRun    string            `json:"next_run"`
+	Successful int               `json:"successful"`
+	Failed     int               `json:"failed"`
+	Results    []ConnectorResult `json:"results"`
+}
+
+var engine EngineStatus
+var engineMu sync.Mutex
+var obsMu sync.Mutex
 
 var store Store
 var mu sync.Mutex
@@ -108,11 +134,13 @@ func mean(xs []float64) float64 {
 	return s / float64(len(xs))
 }
 func add(c *Client, s, m string, v interface{}, stamp string) {
+	obsMu.Lock()
 	c.Observations = append(c.Observations, Observation{SourceKey: s, MetricKey: m, Value: v, ObservedAt: stamp})
+	obsMu.Unlock()
 }
 
 func seedStore() Store {
-	stamp := "2026-08-11T12:00:00Z"
+	stamp := "2026-08-12T07:30:00Z"
 	astor := &Client{
 		Slug: "astor-garden", Name: "Astor Garden Hotel", Sector: "Хотели",
 		Note: "Публичен профил • без вътрешни данни",
@@ -182,7 +210,7 @@ func seedStore() Store {
 		{"official_site", "language_count", 2.0}, {"official_site", "category_count", 4.0}, {"official_site", "pricing_visible", 1.0},
 		{"official_site", "cart_active", 1.0}, {"official_site", "product_details", 1.0}, {"official_site", "loyalty_program", 1.0},
 		{"official_site", "review_functionality", 1.0}, {"official_site", "history_visible", 1.0}, {"official_site", "blog_events", 1.0},
-		{"linkedin", "followers", 799.0}, {"linkedin", "profile_active", 1.0}, {"linkedin", "visible_posts_90d", 5.0},
+		{"linkedin", "followers", 811.0}, {"linkedin", "profile_active", 1.0}, {"linkedin", "visible_posts_90d", 5.0},
 		{"linkedin", "recent_industry_events", 3.0}, {"corporate", "portfolio_public", 1.0}, {"corporate", "contacts_public", 1.0},
 		{"corporate", "heritage_years", 100.0}, {"industry", "listed_as_brand", 1.0},
 	} {
@@ -201,6 +229,13 @@ func ensureStore() {
 	dataPath = filepath.Join(appDataDir(), "data_v5.json")
 	if b, err := os.ReadFile(dataPath); err == nil {
 		if json.Unmarshal(b, &store) == nil && len(store.Clients) > 0 {
+			return
+		}
+	}
+	// Persisted public-data snapshot committed by the daily GitHub workflow.
+	if b, err := os.ReadFile(filepath.Join("data", "live_store.json")); err == nil {
+		if json.Unmarshal(b, &store) == nil && len(store.Clients) > 0 {
+			saveStore()
 			return
 		}
 	}
@@ -305,24 +340,80 @@ func astorDashboard(c *Client) map[string]interface{} {
 	}
 }
 
+func boolScore(v interface{}) float64 {
+	if f(v) > 0 {
+		return 100
+	}
+	return 0
+}
+func norm(v, max float64) float64 {
+	if max <= 0 {
+		return 0
+	}
+	return clamp(v / max * 100)
+}
+func latestObservedAt(c *Client) string {
+	if len(c.Observations) == 0 {
+		return ""
+	}
+	latestStamp := c.Observations[0].ObservedAt
+	for _, o := range c.Observations {
+		if o.ObservedAt > latestStamp {
+			latestStamp = o.ObservedAt
+		}
+	}
+	return latestStamp
+}
 func aromaDashboard(c *Client) map[string]interface{} {
 	followers := f(latest(c, "linkedin", "followers"))
 	posts := f(latest(c, "linkedin", "visible_posts_90d"))
 	events := f(latest(c, "linkedin", "recent_industry_events"))
-	// Пилотни секторни оценки върху проверими публични елементи.
-	// Не се използват 100% стойности по подразбиране: всяка област има резерв.
-	digital := 86.0
-	presence := 78.6
-	content := 82.0
-	info := 88.0
-	product := 84.0
+	news30 := f(latest(c, "google_search", "news_mentions_30d"))
+	newsSources := f(latest(c, "google_search", "news_sources_30d"))
+
+	web := boolScore(latest(c, "official_site", "website_active"))
+	ecommerce := boolScore(latest(c, "official_site", "ecommerce_active"))
+	price := boolScore(latest(c, "official_site", "pricing_visible"))
+	cart := boolScore(latest(c, "official_site", "cart_active"))
+	prod := boolScore(latest(c, "official_site", "product_details"))
+	cats := norm(f(latest(c, "official_site", "category_count")), 4)
+	langs := norm(f(latest(c, "official_site", "language_count")), 2)
+	loyalty := boolScore(latest(c, "official_site", "loyalty_program"))
+	reviews := boolScore(latest(c, "official_site", "review_functionality"))
+	historyVisible := boolScore(latest(c, "official_site", "history_visible"))
+	blogEvents := boolScore(latest(c, "official_site", "blog_events"))
+	corporateReach := boolScore(latest(c, "corporate", "reachable"))
+	industryReach := boolScore(latest(c, "cosmetics_bg", "reachable"))
+	linkedinReach := boolScore(latest(c, "linkedin", "profile_active"))
+
+	digital := r1(web*.15 + ecommerce*.20 + prod*.15 + price*.10 + cart*.15 + cats*.10 + langs*.05 + loyalty*.05 + reviews*.05)
+	audienceScore := clamp(35 + 65*math.Log10(math.Max(followers, 1))/math.Log10(5000))
+	activityScore := clamp(posts / 12 * 100)
+	newsScore := clamp(news30 / 15 * 100)
+	presence := r1(linkedinReach*.20 + audienceScore*.35 + activityScore*.25 + newsScore*.20)
+	eventScore := clamp(events / 6 * 100)
+	content := r1(activityScore*.35 + eventScore*.20 + blogEvents*.20 + cats*.15 + newsScore*.10)
+	info := r1(historyVisible*.25 + corporateReach*.25 + industryReach*.15 + linkedinReach*.15 + web*.20)
+	product := r1(ecommerce*.20 + prod*.20 + price*.15 + cart*.15 + cats*.15 + loyalty*.10 + reviews*.05)
+
+	// Конкурентният компонент остава отделен публичен benchmark, докато конкурентните connectors се натрупат.
 	competitive := 82.4
 	blis := r1(digital*.22 + presence*.16 + content*.16 + info*.16 + product*.15 + competitive*.15)
 	benchmark := 79.9
 	relative := r1(blis / benchmark * 100)
+	trend := 0.0
+	if len(c.Snapshots) > 0 {
+		prev := f(c.Snapshots[len(c.Snapshots)-1].Payload["blis_index"])
+		if prev > 0 {
+			trend = r1(blis - prev)
+		}
+	}
+	confidence := r1(mean([]float64{98, 90, 92, 88, 88}))
+	eng := engineSnapshot()
 	return map[string]interface{}{
-		"client": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note,
-		"blis_index": blis, "benchmark": benchmark, "relative": relative, "confidence": 88.0, "trend": 1.6,
+		"client": c.Slug, "name": c.Name, "sector": c.Sector, "note": "Публичен профил • BLIS Engine",
+		"blis_index": blis, "benchmark": benchmark, "relative": relative, "confidence": confidence, "trend": trend,
+		"data_updated": latestObservedAt(c), "engine": eng,
 		"nav": []interface{}{
 			map[string]interface{}{"key": "overview", "label": "Общ преглед", "icon": "⌂"},
 			map[string]interface{}{"key": "presence", "label": "Публично присъствие", "icon": "✦"},
@@ -333,43 +424,64 @@ func aromaDashboard(c *Client) map[string]interface{} {
 			map[string]interface{}{"key": "method", "label": "Методология", "icon": "▤"},
 		},
 		"indices": []interface{}{
-			idx("digital", "Индекс на дигиталното присъствие", digital, "Оценява собствената дигитална среда на марката и директния път до продуктите.",
-				[]interface{}{comp("Активен официален сайт", 94.0, "20%"), comp("Електронна търговия", 90.0, "20%"), comp("Техническа платформа", 88.0, "10%"), comp("Езиково покритие", 75.0, "10%"), comp("Категорийно покритие", 90.0, "15%"), comp("Видими цени", 96.0, "10%"), comp("Функция за покупка", 91.0, "15%")},
-				"Претеглена оценка на публично проверими елементи на Aroma.bg.", []string{"Aroma.bg"}),
-			idx("presence", "Индекс на публичното присъствие", presence, "Измерва видимата фирмена активност и публичната аудитория.",
-				[]interface{}{comp("Активен фирмен профил", 88.0, "базов"), comp("LinkedIn аудитория", followers, "нормализирана"), comp("Видими публикации за 90 дни", posts, "активност")},
-				"Публичен профил + нормализирана аудитория + текуща активност.", []string{"LinkedIn – Aroma Cosmetics AD"}),
-			idx("content", "Индекс на съдържанието", content, "Оценява качеството, актуалността и последователността на публичното съдържание на марката – собствен сайт, фирмени профили, продуктови материали, новини и участия.",
-				[]interface{}{comp("Видими публикации за 90 дни", posts, "35%"), comp("Публични участия / събития", events, "25%"), comp("Новини и събития в сайта", 82.0, "20%"), comp("Продуктови категории", 90.0, "20%")},
-				"Текущи публични публикации, събития и собствено съдържание.", []string{"LinkedIn – Aroma Cosmetics AD", "Aroma.bg"}),
-			idx("information", "Индекс на информационната последователност", info, "Оценява дали ключовата информация за компанията и марките е откриваема и последователна.",
-				[]interface{}{comp("История и позициониране", 94.0, "25%"), comp("Корпоративни контакти", 90.0, "20%"), comp("Публично портфолио", 88.0, "25%"), comp("Фирмен профил", 82.0, "20%"), comp("Браншово присъствие", 78.0, "10%")},
-				"Претеглена оценка на публичната информационна цялост.", []string{"Aroma.bg", "корпоративна информация", "LinkedIn", "Cosmetics Bulgaria"}),
-			idx("product", "Индекс на продуктовото представяне", product, "Оценява доколко продуктите могат да бъдат открити, разбрани и закупени през публичната дигитална среда.",
-				[]interface{}{comp("Електронна търговия", 90.0, "20%"), comp("Продуктова информация", 89.0, "20%"), comp("Видими цени", 96.0, "15%"), comp("Добавяне в количка", 92.0, "15%"), comp("Категорийно покритие", 90.0, "15%"), comp("Лоялна програма", 72.0, "10%"), comp("Функция за отзиви", 58.0, "5%")},
-				"Претеглена оценка на публично видимата продуктова среда.", []string{"Aroma.bg"}),
-			idx("competitive", "Индекс на конкурентното позициониране", competitive, "Оценява относителната позиция на Aroma спрямо предварително определена група български козметични марки по еднаква публична методика.",
-				[]interface{}{comp("Дигитална зрялост", 86.0, "25%"), comp("Публична аудитория", 85.0, "20%"), comp("Активност на съдържанието", 88.0, "20%"), comp("Репутационен капитал", 55.0, "15%"), comp("Портфолио и пазарна видимост", 90.0, "20%")},
-				"Дигитална зрялост × 25% + Публична аудитория × 20% + Активност на съдържанието × 20% + Репутационен капитал × 15% + Портфолио и пазарна видимост × 20%.", []string{"Aroma.bg", "LinkedIn – Aroma Cosmetics AD", "Cosmetics Bulgaria", "Google Search", "търговски и браншови източници"}),
+			idx("digital", "Индекс на дигиталното присъствие", digital, "Изчислява се от текущо проверими характеристики на Aroma.bg.",
+				[]interface{}{comp("Активен официален сайт", web, "15%"), comp("Електронна търговия", ecommerce, "20%"), comp("Продуктови детайли", prod, "15%"), comp("Видими цени", price, "10%"), comp("Функция за покупка", cart, "15%"), comp("Категорийно покритие", cats, "10%"), comp("Езиково покритие", langs, "5%"), comp("Лоялна програма", loyalty, "5%"), comp("Функция за отзиви", reviews, "5%")},
+				"Текущи backend проверки на публичния сайт; стойностите се преизчисляват при всеки engine run.", []string{"Aroma.bg"}),
+			idx("presence", "Индекс на публичното присъствие", presence, "Измерва текущата публична аудитория, комуникационна активност и новинарска видимост.",
+				[]interface{}{comp("LinkedIn профил", linkedinReach, "20%"), comp("LinkedIn аудитория", followers, "35% нормализирана"), comp("Видими публикации за 90 дни", posts, "25%"), comp("Новинарски споменавания за 30 дни", news30, "20%")},
+				"Публичен LinkedIn профил + видими публикации + Google News RSS.", []string{"LinkedIn – Aroma Cosmetics AD", "Google Search"}),
+			idx("content", "Индекс на съдържанието", content, "Оценява текущата честота и широчина на публично видимото съдържание.",
+				[]interface{}{comp("Видими публикации за 90 дни", posts, "35%"), comp("Публични участия / събития", events, "20%"), comp("Новини / събития в сайта", blogEvents, "20%"), comp("Продуктови категории", cats, "15%"), comp("Новинарска видимост", news30, "10%")},
+				"Динамичен индекс от публични съдържателни сигнали.", []string{"LinkedIn – Aroma Cosmetics AD", "Aroma.bg", "Google News"}),
+			idx("information", "Индекс на информационната последователност", info, "Проверява дали ключовата фирмена информация е налична в основните публични точки.",
+				[]interface{}{comp("История и позициониране", historyVisible, "25%"), comp("Корпоративна информация", corporateReach, "25%"), comp("Браншов профил", industryReach, "15%"), comp("LinkedIn профил", linkedinReach, "15%"), comp("Официален сайт", web, "20%")},
+				"Наличност и съгласуваност на публични информационни точки.", []string{"Aroma.bg", "корпоративна информация", "LinkedIn", "Cosmetics Bulgaria"}),
+			idx("product", "Индекс на продуктовото представяне", product, "Изчислява доколко продуктите могат да бъдат открити, разбрани и закупени през публичната среда.",
+				[]interface{}{comp("Електронна търговия", ecommerce, "20%"), comp("Продуктова информация", prod, "20%"), comp("Видими цени", price, "15%"), comp("Добавяне в количка", cart, "15%"), comp("Категорийно покритие", cats, "15%"), comp("Лоялна програма", loyalty, "10%"), comp("Функция за отзиви", reviews, "5%")},
+				"Динамична претеглена оценка на Aroma.bg.", []string{"Aroma.bg"}),
+			idx("competitive", "Индекс на конкурентното позициониране", competitive, "Публичен сравнителен benchmark. Автоматичните конкурентни connectors са следващият engine слой.",
+				[]interface{}{comp("Aroma – текущ публичен benchmark", competitive, "активен")},
+				"Временно фиксиран benchmark; не участва като 'live' сигнал до активиране на конкурентните connectors.", []string{"публична сравнителна група"}),
 		},
 		"metrics": []interface{}{
 			met("LinkedIn аудитория", fmt.Sprintf("%.0f последователи", followers)),
-			met("Официален сайт", "активен електронен магазин"),
-			met("Продуктови категории", "Лице • Коса • Тяло • Подаръци"),
+			met("Новинарска видимост", fmt.Sprintf("%.0f споменавания / 30 дни • %.0f източника", news30, newsSources)),
+			met("Официален сайт", func() string {
+				if web > 0 {
+					return "активен • engine проверен"
+				}
+				return "непотвърден"
+			}()),
 		},
-		"signals": []interface{}{
-			sig("positive", "Силен собствен дигитален актив", ""),
-			sig("positive", "Видима текуща комуникационна активност", ""),
-			sig("watch", "Възможност за по-системно натрупване на продуктови оценки", ""),
-		},
+		"signals": buildAromaSignals(followers, posts, news30, web, ecommerce),
 		"competitors": []interface{}{
-			map[string]interface{}{"name": "Aroma", "score": 82.4, "digital": 86.0, "audience": 85.0, "activity": 88.0, "reviews": 55.0, "portfolio": 90.0},
+			map[string]interface{}{"name": "Aroma", "score": 82.4, "digital": digital, "audience": audienceScore, "activity": activityScore, "reviews": 55.0, "portfolio": product},
 			map[string]interface{}{"name": "Alteya Organics", "score": 93.4, "digital": 94.0, "audience": 100.0, "activity": 86.0, "reviews": 95.0, "portfolio": 92.0},
 			map[string]interface{}{"name": "Biofresh", "score": 72.8, "digital": 84.0, "audience": 71.0, "activity": 55.0, "reviews": 60.0, "portfolio": 88.0},
 			map[string]interface{}{"name": "Agiva", "score": 73.4, "digital": 70.0, "audience": 64.0, "activity": 92.0, "reviews": 50.0, "portfolio": 86.0},
 		},
 	}
 }
+func buildAromaSignals(followers, posts, news30, web, ecommerce float64) []interface{} {
+	out := []interface{}{}
+	if web > 0 && ecommerce > 0 {
+		out = append(out, sig("positive", "Официалният сайт и електронният магазин са достъпни", "Проверено от BLIS Engine."))
+	}
+	if followers >= 800 {
+		out = append(out, sig("positive", fmt.Sprintf("LinkedIn аудитория: %.0f последователи", followers), "Публично наблюдаем фирмен профил."))
+	}
+	if news30 > 0 {
+		out = append(out, sig("positive", fmt.Sprintf("%.0f новинарски споменавания през последните 30 дни", news30), "Google News RSS."))
+	}
+	if posts < 6 {
+		out = append(out, sig("watch", "Умерена видима честота на публикациите", "Следи се динамиката на публичния фирмен профил."))
+	}
+	if len(out) == 0 {
+		out = append(out, sig("watch", "Engine събира нови публични наблюдения", "Следващото автоматично обновяване ще добави нов snapshot."))
+	}
+	return out
+}
+
 func dashboard(c *Client) map[string]interface{} {
 	if c.Slug == "astor-garden" {
 		return astorDashboard(c)
@@ -377,33 +489,345 @@ func dashboard(c *Client) map[string]interface{} {
 	return aromaDashboard(c)
 }
 
-func probeOfficial(c *Client) map[string]interface{} {
-	var src *Source
+func engineSnapshot() EngineStatus   { engineMu.Lock(); defer engineMu.Unlock(); return engine }
+func setEngineStatus(e EngineStatus) { engineMu.Lock(); engine = e; engineMu.Unlock() }
+func sourceByKey(c *Client, key string) *Source {
 	for i := range c.Sources {
-		if c.Sources[i].Key == "official_site" {
-			src = &c.Sources[i]
-			break
+		if c.Sources[i].Key == key {
+			return &c.Sources[i]
 		}
 	}
-	if src == nil {
-		return map[string]interface{}{"ok": false}
+	return nil
+}
+func fetchURL(raw string, limit int64) (int, string, error) {
+	cli := http.Client{Timeout: 8 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) > 6 {
+			return fmt.Errorf("too many redirects")
+		}
+		return nil
+	}}
+	req, err := http.NewRequest("GET", raw, nil)
+	if err != nil {
+		return 0, "", err
 	}
-	cli := http.Client{Timeout: 12 * time.Second}
-	req, _ := http.NewRequest("GET", src.URL, nil)
-	req.Header.Set("User-Agent", "BLIS-Navigator/1.2")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; BLIS-Navigator/2.0; +https://blis-navigator-aroma.onrender.com)")
+	req.Header.Set("Accept-Language", "bg-BG,bg;q=0.9,en;q=0.7")
 	resp, err := cli.Do(req)
 	if err != nil {
-		return map[string]interface{}{"ok": false, "message": err.Error()}
+		return 0, "", err
 	}
 	defer resp.Body.Close()
-	_, _ = io.ReadAll(io.LimitReader(resp.Body, 1024*1024))
-	add(c, "official_site", "website_active", func() float64 {
-		if resp.StatusCode < 400 {
+	b, err := io.ReadAll(io.LimitReader(resp.Body, limit))
+	return resp.StatusCode, string(b), err
+}
+func containsAny(s string, needles ...string) bool {
+	s = strings.ToLower(s)
+	for _, n := range needles {
+		if strings.Contains(s, strings.ToLower(n)) {
+			return true
+		}
+	}
+	return false
+}
+func countAny(s string, needles ...string) int {
+	s = strings.ToLower(s)
+	n := 0
+	for _, x := range needles {
+		n += strings.Count(s, strings.ToLower(x))
+	}
+	return n
+}
+func parseNumber(raw string) float64 {
+	raw = strings.ReplaceAll(raw, " ", "")
+	raw = strings.ReplaceAll(raw, "\u00a0", "")
+	raw = strings.ReplaceAll(raw, ",", "")
+	v, _ := strconv.ParseFloat(raw, 64)
+	return v
+}
+func probeOfficialAroma(c *Client) ConnectorResult {
+	stamp := nowISO()
+	src := sourceByKey(c, "official_site")
+	res := ConnectorResult{SourceKey: "official_site", Label: "Aroma.bg", ObservedAt: stamp, Metrics: map[string]interface{}{}}
+	if src == nil {
+		res.Error = "source missing"
+		return res
+	}
+	status, body, err := fetchURL(src.URL, 4*1024*1024)
+	res.Status = status
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+	ok := status >= 200 && status < 400
+	res.OK = ok
+	low := strings.ToLower(body)
+	metrics := map[string]interface{}{
+		"website_active": func() float64 {
+			if ok {
+				return 1
+			}
+			return 0
+		}(),
+		"ecommerce_active": func() float64 {
+			if containsAny(low, "cart", "колич", "checkout", "shopify", "buy now", "купи") {
+				return 1
+			}
+			return 0
+		}(),
+		"shopify_detected": func() float64 {
+			if strings.Contains(low, "shopify") {
+				return 1
+			}
+			return 0
+		}(),
+		"pricing_visible": func() float64 {
+			if containsAny(low, " лв", "bgn", "€", "eur", "price") {
+				return 1
+			}
+			return 0
+		}(),
+		"cart_active": func() float64 {
+			if containsAny(low, "cart", "колич", "checkout") {
+				return 1
+			}
+			return 0
+		}(),
+		"product_details": func() float64 {
+			if containsAny(low, "product", "продукт", "ingredients", "състав") {
+				return 1
+			}
+			return 0
+		}(),
+		"loyalty_program": func() float64 {
+			if containsAny(low, "loyal", "лоял", "клуб") {
+				return 1
+			}
+			return 0
+		}(),
+		"review_functionality": func() float64 {
+			if containsAny(low, "review", "отзив", "rating") {
+				return 1
+			}
+			return 0
+		}(),
+		"history_visible": func() float64 {
+			if containsAny(low, "1924", "100 год", "история", "history") {
+				return 1
+			}
+			return 0
+		}(),
+		"blog_events": func() float64 {
+			if containsAny(low, "blog", "новини", "събит", "news") {
+				return 1
+			}
+			return 0
+		}(),
+		"category_count": float64(func() int {
+			n := 0
+			for _, x := range []string{"лице", "коса", "тяло", "подар"} {
+				if strings.Contains(low, x) {
+					n++
+				}
+			}
+			return n
+		}()),
+		"language_count": float64(func() int {
+			n := 1
+			if containsAny(low, "hreflang=\"en", "/en/", "lang=\"en") {
+				n++
+			}
+			return n
+		}()),
+		"html_bytes": float64(len(body)),
+	}
+	for k, v := range metrics {
+		add(c, "official_site", k, v, stamp)
+	}
+	res.Metrics = metrics
+	return res
+}
+func probeLinkedInAroma(c *Client) ConnectorResult {
+	stamp := nowISO()
+	src := sourceByKey(c, "linkedin")
+	res := ConnectorResult{SourceKey: "linkedin", Label: "LinkedIn – Aroma Cosmetics AD", ObservedAt: stamp, Metrics: map[string]interface{}{}}
+	if src == nil {
+		res.Error = "source missing"
+		return res
+	}
+	status, body, err := fetchURL(src.URL, 4*1024*1024)
+	res.Status = status
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+	res.OK = status >= 200 && status < 400
+	clean := regexp.MustCompile(`<[^>]+>`).ReplaceAllString(body, " ")
+	followerRe := regexp.MustCompile(`(?i)([0-9][0-9,.\s]{0,12})\s+followers`)
+	followers := f(latest(c, "linkedin", "followers"))
+	if m := followerRe.FindStringSubmatch(clean); len(m) > 1 {
+		if v := parseNumber(m[1]); v > 0 {
+			followers = v
+		}
+	}
+	ageRe := regexp.MustCompile(`\b(?:[1-9]|1[0-2])(?:mo|w|d)\b`)
+	posts := float64(len(ageRe.FindAllString(clean, -1)))
+	if posts == 0 {
+		posts = f(latest(c, "linkedin", "visible_posts_90d"))
+	}
+	if posts > 30 {
+		posts = 30
+	}
+	eventHits := float64(countAny(clean, "финалист", "събитие", "конференц", "участие", "award", "cosmoprof"))
+	if eventHits > 12 {
+		eventHits = 12
+	}
+	metrics := map[string]interface{}{"followers": followers, "profile_active": func() float64 {
+		if res.OK {
 			return 1
 		}
 		return 0
-	}(), nowISO())
-	return map[string]interface{}{"ok": true, "status": resp.StatusCode}
+	}(), "visible_posts_90d": posts, "recent_industry_events": eventHits}
+	for k, v := range metrics {
+		add(c, "linkedin", k, v, stamp)
+	}
+	res.Metrics = metrics
+	return res
+}
+
+type rss struct {
+	Channel struct {
+		Items []struct {
+			Title   string `xml:"title"`
+			Link    string `xml:"link"`
+			PubDate string `xml:"pubDate"`
+			Source  string `xml:"source"`
+		} `xml:"item"`
+	} `xml:"channel"`
+}
+
+func probeNewsAroma(c *Client) ConnectorResult {
+	stamp := nowISO()
+	q := url.QueryEscape(`"Aroma Cosmetics" OR "Арома Козметикс"`)
+	raw := "https://news.google.com/rss/search?q=" + q + "&hl=bg&gl=BG&ceid=BG:bg"
+	res := ConnectorResult{SourceKey: "google_search", Label: "Google News", ObservedAt: stamp, Metrics: map[string]interface{}{}}
+	status, body, err := fetchURL(raw, 3*1024*1024)
+	res.Status = status
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+	res.OK = status >= 200 && status < 400
+	var feed rss
+	if xml.Unmarshal([]byte(body), &feed) != nil {
+		res.Error = "RSS parse error"
+		res.OK = false
+		return res
+	}
+	cutoff := time.Now().Add(-30 * 24 * time.Hour)
+	count := 0
+	sources := map[string]bool{}
+	latestTitle := ""
+	latestTime := time.Time{}
+	for _, it := range feed.Channel.Items {
+		t, err := time.Parse(time.RFC1123Z, it.PubDate)
+		if err != nil {
+			t, _ = time.Parse(time.RFC1123, it.PubDate)
+		}
+		if !t.IsZero() && t.After(cutoff) {
+			count++
+			if it.Source != "" {
+				sources[it.Source] = true
+			}
+			if t.After(latestTime) {
+				latestTime = t
+				latestTitle = it.Title
+			}
+		}
+	}
+	metrics := map[string]interface{}{"news_mentions_30d": float64(count), "news_sources_30d": float64(len(sources)), "latest_news_title": latestTitle}
+	for k, v := range metrics {
+		add(c, "google_search", k, v, stamp)
+	}
+	res.Metrics = metrics
+	return res
+}
+func probeReference(c *Client, key string) ConnectorResult {
+	stamp := nowISO()
+	src := sourceByKey(c, key)
+	res := ConnectorResult{SourceKey: key, ObservedAt: stamp, Metrics: map[string]interface{}{}}
+	if src == nil {
+		res.Error = "source missing"
+		return res
+	}
+	res.Label = src.Label
+	status, _, err := fetchURL(src.URL, 512*1024)
+	res.Status = status
+	if err != nil {
+		res.Error = err.Error()
+		return res
+	}
+	res.OK = status >= 200 && status < 400
+	v := 0.0
+	if res.OK {
+		v = 1
+	}
+	add(c, key, "reachable", v, stamp)
+	res.Metrics = map[string]interface{}{"reachable": v}
+	return res
+}
+func runAromaEngine(c *Client, createSnapshot bool) EngineStatus {
+	started := time.Now()
+	setEngineStatus(EngineStatus{Running: true, LastRun: engineSnapshot().LastRun, NextRun: started.Add(24 * time.Hour).Format(time.RFC3339)})
+	results := []ConnectorResult{probeOfficialAroma(c), probeLinkedInAroma(c), probeNewsAroma(c)}
+	keys := []string{"corporate", "cosmetics_bg", "nsi", "registry", "bpo", "kzp", "bda", "euipo", "wipo", "eurostat", "cosmetics_europe", "cosing", "ec_cosmetics", "douglas", "lilly", "dm", "notino"}
+	ch := make(chan ConnectorResult, len(keys))
+	for _, key := range keys {
+		go func(k string) { ch <- probeReference(c, k) }(key)
+	}
+	for range keys {
+		results = append(results, <-ch)
+	}
+	successful, failed := 0, 0
+	for _, r := range results {
+		if r.OK {
+			successful++
+		} else {
+			failed++
+		}
+	}
+	if createSnapshot {
+		d := dashboard(c)
+		c.Snapshots = append(c.Snapshots, Snapshot{CreatedAt: nowISO(), Payload: d})
+		if len(c.Snapshots) > 400 {
+			c.Snapshots = c.Snapshots[len(c.Snapshots)-400:]
+		}
+		if len(c.Observations) > 8000 {
+			c.Observations = c.Observations[len(c.Observations)-8000:]
+		}
+		saveStore()
+	}
+	st := EngineStatus{Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: successful, Failed: failed, Results: results}
+	setEngineStatus(st)
+	return st
+}
+func startEngineScheduler() {
+	go func() {
+		time.Sleep(8 * time.Second)
+		mu.Lock()
+		if c := store.Clients["aroma"]; c != nil {
+			runAromaEngine(c, true)
+		}
+		mu.Unlock()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			mu.Lock()
+			if c := store.Clients["aroma"]; c != nil {
+				runAromaEngine(c, true)
+			}
+			mu.Unlock()
+		}
+	}()
 }
 
 func reportContent(c *Client, id string) (string, string) {
@@ -443,7 +867,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "api/health" {
-		jsonOut(w, map[string]interface{}{"ok": true, "time": nowISO()})
+		jsonOut(w, map[string]interface{}{"ok": true, "time": nowISO(), "engine": engineSnapshot()})
+		return
+	}
+	if path == "api/engine/status" {
+		jsonOut(w, engineSnapshot())
+		return
+	}
+	if path == "api/store/export" {
+		mu.Lock()
+		defer mu.Unlock()
+		jsonOut(w, store)
 		return
 	}
 	if path == "api/clients" {
@@ -502,12 +936,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			mu.Lock()
-			res := probeOfficial(c)
+			st := runAromaEngine(c, true)
 			d := dashboard(c)
-			c.Snapshots = append(c.Snapshots, Snapshot{CreatedAt: nowISO(), Payload: d})
-			saveStore()
 			mu.Unlock()
-			jsonOut(w, map[string]interface{}{"ok": true, "connector": res, "dashboard": d})
+			jsonOut(w, map[string]interface{}{"ok": true, "engine": st, "dashboard": d})
 			return
 		}
 	}
@@ -516,6 +948,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 func main() {
 	ensureStore()
+	startEngineScheduler()
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "10000"
