@@ -1,0 +1,20 @@
+/* BLIS Navigator — client-specific visual themes */
+:root{--client-bg:#f7fbff;--client-bg2:#eef5ff;--client-glow:rgba(15,95,233,.10);--client-ink:#0f2747}
+body{background:linear-gradient(135deg,var(--client-bg) 0,#fff 38%,var(--client-bg2) 100%);background-attachment:fixed;transition:background .45s ease}
+.side{background:linear-gradient(180deg,#fff 0,var(--client-bg) 100%);transition:background .4s ease}
+.shell{position:relative}
+.shell:before{content:"";position:fixed;right:-140px;top:90px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,var(--client-glow),transparent 68%);pointer-events:none;z-index:-1;transition:background .45s ease}
+.card,.watchCard,.channel,.competitor,.report,.statusbox,.brandLab{backdrop-filter:blur(7px);background:rgba(255,255,255,.92)}
+.clientHero,.profileIdentity{background:linear-gradient(135deg,#fff 0,var(--client-bg2) 72%,var(--client-bg) 100%)}
+.clientLogo,.monogram{box-shadow:0 10px 28px var(--client-glow)}
+.nav button.active{box-shadow:inset 3px 0 0 var(--client),0 4px 14px var(--client-glow)}
+.clientbox:after{height:3px}
+.page.active{animation:clientPageIn .32s ease both}@keyframes clientPageIn{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:none}}
+body[data-client="aroma"]{--client:#147d8b;--clientSoft:#e9f7f7;--client-bg:#f3fbfb;--client-bg2:#eaf7f5;--client-glow:rgba(20,125,139,.13);--client-ink:#123f48}
+body[data-client="aroma"] .brandname{color:#126b78}body[data-client="aroma"] .btn.blue{background:linear-gradient(135deg,#126b78,#22a6a8);border-color:#126b78}body[data-client="aroma"] .pulse{background:linear-gradient(90deg,#fff,#effafa)}
+body[data-client="bolyarka"]{--client:#a61f2b;--clientSoft:#fff0ec;--client-bg:#fff9f4;--client-bg2:#fbeee8;--client-glow:rgba(166,31,43,.14);--client-ink:#4a2024}
+body[data-client="bolyarka"] .brandname{color:#9d1d29}body[data-client="bolyarka"] .btn.blue{background:linear-gradient(135deg,#9d1d29,#c54834);border-color:#9d1d29}body[data-client="bolyarka"] .pulse{background:linear-gradient(90deg,#fff,#fff5ef)}
+body[data-client="astor-garden"]{--client:#0b6f73;--clientSoft:#edf8f5;--client-bg:#f5fbf8;--client-bg2:#e9f5f1;--client-glow:rgba(11,111,115,.14);--client-ink:#173e40}
+body[data-client="astor-garden"] .brandname{color:#0b6266}body[data-client="astor-garden"] .btn.blue{background:linear-gradient(135deg,#0b6266,#199697);border-color:#0b6266}body[data-client="astor-garden"] .pulse{background:linear-gradient(90deg,#fff,#eff9f6)}
+/* Keep BLIS system identity while letting the selected client own the content canvas. */
+.sectionTitle,.cardLabel,.eyebrow{color:var(--client)}.genericHead h2{color:var(--client-ink)}.monitor span,.barFill{background:linear-gradient(90deg,var(--client),#4da5c7)}
