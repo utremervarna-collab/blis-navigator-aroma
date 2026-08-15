@@ -1,20 +1,35 @@
-/* BLIS Navigator — client-specific visual themes */
-:root{--client-bg:#f7fbff;--client-bg2:#eef5ff;--client-glow:rgba(15,95,233,.10);--client-ink:#0f2747}
-body{background:linear-gradient(135deg,var(--client-bg) 0,#fff 38%,var(--client-bg2) 100%);background-attachment:fixed;transition:background .45s ease}
-.side{background:linear-gradient(180deg,#fff 0,var(--client-bg) 100%);transition:background .4s ease}
-.shell{position:relative}
-.shell:before{content:"";position:fixed;right:-140px;top:90px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,var(--client-glow),transparent 68%);pointer-events:none;z-index:-1;transition:background .45s ease}
-.card,.watchCard,.channel,.competitor,.report,.statusbox,.brandLab{backdrop-filter:blur(7px);background:rgba(255,255,255,.92)}
-.clientHero,.profileIdentity{background:linear-gradient(135deg,#fff 0,var(--client-bg2) 72%,var(--client-bg) 100%)}
-.clientLogo,.monogram{box-shadow:0 10px 28px var(--client-glow)}
-.nav button.active{box-shadow:inset 3px 0 0 var(--client),0 4px 14px var(--client-glow)}
-.clientbox:after{height:3px}
-.page.active{animation:clientPageIn .32s ease both}@keyframes clientPageIn{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:none}}
-body[data-client="aroma"]{--client:#147d8b;--clientSoft:#e9f7f7;--client-bg:#f3fbfb;--client-bg2:#eaf7f5;--client-glow:rgba(20,125,139,.13);--client-ink:#123f48}
-body[data-client="aroma"] .brandname{color:#126b78}body[data-client="aroma"] .btn.blue{background:linear-gradient(135deg,#126b78,#22a6a8);border-color:#126b78}body[data-client="aroma"] .pulse{background:linear-gradient(90deg,#fff,#effafa)}
-body[data-client="bolyarka"]{--client:#a61f2b;--clientSoft:#fff0ec;--client-bg:#fff9f4;--client-bg2:#fbeee8;--client-glow:rgba(166,31,43,.14);--client-ink:#4a2024}
-body[data-client="bolyarka"] .brandname{color:#9d1d29}body[data-client="bolyarka"] .btn.blue{background:linear-gradient(135deg,#9d1d29,#c54834);border-color:#9d1d29}body[data-client="bolyarka"] .pulse{background:linear-gradient(90deg,#fff,#fff5ef)}
-body[data-client="astor-garden"]{--client:#0b6f73;--clientSoft:#edf8f5;--client-bg:#f5fbf8;--client-bg2:#e9f5f1;--client-glow:rgba(11,111,115,.14);--client-ink:#173e40}
-body[data-client="astor-garden"] .brandname{color:#0b6266}body[data-client="astor-garden"] .btn.blue{background:linear-gradient(135deg,#0b6266,#199697);border-color:#0b6266}body[data-client="astor-garden"] .pulse{background:linear-gradient(90deg,#fff,#eff9f6)}
-/* Keep BLIS system identity while letting the selected client own the content canvas. */
-.sectionTitle,.cardLabel,.eyebrow{color:var(--client)}.genericHead h2{color:var(--client-ink)}.monitor span,.barFill{background:linear-gradient(90deg,var(--client),#4da5c7)}
+/* BLIS Navigator — strong client-specific visual themes */
+:root{--client:#0f5fe9;--clientSoft:#eef5ff;--client-bg:#f6f9ff;--client-bg2:#eaf2ff;--client-panel:#ffffff;--client-panel2:#f8fbff;--client-glow:rgba(15,95,233,.14);--client-ink:#0f2747;--client-line:#dfe8f5;--client-pattern:none;--client-hero:none}
+html,body{min-height:100%;background:var(--client-bg);transition:background .45s ease,color .3s ease}
+body{position:relative;background-image:var(--client-pattern);background-attachment:fixed;background-size:auto,auto;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-3;background:linear-gradient(135deg,var(--client-bg) 0%,#fff 42%,var(--client-bg2) 100%);transition:background .45s ease}
+body:after{content:"";position:fixed;right:-180px;top:70px;width:620px;height:620px;border-radius:50%;pointer-events:none;z-index:-2;background:radial-gradient(circle,var(--client-glow) 0%,transparent 68%);filter:blur(2px)}
+.app{background:transparent}.main{background:transparent}.shell{position:relative;background:transparent}.shell:before{content:"";position:absolute;inset:0 -8px auto -8px;height:170px;border-radius:0 0 34px 34px;background:var(--client-hero);opacity:.9;pointer-events:none;z-index:-1}
+.side{background:linear-gradient(180deg,var(--client-panel) 0%,var(--client-panel2) 72%,var(--client-bg2) 100%);border-right:1px solid var(--client-line);box-shadow:12px 0 35px rgba(16,24,40,.035);transition:background .4s ease,border-color .4s ease}
+.topbar{padding:18px 18px 16px;border:1px solid var(--client-line);border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.96),var(--client-panel2));box-shadow:0 12px 34px rgba(16,24,40,.055);position:relative;overflow:hidden}
+.topbar:after{content:"";position:absolute;right:-55px;top:-75px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,var(--client-glow),transparent 68%);pointer-events:none}.topbar .title,.topbar .actions{position:relative;z-index:1}
+.card,.watchCard,.channel,.competitor,.report,.statusbox,.brandLab{border-color:var(--client-line);background:rgba(255,255,255,.94);box-shadow:0 6px 20px rgba(16,24,40,.045);transition:background .35s ease,border-color .35s ease,box-shadow .2s ease,transform .2s ease}.card:hover,.channel:hover,.competitor:hover{box-shadow:0 14px 36px var(--client-glow);transform:translateY(-1px)}
+.clientHero,.profileIdentity{background:linear-gradient(135deg,#fff 0%,var(--client-panel2) 52%,var(--client-bg2) 100%);border-color:var(--client-line);box-shadow:0 12px 34px var(--client-glow)}
+.clientHero:before,.profileIdentity:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--client);border-radius:12px 0 0 12px}
+.clientLogo,.monogram{background:linear-gradient(135deg,var(--client),var(--client-ink));box-shadow:0 12px 30px var(--client-glow)}
+.clientbox{background:linear-gradient(135deg,rgba(255,255,255,.82),var(--client-panel2));border-radius:12px;border:1px solid var(--client-line);margin:0 2px;padding:14px 12px}.clientbox:after{height:3px;left:12px;right:12px;background:linear-gradient(90deg,var(--client),transparent)}
+.nav button{border:1px solid transparent}.nav button.active{background:linear-gradient(90deg,var(--clientSoft),rgba(255,255,255,.9));border-color:var(--client-line);box-shadow:inset 4px 0 0 var(--client),0 7px 18px var(--client-glow)}.nav button:hover{background:var(--client-panel2)}
+.statusbox{background:linear-gradient(135deg,#fff,var(--client-panel2))}.brandLab{background:linear-gradient(135deg,var(--client-panel2),#fff)}
+.genericHead{padding:4px 2px 0}.genericHead h2{color:var(--client-ink)}.sectionTitle,.cardLabel,.eyebrow{color:var(--client)}
+.pulse{background:linear-gradient(90deg,#fff,var(--client-panel2));border-color:var(--client-line);box-shadow:0 8px 22px rgba(16,24,40,.04)}.pulse strong{color:var(--client)}
+.monitor span,.barFill{background:linear-gradient(90deg,var(--client),color-mix(in srgb,var(--client) 55%,white))}.donut .prog{stroke:var(--client)}
+.page.active{animation:clientPageIn .34s ease both}@keyframes clientPageIn{from{opacity:.28;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* AROMA — clean cosmetic / laboratory character */
+body[data-client="aroma"]{--client:#147d8b;--clientSoft:#e7f6f7;--client-bg:#f4fbfb;--client-bg2:#e5f4f2;--client-panel:#ffffff;--client-panel2:#f0faf9;--client-glow:rgba(20,125,139,.16);--client-ink:#123f48;--client-line:#d4ecea;--client-hero:linear-gradient(110deg,rgba(20,125,139,.08),rgba(255,255,255,0) 55%);--client-pattern:linear-gradient(rgba(20,125,139,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(20,125,139,.025) 1px,transparent 1px)}
+body[data-client="aroma"]{background-size:34px 34px,34px 34px}body[data-client="aroma"] .brandname{color:#126b78}body[data-client="aroma"] .btn.blue{background:linear-gradient(135deg,#126b78,#22a6a8);border-color:#126b78}body[data-client="aroma"] .kpi:nth-child(odd),body[data-client="aroma"] .watchCard:nth-child(odd){background:linear-gradient(135deg,#fff,#f3fbfa)}
+
+/* BOLYARKA — warm brewery / heritage character */
+body[data-client="bolyarka"]{--client:#a61f2b;--clientSoft:#fdece8;--client-bg:#fff8f1;--client-bg2:#f7e8de;--client-panel:#fffdf9;--client-panel2:#fff4ea;--client-glow:rgba(166,31,43,.18);--client-ink:#4a2024;--client-line:#ecd8cc;--client-hero:linear-gradient(110deg,rgba(166,31,43,.10),rgba(240,183,94,.08) 42%,rgba(255,255,255,0) 74%);--client-pattern:radial-gradient(circle at 18px 18px,rgba(166,31,43,.035) 1.5px,transparent 1.6px)}
+body[data-client="bolyarka"]{background-size:38px 38px}body[data-client="bolyarka"] .brandname{color:#9d1d29}body[data-client="bolyarka"] .btn.blue{background:linear-gradient(135deg,#8f1b27,#c54834);border-color:#8f1b27}body[data-client="bolyarka"] .topbar{background:linear-gradient(135deg,#fffdf9,#fff1e6)}body[data-client="bolyarka"] .card:nth-child(3n+1),body[data-client="bolyarka"] .watchCard:nth-child(even){background:linear-gradient(135deg,#fffdf9,#fff7ef)}body[data-client="bolyarka"] .side{box-shadow:12px 0 40px rgba(166,31,43,.06)}
+
+/* ASTOR GARDEN — elegant hospitality / sea character */
+body[data-client="astor-garden"]{--client:#0b6f73;--clientSoft:#e8f5f1;--client-bg:#f7faf7;--client-bg2:#e5f0eb;--client-panel:#fffefa;--client-panel2:#f2f7f4;--client-glow:rgba(11,111,115,.17);--client-ink:#173e40;--client-line:#d8e5df;--client-hero:linear-gradient(110deg,rgba(11,111,115,.09),rgba(203,184,143,.10) 52%,rgba(255,255,255,0) 78%);--client-pattern:linear-gradient(120deg,transparent 0 48%,rgba(11,111,115,.022) 49% 51%,transparent 52% 100%)}
+body[data-client="astor-garden"]{background-size:56px 56px}body[data-client="astor-garden"] .brandname{color:#0b6266}body[data-client="astor-garden"] .btn.blue{background:linear-gradient(135deg,#0b6266,#199697);border-color:#0b6266}body[data-client="astor-garden"] .topbar{background:linear-gradient(135deg,#fffefa,#eef6f2)}body[data-client="astor-garden"] .profileIdentity,body[data-client="astor-garden"] .clientHero{background:linear-gradient(135deg,#fffefa,#eef6f2 65%,#e4eee9)}body[data-client="astor-garden"] .card:nth-child(4n+2){background:linear-gradient(135deg,#fffefa,#f4f8f5)}
+
+@media(max-width:900px){.topbar{border-radius:14px}.shell:before{display:none}body:after{width:360px;height:360px;right:-180px}.clientbox{margin:0}.card:hover,.channel:hover,.competitor:hover{transform:none}}
