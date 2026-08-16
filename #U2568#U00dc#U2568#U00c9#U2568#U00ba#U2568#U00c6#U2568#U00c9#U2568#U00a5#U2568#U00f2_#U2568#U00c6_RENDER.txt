@@ -1,0 +1,20 @@
+﻿BLIS NAVIGATOR – AROMA
+
+1. Направи GitHub repository: blis-navigator-aroma
+2. Качи всички файлове от тази папка в него.
+3. Влез в Render.
+4. New -> Web Service.
+5. Свържи GitHub.
+6. Избери blis-navigator-aroma.
+7. Ако Render не попълни автоматично:
+   Build Command:
+   go build -tags netgo -ldflags '-s -w' -o app .
+   Start Command:
+   ./app
+   Health Check:
+   /api/health
+8. Create Web Service.
+9. Изчакай статус Live.
+10. Копирай адреса https://....onrender.com и го изпрати на Aroma.
+
+Тази версия е само за Aroma.

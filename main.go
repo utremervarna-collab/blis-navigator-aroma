@@ -1814,17 +1814,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		jsonOut(w, map[string]interface{}{"ok": true, "id": in.ID, "created_at": in.CreatedAt})
 		return
 	}
-	if !strings.Contains(path, "..") && (strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".svg")) {
+	if !strings.Contains(path, "..") && (strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp")) {
 		b, err := staticFS.ReadFile("static/" + path)
 		if err == nil {
 			ct := http.DetectContentType(b)
-			if strings.HasSuffix(path, ".css") {
+			switch {
+			case strings.HasSuffix(path, ".css"):
 				ct = "text/css; charset=utf-8"
-			}
-			if strings.HasSuffix(path, ".html") {
+			case strings.HasSuffix(path, ".js"):
+				ct = "application/javascript; charset=utf-8"
+			case strings.HasSuffix(path, ".html"):
 				ct = "text/html; charset=utf-8"
 			}
 			w.Header().Set("Content-Type", ct)
+			if strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".html") {
+				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+			}
 			w.Write(b)
 			return
 		}

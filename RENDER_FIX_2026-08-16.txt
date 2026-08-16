@@ -1,0 +1,21 @@
+BLIS Navigator — Render fix 2026-08-16
+
+Причина за проблема:
+- main.go използва собствен http.HandlerFunc(handler), а не DefaultServeMux.
+- static_js.go регистрира /app.js и останалите JavaScript маршрути в DefaultServeMux, но тези маршрути никога не се изпълняват.
+- custom static handler допускаше .html/.css/images, но НЕ допускаше .js.
+- dashboard.html заобикаляше проблема чрез raw.githubusercontent.com, което правеше зареждането зависимо от външен GitHub Raw URL.
+
+Поправка:
+- main.go вече сервира .js директно от embedded staticFS.
+- JavaScript получава Content-Type: application/javascript; charset=utf-8.
+- HTML/CSS/JS получават no-cache headers.
+- dashboard.html вече зарежда локалните /app.js и останалите JS модули от самия Render service.
+- Премахната е зависимостта от raw.githubusercontent.com за boot на dashboard.
+
+Проверено локално:
+- go build: OK
+- node --check на всички static/*.js: OK
+- GET /app.js: HTTP 200 + правилен JavaScript Content-Type
+- GET /dashboard.html: HTTP 200
+- GET /api/health: OK
