@@ -6,28 +6,47 @@ import (
 	"strings"
 )
 
-// Inline the Navigator JavaScript into the embedded index page. The server uses
-// http.HandlerFunc(handler) directly, so DefaultServeMux routes registered in
-// other init functions are bypassed. Inlining guarantees that the application
-// code executes regardless of static .js routing or browser cache behavior.
+// Inline all Navigator JavaScript assets into the embedded dashboard page.
+// The application server uses its own handler and may bypass DefaultServeMux,
+// so inlining guarantees that every dashboard layer executes after deploy.
 
-//go:embed static/app.js static/portal-unified.js
+//go:embed static/app.js static/portal-unified.js static/dashboard-extensions.js static/dashboard-premium.js static/dashboard-modules-premium.js static/dashboard-final-premium.js
 var inlineNavigatorAssets embed.FS
 
 func init() {
-	app, err1 := inlineNavigatorAssets.ReadFile("static/app.js")
-	unified, err2 := inlineNavigatorAssets.ReadFile("static/portal-unified.js")
-	if err1 != nil || err2 != nil {
-		return
+	files := []string{
+		"static/app.js",
+		"static/portal-unified.js",
+		"static/dashboard-extensions.js",
+		"static/dashboard-premium.js",
+		"static/dashboard-modules-premium.js",
+		"static/dashboard-final-premium.js",
 	}
 
-	// Remove any external Navigator script tags, including cache-busting query strings.
-	reApp := regexp.MustCompile(`<script\s+src=["']/app\.js(?:\?[^"']*)?["']\s*></script>`)
-	reUnified := regexp.MustCompile(`<script\s+src=["']/portal-unified\.js(?:\?[^"']*)?["']\s*></script>`)
-	indexHTML = reApp.ReplaceAllString(indexHTML, "")
-	indexHTML = reUnified.ReplaceAllString(indexHTML, "")
+	parts := make([]string, 0, len(files))
+	for _, f := range files {
+		b, err := inlineNavigatorAssets.ReadFile(f)
+		if err != nil {
+			return
+		}
+		parts = append(parts, "<script>"+string(b)+"</script>")
+	}
 
-	inline := "<script>" + string(app) + "</script><script>" + string(unified) + "</script>"
+	// Remove external script tags for all Navigator layers, with optional cache-busting query strings.
+	names := []string{
+		"app.js",
+		"portal-unified.js",
+		"dashboard-extensions.js",
+		"dashboard-premium.js",
+		"dashboard-modules-premium.js",
+		"dashboard-final-premium.js",
+	}
+	for _, name := range names {
+		re := regexp.MustCompile(`<script\s+src=["']/` + regexp.QuoteMeta(name) + `(?:\?[^"']*)?["']\s*></script>`)
+		indexHTML = re.ReplaceAllString(indexHTML, "")
+	}
+
+	inline := strings.Join(parts, "")
 	if strings.Contains(indexHTML, "</body>") {
 		indexHTML = strings.Replace(indexHTML, "</body>", inline+"</body>", 1)
 	} else {
