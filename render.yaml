@@ -7,3 +7,6 @@ services:
     startCommand: ./app
     healthCheckPath: /api/health
     autoDeploy: true
+    envVars:
+      - key: BLIS_DEPLOY_REV
+        value: "20260817-1731-bolyarka-hero"
