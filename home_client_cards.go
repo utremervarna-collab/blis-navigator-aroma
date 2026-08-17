@@ -2,36 +2,44 @@ package main
 
 import "strings"
 
+func profileImageData(path string) string {
+	b, err := staticFS.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return "data:image/jpeg;base64," + strings.Join(strings.Fields(string(b)), "")
+}
+
 func init() {
 	const clientVisualCSS = `<style id="blis-home-client-visuals">
 #clients .clientGrid{align-items:stretch}
 #clients .clientCard{min-height:350px;padding:0!important;display:flex;flex-direction:column;justify-content:flex-end;background:#142840!important;border:1px solid rgba(19,47,77,.08);box-shadow:0 14px 34px rgba(20,40,64,.10);transition:transform .22s ease,box-shadow .22s ease;overflow:hidden}
 #clients .clientCard:hover{transform:translateY(-4px);box-shadow:0 20px 42px rgba(20,40,64,.15)}
-#clients .clientCard:before{z-index:1!important;background:linear-gradient(180deg,rgba(10,24,43,.01) 18%,rgba(10,24,43,.18) 48%,rgba(10,24,43,.94) 100%)!important}
-#clients .clientCardImage{position:absolute!important;inset:0;width:100%;height:100%;z-index:0!important;transition:transform .45s ease;display:block}
-#clients .clientCard:hover .clientCardImage{transform:scale(1.025)}
-#clients .clientCardContent{position:relative!important;z-index:2!important;padding:25px 27px 27px;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+#clients .clientCard:before{z-index:1!important;background:linear-gradient(180deg,rgba(8,23,42,.00) 15%,rgba(8,23,42,.10) 48%,rgba(8,23,42,.94) 100%)!important}
+#clients .clientCardImage{position:absolute!important;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;z-index:0!important;display:block;transition:transform .45s ease;filter:saturate(.94) contrast(1.02)}
+#clients .clientCard:hover .clientCardImage{transform:scale(1.018)}
+#clients .clientCardContent{position:relative!important;z-index:2!important;padding:24px 27px 27px;text-shadow:0 1px 2px rgba(0,0,0,.22)}
 #clients .clientCard h3{font-size:28px;margin:0 0 5px;color:#fff}
-#clients .clientCard .sector{font-size:11px;margin-bottom:11px;color:rgba(255,255,255,.84)}
-#clients .clientCard p{font-size:10.5px;line-height:1.58;color:rgba(255,255,255,.91);max-width:95%}
+#clients .clientCard .sector{font-size:11px;margin-bottom:10px;color:rgba(255,255,255,.84)}
+#clients .clientCard p{font-size:10.5px;line-height:1.55;color:rgba(255,255,255,.92);max-width:96%}
 @media(max-width:1100px){#clients .clientCard{min-height:330px}}
-@media(max-width:720px){#clients .clientCard{min-height:310px}#clients .clientCardContent{padding:22px}#clients .clientCard h3{font-size:25px}}
+@media(max-width:720px){#clients .clientCard{min-height:305px}#clients .clientCardContent{padding:21px}#clients .clientCard h3{font-size:25px}}
 </style>`
 	indexHTML = strings.Replace(indexHTML, "</head>", clientVisualCSS+"</head>", 1)
 
-	const bolyarkaVisual = `<svg class="clientCardImage" viewBox="0 0 420 256" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="bb" x1="0" x2="1"><stop stop-color="#12090a"/><stop offset=".6" stop-color="#4b1018"/><stop offset="1" stop-color="#b46916"/></linearGradient><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f6ce6b"/><stop offset="1" stop-color="#8e4d0c"/></linearGradient></defs><rect width="420" height="256" fill="url(#bb)"/><circle cx="345" cy="45" r="88" fill="#e99b28" opacity=".15"/><path d="M0 204 C90 160 150 235 235 188 S355 147 420 177" fill="none" stroke="#e8a238" stroke-width="2" opacity=".55"/><path d="M0 217 C84 180 165 241 248 197 S354 166 420 187" fill="none" stroke="#f5c562" opacity=".28"/><g transform="translate(305 26)"><rect x="31" y="22" width="26" height="150" rx="9" fill="#6d220d" stroke="#e6a23e"/><rect x="34" y="7" width="20" height="25" rx="4" fill="#c37a1c"/><rect x="28" y="76" width="32" height="54" rx="6" fill="url(#bg)"/><circle cx="44" cy="103" r="9" fill="none" stroke="#f8d77d" stroke-width="2"/></g><g transform="translate(32 68)"><text x="0" y="0" fill="#f4c968" font-size="24" font-family="Georgia,serif" font-weight="700">БОЛЯРКА</text><text x="0" y="23" fill="#fff" opacity=".7" font-size="9" font-family="Arial">ПИВО С ХАРАКТЕР</text></g><g transform="translate(34 122)"><rect width="66" height="66" rx="15" fill="#fff" opacity=".08"/><path d="M18 43h7V28h-7zm13 0h7V20h-7zm13 0h7V13h-7z" fill="#f5c562"/></g></svg>`
-	const aromaVisual = `<svg class="clientCardImage" viewBox="0 0 420 256" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="ab" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8f7f2"/><stop offset=".55" stop-color="#dce9df"/><stop offset="1" stop-color="#9bbda8"/></linearGradient><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#d6ddd7"/></linearGradient></defs><rect width="420" height="256" fill="url(#ab)"/><circle cx="348" cy="42" r="76" fill="#fff" opacity=".42"/><g transform="translate(55 49)"><rect x="28" y="42" width="42" height="93" rx="7" fill="url(#ag)" stroke="#c7d0ca"/><rect x="35" y="19" width="28" height="31" rx="4" fill="#d9ddd9"/><rect x="89" y="58" width="54" height="76" rx="12" fill="#f7f7f4" stroke="#cbd4ce"/><rect x="100" y="43" width="32" height="19" rx="5" fill="#d7ddd8"/><circle cx="172" cy="105" r="31" fill="#f4f5f0" stroke="#c7d0ca"/><rect x="157" y="63" width="30" height="20" rx="5" fill="#d6ddd8"/><rect x="221" y="69" width="25" height="67" rx="7" fill="#edf0eb" stroke="#cad4cd"/><rect x="227" y="45" width="13" height="27" rx="4" fill="#cfd7d1"/></g><path d="M20 210 C90 180 110 225 165 203 S255 175 323 201 S380 208 420 190" fill="none" stroke="#6f9c81" stroke-width="2" opacity=".45"/><g transform="translate(292 76)"><circle cx="32" cy="32" r="32" fill="#fff" opacity=".34"/><path d="M18 38c13-3 22-12 27-26 4 17-2 32-18 42-5-5-8-10-9-16z" fill="#6f9c81"/></g></svg>`
-	const astorVisual = `<svg class="clientCardImage" viewBox="0 0 420 256" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="hb" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07192c"/><stop offset=".58" stop-color="#0c3750"/><stop offset="1" stop-color="#af8a4a"/></linearGradient><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8fb2c5"/><stop offset="1" stop-color="#234d64"/></linearGradient></defs><rect width="420" height="256" fill="url(#hb)"/><circle cx="332" cy="36" r="80" fill="#e5c98a" opacity=".18"/><rect x="0" y="150" width="420" height="106" fill="url(#sea)" opacity=".48"/><path d="M0 161 C72 142 117 167 172 153 S286 138 420 158 L420 256 L0 256Z" fill="#d8e5e7" opacity=".25"/><g transform="translate(48 52)" fill="none" stroke="#d9b56d" stroke-width="3"><path d="M0 96V43M0 43L41 4l41 39v53M16 96V48h50v48M27 65h12v31M49 65h12v31"/><path d="M-8 96h98"/></g><g transform="translate(272 48)"><circle cx="48" cy="48" r="43" fill="#07192c" opacity=".7" stroke="#d9b56d" stroke-width="2"/><text x="48" y="59" text-anchor="middle" fill="#d9b56d" font-size="31" font-family="Georgia,serif">A</text></g><path d="M185 198 C238 165 306 174 420 154" fill="none" stroke="#f0dcae" stroke-width="2" opacity=".55"/></svg>`
+	aroma := profileImageData("static/home-aroma.b64")
+	bolyarka := profileImageData("static/home-bolyarka.b64")
+	astor := profileImageData("static/home-astor.b64")
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c1"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></article>`,
-		`<article class="clientCard c1">`+bolyarkaVisual+`<div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>`, 1)
+		`<article class="clientCard c1"><img class="clientCardImage" src="`+bolyarka+`" alt="Клиентски профил Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>`, 1)
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c2"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></article>`,
-		`<article class="clientCard c2">`+aromaVisual+`<div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>`, 1)
+		`<article class="clientCard c2"><img class="clientCardImage" src="`+aroma+`" alt="Клиентски профил Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>`, 1)
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c3"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></article>`,
-		`<article class="clientCard c3">`+astorVisual+`<div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>`, 1)
+		`<article class="clientCard c3"><img class="clientCardImage" src="`+astor+`" alt="Клиентски профил Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>`, 1)
 }
