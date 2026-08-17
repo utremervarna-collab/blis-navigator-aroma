@@ -1,0 +1,39 @@
+/* BLIS Navigator — typography + secondary motion layer */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root{--ui-font:"Inter","Segoe UI",Arial,sans-serif;--display-font:"Space Grotesk","Segoe UI",Arial,sans-serif}
+html,body,button,select,input,textarea{font-family:var(--ui-font)!important}
+.title h1,.brandname,.client-brand-name,.ov-kpi-value strong,.ref-val,.ov-big-change,.ov-donut-center strong,.ref-title h2,.ov-panel h3,.ref-head h3{font-family:var(--display-font)!important}
+.title h1{font-weight:700!important;letter-spacing:-.045em!important}.brandname{font-weight:700!important;letter-spacing:-.055em!important}.client-brand-name{font-weight:650!important}.nav button{font-weight:560!important}.ov-kpi-head{font-weight:600!important}.ov-kpi-value strong{font-weight:650!important}.ov-panel h3,.ref-head h3{font-weight:650!important}.ov-panel-sub,.ov-kpi-foot,.ov-signal small,.ov-pulse-row small{font-family:var(--ui-font)!important}
+
+/* Ambient moving data field in the main canvas */
+.main{position:relative!important;overflow:hidden!important}.main:before{content:"";position:fixed;left:224px;right:0;top:82px;bottom:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(23,102,232,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(23,102,232,.018) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.45),transparent 62%);animation:blisGridDrift 28s linear infinite}.shell{position:relative!important;z-index:1!important}
+
+/* Header glint — very slow and subtle */
+.topbar:before{content:"";position:absolute;top:0;bottom:0;left:-18%;width:16%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.8),transparent);opacity:.28;animation:blisHeaderGlint 11s ease-in-out infinite;z-index:0}.topbar>.title,.topbar>.toptools{position:relative;z-index:1}
+
+/* KPI values get a short focus pulse after count-up */
+.ov-kpi-value strong,.ref-val{transition:filter .25s ease,transform .25s ease}.blis-counting{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--client) 22%,transparent));transform:translateY(-1px)}
+
+/* Client identity breathes very gently */
+.client-brand-mark{position:relative;overflow:hidden}.client-brand-mark:after{content:"";position:absolute;inset:-40%;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.58) 50%,transparent 65%);transform:translateX(-120%);animation:blisBrandSweep 7s ease-in-out infinite}.client-brand-status:before{animation:blisClientPulse 2.4s ease-out infinite}
+
+/* Cards get a more premium hover response without bouncing */
+.page.active .ov-card,.page.active .ref-card,.page.active .live-card,.page.active .dig-card{transition:box-shadow .22s ease,border-color .22s ease,transform .22s ease}.page.active .ov-card:hover,.page.active .ref-card:hover,.page.active .live-card:hover,.page.active .dig-card:hover{transform:translateY(-2px);box-shadow:0 13px 28px rgba(25,48,82,.065)!important;border-color:color-mix(in srgb,var(--client) 18%,#dfe6ef)!important}
+
+/* Active nav has a moving highlight edge */
+.nav button.active{overflow:hidden}.nav button.active:after{content:"";position:absolute;left:0;top:-24px;width:2px;height:24px;background:linear-gradient(180deg,transparent,var(--client),transparent);animation:blisNavTrace 3.6s linear infinite}
+
+/* Pills / live status shimmer */
+.ov-pill,.ref-badge{position:relative;overflow:hidden}.ov-pill:after,.ref-badge:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.9) 50%,transparent 62%);transform:translateX(-140%);animation:blisChipShimmer 6.5s ease-in-out infinite}
+
+/* Donut and selected circular visuals feel alive */
+.ov-donut{animation:blisDonutBreath 5.2s ease-in-out infinite}.ov-donut-center{animation:blisCenterFloat 4.4s ease-in-out infinite}
+
+/* Topic and source rows receive tiny activity traces */
+.ov-topic,.ov-source,.ov-signal,.ov-pulse-row{position:relative}.ov-topic:after,.ov-source:after,.ov-signal:after,.ov-pulse-row:after{content:"";position:absolute;left:0;bottom:0;height:1px;width:0;background:linear-gradient(90deg,var(--client),transparent);opacity:.38;transition:width .35s ease}.ov-topic:hover:after,.ov-source:hover:after,.ov-signal:hover:after,.ov-pulse-row:hover:after{width:100%}
+
+@keyframes blisGridDrift{from{background-position:0 0,0 0}to{background-position:34px 34px,34px 34px}}@keyframes blisHeaderGlint{0%,70%{left:-18%;opacity:0}76%{opacity:.24}92%{left:110%;opacity:.12}100%{left:110%;opacity:0}}@keyframes blisBrandSweep{0%,68%{transform:translateX(-130%)}82%{transform:translateX(130%)}100%{transform:translateX(130%)}}@keyframes blisClientPulse{0%{box-shadow:0 0 0 0 rgba(47,173,101,.32)}70%,100%{box-shadow:0 0 0 7px rgba(47,173,101,0)}}@keyframes blisNavTrace{from{top:-24px}to{top:100%}}@keyframes blisChipShimmer{0%,75%{transform:translateX(-140%)}90%{transform:translateX(140%)}100%{transform:translateX(140%)}}@keyframes blisDonutBreath{0%,100%{filter:saturate(.94)}50%{filter:saturate(1.08)}}@keyframes blisCenterFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+
+@media(max-width:1180px){.main:before{left:190px}}@media(max-width:820px){.main:before{display:none}.topbar:before{display:none}}
+@media(prefers-reduced-motion:reduce){.main:before,.topbar:before,.client-brand-mark:after,.client-brand-status:before,.nav button.active:after,.ov-pill:after,.ref-badge:after,.ov-donut,.ov-donut-center{animation:none!important}}
