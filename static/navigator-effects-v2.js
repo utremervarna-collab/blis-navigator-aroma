@@ -13,12 +13,13 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 
-/* Load the shared 7/30/90-day analytics period system. */
 (function(){
-  function load(src,next){var s=document.createElement('script');s.src=src;s.onload=function(){if(next)next()};document.head.appendChild(s)}
-  load('/navigator-period-filter.js?v=20260817-3',function(){
-    load('/navigator-period-overview.js?v=20260817-3',function(){
-      load('/navigator-period-runtime.js?v=20260817-3');
+  function loadScript(src,next){var s=document.createElement('script');s.src=src;s.onload=function(){if(next)next()};document.head.appendChild(s)}
+  loadScript('/navigator-period-filter.js?v=20260817-3',function(){
+    loadScript('/navigator-period-overview.js?v=20260817-3',function(){
+      loadScript('/navigator-period-runtime.js?v=20260817-3',function(){
+        loadScript('/navigator-client-runtime-fix.js?v=20260817-1');
+      });
     });
   });
 })();
