@@ -1,60 +1,87 @@
 /* BLIS Navigator dashboard polish — terminology and lightweight post-render normalization. */
 (function(){
-  const MARKET_LABEL = 'Пазарни сигнали';
+  const replacements = new Map([
+    ['Потребителски интерес','Пазарни сигнали'],
+    ['ПОТРЕБИТЕЛСКИ ИНТЕРЕС','ПАЗАРНИ СИГНАЛИ'],
+    ['Дял от вниманието','Дял от публичната видимост'],
+    ['ДЯЛ ОТ ВНИМАНИЕТО','ДЯЛ ОТ ПУБЛИЧНАТА ВИДИМОСТ']
+  ]);
 
-  function exactText(el, from, to){
-    if(!el) return;
-    if((el.textContent || '').trim() === from) el.textContent = to;
-  }
-
-  function normalizeTerminology(root=document){
-    const marketNav = document.querySelector('#nav button[data-page="market"] span:last-child');
-    if(marketNav) marketNav.textContent = MARKET_LABEL;
-
-    root.querySelectorAll('.ref-kpi-top,.ref-title h2,.ref-eyebrow,.ref-head h3').forEach(el=>{
-      exactText(el,'Потребителски интерес',MARKET_LABEL);
-      exactText(el,'ПОТРЕБИТЕЛСКИ ИНТЕРЕС',MARKET_LABEL.toUpperCase());
+  function normalizeText(root=document){
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+      acceptNode(node){
+        const p=node.parentElement;
+        if(!p || /^(SCRIPT|STYLE|NOSCRIPT)$/i.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes=[];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node=>{
+      let t=node.nodeValue;
+      replacements.forEach((to,from)=>{ if(t && t.includes(from)) t=t.split(from).join(to); });
+      if(t!==node.nodeValue) node.nodeValue=t;
     });
   }
 
   function normalizeMetricValues(root=document){
     root.querySelectorAll('.ref-val').forEach(el=>{
-      el.setAttribute('aria-label',(el.textContent || '').replace(/\s+/g,' ').trim());
+      const raw=(el.textContent || '').replace(/\s+/g,' ').trim();
+      el.setAttribute('aria-label',raw);
+      const core=raw.replace('/100','').trim();
+      const empty=!core || core==='—' || core==='–' || core==='-';
+      el.dataset.empty=empty?'true':'false';
+      if(empty){
+        el.innerHTML='<span>—</span>';
+        const card=el.closest('.ref-kpi');
+        if(card && !card.querySelector('.ref-metric-note')){
+          const note=document.createElement('div');
+          note.className='ref-metric-note';
+          note.textContent='Натрупва се сравнима база';
+          el.insertAdjacentElement('afterend',note);
+        }
+      }
     });
   }
 
+  function normalizeBranding(){
+    const brand=document.querySelector('.side .brand');
+    if(!brand) return;
+    const name=brand.querySelector('.brandname');
+    const sub=brand.querySelector('.brandsub');
+    if(name) name.innerHTML='BLIS<sup>™</sup><span class="navigator-word">NAVIGATOR 2.0</span>';
+    if(sub) sub.textContent='Brand Lab Intelligence System';
+  }
+
   function markActivePage(){
-    const active = document.querySelector('.page.active');
-    if(active && active.id) document.body.dataset.navigatorPage = active.id;
+    const active=document.querySelector('.page.active');
+    if(active && active.id) document.body.dataset.navigatorPage=active.id;
   }
 
   function polish(root=document){
-    normalizeTerminology(root);
+    normalizeText(root);
     normalizeMetricValues(root);
+    normalizeBranding();
     markActivePage();
   }
 
   function init(){
     polish(document);
-
-    const shell = document.querySelector('.shell');
+    const shell=document.querySelector('.shell');
     if(shell){
-      const observer = new MutationObserver(mutations=>{
-        for(const m of mutations){
-          if(m.type === 'childList' || (m.type === 'attributes' && m.attributeName === 'class')){
-            polish(document);
-            break;
-          }
-        }
+      let scheduled=false;
+      const observer=new MutationObserver(()=>{
+        if(scheduled) return;
+        scheduled=true;
+        requestAnimationFrame(()=>{scheduled=false;polish(document);});
       });
       observer.observe(shell,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
     }
-
     document.addEventListener('click',e=>{
       if(e.target.closest('#nav button')) requestAnimationFrame(()=>polish(document));
     });
   }
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded',init,{once:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
 })();
