@@ -34,14 +34,24 @@
     bind(card);
   }
 
+  const normKey=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/linkedin|линкд\s*ин/g,'linkedin').replace(/facebook|фейсбук/g,'facebook').replace(/instagram|инстаграм/g,'instagram').replace(/youtube|ютуб/g,'youtube').replace(/[^a-zа-я0-9]+/g,' ').trim();
+  const topicKey=(title,text)=>{
+    const n=normKey(`${title} ${text}`);
+    for(const k of ['linkedin','facebook','instagram','youtube','новинар','google news','сайт','електронн магазин','ecommerce','репутац','конкурент','дигитал','публикац','аудитория'])if(n.includes(k))return k;
+    return normKey(title).split(' ').slice(0,4).join(' ');
+  };
   function signalItems(){
     const d=(typeof D!=='undefined'&&D)?D:{};
     const src=(typeof S!=='undefined'&&Array.isArray(S))?S:[];
     const out=[];
-    const seen=new Set();
+    const seenTopics=new Set();
     const add=(title,text,tag)=>{
-      title=String(title||'').trim(); if(!title||seen.has(title)||out.length>=7)return;
-      seen.add(title); out.push({title,text:String(text||'').trim(),tag});
+      title=String(title||'').trim(); text=String(text||'').trim();
+      if(!title||out.length>=7)return;
+      const key=topicKey(title,text);
+      if(key&&seenTopics.has(key))return;
+      if(key)seenTopics.add(key);
+      out.push({title,text,tag});
     };
     (Array.isArray(d.signals)?d.signals:[]).forEach(x=>add(x.title||x.label,x.text||x.description||x.detail||'Промяна в наблюдаваната среда',x.priority||({positive:'Положителен',watch:'За наблюдение',negative:'Риск'}[x.level])||'Сигнал'));
     (Array.isArray(d.metrics)?d.metrics:[]).forEach(x=>add(x.label,`Текущо измерване: ${x.value??'—'}`,'Измерване'));
@@ -49,15 +59,34 @@
     src.forEach(x=>add(x.label||x.name||x.key,x.method||'Активен публичен източник','Източник'));
     return out.slice(0,7);
   }
+  function bindSignalToggle(card){
+    const btn=card.querySelector('[data-leading-toggle]');
+    if(!btn||btn.dataset.bound==='1')return;
+    btn.dataset.bound='1';
+    btn.addEventListener('click',()=>{
+      const expanded=card.classList.toggle('is-expanded');
+      btn.textContent=expanded?'Покажи по-малко ↑':'Покажи всички ↓';
+      btn.setAttribute('aria-expanded',expanded?'true':'false');
+    });
+  }
   function enhanceLeadingSignals(){
-    const box=document.querySelector('#overviewPremium .ov-leading-signals .ov-lead-grid');
-    if(!box)return;
+    const card=document.querySelector('#overviewPremium .ov-leading-signals');
+    const box=card?.querySelector('.ov-lead-grid');
+    if(!card||!box)return;
     const items=signalItems();
     if(!items.length)return;
     const signature=JSON.stringify(items.map(x=>[x.title,x.text,x.tag]));
-    if(box.dataset.signalSignature===signature)return;
-    box.dataset.signalSignature=signature;
-    box.innerHTML=items.map((x,i)=>`<div class="ov-lead-item"><span class="ov-lead-num">${i+1}</span><div class="ov-lead-copy"><b>${esc(x.title)}</b><small>${esc(x.text)}</small></div><span class="ov-lead-tag">${esc(x.tag)}</span></div>`).join('');
+    if(box.dataset.signalSignature!==signature){
+      box.dataset.signalSignature=signature;
+      box.innerHTML=items.map((x,i)=>`<div class="ov-lead-item ${i>2?'ov-lead-extra':''}"><span class="ov-lead-num">${i+1}</span><div class="ov-lead-copy"><b>${esc(x.title)}</b><small>${esc(x.text)}</small></div><span class="ov-lead-tag">${esc(x.tag)}</span></div>`).join('');
+      card.classList.remove('is-expanded');
+      let toggle=card.querySelector('[data-leading-toggle]');
+      if(items.length>3){
+        if(!toggle){toggle=document.createElement('button');toggle.type='button';toggle.className='ov-leading-toggle';toggle.dataset.leadingToggle='1';card.appendChild(toggle)}
+        toggle.textContent='Покажи всички ↓'; toggle.setAttribute('aria-expanded','false');
+      }else if(toggle)toggle.remove();
+    }
+    bindSignalToggle(card);
   }
 
   function enhance(){enhanceMethods();enhanceLeadingSignals()}
