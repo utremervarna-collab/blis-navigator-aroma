@@ -14,25 +14,6 @@ func embeddedBase64Data(path, mime string) string {
 	return "data:" + mime + ";base64," + data
 }
 
-func bolyarkaProfileHeroData() string {
-	b, err := staticFS.ReadFile("static/navigator-client-hero.js")
-	if err != nil {
-		return ""
-	}
-	s := string(b)
-	const startMarker = "const bolyarkaHero='"
-	start := strings.Index(s, startMarker)
-	if start < 0 {
-		return ""
-	}
-	start += len(startMarker)
-	endRel := strings.Index(s[start:], "';")
-	if endRel < 0 {
-		return ""
-	}
-	return s[start : start+endRel]
-}
-
 func replaceHomeClientGrid(html string, replacement string) string {
 	startMarker := `<div class="clientGrid">`
 	endMarker := `<div class="clientNote">`
@@ -68,12 +49,11 @@ func init() {
 </style>`
 	indexHTML = strings.Replace(indexHTML, "</head>", clientVisualCSS+"</head>", 1)
 
-	// Use the exact same hero assets as the protected client profiles.
 	aroma := embeddedBase64Data("static/hero-aroma-micro.txt", "image/webp")
+	bolyarka := embeddedBase64Data("static/hero-bolyarka-micro.txt", "image/webp")
 	astor := embeddedBase64Data("static/hero-astor-micro.txt", "image/webp")
-	bolyarka := bolyarkaProfileHeroData()
 
-	grid := `<!-- home-client-profile-hero-images-v4 --><div class="clientGrid">` +
+	grid := `<!-- home-client-profile-hero-images-v5 --><div class="clientGrid">` +
 		`<article class="clientCard c1"><img class="clientCardImage" src="` + bolyarka + `" alt="Профилна визия Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>` +
 		`<article class="clientCard c2"><img class="clientCardImage" src="` + aroma + `" alt="Профилна визия Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>` +
 		`<article class="clientCard c3"><img class="clientCardImage" src="` + astor + `" alt="Профилна визия Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>` +
