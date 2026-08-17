@@ -1,9 +1,9 @@
 /* BLIS Navigator — trend layout correction only; no redesign. */
-#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:visible!important;padding-bottom:20px!important}
-#overviewPremium .ov-trend{height:auto!important;min-height:292px!important;overflow:visible!important;display:block!important;margin:2px 0 0!important}
+#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:visible!important;padding-bottom:24px!important}
+#overviewPremium .ov-trend{height:220px!important;min-height:220px!important;overflow:visible!important;display:block!important;margin:2px 0 0!important;position:relative!important}
 #overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:220px!important;margin:0!important}
-#overviewPremium .ov-method-note{position:relative!important;z-index:2!important;display:block!important;width:100%!important;clear:both!important;margin:12px 0 0!important;padding:11px 14px!important;border:1px solid #e4eaf2!important;border-radius:10px!important;background:#f8fafc!important;color:#78879c!important;font-size:10px!important;line-height:1.45!important;box-sizing:border-box!important}
+#overviewPremium .ov-method-note{position:relative!important;z-index:2!important;display:block!important;width:100%!important;clear:both!important;margin:14px 0 0!important;padding:11px 14px!important;border:1px solid #e4eaf2!important;border-radius:10px!important;background:#f8fafc!important;color:#78879c!important;font-size:10px!important;line-height:1.45!important;box-sizing:border-box!important}
 #overviewPremium .ov-method-note b{color:#54657d!important;font-weight:700!important}
-#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;margin:18px 0 0!important;transform:none!important}
+#overviewPremium .ov-panel>.ov-method-note + .ov-link,#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;float:none!important;inset:auto!important;margin:16px 0 0!important;transform:none!important}
 #overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
-@media(max-width:900px){#overviewPremium .ov-trend{min-height:276px!important}#overviewPremium .ov-trend>svg{height:205px!important}}
+@media(max-width:900px){#overviewPremium .ov-trend{height:205px!important;min-height:205px!important}#overviewPremium .ov-trend>svg{height:205px!important}#overviewPremium .ov-method-note{margin-top:12px!important}}
