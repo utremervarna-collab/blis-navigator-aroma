@@ -35,7 +35,8 @@
   }
 
   function signalItems(){
-    const d=window.D||{};
+    const d=(typeof D!=='undefined'&&D)?D:{};
+    const src=(typeof S!=='undefined'&&Array.isArray(S))?S:[];
     const out=[];
     const seen=new Set();
     const add=(title,text,tag)=>{
@@ -45,13 +46,14 @@
     (Array.isArray(d.signals)?d.signals:[]).forEach(x=>add(x.title||x.label,x.text||x.description||x.detail||'Промяна в наблюдаваната среда',x.priority||({positive:'Положителен',watch:'За наблюдение',negative:'Риск'}[x.level])||'Сигнал'));
     (Array.isArray(d.metrics)?d.metrics:[]).forEach(x=>add(x.label,`Текущо измерване: ${x.value??'—'}`,'Измерване'));
     (Array.isArray(d.indices)?d.indices:[]).forEach(x=>add(x.label||x.name,`Текуща стойност: ${x.value??'—'}/100${x.description?` · ${x.description}`:''}`,'Индекс'));
-    (Array.isArray(window.S)?window.S:[]).forEach(x=>add(x.label||x.name||x.key,x.method||'Активен публичен източник','Източник'));
+    src.forEach(x=>add(x.label||x.name||x.key,x.method||'Активен публичен източник','Източник'));
     return out.slice(0,7);
   }
   function enhanceLeadingSignals(){
     const box=document.querySelector('#overviewPremium .ov-leading-signals .ov-lead-grid');
     if(!box)return;
     const items=signalItems();
+    if(!items.length)return;
     const signature=JSON.stringify(items.map(x=>[x.title,x.text,x.tag]));
     if(box.dataset.signalSignature===signature)return;
     box.dataset.signalSignature=signature;
