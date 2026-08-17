@@ -24,13 +24,13 @@ func init() {
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c1"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></article>`,
-		`<article class="clientCard c1"><img class="clientCardImage" src="/home-bolyarka.svg" alt="BLIS визуализация за Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>`, 1)
+		`<article class="clientCard c1"><img class="clientCardImage" src="/home-bolyarka.svg?v=20260817-fixed2" alt="BLIS визуализация за Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>`, 1)
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c2"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></article>`,
-		`<article class="clientCard c2"><img class="clientCardImage" src="/home-aroma.svg" alt="BLIS визуализация за Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>`, 1)
+		`<article class="clientCard c2"><img class="clientCardImage" src="/home-aroma.svg?v=20260817-fixed2" alt="BLIS визуализация за Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>`, 1)
 
 	indexHTML = strings.Replace(indexHTML,
 		`<article class="clientCard c3"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></article>`,
-		`<article class="clientCard c3"><img class="clientCardImage" src="/home-astor.svg" alt="BLIS визуализация за Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>`, 1)
+		`<article class="clientCard c3"><img class="clientCardImage" src="/home-astor.svg?v=20260817-fixed2" alt="BLIS визуализация за Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>`, 1)
 }
