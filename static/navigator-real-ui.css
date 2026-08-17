@@ -1,28 +1,27 @@
 /* BLIS Navigator — real client UI */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
-html,body,button,select,input,textarea{font-family:"DM Sans","Segoe UI",Arial,sans-serif!important;letter-spacing:0!important}
-.title h1,.ref-title h2,.ov-panel h3,.ref-head h3,.client-brand-name,.ov-kpi-head,.nav button{font-family:"Sora","DM Sans",sans-serif!important;letter-spacing:-.018em!important}
-.ov-kpi-value strong,.ov-big-change,.ov-donut-center strong{font-family:"Sora","DM Sans",sans-serif!important;letter-spacing:-.045em!important;font-variant-numeric:tabular-nums}
+html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial,sans-serif!important;letter-spacing:0!important}
+.title h1,.ref-title h2,.ov-panel h3,.ref-head h3,.client-brand-name,.ov-kpi-head,.nav button,.ov-kpi-value strong,.ov-big-change,.ov-donut-center strong{font-family:"Montserrat","Segoe UI",Arial,sans-serif!important}
+.title h1{letter-spacing:-.035em!important}.ov-kpi-value strong,.ov-big-change,.ov-donut-center strong{letter-spacing:-.045em!important;font-variant-numeric:tabular-nums}
 
 /* Sidebar — selector owns its own space and never overlaps navigation. */
 .side{display:flex!important;flex-direction:column!important}
 .side .brand{flex:0 0 auto!important}
-.side .clientbox{position:relative!important;flex:0 0 auto!important;margin:16px 12px 18px!important;padding:0!important;z-index:20!important}
+.side .clientbox{position:relative!important;flex:0 0 auto!important;margin:16px 12px 22px!important;padding:0!important;z-index:20!important}
 .client-switch{position:relative!important;width:100%!important}
 .client-switch-button{min-height:82px!important}
 .client-switch-menu{z-index:120!important}
-.nav{position:relative!important;flex:1 1 auto!important;min-height:0!important;margin:0!important;padding-top:8px!important;z-index:2!important;border-top:1px solid #e8edf4!important}
+.nav{position:relative!important;flex:1 1 auto!important;min-height:0!important;margin:0!important;padding-top:10px!important;z-index:2!important;border-top:1px solid #e8edf4!important}
 .dashboard-home-link,.sideuser{flex:0 0 auto!important}
 
-/* Photographic client header. navigator-client-hero.js supplies the actual image. */
-.topbar{position:relative!important;min-height:136px!important;height:136px!important;overflow:hidden!important;isolation:isolate!important;background:#fff!important;border-radius:0 0 18px 18px!important}
-.topbar:before{display:none!important}
-.topbar:after{display:none!important}
-.topbar .title{position:relative!important;z-index:3!important;max-width:500px!important;padding-left:4px!important}
-.topbar .title h1{font-size:27px!important;line-height:1.12!important;font-weight:600!important;color:#102a52!important;letter-spacing:-.035em!important}
-.topbar .title p{font-family:"DM Sans",sans-serif!important;font-size:11px!important;font-weight:500!important;color:#637692!important;letter-spacing:0!important}
-.toptools{position:relative!important;z-index:4!important;padding:8px 10px!important;border:1px solid rgba(222,231,241,.82)!important;border-radius:12px!important;background:rgba(255,255,255,.82)!important;backdrop-filter:blur(10px)!important;box-shadow:0 6px 18px rgba(24,45,76,.05)!important}
+/* Photographic client header — image is intentionally visible, not washed out. */
+.topbar{position:relative!important;min-height:168px!important;height:168px!important;overflow:hidden!important;isolation:isolate!important;background:#eef3f7!important;border-radius:0 0 18px 18px!important;border-bottom:1px solid #dfe6ef!important}
+.topbar:before,.topbar:after{display:none!important}
+.topbar .title{position:relative!important;z-index:4!important;max-width:520px!important;padding:18px 22px!important;border-radius:16px!important;background:rgba(255,255,255,.84)!important;backdrop-filter:blur(8px)!important;box-shadow:0 8px 26px rgba(21,42,76,.08)!important;border:1px solid rgba(255,255,255,.72)!important}
+.topbar .title h1{margin:0 0 7px!important;font-size:29px!important;line-height:1.08!important;font-weight:700!important;color:#10284f!important}
+.topbar .title p{font-family:"Montserrat",sans-serif!important;font-size:10.5px!important;line-height:1.45!important;font-weight:500!important;color:#667894!important;letter-spacing:0!important}
+.toptools{position:relative!important;z-index:5!important;padding:8px 10px!important;border:1px solid rgba(222,231,241,.72)!important;border-radius:12px!important;background:rgba(255,255,255,.78)!important;backdrop-filter:blur(12px)!important;box-shadow:0 8px 22px rgba(24,45,76,.08)!important}
 
 /* Real-data states — never replace missing measurements with demo values. */
 .ov-no-data{min-height:54px;display:flex;align-items:center;padding:12px 14px;border:1px dashed #dbe4ef;border-radius:9px;background:#f9fbfd;color:#8290a4;font-size:9px;line-height:1.4}
@@ -30,5 +29,5 @@ html,body,button,select,input,textarea{font-family:"DM Sans","Segoe UI",Arial,sa
 .ov-method-note{padding:14px 16px;border-radius:10px;background:#f7fafc;border:1px solid #e5ebf3;font-size:10px;line-height:1.55;color:#64748b}
 .ov-big-change.negative{color:#d94444!important}
 
-@media(max-width:1180px){.topbar{min-height:122px!important;height:122px!important}.topbar .title h1{font-size:24px!important}}
-@media(max-width:820px){.topbar{min-height:112px!important;height:auto!important}.topbar .title{max-width:72%!important}}
+@media(max-width:1180px){.topbar{min-height:150px!important;height:150px!important}.topbar .title h1{font-size:25px!important}.topbar .title{max-width:470px!important}}
+@media(max-width:820px){.topbar{min-height:132px!important;height:auto!important}.topbar .title{max-width:72%!important;padding:14px 16px!important}.topbar .title h1{font-size:22px!important}}
