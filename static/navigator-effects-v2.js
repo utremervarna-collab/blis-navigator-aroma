@@ -12,3 +12,13 @@
   function init(){run();document.querySelectorAll('.page').forEach(page=>new MutationObserver(()=>{if(page.classList.contains('active')){seen.delete?.(page);setTimeout(()=>activate(page),45)}}).observe(page,{attributes:true,attributeFilter:['class']}));document.addEventListener('click',e=>{if(e.target.closest('#nav button'))setTimeout(run,70)})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
+/* Load the shared 7/30/90-day analytics period system. */
+(function(){
+  function load(src,next){var s=document.createElement('script');s.src=src;s.onload=function(){if(next)next()};document.head.appendChild(s)}
+  load('/navigator-period-filter.js?v=20260817-1',function(){
+    load('/navigator-period-overview.js?v=20260817-1',function(){
+      load('/navigator-period-runtime.js?v=20260817-1');
+    });
+  });
+})();
