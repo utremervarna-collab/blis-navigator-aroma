@@ -1,0 +1,50 @@
+/* BLIS Navigator — motion + typography layer for canonical Overview */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+html,body,button,select,input{font-family:"Manrope","Segoe UI",Arial,sans-serif!important}
+body{font-feature-settings:"ss01" 1,"cv02" 1,"cv03" 1;letter-spacing:-.006em}
+.title h1{font-family:"Manrope","Segoe UI",Arial,sans-serif!important;font-weight:800!important;letter-spacing:-.045em!important}
+.nav button,.client-brand-name,.ov-kpi-head,.ov-panel h3,.ref-head h3{font-family:"Manrope","Segoe UI",Arial,sans-serif!important}
+.nav button{font-weight:600!important;letter-spacing:-.012em!important}
+.ov-kpi-head,.ov-panel h3{font-weight:800!important;letter-spacing:-.018em!important}
+.ov-kpi-value strong{font-weight:700!important;letter-spacing:-.055em!important}
+.ov-kpi-value small,.ov-kpi-foot,.ov-panel-sub,.ov-signal small,.ov-pulse-row small{letter-spacing:0!important}
+
+/* Live system rail: quiet, permanent, unmistakably active */
+.blis-activity-rail{position:relative;height:32px;margin:0 -34px 14px;padding:0 34px;display:flex;align-items:center;gap:18px;background:rgba(255,255,255,.78);border-bottom:1px solid #e8edf4;overflow:hidden;color:#64748b;font-size:9px;font-weight:650;letter-spacing:.01em;isolation:isolate}
+.blis-activity-rail:before{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--client) 38%,color-mix(in srgb,var(--client) 55%,#72d9ff) 50%,var(--client) 62%,transparent 100%);background-size:36% 100%;background-repeat:no-repeat;animation:blisScan 5.5s linear infinite;opacity:.72;z-index:-1}
+.blis-live-label{display:flex;align-items:center;gap:7px;color:#1f3554;font-size:9px;font-weight:800;white-space:nowrap}.blis-live-dot{width:7px;height:7px;border-radius:50%;background:#23ad63;box-shadow:0 0 0 0 rgba(35,173,99,.38);animation:blisPulse 1.8s ease-out infinite}
+.blis-activity-copy{white-space:nowrap}.blis-activity-sep{width:1px;height:13px;background:#dfe6ef}.blis-data-stream{margin-left:auto;display:flex;align-items:center;gap:5px;height:14px}.blis-data-stream i{display:block;width:3px;border-radius:3px;background:color-mix(in srgb,var(--client) 72%,#fff);animation:blisBars 1.25s ease-in-out infinite}.blis-data-stream i:nth-child(1){height:5px;animation-delay:0s}.blis-data-stream i:nth-child(2){height:10px;animation-delay:.12s}.blis-data-stream i:nth-child(3){height:7px;animation-delay:.24s}.blis-data-stream i:nth-child(4){height:13px;animation-delay:.36s}.blis-data-stream i:nth-child(5){height:8px;animation-delay:.48s}
+
+/* Current-data pulse */
+.sync{position:relative!important;padding-left:15px!important;display:block!important}.sync:before{content:"";position:absolute;left:auto;right:118px;top:5px;width:6px;height:6px;border-radius:50%;background:#23ad63;box-shadow:0 0 0 0 rgba(35,173,99,.32);animation:blisPulse 2s ease-out infinite}
+
+/* Overview enters as a system, not a static page */
+#overview .ov-kpi,#overview .ov-row-main>.ov-card,#overview .ov-row-mid>.ov-card,#overview .ov-row-bottom>.ov-card{opacity:0;transform:translateY(6px);animation:blisCardIn .46s cubic-bezier(.22,.8,.28,1) forwards}
+#overview .ov-kpi:nth-child(1){animation-delay:.03s}#overview .ov-kpi:nth-child(2){animation-delay:.07s}#overview .ov-kpi:nth-child(3){animation-delay:.11s}#overview .ov-kpi:nth-child(4){animation-delay:.15s}#overview .ov-kpi:nth-child(5){animation-delay:.19s}
+#overview .ov-row-main>.ov-card:nth-child(1){animation-delay:.18s}#overview .ov-row-main>.ov-card:nth-child(2){animation-delay:.23s}#overview .ov-row-main>.ov-card:nth-child(3){animation-delay:.28s}
+#overview .ov-row-mid>.ov-card:nth-child(1){animation-delay:.31s}#overview .ov-row-mid>.ov-card:nth-child(2){animation-delay:.35s}#overview .ov-row-mid>.ov-card:nth-child(3){animation-delay:.39s}
+#overview .ov-row-bottom>.ov-card:nth-child(1){animation-delay:.42s}#overview .ov-row-bottom>.ov-card:nth-child(2){animation-delay:.46s}
+
+/* Graphs visibly process on load */
+#overview .ov-spark polyline,#overview .ov-chart-line{stroke-dasharray:1100;stroke-dashoffset:1100;animation:blisDraw 1.45s cubic-bezier(.2,.72,.25,1) forwards}
+#overview .ov-kpi:nth-child(2) .ov-spark polyline{animation-delay:.12s}#overview .ov-kpi:nth-child(3) .ov-spark polyline{animation-delay:.18s}#overview .ov-kpi:nth-child(4) .ov-spark polyline{animation-delay:.24s}#overview .ov-kpi:nth-child(5) .ov-spark polyline{animation-delay:.30s}
+#overview .ov-chart-line{animation-duration:1.8s;animation-delay:.22s}
+#overview .ov-chart-area{opacity:0;animation:blisFade .7s ease .85s forwards}
+#overview .ov-chart-line+circle,#overview .ov-trend circle{transform-box:fill-box;transform-origin:center;animation:blisPoint 1.6s ease-in-out infinite alternate}
+
+/* Live chip and data indicators */
+#overview .ov-pill[style*="0a9c57"]{position:relative;padding-left:18px!important;background:#eefaf3!important;border-color:#d8f2e2!important}.ov-pill[style*="0a9c57"]:before{content:"";position:absolute;left:8px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#23ad63;animation:blisPulse 1.8s ease-out infinite}
+.ov-bars i{transform-origin:bottom;animation:blisBarBreath 3.2s ease-in-out infinite alternate}.ov-bars i:nth-child(3n){animation-delay:.3s}.ov-bars i:nth-child(3n+1){animation-delay:.7s}
+
+@keyframes blisScan{0%{background-position:-45% 0}100%{background-position:145% 0}}
+@keyframes blisPulse{0%{box-shadow:0 0 0 0 rgba(35,173,99,.32)}70%{box-shadow:0 0 0 6px rgba(35,173,99,0)}100%{box-shadow:0 0 0 0 rgba(35,173,99,0)}}
+@keyframes blisBars{0%,100%{transform:scaleY(.55);opacity:.48}50%{transform:scaleY(1);opacity:1}}
+@keyframes blisCardIn{to{opacity:1;transform:none}}
+@keyframes blisDraw{to{stroke-dashoffset:0}}
+@keyframes blisFade{to{opacity:1}}
+@keyframes blisPoint{from{opacity:.72}to{opacity:1}}
+@keyframes blisBarBreath{from{filter:saturate(.88);opacity:.76}to{filter:saturate(1.08);opacity:1}}
+
+@media(max-width:820px){.blis-activity-rail{margin:0 -14px 12px;padding:0 14px;gap:10px}.blis-activity-copy.secondary,.blis-activity-sep.secondary{display:none}.sync:before{display:none}}
+@media(prefers-reduced-motion:reduce){.blis-activity-rail:before,.blis-live-dot,.blis-data-stream i,.sync:before,#overview .ov-kpi,#overview .ov-row-main>.ov-card,#overview .ov-row-mid>.ov-card,#overview .ov-row-bottom>.ov-card,#overview .ov-spark polyline,#overview .ov-chart-line,#overview .ov-chart-area,#overview .ov-trend circle,.ov-bars i{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}}
