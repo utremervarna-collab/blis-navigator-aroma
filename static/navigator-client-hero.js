@@ -1,9 +1,10 @@
-/* BLIS Navigator — client hero loader, local assets only */
+/* BLIS Navigator — photographic client hero loader */
 (function(){
+  const base='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/';
   const assets={
-    aroma:'/hero-aroma-micro.txt',
-    bolyarka:'/hero-bolyarka-micro.txt',
-    'astor-garden':'/hero-astor-micro.txt'
+    aroma:base+'hero-aroma-micro.txt',
+    bolyarka:base+'hero-bolyarka-micro.txt',
+    'astor-garden':base+'hero-astor-micro.txt'
   };
   const cache={};
 
@@ -32,7 +33,7 @@
   async function imageFor(key){
     if(cache[key])return cache[key];
     const url=assets[key]||assets.aroma;
-    const txt=(await fetch(url+'?v=20260817-hero-clean1',{cache:'no-store'}).then(r=>{
+    const txt=(await fetch(url+'?v=20260817-restore2',{cache:'no-store',mode:'cors'}).then(r=>{
       if(!r.ok)throw new Error('hero '+r.status);
       return r.text();
     })).replace(/\s+/g,'');
@@ -51,7 +52,6 @@
       bg.style.opacity='1';
     }catch(err){
       console.error('BLIS client hero:',err);
-      bg.style.backgroundImage='none';
     }
   }
 
