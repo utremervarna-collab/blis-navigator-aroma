@@ -1,4 +1,5 @@
 /* BLIS Navigator — client branding, switcher and canonical icon language */
+body:not(.greeting-ready) .topbar .title h1{opacity:0}.topbar .title h1{transition:opacity .12s ease}
 .nav .navico svg,.ov-ico svg,.ov-signal-ico svg,.client-switch-chevron svg{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav .navico{display:grid!important;place-items:center!important;width:22px!important;min-width:22px!important;height:22px!important;font-size:0!important}
 .nav button.active .navico{color:#1766e8!important}
