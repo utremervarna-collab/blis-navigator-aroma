@@ -1,0 +1,2 @@
+Force Render auto-deploy after dashboard includes repaired Bolyarka profile hero asset.
+Target parent commit: 1467d9023e5e398cb555b1bc4064e1e8e2ce680a
