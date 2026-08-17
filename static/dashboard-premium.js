@@ -25,6 +25,18 @@
   function mentions(limit=5){
     return (A||[]).slice().sort((a,b)=>new Date(b.time||b.observed_at||0)-new Date(a.time||a.observed_at||0)).slice(0,limit);
   }
+  function signalMethod(){
+    return `<div class="refSignalMethod">
+      <div class="refSignalMethodTitle"><b>Какво следим</b><span>постоянно наблюдение на публичната среда</span></div>
+      <div class="refSignalWatch">
+        <span><i>◎</i><b>Репутация</b><small>оценки, отзиви, негативни теми и промяна в тона</small></span>
+        <span><i>↗</i><b>Потребителски интерес</b><small>търсения, въпроси, взаимодействия и нови теми</small></span>
+        <span><i>◇</i><b>Конкуренти</b><small>кампании, продукти, инициативи и комуникационни пикове</small></span>
+        <span><i>◉</i><b>Пазар и медии</b><small>публикации, секторни промени, тенденции и външни фактори</small></span>
+      </div>
+      <div class="refSignalHow"><b>Как се формира сигналът</b><p>BLIS сравнява новото наблюдение с предходните периоди, проверява източника и контекста и оценява значимостта, актуалността, влиянието, устойчивостта и риска. Сигнал се показва само когато промяната заслужава внимание, а не при всяко единично споменаване.</p></div>
+    </div>`;
+  }
   function renderPremiumOverview(){
     if(!$('overviewPremium')||!D)return;
     const blis=D?.blis_index, events=latestEvents(), signals=(D?.signals||[]).slice(0,3), src=sourceSummary();
@@ -45,9 +57,10 @@
           <button class="refLink" onclick="go('timeline')">Виж детайли →</button>
         </div>
         <div class="pPanel refSignalsPanel">
-          <div class="pPanelHead"><div><span class="pEyebrow">Ключови сигнали</span></div><button onclick="go('market')">Виж всички сигнали →</button></div>
+          <div class="pPanelHead"><div><span class="pEyebrow">Водещи сигнали</span><small>само промени с аналитична стойност</small></div><button onclick="go('market')">Виж всички сигнали →</button></div>
           ${signals.length?signals.map((s,i)=>`<div class="pSignal"><span class="pSignalMark ${i===0?'hot':''}">${i===0?'↓':i===1?'↑':'◉'}</span><div><b>${esc(s.title||s.label||'Сигнал')}</b><p>${esc(s.description||s.detail||'Промяна в наблюдаваната среда.')}</p></div><span class="pSignalTag">${i===0?'Висок приоритет':i===1?'Наблюдение':'Среден приоритет'}</span></div>`).join(''):'<div class="scan">Няма нов потвърден сигнал за периода.</div>'}
-          <button class="refLink centered" onclick="go('market')">Виж всички сигнали →</button>
+          ${signalMethod()}
+          <button class="refLink centered" onclick="go('market')">Отвори пълния анализ на сигналите →</button>
         </div>
         <div class="pPanel refPulsePanel">
           <div class="pPanelHead"><div><span class="pEyebrow">BLIS Pulse</span></div><span class="pStatus">● LIVE</span></div>
