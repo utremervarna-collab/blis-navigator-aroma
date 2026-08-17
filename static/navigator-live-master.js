@@ -36,7 +36,7 @@
     const host=document.getElementById('liveBody'); if(!host) return;
     const sCount=getSources().length||48, aCount=getActivity().length||1248, alerts=getSignals().length||3;
     host.innerHTML=`<div class="lm-screen">
-      <div class="lm-title"><h2>2. LIVE MONITORING – ПРЕГЛЕД НА НАБЛЮДЕНИЕТО</h2><p>Следим външната среда в реално време от активните източници</p></div>
+      <div class="lm-title"><h2>LIVE MONITORING – ПРЕГЛЕД НА НАБЛЮДЕНИЕТО</h2><p>Следим външната среда в реално време от активните източници</p></div>
       <div class="lm-kpis">
         ${[['◉','АКТИВНИ ИЗТОЧНИЦИ',`${sCount}<small>/52</small>`,'включени източника'],['✓','УСПЕШНИ ПРОВЕРКИ','96%','успешни събирания'],['◷','ПОСЛЕДНА ПРОВЕРКА','24 <small>мин.</small>','преди'],['▥','НОВИ ЕЛЕМЕНТИ (24ч)',aCount.toLocaleString('bg-BG'),'публикации, сигнали, отзиви'],['!','АКТИВНИ АЛЕРТИ',String(alerts),'изискват внимание']].map((k,i)=>`<div class="lm-card lm-kpi"><div class="lm-kicon k${i}">${k[0]}</div><div><span>${k[1]}</span><strong>${k[2]}</strong><small>${k[3]}</small></div></div>`).join('')}
       </div>
