@@ -1,6 +1,9 @@
 /* BLIS Navigator — trend layout correction only; no redesign. */
-#overviewPremium .ov-trend{height:auto!important;min-height:0!important;overflow:visible!important;display:block!important}
+#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:visible!important;padding-bottom:20px!important}
+#overviewPremium .ov-trend{height:auto!important;min-height:292px!important;overflow:visible!important;display:block!important;margin:2px 0 0!important}
 #overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:220px!important;margin:0!important}
-#overviewPremium .ov-method-note{position:static!important;display:block!important;margin:8px 0 0!important;padding:9px 12px!important;border:1px solid #e4eaf2!important;border-radius:9px!important;background:#f8fafc!important;color:#78879c!important;font-size:9.5px!important;line-height:1.35!important;box-sizing:border-box!important}
-#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;margin-top:13px!important;position:static!important}
-#overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:2.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
+#overviewPremium .ov-method-note{position:relative!important;z-index:2!important;display:block!important;width:100%!important;clear:both!important;margin:12px 0 0!important;padding:11px 14px!important;border:1px solid #e4eaf2!important;border-radius:10px!important;background:#f8fafc!important;color:#78879c!important;font-size:10px!important;line-height:1.45!important;box-sizing:border-box!important}
+#overviewPremium .ov-method-note b{color:#54657d!important;font-weight:700!important}
+#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;margin:18px 0 0!important;transform:none!important}
+#overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
+@media(max-width:900px){#overviewPremium .ov-trend{min-height:276px!important}#overviewPremium .ov-trend>svg{height:205px!important}}
