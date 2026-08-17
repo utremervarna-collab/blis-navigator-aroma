@@ -45,6 +45,21 @@
       <div class="lm-livefoot"><div><span>Елементи в потока</span><b id="lmActivityCount">${getActivity().length.toLocaleString('bg-BG')}</b></div><div><span>Активни източници</span><b id="lmSourceCount">${getSources().length}</b></div><div><span>Предупреждения</span><b id="lmSignalCount">${getSignals().length}</b></div><div class="lm-livepulse"><i></i><span>Сканиране в ход</span></div></div>
     </div>`
   }
+  function geoCoverageModule(){
+    return `<div class="lm-map lm-map-zoom">
+      <div class="lm-globe-wrap">
+        <div class="lm-globe-stage" aria-label="Активен географски фокус върху България">
+          <div class="lm-globe-grid"></div>
+          <div class="lm-globe-scan"></div>
+          <div class="lm-globe-surface"></div>
+          <div class="lm-geo-focus"><span class="lm-geo-ping"></span><span class="lm-geo-core"></span><span class="lm-geo-label">BG</span></div>
+          <div class="lm-geo-coordinates">42.7° N · 25.5° E</div>
+        </div>
+        <div class="lm-geo-caption"><b>Фокус на наблюдението</b><span>България · активен мониторинг в реално време</span></div>
+      </div>
+      <div class="lm-country"><b>Топ държави</b><span>България <em>82%</em></span><span>Германия <em>5%</em></span><span>Великобритания <em>3%</em></span><span>Румъния <em>2%</em></span><span>Други <em>8%</em></span></div>
+    </div>`
+  }
   function updateLiveWidget(){
     const clock=document.getElementById('lmLiveClock'); if(clock)clock.textContent=new Intl.DateTimeFormat('bg-BG',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());
     const bars=document.getElementById('lmLiveBars'); if(bars)bars.innerHTML=activityBars();
@@ -66,7 +81,7 @@
       <div class="lm-kpis">${[['◉','АКТИВНИ ИЗТОЧНИЦИ',`${sCount}<small>/52</small>`,'включени източника'],['✓','УСПЕШНИ ПРОВЕРКИ','96%','успешни събирания'],['◷','ПОСЛЕДНА ПРОВЕРКА','24 <small>мин.</small>','преди'],['▥','НОВИ ЕЛЕМЕНТИ (24ч)',aCount.toLocaleString('bg-BG'),'публикации, сигнали, отзиви'],['!','АКТИВНИ ПРЕДУПРЕЖДЕНИЯ',String(alerts),'изискват внимание']].map((k,i)=>`<div class="lm-card lm-kpi"><div class="lm-kicon k${i}">${k[0]}</div><div><span>${k[1]}</span><strong>${k[2]}</strong><small>${k[3]}</small></div></div>`).join('')}</div>
       <div class="lm-grid lm-upper"><div class="lm-card"><div class="lm-cardhead"><h3>СТАТУС НА ИЗТОЧНИЦИТЕ</h3><div class="lm-tabs"><button class="active">Всички</button><button>Социални</button><button>Уеб</button><button>Медии</button><button>Отзиви</button></div></div><div class="lm-tablewrap"><table><thead><tr><th>Източник</th><th>Тип</th><th>Статус</th><th>Последна проверка</th><th>Данни за 24ч</th><th></th></tr></thead><tbody>${sourceRows()}</tbody></table></div><button class="lm-link" onclick="window.refGo&&refGo('sources')">Виж всички източници →</button></div>
       <div class="lm-stack"><div class="lm-card lm-live-card"><div class="lm-cardhead"><h3>АКТИВНОСТ НА СЪБИРАНЕТО (ПОСЛЕДНИ 24 ЧАСА)</h3><span class="lm-live-badge"><i></i>LIVE</span></div>${liveActivityModule()}</div>
-      <div class="lm-card"><div class="lm-cardhead"><h3>ГЕОПОКРИТИЕ НА МОНИТОРИНГА</h3></div><div class="lm-map"><div class="lm-world">BG<div class="pulse-dot"></div></div><div class="lm-country"><b>Топ държави</b><span>България <em>82%</em></span><span>Германия <em>5%</em></span><span>Великобритания <em>3%</em></span><span>Румъния <em>2%</em></span><span>Други <em>8%</em></span></div></div></div></div></div>
+      <div class="lm-card lm-geo-card"><div class="lm-cardhead"><h3>ГЕОПОКРИТИЕ НА МОНИТОРИНГА</h3><span class="lm-geo-live"><i></i>LIVE</span></div>${geoCoverageModule()}</div></div></div>
       <div class="lm-grid lm-lower"><div class="lm-card"><div class="lm-cardhead"><h3>ПОСЛЕДНИ ПРОВЕРКИ НА СИСТЕМАТА</h3></div><div class="lm-checks">${checks()}</div><button class="lm-link" onclick="window.refGo&&refGo('history')">Виж пълна история →</button></div><div class="lm-card"><div class="lm-cardhead"><h3>СТАТУС НА СИСТЕМАТА</h3></div><div class="lm-systems">${['Събиране на данни','Обработка и анализ','Сигнали и нотификации','Dashboard и отчети'].map(x=>`<div><span>✓</span><b>${x}</b><small>Нормално</small></div>`).join('')}</div><div class="lm-ok">● Всички системи работят нормално</div></div></div>
     </div>`;
     startLiveTimers();
