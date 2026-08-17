@@ -1,8 +1,11 @@
 /* BLIS Navigator — trend layout correction only; no redesign. */
-#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:hidden!important;padding-bottom:18px!important}
-#overviewPremium .ov-trend{height:220px!important;min-height:220px!important;overflow:hidden!important;display:block!important;margin:2px 0 0!important;position:relative!important}
-#overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:220px!important;margin:0!important}
+#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:hidden!important;padding-bottom:24px!important}
+#overviewPremium .ov-trend{height:246px!important;min-height:246px!important;overflow:hidden!important;display:block!important;margin:2px 0 0!important;position:relative!important}
+#overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:246px!important;margin:0!important;overflow:visible!important}
 #overviewPremium .ov-method-note{display:none!important}
-#overviewPremium .ov-panel>.ov-method-note + .ov-link,#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;float:none!important;inset:auto!important;margin:12px 0 0!important;transform:none!important}
+#overviewPremium .ov-panel>.ov-method-note + .ov-link,#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;float:none!important;inset:auto!important;margin:16px 0 0!important;transform:none!important}
 #overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
-@media(max-width:900px){#overviewPremium .ov-trend{height:205px!important;min-height:205px!important}#overviewPremium .ov-trend>svg{height:205px!important}}
+#overviewPremium .ov-daily-point{vector-effect:non-scaling-stroke!important}
+#overviewPremium .ov-date-label{font-size:9px!important;dominant-baseline:auto!important}
+@media(max-width:900px){#overviewPremium .ov-trend{height:228px!important;min-height:228px!important}#overviewPremium .ov-trend>svg{height:228px!important}#overviewPremium .ov-row-main>.ov-panel:first-child{padding-bottom:22px!important}}
+@media(max-width:640px){#overviewPremium .ov-trend{height:216px!important;min-height:216px!important}#overviewPremium .ov-trend>svg{height:216px!important}#overviewPremium .ov-panel>.ov-trend + .ov-link{margin-top:18px!important}}
