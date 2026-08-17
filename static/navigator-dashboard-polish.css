@@ -1,0 +1,263 @@
+/* BLIS Navigator dashboard polish — visual authority without widening the sidebar */
+:root{
+  --blis-ink:#101a2f;
+  --blis-muted:#66738b;
+  --blis-line:#e7ecf3;
+  --blis-panel:#ffffff;
+  --blis-bg:#f5f7fb;
+  --blis-blue:#1766e8;
+  --blis-blue-soft:#eaf2ff;
+  --blis-green:#2ea866;
+}
+
+/* Keep the existing sidebar width. Increase contrast, hierarchy and perceived weight only. */
+.side{
+  background:linear-gradient(180deg,#f9fbff 0%,#f3f6fb 100%)!important;
+  border-right:1px solid #dfe6f1!important;
+  box-shadow:12px 0 34px rgba(27,48,82,.055)!important;
+}
+.side .brand{
+  padding-top:24px!important;
+  padding-bottom:19px!important;
+  border-bottom:1px solid rgba(141,157,181,.18)!important;
+}
+.side .brandname{
+  font-size:26px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  letter-spacing:-1.15px!important;
+  color:#101a2f!important;
+}
+.side .brandsub{
+  margin-top:7px!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  letter-spacing:.115em!important;
+  text-transform:uppercase!important;
+  color:#6e7a90!important;
+  font-weight:700!important;
+}
+.side .clientbox{
+  margin-top:15px!important;
+  border:1px solid #dfe6f1!important;
+  background:#fff!important;
+  box-shadow:0 6px 18px rgba(25,45,75,.04)!important;
+}
+.side .clientmark{
+  box-shadow:0 0 0 4px rgba(23,102,232,.08)!important;
+}
+.side .clientnote{
+  color:#7b879b!important;
+  line-height:1.25!important;
+}
+.nav{
+  margin-top:13px!important;
+}
+.nav button{
+  position:relative!important;
+  min-height:42px!important;
+  margin:2px 8px!important;
+  border-radius:10px!important;
+  font-weight:650!important;
+  color:#526078!important;
+  transition:background .16s ease,color .16s ease,transform .16s ease!important;
+}
+.nav button:hover{
+  background:#edf3fd!important;
+  color:#203554!important;
+}
+.nav button.active{
+  color:#115ecf!important;
+  background:#eaf2ff!important;
+  box-shadow:inset 0 0 0 1px rgba(23,102,232,.08)!important;
+}
+.nav button.active:before{
+  content:"";
+  position:absolute;
+  left:-8px;
+  top:8px;
+  bottom:8px;
+  width:3px;
+  border-radius:0 4px 4px 0;
+  background:#1766e8;
+}
+.nav .navico{
+  width:23px!important;
+  text-align:center!important;
+  opacity:.9!important;
+}
+.sideuser{
+  border-top:1px solid rgba(141,157,181,.18)!important;
+}
+
+/* Main canvas */
+.main{
+  background:var(--blis-bg)!important;
+}
+.shell{
+  max-width:none!important;
+}
+.topbar{
+  background:rgba(255,255,255,.94)!important;
+  border-bottom:1px solid var(--blis-line)!important;
+  backdrop-filter:blur(12px);
+}
+.title h1{
+  color:var(--blis-ink)!important;
+  letter-spacing:-.035em!important;
+}
+.title p{
+  color:#6d798f!important;
+}
+.sync{
+  color:#68758b!important;
+}
+.page{
+  padding-bottom:42px!important;
+}
+
+/* Reference dashboard cards */
+.ref-card{
+  border:1px solid #e4eaf2!important;
+  box-shadow:0 8px 24px rgba(25,45,75,.045)!important;
+  border-radius:14px!important;
+  background:#fff!important;
+}
+.ref-card:hover{
+  border-color:#d8e1ed!important;
+}
+.ref-title{
+  margin-bottom:17px!important;
+}
+.ref-title h2{
+  letter-spacing:-.035em!important;
+  color:#111c31!important;
+}
+.ref-title p{
+  color:#6c788e!important;
+  max-width:880px!important;
+}
+.ref-head h3,
+.ref-eyebrow{
+  color:#24334c!important;
+}
+
+/* All index values share one baseline and fixed numeric width. */
+.ref-kpi{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-rows:auto 1fr auto auto!important;
+  align-content:stretch!important;
+}
+.ref-kpi-top{
+  min-height:34px!important;
+  display:flex!important;
+  align-items:center!important;
+}
+.ref-val{
+  min-height:56px!important;
+  display:flex!important;
+  align-items:baseline!important;
+  justify-content:flex-start!important;
+  gap:4px!important;
+  font-variant-numeric:tabular-nums lining-nums!important;
+  letter-spacing:-.055em!important;
+  white-space:nowrap!important;
+}
+.ref-val small{
+  flex:0 0 auto!important;
+  letter-spacing:0!important;
+  font-variant-numeric:tabular-nums!important;
+}
+.ref-spark{
+  min-height:42px!important;
+  display:flex!important;
+  align-items:flex-end!important;
+}
+.ref-foot{
+  min-height:28px!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  line-height:1.25!important;
+  color:#7d899d!important;
+}
+.ref-grid5>.ref-kpi .ref-val,
+.ref-grid4>.ref-kpi .ref-val{
+  width:100%!important;
+}
+
+/* Tables and lists */
+.ref-table{
+  width:100%!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+.ref-table th{
+  color:#657188!important;
+  font-weight:750!important;
+  background:#f8fafc!important;
+}
+.ref-table th,
+.ref-table td{
+  border-bottom:1px solid #edf1f6!important;
+  vertical-align:middle!important;
+}
+.ref-row{
+  border-bottom-color:#edf1f6!important;
+}
+.ref-row:last-child{
+  border-bottom:0!important;
+}
+.ref-badge{
+  white-space:nowrap!important;
+}
+.ref-link{
+  font-weight:700!important;
+}
+
+/* Stronger but restrained BLIS color cues */
+.ref-orb{
+  box-shadow:inset 0 0 0 1px rgba(20,40,70,.035)!important;
+}
+.ref-status-good{
+  color:#248d58!important;
+}
+.ref-callout{
+  border-left:3px solid #1766e8!important;
+  background:#f6f9ff!important;
+}
+
+/* Wide screens: stable metric geometry and less visual drift */
+@media (min-width:1180px){
+  .ref-grid5{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    align-items:stretch!important;
+  }
+  .ref-grid4{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    align-items:stretch!important;
+  }
+  .ref-grid5>.ref-card,
+  .ref-grid4>.ref-card{
+    height:100%!important;
+  }
+}
+
+/* Mobile/tablet: dashboard remains usable rather than squeezed. */
+@media (max-width:1100px){
+  .ref-grid5{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .ref-grid4{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .ref-main-row,.ref-wide-row,.ref-bottom-row,.ref-grid2{grid-template-columns:1fr!important;}
+}
+@media (max-width:760px){
+  .side{
+    box-shadow:0 10px 30px rgba(27,48,82,.08)!important;
+  }
+  .side .brandname{font-size:23px!important;}
+  .topbar{backdrop-filter:none;}
+  .ref-grid5,.ref-grid4{grid-template-columns:1fr!important;}
+  .ref-card{border-radius:12px!important;}
+  .ref-val{min-height:48px!important;}
+  .ref-table{min-width:680px!important;}
+  .ref-card:has(.ref-table){overflow-x:auto!important;}
+}
