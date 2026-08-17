@@ -10,6 +10,21 @@ func profileImageData(path string) string {
 	return "data:image/jpeg;base64," + strings.Join(strings.Fields(string(b)), "")
 }
 
+func replaceHomeClientGrid(html string, replacement string) string {
+	startMarker := `<div class="clientGrid">`
+	endMarker := `<div class="clientNote">`
+	start := strings.Index(html, startMarker)
+	if start < 0 {
+		return html
+	}
+	endRel := strings.Index(html[start:], endMarker)
+	if endRel < 0 {
+		return html
+	}
+	end := start + endRel
+	return html[:start] + replacement + html[end:]
+}
+
 func init() {
 	const clientVisualCSS = `<style id="blis-home-client-visuals">
 #clients .clientGrid{align-items:stretch}
@@ -31,15 +46,11 @@ func init() {
 	bolyarka := profileImageData("static/home-bolyarka.b64")
 	astor := profileImageData("static/home-astor.b64")
 
-	indexHTML = strings.Replace(indexHTML,
-		`<article class="clientCard c1"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></article>`,
-		`<article class="clientCard c1"><img class="clientCardImage" src="`+bolyarka+`" alt="Клиентски профил Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>`, 1)
+	grid := `<!-- home-client-profile-images-v3 --><div class="clientGrid">` +
+		`<article class="clientCard c1"><img class="clientCardImage" src="` + bolyarka + `" alt="Клиентски профил Болярка"><div class="clientCardContent"><h3>Bolyarka</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>` +
+		`<article class="clientCard c2"><img class="clientCardImage" src="` + aroma + `" alt="Клиентски профил Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>` +
+		`<article class="clientCard c3"><img class="clientCardImage" src="` + astor + `" alt="Клиентски профил Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>` +
+		`</div>`
 
-	indexHTML = strings.Replace(indexHTML,
-		`<article class="clientCard c2"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></article>`,
-		`<article class="clientCard c2"><img class="clientCardImage" src="`+aroma+`" alt="Клиентски профил Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>`, 1)
-
-	indexHTML = strings.Replace(indexHTML,
-		`<article class="clientCard c3"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></article>`,
-		`<article class="clientCard c3"><img class="clientCardImage" src="`+astor+`" alt="Клиентски профил Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>`, 1)
+	indexHTML = replaceHomeClientGrid(indexHTML, grid)
 }
