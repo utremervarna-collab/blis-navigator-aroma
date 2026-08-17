@@ -34,6 +34,12 @@
     bind(card);
   }
 
+  function removeDuplicateSignals(){
+    document.querySelectorAll('#overviewPremium .ov-row-main > .ov-card').forEach(card=>{
+      if((card.querySelector('h3')?.textContent||'').trim()==='Ключови сигнали')card.remove();
+    });
+  }
+
   const normKey=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/linkedin|линкд\s*ин/g,'linkedin').replace(/facebook|фейсбук/g,'facebook').replace(/instagram|инстаграм/g,'instagram').replace(/youtube|ютуб/g,'youtube').replace(/[^a-zа-я0-9]+/g,' ').trim();
   const topicKey=(title,text)=>{
     const n=normKey(`${title} ${text}`);
@@ -89,7 +95,7 @@
     bindSignalToggle(card);
   }
 
-  function enhance(){enhanceMethods();enhanceLeadingSignals()}
+  function enhance(){removeDuplicateSignals();enhanceMethods();enhanceLeadingSignals()}
   const mo=new MutationObserver(()=>requestAnimationFrame(enhance));
   function init(){const host=document.getElementById('overviewPremium');if(host)mo.observe(host,{childList:true,subtree:true});enhance();setInterval(enhance,1200)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
