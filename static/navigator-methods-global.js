@@ -1,4 +1,4 @@
-/* BLIS Navigator — global interactive calculation methods + seventh leading signal */
+/* BLIS Navigator — global interactive calculation methods + enriched leading signals */
 (function(){
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const methods=[
@@ -15,11 +15,9 @@
     const m=methods[i]||methods[0];
     return `<div class="blis-method-detail-icon">${m.icon}</div><div><small>МЕТОД ${String(i+1).padStart(2,'0')}</small><h4>${m.title}</h4><b>${m.lead}</b><p>${m.body}</p></div>`;
   }
-
   function moduleHTML(){
     return `<div class="blis-method-shell"><div class="blis-method-visual" aria-hidden="true"><div class="blis-method-orbit"><span></span><span></span><span></span><i>⌁</i></div><div class="blis-method-center"><small>BLIS</small><strong>7</strong><em>метода</em></div></div><div class="blis-method-nav">${methods.map((m,i)=>`<button type="button" class="blis-method-point ${i===0?'active':''}" data-blis-method="${i}"><span>${m.icon}</span><b>${i+1}. ${m.title}</b></button>`).join('')}</div><div class="blis-method-detail" id="blisMethodDetail">${detail(0)}</div></div>`;
   }
-
   function bind(card){
     card.querySelectorAll('[data-blis-method]').forEach(btn=>btn.addEventListener('click',()=>{
       const i=Number(btn.dataset.blisMethod)||0;
@@ -27,7 +25,6 @@
       const d=card.querySelector('#blisMethodDetail'); if(d)d.innerHTML=detail(i);
     }));
   }
-
   function enhanceMethods(){
     const cards=[...document.querySelectorAll('#overviewPremium .ov-card')];
     const card=cards.find(c=>/Метод на изчисление|Методи на изчисление/.test(c.querySelector('h3')?.textContent||''));
@@ -37,19 +34,32 @@
     bind(card);
   }
 
-  function enhanceSeventhSignal(){
+  function signalItems(){
+    const d=window.D||{};
+    const out=[];
+    const seen=new Set();
+    const add=(title,text,tag)=>{
+      title=String(title||'').trim(); if(!title||seen.has(title)||out.length>=7)return;
+      seen.add(title); out.push({title,text:String(text||'').trim(),tag});
+    };
+    (Array.isArray(d.signals)?d.signals:[]).forEach(x=>add(x.title||x.label,x.text||x.description||x.detail||'Промяна в наблюдаваната среда',x.priority||({positive:'Положителен',watch:'За наблюдение',negative:'Риск'}[x.level])||'Сигнал'));
+    (Array.isArray(d.metrics)?d.metrics:[]).forEach(x=>add(x.label,`Текущо измерване: ${x.value??'—'}`,'Измерване'));
+    (Array.isArray(d.indices)?d.indices:[]).forEach(x=>add(x.label||x.name,`Текуща стойност: ${x.value??'—'}/100${x.description?` · ${x.description}`:''}`,'Индекс'));
+    (Array.isArray(window.S)?window.S:[]).forEach(x=>add(x.label||x.name||x.key,x.method||'Активен публичен източник','Източник'));
+    return out.slice(0,7);
+  }
+  function enhanceLeadingSignals(){
     const box=document.querySelector('#overviewPremium .ov-leading-signals .ov-lead-grid');
-    if(!box||box.dataset.sevenReady==='1')return;
-    const arr=(window.D&&Array.isArray(D.signals))?D.signals:[];
-    if(arr.length<7){box.dataset.sevenReady='1';return;}
-    const x=arr[6];
-    const item=document.createElement('div'); item.className='ov-lead-item blis-seventh-signal';
-    item.innerHTML=`<span class="ov-lead-num">7</span><div class="ov-lead-copy"><b>${esc(x.title||x.label||'Наблюдаван сигнал')}</b><small>${esc(x.description||x.detail||'Промяна в наблюдаваната среда')}</small></div>${x.priority?`<span class="ov-lead-tag">${esc(x.priority)}</span>`:''}`;
-    box.appendChild(item); box.dataset.sevenReady='1';
+    if(!box)return;
+    const items=signalItems();
+    const signature=JSON.stringify(items.map(x=>[x.title,x.text,x.tag]));
+    if(box.dataset.signalSignature===signature)return;
+    box.dataset.signalSignature=signature;
+    box.innerHTML=items.map((x,i)=>`<div class="ov-lead-item"><span class="ov-lead-num">${i+1}</span><div class="ov-lead-copy"><b>${esc(x.title)}</b><small>${esc(x.text)}</small></div><span class="ov-lead-tag">${esc(x.tag)}</span></div>`).join('');
   }
 
-  function enhance(){enhanceMethods();enhanceSeventhSignal()}
+  function enhance(){enhanceMethods();enhanceLeadingSignals()}
   const mo=new MutationObserver(()=>requestAnimationFrame(enhance));
-  function init(){const host=document.getElementById('overviewPremium');if(host)mo.observe(host,{childList:true,subtree:true});enhance();setInterval(enhance,1600)}
+  function init(){const host=document.getElementById('overviewPremium');if(host)mo.observe(host,{childList:true,subtree:true});enhance();setInterval(enhance,1200)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
