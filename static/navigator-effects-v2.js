@@ -15,8 +15,8 @@
 
 (function(){
   function loadScript(src,next){var s=document.createElement('script');s.src=src;s.onload=function(){if(next)next()};document.head.appendChild(s)}
-  loadScript('/navigator-period-filter.js?v=20260817-3',function(){
-    loadScript('/navigator-period-overview.js?v=20260817-3',function(){
+  loadScript('/navigator-period-filter.js?v=20260817-4',function(){
+    loadScript('/navigator-period-overview.js?v=20260817-4',function(){
       loadScript('/navigator-period-runtime.js?v=20260817-3',function(){
         loadScript('/navigator-client-runtime-fix.js?v=20260817-1');
       });
