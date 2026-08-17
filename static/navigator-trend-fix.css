@@ -1,0 +1,6 @@
+/* BLIS Navigator — trend layout correction only; no redesign. */
+#overviewPremium .ov-trend{height:auto!important;min-height:0!important;overflow:visible!important;display:block!important}
+#overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:220px!important;margin:0!important}
+#overviewPremium .ov-method-note{position:static!important;display:block!important;margin:8px 0 0!important;padding:9px 12px!important;border:1px solid #e4eaf2!important;border-radius:9px!important;background:#f8fafc!important;color:#78879c!important;font-size:9.5px!important;line-height:1.35!important;box-sizing:border-box!important}
+#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;margin-top:13px!important;position:static!important}
+#overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:2.7!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
