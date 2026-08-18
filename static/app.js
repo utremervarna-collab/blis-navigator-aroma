@@ -5,7 +5,8 @@ var slug='aroma',D=null,S=[],Q={},A=[],H=[];
 
 function clamp(v){return Math.max(0,Math.min(100,Number(v)||0))}
 function idx(k){return (D?.indices||[]).find(x=>x.key===k)||null}
-function score(k){if(k==='blis'){let n=Number(D?.blis_index);return Number.isFinite(n)?n:null}let x=idx(k);return x&&Number.isFinite(Number(x.value))?Number(x.value):null}
+function currentScore(k){if(k==='blis'){let n=Number(D?.blis_index);return Number.isFinite(n)?n:null}let x=idx(k);return x&&Number.isFinite(Number(x.value))?Number(x.value):null}
+function score(k){try{if(window.BLISPeriod?.dailySeries){const a=BLISPeriod.dailySeries(k).map(x=>Number(x.value)).filter(Number.isFinite);if(a.length)return Math.round((a.reduce((s,v)=>s+v,0)/a.length)*10)/10}}catch{}return currentScore(k)}
 function val(v){if(v===null||v===undefined||v==='')return'—';if(typeof v==='number')return Number.isInteger(v)?String(v):v.toLocaleString('bg-BG',{maximumFractionDigits:1});return String(v)}
 function hist(k){return(window.BLISPeriod?.dailySeries?BLISPeriod.dailySeries(k).map(x=>x.value):(H||[]).map(s=>{let p=s?.payload||{};if(k==='blis')return Number(p.blis_index);let x=(p.indices||[]).find(i=>i.key===k);return x?Number(x.value):NaN}).filter(Number.isFinite))}
 function spark(a,color='#0f5fe9'){if(!a||a.length<2)return'<div class="scan">Тенденцията ще се появи след поне две сравними измервания.</div>';let w=180,h=44,min=Math.min(...a),max=Math.max(...a);if(min===max)max=min+1;let pts=a.map((v,i)=>[4+(w-8)*i/(a.length-1),4+(h-8)*(1-(v-min)/(max-min))]),d=pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');return`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="${color}" stroke-width="2.4"/></svg>`}
@@ -31,7 +32,7 @@ window.BLISPeriod={
  days:Number(localStorage.getItem('blis-period-days'))||30,
  allowed:[30,60,90],
  set(days){days=Number(days);if(!this.allowed.includes(days))days=30;this.days=days;localStorage.setItem('blis-period-days',String(days));this.paint();window.dispatchEvent(new CustomEvent('blis:periodchange',{detail:{days,slug}}));},
- paint(){document.querySelectorAll('[data-blis-period]').forEach(b=>b.classList.toggle('active',Number(b.dataset.blisPeriod)===this.days));const l=document.getElementById('periodLabel');if(l)l.textContent=`Последните ${this.days} дни`;},
+ paint(){document.querySelectorAll('[data-blis-period]').forEach(b=>b.classList.toggle('active',Number(b.dataset.blisPeriod)===this.days));const l=document.getElementById('periodLabel');if(l)l.textContent=`Последните ${this.days} дни`;const badge=document.querySelector('#overview .ref-main-row .ref-card .ref-badge');if(badge)badge.textContent=`Последните ${this.days} дни`;},
  snapshots(){const all=Array.isArray(H)?H:[],anchor=latestAnchor(all),cut=anchor-this.days*86400000;return all.filter(x=>{const d=itemTime(x);return d&&d.getTime()>=cut&&d.getTime()<=anchor}).sort((a,b)=>(itemTime(a)?.getTime()||0)-(itemTime(b)?.getTime()||0))},
  activity(){const all=Array.isArray(A)?A:[],anchor=latestAnchor(all),cut=anchor-this.days*86400000;const dated=all.filter(x=>itemTime(x));if(!dated.length)return all;return all.filter(x=>{const d=itemTime(x);return d&&d.getTime()>=cut&&d.getTime()<=anchor})},
  dailySeries(k){const byDay=new Map();this.snapshots().forEach(s=>{const d=itemTime(s),v=snapshotValue(s,k);if(!d||v==null)return;byDay.set(d.toISOString().slice(0,10),v)});return Array.from(byDay,([date,value])=>({date,value})).sort((a,b)=>a.date.localeCompare(b.date))}
