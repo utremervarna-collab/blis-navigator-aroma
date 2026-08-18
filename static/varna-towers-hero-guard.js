@@ -7,7 +7,7 @@
   function source(){
     if(data)return Promise.resolve(data);
     if(!loading){
-      loading=fetch('/varna-towers-profile-hero-header-v7.txt?v=20260818-vt-header7',{cache:'no-store'})
+      loading=fetch('/varna-towers-profile-hero-header-v7.js?v=20260818-vt-header8',{cache:'no-store'})
         .then(r=>{if(!r.ok)throw new Error('VT hero '+r.status);return r.text()})
         .then(t=>{data='data:image/jpeg;base64,'+t.trim();return data})
         .catch(()=>{loading=null;return''});
