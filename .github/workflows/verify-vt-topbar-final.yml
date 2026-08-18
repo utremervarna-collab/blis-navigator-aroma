@@ -1,56 +1,44 @@
-name: Verify Varna Towers Topbar Final
+name: Inspect Varna Towers Topbar Overlay
 on:
   pull_request:
     branches: [main]
 jobs:
-  verify:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Verify production topbar hero
+      - name: Inspect production topbar layers
         run: |
-          cat > verify.cjs <<'NODE'
+          cat > inspect.cjs <<'NODE'
           const { chromium } = require('playwright-core');
           (async()=>{
             const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
-            let last='';
-            for(let i=1;i<=30;i++){
-              const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
-              try{
-                await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});
-                await page.waitForTimeout(1800);
-                const state=await page.evaluate(async()=>{
-                  const top=document.querySelector('.topbar');
-                  const bg=document.querySelector('.topbar .client-photo-bg');
-                  const cs=top?getComputedStyle(top):null;
-                  const bcs=bg?getComputedStyle(bg):null;
-                  const html=await (await fetch('/dashboard.html?client=varna-towers',{cache:'no-store'})).text();
-                  return {
-                    client:document.body.dataset.client,
-                    topbg:cs?.backgroundImage||'',
-                    topsize:cs?.backgroundSize||'',
-                    toppos:cs?.backgroundPosition||'',
-                    toph:top?.getBoundingClientRect().height||0,
-                    bgdisplay:bcs?.display||'',
-                    cssKey:html.includes('navigator-real-ui.css?v=20260818-vtfinal1'),
-                    guardKey:html.includes('varna-towers-hero-guard.js?v=20260818-direct2')
-                  };
-                });
-                console.log('ATTEMPT',i,JSON.stringify(state));
-                const ok=state.client==='varna-towers'&&state.topbg.includes('varna-towers-profile-hero-header-v2.jpg')&&state.topsize.includes('cover')&&state.toph>=160&&state.bgdisplay==='none'&&state.cssKey&&state.guardKey;
-                if(!ok)throw new Error('topbar hero not live yet');
-                await page.locator('.topbar').screenshot({path:'varna-towers-topbar-final.png'});
-                await page.close();await browser.close();return;
-              }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<30)await new Promise(r=>setTimeout(r,10000));}
-            }
-            await browser.close();throw new Error(last||'verification failed');
+            const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
+            await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(1800);
+            const info=await page.evaluate(()=>{
+              const top=document.querySelector('.topbar');
+              const collect=el=>{
+                const cs=getComputedStyle(el),r=el.getBoundingClientRect();
+                return {tag:el.tagName,cls:el.className,id:el.id||'',display:cs.display,position:cs.position,z:cs.zIndex,opacity:cs.opacity,bg:cs.background,bgColor:cs.backgroundColor,bgImage:cs.backgroundImage,width:r.width,height:r.height,top:r.top,left:r.left,pointer:cs.pointerEvents};
+              };
+              return {
+                top:collect(top),
+                children:[...top.children].map(collect),
+                descendants:[...top.querySelectorAll('*')].map(collect).filter(x=>x.width>1200&&x.height>100),
+                bodyBg:getComputedStyle(document.body).background
+              };
+            });
+            console.log(JSON.stringify(info,null,2));
+            await page.locator('.topbar').screenshot({path:'varna-towers-layer-inspect.png'});
+            await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node verify.cjs
+          node inspect.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: varna-towers-topbar-final
-          path: varna-towers-topbar-final.png
+          name: varna-towers-layer-inspect
+          path: varna-towers-layer-inspect.png
