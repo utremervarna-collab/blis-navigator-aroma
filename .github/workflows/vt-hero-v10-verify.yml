@@ -8,9 +8,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Print hero diagnostics
+      - name: Build diagnostics report
         run: |
-          python3 - <<'PY'
+          python3 - <<'PY' > vt-v10-report.txt
           import base64, hashlib
           parts=[open(f'static/varna-towers-hero-v10-{n}.js').read().strip() for n in range(1,10)]
           lens=[len(x) for x in parts]
@@ -24,3 +24,8 @@ jobs:
           except Exception as e:
               print('DECODE_ERROR='+repr(e))
           PY
+          cat vt-v10-report.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vt-v10-report
+          path: vt-v10-report.txt
