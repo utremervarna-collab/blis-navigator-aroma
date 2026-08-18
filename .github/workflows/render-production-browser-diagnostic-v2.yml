@@ -1,0 +1,79 @@
+name: Render Production Browser Diagnostic V2
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  inspect-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Inspect live Bolyarka header
+        run: |
+          cat > render-diag-v2.cjs <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1440,height:1000}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
+            await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=bolyarka&diag='+Date.now(),{waitUntil:'networkidle',timeout:120000});
+            await page.waitForTimeout(3000);
+            const result=await page.evaluate(()=>{
+              const top=document.querySelector('.topbar');
+              const hard=document.querySelector('.bolyarka-hard-hero');
+              const bg=document.querySelector('.client-photo-bg');
+              const veil=document.querySelector('.client-photo-veil');
+              const cs=top?getComputedStyle(top):null;
+              return {
+                href:location.href,
+                title:document.title,
+                bodyClient:document.body.dataset.client||null,
+                heading:document.querySelector('.topbar .title h1')?.textContent||null,
+                cssHref:[...document.styleSheets].map(x=>x.href).filter(Boolean).find(x=>x.includes('navigator-real-ui.css'))||null,
+                topBackgroundImage:cs?.backgroundImage||null,
+                topBackgroundColor:cs?.backgroundColor||null,
+                topWidth:top?.getBoundingClientRect().width||0,
+                topHeight:top?.getBoundingClientRect().height||0,
+                hardHeroExists:!!hard,
+                hardHeroDisplay:hard?getComputedStyle(hard).display:null,
+                hardHeroOpacity:hard?getComputedStyle(hard).opacity:null,
+                hardHeroSrc:hard?.getAttribute('src')||null,
+                hardHeroNaturalWidth:hard?.naturalWidth||0,
+                hardHeroNaturalHeight:hard?.naturalHeight||0,
+                legacyBgExists:!!bg,
+                legacyBgImage:bg?getComputedStyle(bg).backgroundImage:null,
+                legacyBgOpacity:bg?getComputedStyle(bg).opacity:null,
+                veilExists:!!veil,
+                veilBackground:veil?getComputedStyle(veil).backgroundImage:null,
+                veilZ:veil?getComputedStyle(veil).zIndex:null,
+                titleZ:document.querySelector('.topbar .title')?getComputedStyle(document.querySelector('.topbar .title')).zIndex:null
+              };
+            });
+            result.errors=errors;
+            console.log(JSON.stringify(result,null,2));
+            fs.writeFileSync('render-result-v2.json',JSON.stringify(result,null,2));
+            await page.locator('.topbar').screenshot({path:'bolyarka-header-v2.png'});
+            await page.screenshot({path:'bolyarka-dashboard-v2.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node render-diag-v2.cjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-browser-evidence-v2
+          path: |
+            render-result-v2.json
+            bolyarka-header-v2.png
+            bolyarka-dashboard-v2.png
+          if-no-files-found: ignore
