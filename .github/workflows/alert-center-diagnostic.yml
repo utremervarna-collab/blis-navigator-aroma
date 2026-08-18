@@ -3,17 +3,52 @@ on:
   pull_request:
     branches: [main]
 jobs:
-  inspect-production:
+  verify-production:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Install browser driver
         run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Inspect current signal and source payloads
+      - name: Verify real and synthetic warning workflow
         run: |
-          cat > inspect.cjs <<'NODE'
+          cat > verify.cjs <<'NODE'
           const { chromium }=require('playwright-core');
-          (async()=>{const b=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});const p=await b.newPage();await p.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForTimeout(3500);const x=await p.evaluate(()=>({signals:(typeof D!=='undefined'&&D&&Array.isArray(D.signals))?D.signals:[],sources:(typeof S!=='undefined'&&Array.isArray(S))?S.slice(0,12):[]}));console.log('SIGNALS',JSON.stringify(x.signals));console.log('SOURCES',JSON.stringify(x.sources));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
+          const target='https://blis-navigator-aroma.onrender.com/dashboard.html?client=aroma';
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            let last='';
+            for(let attempt=1;attempt<=10;attempt++){
+              const page=await browser.newPage({viewport:{width:1440,height:1000}});
+              const errs=[];page.on('pageerror',e=>errs.push(e.message));
+              try{
+                await page.goto(target,{waitUntil:'domcontentloaded',timeout:30000});
+                await page.waitForTimeout(3200);
+                await page.locator('#nav button[data-page="live"]').first().click({force:true});
+                await page.waitForTimeout(1400);
+                const real=await page.evaluate(()=>({count:document.querySelector('#live .lm-kpi[data-lm-kpi="warnings"] strong')?.textContent.trim(),alerts:window.BLISAlertCenter?.alerts?.().map(x=>({title:x.title,priority:x.priority,route:x.route}))||[],activity:!!document.querySelector('.lm-live-card .lm-live-stage'),geo:!!document.querySelector('.lm-geo-card .lm-map-real')}));
+                console.log('REAL',JSON.stringify(real));
+                if(!real.activity||!real.geo)throw new Error('Confirmed Live visuals missing');
+                if(real.count!=='0'||real.alerts.length!==0)throw new Error('Positive informational signals are still counted as warnings');
+                await page.locator('#live .lm-kpi[data-lm-kpi="warnings"]').click();await page.waitForTimeout(150);
+                const empty=await page.locator('#lmKpiDetail').textContent();
+                if(!empty.includes('Няма активни предупреждения'))throw new Error('Zero-warning state missing');
+                await page.evaluate(()=>{D.signals.push({level:'watch',title:'Ръст на негативните отзиви',text:'Негативните отзиви са над обичайното ниво за периода.',source:'Google Reviews',change:'+38%'});window.dispatchEvent(new CustomEvent('blis:periodchange',{detail:{days:window.BLISPeriod.days}}));});
+                await page.waitForTimeout(250);
+                await page.locator('#live .lm-kpi[data-lm-kpi="warnings"]').click();await page.waitForTimeout(120);
+                const synthetic=await page.evaluate(()=>({count:document.querySelector('#live .lm-kpi[data-lm-kpi="warnings"] strong')?.textContent.trim(),rows:[...document.querySelectorAll('#lmKpiDetail .lm-alert-item')].map(x=>({priority:x.querySelector('.lm-alert-priority')?.textContent.trim(),title:x.querySelector('.lm-alert-copy b')?.textContent.trim(),action:x.querySelector('.lm-alert-action')?.textContent.trim()})),alerts:window.BLISAlertCenter.alerts().map(x=>({title:x.title,route:x.route,priority:x.priority}))}));
+                console.log('SYNTHETIC',JSON.stringify(synthetic));
+                if(synthetic.count!=='1'||synthetic.rows.length!==1)throw new Error('Synthetic watch warning not surfaced');
+                if(synthetic.alerts[0]?.route!=='reputation')throw new Error('Reputation warning classified to wrong module');
+                await page.locator('#lmKpiDetail .lm-alert-action').click();await page.waitForTimeout(650);
+                const routed=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,focus:document.querySelector('.page.active .blis-alert-focus')?.textContent.trim(),route:window.BLIS_ACTIVE_ALERT?.route}));
+                console.log('ROUTED',JSON.stringify(routed));
+                if(routed.active!=='reputation'||routed.route!=='reputation'||!routed.focus)throw new Error('Actionable warning route/context failed');
+                if(errs.length)throw new Error('JS errors: '+errs.join(' | '));
+                await page.close();await browser.close();return;
+              }catch(e){last=e.message;console.log('RETRY',attempt,last);await page.close();if(attempt<10)await new Promise(r=>setTimeout(r,5000));}
+            }
+            await browser.close();throw new Error(last||'verification failed');
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node inspect.cjs
+          node verify.cjs
