@@ -31,7 +31,7 @@
     if(source)return source;
     if(loading)return loading;
     loading=(async()=>{
-      const r=await fetch(RAW+'?v=20260818-profile-800x200-7',{cache:'no-store',mode:'cors'});
+      const r=await fetch(RAW+'?v=20260818-profile-native-8',{cache:'no-store',mode:'cors'});
       if(!r.ok)throw new Error('Bolyarka profile hero HTTP '+r.status);
       const txt=(await r.text()).trim();
       if(!txt.startsWith('UklGR'))throw new Error('Bolyarka profile hero payload is not WebP');
@@ -62,13 +62,16 @@
     bg.style.setProperty('inset','0','important');
     bg.style.setProperty('width','100%','important');
     bg.style.setProperty('height','100%','important');
+    bg.style.setProperty('background-color','#efe7dc','important');
     bg.style.setProperty('background-image','url("'+src+'")','important');
-    bg.style.setProperty('background-size','cover','important');
+    bg.style.setProperty('background-size','800px 200px','important');
     bg.style.setProperty('background-position','center center','important');
     bg.style.setProperty('background-repeat','no-repeat','important');
     bg.style.setProperty('transform','none','important');
+    bg.style.setProperty('filter','none','important');
+    bg.style.setProperty('image-rendering','auto','important');
     bg.style.setProperty('opacity','1','important');
-    bg.dataset.bolyarkaHero='profile-800x200-7';
+    bg.dataset.bolyarkaHero='profile-native-8';
   }
 
   document.addEventListener('DOMContentLoaded',apply,{once:true});
