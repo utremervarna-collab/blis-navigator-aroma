@@ -12,8 +12,40 @@
   const oldDownload=typeof window.download==='function'?window.download:null;
   window.download=function(type,format){let isVT=false;try{isVT=typeof slug!=='undefined'&&slug==='varna-towers'}catch(e){}if(!isVT)return oldDownload?oldDownload(type,format):undefined;const data=window.__VARNA_TOWERS_DATA||{},d=data.dashboard||{},fmt=String(format||'json').toLowerCase();let body='',mime='application/json;charset=utf-8',ext='json';if(fmt==='csv'){mime='text/csv;charset=utf-8';ext='csv';if(type==='competitive'||type==='benchmark'){body='Марка,Индекс,Рейтинг,Отзиви\n'+(d.competitors||[]).map(x=>`"${x.name}",${x.score},${x.rating},${x.ratings}`).join('\n')}else{body='Показател,Стойност\n'+(d.metrics||[]).map(x=>`"${x.label}","${x.value}"`).join('\n')}}else if(fmt==='html'||fmt==='pdf'){mime='text/html;charset=utf-8';ext='html';body=`<!doctype html><meta charset="utf-8"><title>BLIS – Varna Towers</title><style>body{font:14px Arial;max-width:900px;margin:40px;color:#123}h1{color:#173a55}.m{padding:10px 0;border-bottom:1px solid #ddd}</style><h1>BLIS анализ – Varna Towers</h1><p>Начална публична аналитична база • 18.08.2026</p><h2>BLIS индекс: ${d.blis_index}</h2>${(d.metrics||[]).map(x=>`<div class="m"><b>${x.label}</b> — ${x.value}</div>`).join('')}<h2>Конкуренти</h2>${(d.competitors||[]).map(x=>`<div class="m"><b>${x.name}</b> — ${x.score}</div>`).join('')}<p>При нужда от PDF използвайте Print → Save as PDF.</p>`}else body=JSON.stringify(d,null,2);const b=new Blob([body],{type:mime}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=`varna-towers_${type||'summary'}_2026-08-18.${ext}`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)};
   function isVT(){try{return (typeof slug!=='undefined'&&slug==='varna-towers')||document.body.dataset.client==='varna-towers'}catch(e){return document.body.dataset.client==='varna-towers'}}
-  function applyHero(){if(!isVT())return;const bg=document.querySelector('.topbar .client-photo-bg');if(!bg)return;bg.style.backgroundImage="url('/varna-towers-profile-hero.jpg?v=20260818-vt-hero1')";bg.style.backgroundPosition='center center';bg.style.backgroundSize='cover';bg.style.opacity='1';}
-  function refreshHero(){requestAnimationFrame(()=>{applyHero();setTimeout(applyHero,180)})}
+  let heroData='';
+  let heroPromise=null;
+  function loadHero(){
+    if(heroData)return Promise.resolve(heroData);
+    if(!heroPromise){
+      heroPromise=fetch('/varna-towers-profile-hero-header-v7.txt?v=20260818-vt-header7',{cache:'no-store'})
+        .then(r=>{if(!r.ok)throw new Error('Varna Towers hero '+r.status);return r.text()})
+        .then(t=>{heroData='data:image/jpeg;base64,'+t.trim();return heroData})
+        .catch(()=>{heroPromise=null;return''});
+    }
+    return heroPromise;
+  }
+  function applyHero(){
+    if(!isVT())return;
+    const bg=document.querySelector('.topbar .client-photo-bg');
+    if(!bg)return;
+    loadHero().then(src=>{
+      if(!src||!isVT())return;
+      bg.style.setProperty('background-image',`url("${src}")`,'important');
+      bg.style.setProperty('background-position','center center','important');
+      bg.style.setProperty('background-size','cover','important');
+      bg.style.setProperty('background-repeat','no-repeat','important');
+      bg.style.setProperty('opacity','1','important');
+      bg.style.setProperty('transform','none','important');
+    });
+  }
+  function refreshHero(){
+    requestAnimationFrame(()=>{
+      applyHero();
+      setTimeout(applyHero,120);
+      setTimeout(applyHero,420);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshHero,{once:true});else refreshHero();
   window.addEventListener('load',refreshHero,{once:true});
   window.addEventListener('blis:clientdata',refreshHero);
   document.addEventListener('click',e=>{if(e.target.closest('[data-client-key="varna-towers"]'))setTimeout(refreshHero,80)});
