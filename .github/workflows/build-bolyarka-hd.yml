@@ -1,0 +1,66 @@
+name: Build Bolyarka HD hero
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-bolyarka-hd.yml'
+      - 'static/hero-bolyarka-micro.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build sharp 1600x400 WebP
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          from PIL import Image, ImageFilter
+          from io import BytesIO
+
+          src = Path('static/hero-bolyarka-micro.txt').read_text().strip()
+          raw = base64.b64decode(src)
+          img = Image.open(BytesIO(raw)).convert('RGB')
+          print('source:', img.size)
+
+          # Fit to panoramic 4:1 without distortion: crop only if needed, then upscale.
+          target_ratio = 4.0
+          w, h = img.size
+          ratio = w / h
+          if ratio > target_ratio:
+              new_w = int(h * target_ratio)
+              left = (w - new_w) // 2
+              img = img.crop((left, 0, left + new_w, h))
+          elif ratio < target_ratio:
+              new_h = int(w / target_ratio)
+              top = max(0, (h - new_h) // 2)
+              img = img.crop((0, top, w, top + new_h))
+
+          img = img.resize((1600, 400), Image.Resampling.LANCZOS)
+          img = img.filter(ImageFilter.UnsharpMask(radius=1.15, percent=125, threshold=2))
+          img.save('static/hero-bolyarka-hd.webp', 'WEBP', quality=94, method=6)
+          print('output:', Image.open('static/hero-bolyarka-hd.webp').size)
+          PY
+      - name: Commit generated hero
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/hero-bolyarka-hd.webp
+          if git diff --cached --quiet; then
+            echo 'No hero change'
+          else
+            git commit -m 'Generate sharp 1600x400 Bolyarka profile hero'
+            git push origin main
+          fi
