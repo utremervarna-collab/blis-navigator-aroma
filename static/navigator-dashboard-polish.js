@@ -32,7 +32,8 @@
       const empty=!core || core==='—' || core==='–' || core==='-';
       el.dataset.empty=empty?'true':'false';
       if(empty){
-        el.innerHTML='<span>—</span>';
+        const normalized='<span>—</span>';
+        if(el.innerHTML!==normalized) el.innerHTML=normalized;
         const card=el.closest('.ref-kpi');
         if(card && !card.querySelector('.ref-metric-note')){
           const note=document.createElement('div');
@@ -49,8 +50,10 @@
     if(!brand) return;
     const name=brand.querySelector('.brandname');
     const sub=brand.querySelector('.brandsub');
-    if(name) name.innerHTML='BLIS<sup>™</sup><span class="navigator-word">NAVIGATOR 2.0</span>';
-    if(sub) sub.textContent='Brand Lab Intelligence System';
+    const wantedName='BLIS<sup>™</sup><span class="navigator-word">NAVIGATOR 2.0</span>';
+    const wantedSub='Brand Lab Intelligence System';
+    if(name && name.innerHTML!==wantedName) name.innerHTML=wantedName;
+    if(sub && sub.textContent!==wantedSub) sub.textContent=wantedSub;
   }
 
   function markActivePage(){
