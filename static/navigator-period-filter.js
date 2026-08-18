@@ -1,9 +1,9 @@
-/* BLIS Navigator — real 7/30/90 day period filtering with daily aggregation */
+/* BLIS Navigator — real 30/60/90 day period filtering with daily aggregation */
 (function(){
-  const VALID=[7,30,90],DAY=86400000;
+  const VALID=[30,60,90],DAY=86400000;
   let days=Number(localStorage.getItem('blis_period_days'))||30;if(!VALID.includes(days))days=30;
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
-  const timeOf=x=>{const t=x?.created_at||x?.observed_at||x?.time||x?.timestamp;const d=t?new Date(t):null;return d&&Number.isFinite(d.getTime())?d.getTime():null};
+  const timeOf=x=>{const t=x?.created_at||x?.observed_at||x?.time||x?.timestamp||x?.datetime||x?.date||x?.updated_at||x?.updatedAt;const d=t?new Date(t):null;return d&&Number.isFinite(d.getTime())?d.getTime():null};
   const allSnapshots=()=>{try{return Array.isArray(H)?H:[]}catch(e){return[]}};
   const allActivities=()=>{try{return Array.isArray(A)?A:[]}catch(e){return[]}};
   const dashboardData=()=>{try{return D||null}catch(e){return null}};
@@ -18,7 +18,7 @@
   const dailySeries=k=>snapshots().map(s=>({date:dayKey(s),time:timeOf(s),value:snapshotValue(s,k)})).filter(x=>x.value!=null);
   const history=k=>dailySeries(k).map(x=>x.value);
   const average=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
-  const coverage=()=>{const c=coverageDays(),needed=days===7?Math.min(3,days*.4):days*.7;return{days:c,selected:days,enough:c>=needed,snapshots:snapshots().length,total:dailyAll().length}};
+  const coverage=()=>{const c=coverageDays(),needed=days*.7;return{days:c,selected:days,enough:c>=needed,snapshots:snapshots().length,total:dailyAll().length}};
   const scoreFor=k=>{const c=coverage(),a=history(k);if(!c.enough||a.length<2)return null;return Math.round(average(a)*10)/10};
   const currentScore=k=>{const d=dashboardData();if(k==='blis')return num(d?.blis_index);const x=(d?.indices||[]).find(i=>i.key===k);return x?num(x.value):null};
   const activities=()=>allActivities().filter(inPeriod);
