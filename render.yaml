@@ -3,10 +3,10 @@ services:
     name: blis-navigator-aroma
     runtime: go
     plan: free
-    buildCommand: sed -i 's|path := strings.Trim(r.URL.Path, "/")|path := strings.Trim(r.URL.Path, "/"); if path == "dashboard" || path == "navigator" { path = "dashboard.html" }|' main.go && go build -tags netgo -ldflags '-s -w' -o app .
+    buildCommand: go build -tags netgo -ldflags '-s -w' -o app .
     startCommand: ./app
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260818-dashboard-alias"
+        value: "20260818-1014-legacy-endpoint-final"
