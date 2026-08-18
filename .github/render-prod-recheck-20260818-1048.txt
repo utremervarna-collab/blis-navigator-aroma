@@ -1,0 +1,2 @@
+Recheck Render production after validated Bolyarka WebP hero fix.
+Expected main commits: e2f38ec and 01fd487.
