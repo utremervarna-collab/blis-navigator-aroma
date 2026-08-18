@@ -1,0 +1,38 @@
+name: Varna Towers Hero Guard
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Start Navigator
+        run: |
+          PORT=10000 go run . >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:10000/dashboard.html >/dev/null && exit 0; sleep 1; done
+          cat /tmp/blis.log; exit 1
+      - name: Install browser driver
+        run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify Varna Towers has no Aroma hero
+        run: |
+          cat > hero-check.cjs <<'NODE'
+          const { chromium }=require('playwright-core');
+          (async()=>{
+            const b=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const p=await b.newPage({viewport:{width:1500,height:900}});
+            await p.goto('http://127.0.0.1:10000/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded'});
+            await p.waitForTimeout(3000);
+            const s=await p.evaluate(()=>{const bg=document.querySelector('.client-photo-bg');return{client:document.body.dataset.client,name:document.querySelector('.client-brand-name')?.textContent,bg:bg?.style.backgroundImage||'',opacity:bg?.style.opacity||'',pending:bg?.dataset.varnaTowersHero||''}});
+            console.log(JSON.stringify(s));
+            if(s.client!=='varna-towers'||s.name!=='Varna Towers')throw new Error('Wrong client');
+            if(s.bg&&s.bg!=='none')throw new Error('Inherited hero still active: '+s.bg.slice(0,100));
+            if(s.pending!=='pending')throw new Error('Varna Towers hero guard not active');
+            await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node hero-check.cjs
