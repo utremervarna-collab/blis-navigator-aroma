@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const RAW='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-bolyarka-micro.txt';
+  const RAW='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/home-bolyarka.b64';
   let source='';
   let loading=null;
 
@@ -31,20 +31,20 @@
     if(source)return source;
     if(loading)return loading;
     loading=(async()=>{
-      const r=await fetch(RAW+'?v=20260818-valid-webp4',{cache:'no-store',mode:'cors'});
-      if(!r.ok)throw new Error('Bolyarka hero HTTP '+r.status);
+      const r=await fetch(RAW+'?v=20260818-home-beer5',{cache:'no-store',mode:'cors'});
+      if(!r.ok)throw new Error('Bolyarka beer hero HTTP '+r.status);
       const txt=(await r.text()).trim();
-      if(!txt.startsWith('UklGR'))throw new Error('Bolyarka hero payload is not WebP');
+      if(!txt.startsWith('UklGR'))throw new Error('Bolyarka beer hero payload is not WebP');
       const src='data:image/webp;base64,'+txt;
       const probe=new Image();
       probe.src=src;
       if(probe.decode)await probe.decode();
       else await new Promise((ok,bad)=>{probe.onload=ok;probe.onerror=bad;});
-      if(!probe.naturalWidth||!probe.naturalHeight)throw new Error('Bolyarka hero decoded with zero dimensions');
+      if(!probe.naturalWidth||!probe.naturalHeight)throw new Error('Bolyarka beer hero decoded with zero dimensions');
       source=src;
       return src;
     })().catch(e=>{
-      console.error('BLIS Bolyarka hero validation failed',e);
+      console.error('BLIS Bolyarka beer hero validation failed',e);
       loading=null;
       return '';
     });
@@ -59,10 +59,10 @@
     if(!src||!isBolyarka())return;
     bg.style.setProperty('background-image','url("'+src+'")','important');
     bg.style.setProperty('background-size','cover','important');
-    bg.style.setProperty('background-position','34% 50%','important');
+    bg.style.setProperty('background-position','center 52%','important');
     bg.style.setProperty('background-repeat','no-repeat','important');
     bg.style.setProperty('opacity','1','important');
-    bg.dataset.bolyarkaHero='valid-webp4';
+    bg.dataset.bolyarkaHero='home-beer5';
   }
 
   const observer=new MutationObserver(()=>{ if(isBolyarka())apply(); });
