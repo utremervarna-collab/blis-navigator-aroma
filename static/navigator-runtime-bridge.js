@@ -3,7 +3,7 @@
    from writing into the current Navigator DOM. */
 (function(){
   'use strict';
-  const clients=new Set(['aroma','bolyarka','astor-garden']);
+  const clients=new Set(['aroma','bolyarka','astor-garden','varna-towers']);
   const initialClient=()=>{
     try{
       const q=new URLSearchParams(location.search).get('client');
