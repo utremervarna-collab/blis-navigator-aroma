@@ -1,68 +1,57 @@
 (function(){
-  const asset='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-bolyarka-micro.txt';
-  let data='';
-  let loading=null;
-
-  async function load(){
-    if(data)return data;
-    if(loading)return loading;
-    loading=fetch(asset+'?v=20260818-hero3',{cache:'no-store',mode:'cors'})
-      .then(r=>{if(!r.ok)throw new Error('Bolyarka hero '+r.status);return r.text()})
-      .then(txt=>{
-        txt=(txt||'').trim();
-        if(!txt.startsWith('UklGR'))throw new Error('Invalid Bolyarka WebP payload');
-        data='data:image/webp;base64,'+txt;
-        return data;
-      })
-      .catch(e=>{console.warn('BLIS Bolyarka hero',e);loading=null;return ''});
-    return loading;
-  }
+  'use strict';
 
   function activeClient(){
-    const bodyKey=(document.body&&document.body.dataset&&document.body.dataset.client)||'';
-    if(bodyKey)return bodyKey;
-    try{return (typeof slug!=='undefined'&&slug)||''}catch(e){return ''}
+    return (document.body && document.body.dataset && document.body.dataset.client) || '';
   }
 
-  function ensureBackground(){
+  function ensureStyle(){
+    if(document.getElementById('bolyarkaHeroHardFixStyle')) return;
+    const s=document.createElement('style');
+    s.id='bolyarkaHeroHardFixStyle';
+    s.textContent=`
+      .topbar{position:relative!important;overflow:hidden!important;isolation:isolate!important;}
+      .topbar .bolyarka-hard-hero{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 54%!important;display:block!important;opacity:.48!important;z-index:0!important;pointer-events:none!important;}
+      .topbar .bolyarka-hard-hero-shade{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(248,246,241,.97) 0%,rgba(248,246,241,.84) 34%,rgba(248,246,241,.28) 66%,rgba(20,26,34,.08) 100%)!important;}
+      .topbar>.title,.topbar>.toptools{position:relative!important;z-index:3!important;}
+      body:not([data-client="bolyarka"]) .topbar .bolyarka-hard-hero,
+      body:not([data-client="bolyarka"]) .topbar .bolyarka-hard-hero-shade{display:none!important;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function apply(){
+    ensureStyle();
     const top=document.querySelector('.topbar');
-    if(!top)return null;
-    let bg=top.querySelector('.client-photo-bg');
-    if(!bg){
-      bg=document.createElement('div');
-      bg.className='client-photo-bg';
-      top.prepend(bg);
+    if(!top) return;
+
+    let img=top.querySelector('.bolyarka-hard-hero');
+    if(!img){
+      img=document.createElement('img');
+      img.className='bolyarka-hard-hero';
+      img.alt='';
+      img.setAttribute('aria-hidden','true');
+      img.src='/home-bolyarka.svg?v=20260818-header-hardfix1';
+      top.prepend(img);
     }
-    if(!top.querySelector('.client-photo-veil')){
-      const veil=document.createElement('div');
-      veil.className='client-photo-veil';
-      bg.after(veil);
+
+    let shade=top.querySelector('.bolyarka-hard-hero-shade');
+    if(!shade){
+      shade=document.createElement('div');
+      shade.className='bolyarka-hard-hero-shade';
+      img.after(shade);
     }
-    return bg;
+
+    const on=activeClient()==='bolyarka';
+    img.style.display=on?'block':'none';
+    shade.style.display=on?'block':'none';
   }
 
-  async function apply(){
-    if(activeClient()!=='bolyarka')return;
-    const bg=ensureBackground();
-    if(!bg)return;
-    const src=await load();
-    if(!src||activeClient()!=='bolyarka')return;
-    bg.style.backgroundImage='url("'+src+'")';
-    bg.style.backgroundSize='cover';
-    bg.style.backgroundPosition='center';
-    bg.style.backgroundRepeat='no-repeat';
-    bg.style.opacity='1';
-  }
-
-  const bodyObserver=new MutationObserver(()=>setTimeout(apply,0));
-  bodyObserver.observe(document.body,{attributes:true,attributeFilter:['data-client']});
-
-  document.addEventListener('change',e=>{
-    if(e.target&&e.target.id==='clientSel')setTimeout(apply,0);
-  },true);
-  document.addEventListener('click',()=>setTimeout(apply,120),true);
-  window.addEventListener('load',apply);
-  setTimeout(apply,100);
-  setTimeout(apply,500);
-  setTimeout(apply,1200);
+  const observer=new MutationObserver(apply);
+  observer.observe(document.body,{attributes:true,attributeFilter:['data-client']});
+  window.addEventListener('load',apply,{once:true});
+  document.addEventListener('DOMContentLoaded',apply,{once:true});
+  document.addEventListener('click',()=>setTimeout(apply,50),true);
+  setTimeout(apply,0);
+  setTimeout(apply,250);
 })();
