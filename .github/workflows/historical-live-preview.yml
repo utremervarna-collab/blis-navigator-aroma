@@ -1,0 +1,48 @@
+name: Historical Live Preview
+on:
+  push:
+    branches: [preview-live-20260817-2205]
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Start Navigator
+        run: |
+          PORT=8080 go run . > /tmp/blis.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8080/dashboard.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/blis.log
+          exit 1
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Capture historical Live Monitoring
+        run: |
+          cat > /tmp/shot.js <<'EOF'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
+            await page.goto('http://127.0.0.1:8080/dashboard.html',{waitUntil:'networkidle'});
+            await page.waitForTimeout(1000);
+            const liveBtn=page.getByText('Live Monitoring',{exact:true}).first();
+            if(await liveBtn.count()) await liveBtn.click();
+            else await page.evaluate(()=>{ if(window.refGo) window.refGo('live'); else if(window.go) window.go('live'); });
+            await page.waitForTimeout(2500);
+            await page.screenshot({path:'historical-live-2205.png',fullPage:true});
+            await browser.close();
+          })();
+          EOF
+          node /tmp/shot.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: historical-live-2205
+          path: historical-live-2205.png
