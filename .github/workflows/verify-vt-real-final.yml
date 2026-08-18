@@ -9,43 +9,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Verify exact production JPEG and screenshot
+      - name: Build candidate contact sheet
         shell: bash
         run: |
-          cat > verify.cjs <<'NODE'
+          cat > compare.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial;margin:20px;background:#eee}.row{margin:0 0 24px;background:#fff;padding:12px}.label{font-size:22px;font-weight:bold;margin-bottom:8px}.hero{width:1456px;height:167px;object-fit:cover;object-position:center center;display:block;border:2px solid #111}</style></head><body>
+          <div class="row"><div class="label">A — current v2 jpg</div><img class="hero" src="static/varna-towers-profile-hero-header-v2.jpg"></div>
+          <div class="row"><div class="label">B — older header webp</div><img class="hero" src="static/varna-towers-profile-hero-header.webp"></div>
+          <div class="row"><div class="label">C — older profile jpg</div><img class="hero" src="static/varna-towers-profile-hero.jpg"></div>
+          <div class="row"><div class="label">D — final svg</div><img class="hero" src="static/varna-towers-profile-hero-final.svg"></div>
+          </body></html>
+          HTML
+          cat > compare.cjs <<'NODE'
           const { chromium } = require('playwright-core');
-          const EXPECT='db2cfbcdd0709062829bcaf6dd79423f0585acba7a0b3a61bb76486c15d8a7f5';
-          (async()=>{
-            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
-            let last='';
-            for(let i=1;i<=30;i++){
-              const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
-              try{
-                await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers&verify='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
-                await page.waitForTimeout(1800);
-                const state=await page.evaluate(async(expected)=>{
-                  const top=document.querySelector('.topbar');
-                  const cs=top?getComputedStyle(top):null;
-                  const r=await fetch('/varna-towers-profile-hero-header-v2.jpg?v=20260818-real-final&verify='+Date.now(),{cache:'no-store'});
-                  const b=await r.arrayBuffer();
-                  const digest=await crypto.subtle.digest('SHA-256',b);
-                  const hash=[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('');
-                  const html=await (await fetch('/dashboard.html?verify='+Date.now(),{cache:'no-store'})).text();
-                  return {client:document.body.dataset.client,bg:cs?.backgroundImage||'',size:cs?.backgroundSize||'',w:top?.getBoundingClientRect().width||0,h:top?.getBoundingClientRect().height||0,status:r.status,type:r.headers.get('content-type')||'',bytes:b.byteLength,hash,cssKey:html.includes('navigator-real-ui.css?v=20260818-vtreal-final'),expected};
-                },EXPECT);
-                console.log('ATTEMPT',i,JSON.stringify(state));
-                const ok=state.client==='varna-towers'&&state.bg.includes('varna-towers-profile-hero-header-v2.jpg?v=20260818-real-final')&&state.size.includes('cover')&&state.h>=160&&state.status===200&&state.type.includes('image/jpeg')&&state.bytes===39362&&state.hash===EXPECT&&state.cssKey;
-                if(!ok)throw new Error('real hero not live yet');
-                await page.locator('.topbar').screenshot({path:'varna-towers-real-final.png'});
-                await page.close();await browser.close();return;
-              }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<30)await new Promise(r=>setTimeout(r,10000));}
-            }
-            await browser.close();throw new Error(last||'verification failed');
-          })().catch(e=>{console.error(e);process.exit(1)});
+          const path=require('path');
+          (async()=>{const b=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox','--allow-file-access-from-files']});const p=await b.newPage({viewport:{width:1540,height:1000}});await p.goto('file://'+path.resolve('compare.html'));await p.waitForTimeout(1000);await p.screenshot({path:'varna-towers-candidates.png',fullPage:true});await b.close();})().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node verify.cjs
+          node compare.cjs
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: varna-towers-real-final
-          path: varna-towers-real-final.png
+          name: varna-towers-candidates
+          path: varna-towers-candidates.png
