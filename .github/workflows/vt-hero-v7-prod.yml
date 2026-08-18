@@ -1,4 +1,4 @@
-name: Varna Towers Hero V9
+name: Varna Towers Hero V9 Exact
 on:
   pull_request:
     branches: [main]
@@ -8,11 +8,30 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Verify checked-out hero bytes
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib
+          parts=[]
+          for n in range(1,6):
+              s=open(f'static/varna-towers-hero-v9-{n}.js').read().strip()
+              parts.append(s)
+          print('LOCAL_LENGTHS', [len(x) for x in parts])
+          raw=''.join(parts)
+          data=base64.b64decode(raw, validate=True)
+          sha=hashlib.sha256(data).hexdigest()
+          print('LOCAL_TOTAL',len(raw),'BYTES',len(data),'SHA256',sha)
+          assert [len(x) for x in parts]==[7000,7000,7000,7000,4424]
+          assert len(raw)==32424
+          assert len(data)==24317
+          assert sha=='494a1a0b6f774b91336d99ec3b7e50ffd5fa225a6979b67dd8632572ede2aedb'
+          PY
       - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Verify production hero v9
+      - name: Verify production hero
         run: |
           cat > check.cjs <<'NODE'
           const { chromium }=require('playwright-core');
+          const crypto=require('crypto');
           (async()=>{
             const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
             let last='';
@@ -24,37 +43,18 @@ jobs:
                 const state=await page.evaluate(async()=>{
                   const el=document.querySelector('.topbar .client-photo-bg');
                   const cs=el?getComputedStyle(el):null,r=el?el.getBoundingClientRect():null;
-                  async function text(u){const q=await fetch(u,{cache:'no-store'});const t=await q.text();return {ok:q.ok,status:q.status,text:t}}
                   const parts=[];
-                  for(let n=1;n<=5;n++)parts.push(await text(`/varna-towers-hero-v9-${n}.js?v=20260818-vt9`));
-                  const raw=parts.map(x=>x.text.trim()).join('');
-                  const guard=await text('/varna-towers-hero-guard.js?v=20260818-vt8');
-                  const ui=await text('/varna-towers-ui.js?v=20260818-vt8');
-                  let image={ok:false,width:0,height:0,error:''};
-                  if(raw.length){
-                    try{
-                      const im=new Image();
-                      im.src='data:image/jpeg;base64,'+raw;
-                      await im.decode();
-                      image={ok:true,width:im.naturalWidth,height:im.naturalHeight,error:''};
-                    }catch(e){image.error=e.message}
-                  }
-                  return {
-                    client:document.body.dataset.client,
-                    ready:el?.dataset.varnaTowersHero||'',
-                    bg:cs?.backgroundImage?.slice(0,120)||'',
-                    size:cs?.backgroundSize||'',pos:cs?.backgroundPosition||'',opacity:cs?.opacity||'',
-                    w:r?.width||0,h:r?.height||0,
-                    partOK:parts.map(x=>x.ok),partLens:parts.map(x=>x.text.trim().length),rawLen:raw.length,
-                    guardV9:guard.ok&&guard.text.includes('ready-v9'),
-                    uiClean:ui.ok&&!ui.text.includes('profile-hero-header-v7.js'),
-                    image
-                  };
+                  for(let n=1;n<=5;n++){const q=await fetch(`/varna-towers-hero-v9-${n}.js?v=20260818-vt9`,{cache:'no-store'});parts.push({ok:q.ok,text:(await q.text()).trim()})}
+                  const raw=parts.map(x=>x.text).join('');
+                  let image={ok:false,width:0,height:0};
+                  try{const im=new Image();im.src='data:image/jpeg;base64,'+raw;await im.decode();image={ok:true,width:im.naturalWidth,height:im.naturalHeight}}catch(e){}
+                  return {client:document.body.dataset.client,ready:el?.dataset.varnaTowersHero||'',bg:cs?.backgroundImage?.slice(0,80)||'',opacity:cs?.opacity||'',w:r?.width||0,h:r?.height||0,lens:parts.map(x=>x.text.length),allOK:parts.every(x=>x.ok),raw,image};
                 });
-                console.log('ATTEMPT',i,JSON.stringify(state));
-                const ok=state.client==='varna-towers'&&state.partOK.every(Boolean)&&JSON.stringify(state.partLens)==='[7000,7000,7000,7000,4424]'&&state.rawLen===32424&&state.guardV9&&state.uiClean&&state.ready==='ready-v9'&&state.bg.includes('data:image/jpeg;base64')&&state.opacity==='1'&&state.image.ok&&state.image.width===1228&&state.image.height===169&&state.w>1200&&state.h>150;
-                if(!ok)throw new Error('V9 hero not ready');
-                await page.locator('.topbar').screenshot({path:'varna-towers-hero-v9.png'});
+                const sha=crypto.createHash('sha256').update(Buffer.from(state.raw,'base64')).digest('hex');
+                console.log('ATTEMPT',i,JSON.stringify({...state,raw:undefined,sha}));
+                const ok=state.client==='varna-towers'&&state.allOK&&JSON.stringify(state.lens)==='[7000,7000,7000,7000,4424]'&&state.raw.length===32424&&sha==='494a1a0b6f774b91336d99ec3b7e50ffd5fa225a6979b67dd8632572ede2aedb'&&state.ready==='ready-v9'&&state.bg.includes('data:image/jpeg;base64')&&state.opacity==='1'&&state.image.ok&&state.image.width===1228&&state.image.height===169&&state.w>1200&&state.h>150;
+                if(!ok)throw new Error('exact hero not deployed yet');
+                await page.locator('.topbar').screenshot({path:'varna-towers-hero-v9-exact.png'});
                 await page.close();await browser.close();return;
               }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<24)await new Promise(r=>setTimeout(r,10000));}
             }
@@ -65,5 +65,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: varna-towers-hero-v9
-          path: varna-towers-hero-v9.png
+          name: varna-towers-hero-v9-exact
+          path: varna-towers-hero-v9-exact.png
