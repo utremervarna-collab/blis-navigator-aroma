@@ -1,4 +1,4 @@
-name: Varna Towers Header5
+name: Varna Towers Header6
 on:
   pull_request:
     branches: [main]
@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install browser driver
         run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Capture production header
+      - name: Capture corrected production header
         run: |
           cat > check.cjs <<'NODE'
           const { chromium } = require('playwright-core');
@@ -26,12 +26,12 @@ jobs:
                   const el=document.querySelector('.topbar .client-photo-bg');
                   const cs=el?getComputedStyle(el):null;
                   const r=el?el.getBoundingClientRect():null;
-                  const resp=await fetch('/varna-towers-profile-hero-header.webp?v=20260818-vt-header5',{cache:'no-store'});
+                  const resp=await fetch('/varna-towers-profile-hero-header-v2.jpg?v=20260818-vt-header6',{cache:'no-store'});
                   return {exists:!!el,bg:cs?.backgroundImage||'',size:cs?.backgroundSize||'',width:r?.width||0,height:r?.height||0,ok:resp.ok,status:resp.status,bytes:(await resp.arrayBuffer()).byteLength,client:document.body.dataset.client};
                 });
                 console.log('STATE',JSON.stringify(state));
-                if(!(state.exists&&state.client==='varna-towers'&&state.bg.includes('vt-header5')&&state.ok&&state.width>1100&&state.height>150)) throw new Error('Header5 not deployed yet');
-                await page.screenshot({path:'varna-towers-header5.png',fullPage:false});
+                if(!(state.exists&&state.client==='varna-towers'&&state.bg.includes('varna-towers-profile-hero-header-v2.jpg')&&state.ok&&state.width>1100&&state.height>150)) throw new Error('Corrected JPEG header not deployed yet');
+                await page.screenshot({path:'varna-towers-header6.png',fullPage:false});
                 await page.close(); await browser.close(); return;
               }catch(e){last=e.message;console.log('RETRY',attempt,last);await page.close();if(attempt<10)await new Promise(r=>setTimeout(r,5000));}
             }
@@ -42,5 +42,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: varna-towers-header5
-          path: varna-towers-header5.png
+          name: varna-towers-header6
+          path: varna-towers-header6.png
