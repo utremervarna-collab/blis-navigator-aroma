@@ -1,0 +1,25 @@
+name: Verify VT Real Hero Once
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-vt-real-prod-once.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Wait for Render and capture
+        shell: bash
+        run: |
+          cat > check.cjs <<'NODE'
+          const {chromium}=require('playwright-core'); const crypto=require('crypto');
+          (async()=>{const expected='db2cfbcdd0709062829bcaf6dd79423f0585acba7a0b3a61bb76486c15d8a7f5';const b=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});let e='';for(let i=0;i<30;i++){const p=await b.newPage({viewport:{width:1680,height:720}});try{await p.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});await p.waitForTimeout(1500);const s=await p.evaluate(async()=>{const t=document.querySelector('.topbar'),c=getComputedStyle(t);const r=await fetch('/varna-towers-profile-hero-header-v2.jpg?v=20260818-real-final',{cache:'no-store'}),a=await r.arrayBuffer();return{bg:c.backgroundImage,h:t.getBoundingClientRect().height,bytes:Array.from(new Uint8Array(a)),len:a.byteLength,ok:r.ok}});const hash=crypto.createHash('sha256').update(Buffer.from(s.bytes)).digest('hex');console.log(i,s.len,hash,s.bg);if(s.ok&&s.len===39362&&hash===expected&&s.bg.includes('real-final')&&s.h>=160){await p.locator('.topbar').screenshot({path:'varna-towers-real-production.png'});await p.close();await b.close();return}e='not live';}catch(x){e=x.message}await p.close();await new Promise(r=>setTimeout(r,10000));}await b.close();throw new Error(e)})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node check.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vt-real-production
+          path: varna-towers-real-production.png
