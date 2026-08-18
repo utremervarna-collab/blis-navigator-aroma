@@ -25,10 +25,23 @@ html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial
 .toptools .iconbtn,.toptools .topavatar,.toptools .topuser,.toptools>span{display:none!important}
 
 body[data-client="aroma"] .client-photo-bg{background-size:cover!important;background-position:center 48%!important;transform:scale(1.005)!important}
-body[data-client="bolyarka"] .client-photo-bg{inset:0!important;width:100%!important;height:100%!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;transform:none!important;filter:none!important;opacity:1!important}
 body[data-client="astor-garden"] .client-photo-bg{background-size:cover!important;background-position:42% 52%!important;transform:scale(1)!important}
-body[data-client="bolyarka"] .topbar{background-image:none!important;background-color:#1b0d08!important}
-body[data-client="bolyarka"] .topbar .title h1{color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.55)!important}
+
+/* Bolyarka: one deterministic hero source only. */
+body[data-client="bolyarka"] .topbar{
+  background-image:
+    linear-gradient(90deg,rgba(7,5,4,.58) 0%,rgba(7,5,4,.34) 28%,rgba(7,5,4,.08) 58%,rgba(7,5,4,0) 100%),
+    url('/bolyarka-profile-hero-final.webp?v=20260818-final1')!important;
+  background-size:cover!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  background-color:#1b0d08!important
+}
+body[data-client="bolyarka"] .client-photo-bg,
+body[data-client="bolyarka"] .client-photo-veil,
+body[data-client="bolyarka"] .bolyarka-hard-hero,
+body[data-client="bolyarka"] .bolyarka-hard-hero-shade{display:none!important}
+body[data-client="bolyarka"] .topbar .title h1{color:#fff!important;text-shadow:0 2px 10px rgba(0,0,0,.62)!important}
 
 .ov-no-data{min-height:54px;display:flex;align-items:center;padding:12px 14px;border:1px dashed #dbe4ef;border-radius:9px;background:#f9fbfd;color:#8290a4;font-size:9px;line-height:1.4}
 .ov-kpi-foot{font-size:8px!important;color:#8a98aa!important}
