@@ -30,4 +30,7 @@ function download(type,format){location.href=`/api/clients/${slug}/generate?type
 function closeModal(){let m=$('modal');if(m)m.classList.remove('open')}
 
 async function initDataRuntime(){try{let qClient=new URLSearchParams(location.search).get('client');if(qClient)slug=qClient;else if(window.BLIS_INITIAL_CLIENT)slug=window.BLIS_INITIAL_CLIENT;let c=await fetchJSON('/api/clients',[]),sel=$('clientSel');if(sel&&Array.isArray(c)&&c.length){sel.innerHTML=c.map(x=>`<option value="${esc(x.slug)}">${esc(x.name)}</option>`).join('');if(c.some(x=>x.slug===slug))sel.value=slug;else{slug=sel.value||slug}sel.onchange=async e=>{slug=e.target.value;await load()}}await load()}catch(e){console.error('[BLIS init]',e);window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{slug,error:true}}))}}
+
+function loadStableRouter(){if(document.getElementById('blis-stable-router'))return;var s=document.createElement('script');s.id='blis-stable-router';s.src='/navigator-router-stable.js?v=20260818-1';s.async=false;document.head.appendChild(s)}
+loadStableRouter();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initDataRuntime,{once:true});else initDataRuntime();
