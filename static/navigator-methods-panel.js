@@ -12,7 +12,34 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   function detail(i){const m=methods[i]||methods[0];return `<div class="blis-method-detail-icon">${m.icon}</div><div><small>МЕТОД ${String(i+1).padStart(2,'0')}</small><h4>${esc(m.title)}</h4><b>${esc(m.lead)}</b><p>${esc(m.body)}</p></div>`}
   function html(){return `<section class="ov-card ov-panel blis-method-card blis-method-panel" id="blisMethodsPanel"><div class="ov-head"><div><h3>Методи на изчисление</h3><div class="ov-panel-sub">Как BLIS събира, проверява и превръща сигналите в сравними показатели</div></div><span class="ov-pill">ИНТЕРАКТИВНО</span></div><div class="blis-method-shell"><div class="blis-method-visual" aria-hidden="true"><div class="blis-method-orbit"><span></span><span></span><span></span><i>⌁</i></div><div class="blis-method-center"><small>BLIS</small><strong>7</strong><em>метода</em></div></div><div class="blis-method-nav">${methods.map((m,i)=>`<button type="button" class="blis-method-point ${i===0?'active':''}" data-blis-method="${i}"><span>${m.icon}</span><b>${i+1}. ${esc(m.title)}</b></button>`).join('')}</div><div class="blis-method-detail" id="blisMethodDetail">${detail(0)}</div></div></section>`}
-  function mount(){const host=document.querySelector('#overviewPremium .ov-screen');if(!host||document.getElementById('blisMethodsPanel'))return;host.insertAdjacentHTML('beforeend',html());const panel=document.getElementById('blisMethodsPanel');panel.querySelectorAll('[data-blis-method]').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.blisMethod)||0;panel.querySelectorAll('[data-blis-method]').forEach(x=>x.classList.toggle('active',x===btn));const d=document.getElementById('blisMethodDetail');if(d)d.innerHTML=detail(i)}));}
-  function init(){mount();const host=document.getElementById('overviewPremium');if(host)new MutationObserver(()=>requestAnimationFrame(mount)).observe(host,{childList:true,subtree:true});window.addEventListener('blis:periodchange',()=>setTimeout(mount,0));window.addEventListener('blis:clientdata',()=>setTimeout(mount,0));}
+  function bind(panel){
+    if(!panel||panel.dataset.bound==='1')return;
+    panel.dataset.bound='1';
+    panel.querySelectorAll('[data-blis-method]').forEach(btn=>btn.addEventListener('click',()=>{
+      const i=Number(btn.dataset.blisMethod)||0;
+      panel.querySelectorAll('[data-blis-method]').forEach(x=>x.classList.toggle('active',x===btn));
+      const d=panel.querySelector('#blisMethodDetail');if(d)d.innerHTML=detail(i);
+    }));
+  }
+  function mount(){
+    const root=document.getElementById('overviewPremium');
+    if(!root)return;
+    let panel=root.querySelector('#blisMethodsPanel');
+    if(panel){bind(panel);return;}
+    const host=root.querySelector('.ov-screen')||root.querySelector('.ref-screen')||root;
+    if(!host)return;
+    host.insertAdjacentHTML('beforeend',html());
+    panel=root.querySelector('#blisMethodsPanel');
+    bind(panel);
+  }
+  function schedule(){requestAnimationFrame(()=>{mount();setTimeout(mount,40);setTimeout(mount,180)})}
+  function init(){
+    schedule();
+    const host=document.getElementById('overviewPremium');
+    if(host)new MutationObserver(schedule).observe(host,{childList:true,subtree:true});
+    window.addEventListener('blis:periodchange',schedule);
+    window.addEventListener('blis:clientdata',schedule);
+    document.addEventListener('click',e=>{if(e.target.closest('[data-page="overview"]'))setTimeout(schedule,30)});
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
