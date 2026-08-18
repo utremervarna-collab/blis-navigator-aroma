@@ -5,7 +5,6 @@ html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial
 .title h1,.ref-title h2,.ov-panel h3,.ref-head h3,.client-brand-name,.ov-kpi-head,.nav button,.ov-kpi-value strong,.ov-big-change,.ov-donut-center strong{font-family:"Montserrat","Segoe UI",Arial,sans-serif!important}
 .title h1{letter-spacing:-.035em!important}.ov-kpi-value strong,.ov-big-change,.ov-donut-center strong{letter-spacing:-.045em!important;font-variant-numeric:tabular-nums}
 
-/* Sidebar — selector owns its own space and never overlaps navigation. */
 .side{display:flex!important;flex-direction:column!important}
 .side .brand{flex:0 0 auto!important}
 .side .clientbox{position:relative!important;flex:0 0 auto!important;margin:16px 12px 22px!important;padding:0!important;z-index:20!important}
@@ -16,7 +15,6 @@ html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial
 .dashboard-home-link{flex:0 0 auto!important}
 .sideuser{display:none!important}
 
-/* Photographic client header — client identity only, no generic admin chrome. */
 .topbar{position:relative!important;min-height:168px!important;height:168px!important;overflow:hidden!important;isolation:isolate!important;background:#eef3f7!important;border-radius:0 0 18px 18px!important;border-bottom:1px solid #dfe6ef!important;padding:0 28px!important}
 .topbar:before,.topbar:after{display:none!important}
 .topbar .title{position:relative!important;z-index:4!important;max-width:540px!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;backdrop-filter:none!important;box-shadow:none!important}
@@ -26,14 +24,12 @@ html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial
 .toptools .datebox{background:rgba(255,255,255,.86)!important;backdrop-filter:blur(8px)!important;border:1px solid rgba(216,225,236,.9)!important;box-shadow:0 4px 14px rgba(24,45,76,.05)!important;border-radius:10px!important;padding:10px 15px!important}
 .toptools .iconbtn,.toptools .topavatar,.toptools .topuser,.toptools>span{display:none!important}
 
-/* Give each client a different photographic crop. */
 body[data-client="aroma"] .client-photo-bg{background-size:cover!important;background-position:center 48%!important;transform:scale(1.005)!important}
-body[data-client="bolyarka"] .client-photo-bg{background-size:cover!important;background-position:34% 50%!important;transform:scale(1)!important}
+body[data-client="bolyarka"] .client-photo-bg{inset:0!important;width:100%!important;height:100%!important;background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;transform:none!important;opacity:1!important}
 body[data-client="astor-garden"] .client-photo-bg{background-size:cover!important;background-position:42% 52%!important;transform:scale(1)!important}
-body[data-client="bolyarka"] .topbar{background-image:linear-gradient(90deg,rgba(248,246,241,.84) 0%,rgba(248,246,241,.52) 34%,rgba(248,246,241,.14) 64%,rgba(20,26,34,.04) 100%),url('/home-bolyarka.svg?v=20260818-direct-css1')!important;background-size:cover!important;background-position:center 52%!important;background-repeat:no-repeat!important;background-color:#efe7dc!important}
+body[data-client="bolyarka"] .topbar{background-image:none!important;background-color:#efe7dc!important}
 body[data-client="bolyarka"] .topbar .title h1{color:#10284f!important}
 
-/* Real-data states — never replace missing measurements with demo values. */
 .ov-no-data{min-height:54px;display:flex;align-items:center;padding:12px 14px;border:1px dashed #dbe4ef;border-radius:9px;background:#f9fbfd;color:#8290a4;font-size:9px;line-height:1.4}
 .ov-kpi-foot{font-size:8px!important;color:#8a98aa!important}
 .ov-method-note{padding:14px 16px;border-radius:10px;background:#f7fafc;border:1px solid #e5ebf3;font-size:10px;line-height:1.55;color:#64748b}
