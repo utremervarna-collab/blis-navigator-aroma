@@ -1,44 +1,19 @@
-name: Inspect Varna Towers Topbar Overlay
+name: Capture Varna Towers Production JPEG
 on:
   pull_request:
     branches: [main]
 jobs:
-  inspect:
+  capture:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
-      - name: Inspect production topbar layers
+      - name: Download production JPEG
         run: |
-          cat > inspect.cjs <<'NODE'
-          const { chromium } = require('playwright-core');
-          (async()=>{
-            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
-            const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
-            await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.waitForTimeout(1800);
-            const info=await page.evaluate(()=>{
-              const top=document.querySelector('.topbar');
-              const collect=el=>{
-                const cs=getComputedStyle(el),r=el.getBoundingClientRect();
-                return {tag:el.tagName,cls:el.className,id:el.id||'',display:cs.display,position:cs.position,z:cs.zIndex,opacity:cs.opacity,bg:cs.background,bgColor:cs.backgroundColor,bgImage:cs.backgroundImage,width:r.width,height:r.height,top:r.top,left:r.left,pointer:cs.pointerEvents};
-              };
-              return {
-                top:collect(top),
-                children:[...top.children].map(collect),
-                descendants:[...top.querySelectorAll('*')].map(collect).filter(x=>x.width>1200&&x.height>100),
-                bodyBg:getComputedStyle(document.body).background
-              };
-            });
-            console.log(JSON.stringify(info,null,2));
-            await page.locator('.topbar').screenshot({path:'varna-towers-layer-inspect.png'});
-            await browser.close();
-          })().catch(e=>{console.error(e);process.exit(1)});
-          NODE
-          node inspect.cjs
+          curl -fsSL 'https://blis-navigator-aroma.onrender.com/varna-towers-profile-hero-header-v2.jpg?v=20260818-direct2' -o vt-current.jpg
+          file vt-current.jpg
+          identify vt-current.jpg || true
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: varna-towers-layer-inspect
-          path: varna-towers-layer-inspect.png
+          name: vt-current-jpeg
+          path: vt-current.jpg
