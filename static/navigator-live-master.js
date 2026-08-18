@@ -1,7 +1,7 @@
 /* BLIS Navigator — Live Monitoring master screen */
 (function(){
   let liveClockTimer=null, liveRefreshTimer=null;
-  function E(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function E(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]))}
   function getSources(){try{return Array.isArray(S)?S:[]}catch{return[]}}
   function getSignals(){try{return D?.signals||[]}catch{return[]}}
   function getActivity(){try{return Array.isArray(A)?A:[]}catch{return[]}}
@@ -85,7 +85,14 @@
       <div class="lm-grid lm-lower"><div class="lm-card"><div class="lm-cardhead"><h3>ПОСЛЕДНИ ПРОВЕРКИ НА СИСТЕМАТА</h3></div><div class="lm-checks">${checks()}</div><button class="lm-link" onclick="window.refGo&&refGo('history')">Виж пълна история →</button></div><div class="lm-card"><div class="lm-cardhead"><h3>СТАТУС НА СИСТЕМАТА</h3></div><div class="lm-systems">${['Събиране на данни','Обработка и анализ','Сигнали и нотификации','Dashboard и отчети'].map(x=>`<div><span>✓</span><b>${x}</b><small>Нормално</small></div>`).join('')}</div><div class="lm-ok">● Всички системи работят нормално</div></div></div>
     </div>`;
     startLiveTimers();
+    requestAnimationFrame(()=>window.BLISGeoV2Render?.());
   }
-  function init(){mount();}
+  window.BLISLiveMount=mount;
+  function init(){
+    mount();
+    document.addEventListener('click',e=>{
+      if(e.target.closest('#nav button[data-page="live"]')) requestAnimationFrame(()=>requestAnimationFrame(mount));
+    });
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
