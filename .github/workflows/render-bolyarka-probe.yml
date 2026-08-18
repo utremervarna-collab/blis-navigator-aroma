@@ -1,0 +1,34 @@
+name: Render Bolyarka hero probe
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe production assets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BASE='https://blis-navigator-aroma.onrender.com'
+          echo '=== dashboard ==='
+          curl -fsSL -D /tmp/dashboard.headers "$BASE/dashboard.html?client=bolyarka" -o /tmp/dashboard.html
+          cat /tmp/dashboard.headers
+          grep -o 'navigator-real-ui.css?v=[^"<]*' /tmp/dashboard.html || true
+          echo '=== css ==='
+          curl -fsSL -D /tmp/css.headers "$BASE/navigator-real-ui.css?v=20260818-finalhero1" -o /tmp/ui.css
+          cat /tmp/css.headers
+          grep -n 'bolyarka-profile-hero-final.webp' /tmp/ui.css || true
+          echo '=== image ==='
+          curl -fsSL -D /tmp/img.headers "$BASE/bolyarka-profile-hero-final.webp?v=20260818-final1" -o /tmp/hero.webp
+          cat /tmp/img.headers
+          file /tmp/hero.webp
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/hero.webp')
+          b=p.read_bytes()
+          print('bytes',len(b),'prefix',b[:12])
+          assert b[:4]==b'RIFF' and b[8:12]==b'WEBP', 'not a valid WebP payload'
+          PY
