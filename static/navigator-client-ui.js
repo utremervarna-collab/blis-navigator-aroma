@@ -43,13 +43,20 @@
     wrap.classList.toggle('open',open);
     btn.setAttribute('aria-expanded',open?'true':'false');
   }
-  function navigate(key){
+  async function navigate(key){
     if(!clients[key])return;
     apply(key);
+    closeMenu();
     const u=new URL(location.href);
     u.searchParams.set('client',key);
-    u.hash='overview';
-    location.assign(u.toString());
+    history.replaceState(null,'',u.toString());
+    try{slug=key}catch(e){}
+    try{
+      if(typeof load==='function') await load();
+    }catch(e){
+      console.error('BLIS client load failed',e);
+    }
+    apply(key);
   }
   function handleClick(e){
     const option=e.target.closest('.client-option[data-client-key]');
@@ -63,8 +70,6 @@
     apply(currentKey());
     document.addEventListener('click',handleClick,true);
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
-    const sel=document.getElementById('clientSel');
-    if(sel)sel.addEventListener('change',e=>navigate(e.target.value));
     const wrap=document.querySelector('.client-switch');
     if(wrap){wrap.style.position='relative';wrap.style.zIndex='200';}
     const menu=document.querySelector('.client-switch-menu');if(menu)menu.style.zIndex='1000';
