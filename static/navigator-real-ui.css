@@ -30,6 +30,7 @@ html,body,button,select,input,textarea{font-family:"Montserrat","Segoe UI",Arial
 body[data-client="aroma"] .client-photo-bg{background-size:cover!important;background-position:center 48%!important;transform:scale(1.005)!important}
 body[data-client="bolyarka"] .client-photo-bg{background-size:cover!important;background-position:34% 50%!important;transform:scale(1)!important}
 body[data-client="astor-garden"] .client-photo-bg{background-size:cover!important;background-position:42% 52%!important;transform:scale(1)!important}
+body[data-client="bolyarka"] .topbar{background-image:linear-gradient(90deg,rgba(248,246,241,.84) 0%,rgba(248,246,241,.52) 34%,rgba(248,246,241,.14) 64%,rgba(20,26,34,.04) 100%),url('/home-bolyarka.svg?v=20260818-direct-css1')!important;background-size:cover!important;background-position:center 52%!important;background-repeat:no-repeat!important;background-color:#efe7dc!important}
 body[data-client="bolyarka"] .topbar .title h1{color:#10284f!important}
 
 /* Real-data states — never replace missing measurements with demo values. */
