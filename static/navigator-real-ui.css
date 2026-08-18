@@ -31,7 +31,7 @@ body[data-client="astor-garden"] .client-photo-bg{background-size:cover!importan
 body[data-client="bolyarka"] .topbar{
   background-image:
     linear-gradient(90deg,rgba(7,5,4,.58) 0%,rgba(7,5,4,.34) 28%,rgba(7,5,4,.08) 58%,rgba(7,5,4,0) 100%),
-    url('/bolyarka-profile-hero-final.webp?v=20260818-final1')!important;
+    url('/bolyarka-profile-hero-final.webp?v=20260818-final2')!important;
   background-size:cover!important;
   background-position:center center!important;
   background-repeat:no-repeat!important;
