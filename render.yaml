@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260818-1010-stable-dashboard"
+        value: "20260818-1014-legacy-endpoint-final"
