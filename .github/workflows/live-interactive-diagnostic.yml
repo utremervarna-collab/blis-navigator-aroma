@@ -1,0 +1,81 @@
+name: Live Interactive Diagnostic
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  production-live-interactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install browser driver
+        run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify production Live interactions
+        run: |
+          cat > live-interactive-check.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          const target='https://blis-navigator-aroma.onrender.com/dashboard.html?client=aroma';
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            let last='';
+            for(let attempt=1;attempt<=10;attempt++){
+              const page=await browser.newPage({viewport:{width:1440,height:1000}});
+              const jsErrors=[]; page.on('pageerror',e=>jsErrors.push(e.message));
+              try{
+                await page.goto(target,{waitUntil:'domcontentloaded',timeout:30000});
+                await page.waitForTimeout(3200);
+                const liveBtn=page.locator('#nav button[data-page="live"]').first();
+                if(!await liveBtn.count()) throw new Error('Live nav missing');
+                await liveBtn.click({force:true}); await page.waitForTimeout(1800);
+                const initial=await page.evaluate(()=>({
+                  kpis:[...document.querySelectorAll('#live .lm-kpi[data-lm-kpi]')].map(x=>x.dataset.lmKpi),
+                  coverage:document.querySelectorAll('#live .lm-kpi')[1]?.querySelector('strong')?.textContent.trim(),
+                  tabs:[...document.querySelectorAll('#live .lm-tabs button[data-lm-source-filter]')].map(x=>x.dataset.lmSourceFilter),
+                  activity:!!document.querySelector('.lm-live-card .lm-live-stage'),
+                  geo:!!document.querySelector('.lm-geo-card .lm-map-real'),
+                  statuses:[...document.querySelectorAll('.lm-tablewrap .lm-status')].map(x=>x.textContent.trim())
+                }));
+                console.log('INITIAL',JSON.stringify(initial));
+                if(initial.kpis.join(',')!=='sources,coverage,period,items,warnings')throw new Error('Five interactive KPI cards not ready');
+                if(initial.tabs.join(',')!=='all,social,web,media,reviews')throw new Error('Source filter buttons not bound');
+                if(!initial.activity||!initial.geo)throw new Error('Confirmed Activity/Geo visual missing');
+                if(initial.statuses.some(x=>x!=='● Активен'))throw new Error('Visible sources not all active');
+
+                await page.locator('#live .lm-kpi[data-lm-kpi="sources"]').click(); await page.waitForTimeout(150);
+                if(!await page.locator('#lmKpiDetail .lm-kpi-detail-item').count())throw new Error('Sources KPI detail did not open');
+                await page.locator('#live .lm-kpi[data-lm-kpi="coverage"]').click(); await page.waitForTimeout(120);
+                const coverageDetail=await page.locator('#lmKpiDetail').textContent();
+                if(!coverageDetail.includes('Покритие на данните'))throw new Error('Coverage KPI detail did not open');
+                await page.locator('#live .lm-kpi[data-lm-kpi="period"]').click(); await page.waitForTimeout(120);
+                const periods=await page.locator('#lmKpiDetail [data-lm-period-choice]').allTextContents();
+                if(periods.length!==3||!periods.some(x=>x.includes('30'))||!periods.some(x=>x.includes('60'))||!periods.some(x=>x.includes('90')))throw new Error('Period KPI detail lacks 30/60/90');
+
+                const allRows=await page.locator('#live .lm-tablewrap tbody tr').count();
+                await page.locator('#live .lm-tabs button[data-lm-source-filter="social"]').click(); await page.waitForTimeout(120);
+                const filtered=await page.evaluate(()=>({active:document.querySelector('#live .lm-tabs button.active')?.dataset.lmSourceFilter,visible:[...document.querySelectorAll('#live .lm-tablewrap tbody tr')].filter(r=>getComputedStyle(r).display!=='none').length,total:[...document.querySelectorAll('#live .lm-tablewrap tbody tr')].length}));
+                console.log('FILTERED',JSON.stringify(filtered));
+                if(filtered.active!=='social')throw new Error('Social source tab did not become active');
+                if(filtered.total!==allRows)throw new Error('Source table structure changed unexpectedly');
+                if(filtered.visible>=filtered.total && filtered.total>1)throw new Error('Social tab did not filter rows');
+
+                await page.locator('#live .lm-kpi[data-lm-kpi="period"]').click();
+                await page.locator('#lmKpiDetail [data-lm-period-choice="60"]').click(); await page.waitForTimeout(1000);
+                const after=await page.evaluate(()=>({
+                  period:window.BLISPeriod?.days,
+                  selected:[...document.querySelectorAll('#live .lm-kpi')].find(x=>x.dataset.lmKpi==='period')?.querySelector('strong')?.textContent.trim(),
+                  coverage:document.querySelectorAll('#live .lm-kpi')[1]?.querySelector('strong')?.textContent.trim(),
+                  activity:!!document.querySelector('.lm-live-card .lm-live-stage'),geo:!!document.querySelector('.lm-geo-card .lm-map-real'),
+                  statuses:[...document.querySelectorAll('.lm-tablewrap .lm-status')].map(x=>x.textContent.trim())
+                }));
+                console.log('AFTER60',JSON.stringify(after));
+                if(after.period!==60||!after.selected?.includes('60'))throw new Error('KPI period interaction did not switch to 60');
+                if(!after.activity||!after.geo)throw new Error('Activity/Geo lost after KPI period switch');
+                if(after.statuses.some(x=>x!=='● Активен'))throw new Error('Statuses lost after period switch');
+                if(jsErrors.length)throw new Error('JS errors: '+jsErrors.join(' | '));
+                await page.close();await browser.close();return;
+              }catch(e){last=e.message;console.log('RETRY',attempt,last);await page.close();if(attempt<10)await new Promise(r=>setTimeout(r,5000));}
+            }
+            await browser.close();throw new Error(last||'production check failed');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node live-interactive-check.cjs
