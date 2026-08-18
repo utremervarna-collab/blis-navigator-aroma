@@ -1,0 +1,1 @@
+Deploy verified Varna Towers hero v10 to production.
