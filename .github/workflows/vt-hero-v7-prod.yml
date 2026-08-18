@@ -16,22 +16,24 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
             let last='';
-            for(let i=1;i<=10;i++){
+            for(let i=1;i<=24;i++){
               const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
               try{
                 await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});
-                await page.waitForTimeout(2600);
+                await page.waitForTimeout(2400);
                 const state=await page.evaluate(()=>{
                   const el=document.querySelector('.topbar .client-photo-bg');
-                  if(!el)return {exists:false};
+                  const html=document.documentElement.innerHTML;
+                  if(!el)return {exists:false,hasVt7:html.includes('20260818-vt7')};
                   const cs=getComputedStyle(el),r=el.getBoundingClientRect();
-                  return {exists:true,client:document.body.dataset.client,bg:cs.backgroundImage.slice(0,100),size:cs.backgroundSize,pos:cs.backgroundPosition,opacity:cs.opacity,w:r.width,h:r.height,ready:el.dataset.varnaTowersHero||''};
+                  return {exists:true,client:document.body.dataset.client,bg:cs.backgroundImage.slice(0,120),size:cs.backgroundSize,pos:cs.backgroundPosition,opacity:cs.opacity,w:r.width,h:r.height,ready:el.dataset.varnaTowersHero||'',hasVt7:html.includes('20260818-vt7')};
                 });
-                console.log('STATE',JSON.stringify(state));
-                if(!(state.exists&&state.client==='varna-towers'&&state.bg.includes('data:image/jpeg;base64')&&state.opacity==='1'&&state.w>1200&&state.h>150&&state.ready==='ready'))throw new Error('V7 hero not active yet');
+                console.log('ATTEMPT',i,JSON.stringify(state));
                 await page.screenshot({path:'varna-towers-hero-v7.png',fullPage:false});
+                const ok=state.exists&&state.client==='varna-towers'&&state.hasVt7&&state.bg.includes('data:image/jpeg;base64')&&state.opacity==='1'&&state.w>1200&&state.h>150&&state.ready==='ready';
+                if(!ok)throw new Error('V7 hero not active yet');
                 await page.close();await browser.close();return;
-              }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<10)await new Promise(r=>setTimeout(r,5000));}
+              }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<24)await new Promise(r=>setTimeout(r,10000));}
             }
             await browser.close();throw new Error(last||'verify failed');
           })().catch(e=>{console.error(e);process.exit(1)});
