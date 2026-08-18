@@ -36,13 +36,26 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
+            await page.addInitScript(()=>{
+              window.MutationObserver=class{constructor(cb){this.cb=cb}observe(){}disconnect(){}takeRecords(){return[]}};
+            });
             await page.goto('http://127.0.0.1:8080/dashboard.html',{waitUntil:'networkidle'});
+            await page.waitForTimeout(2200);
+            await page.evaluate(()=>{
+              document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+              document.getElementById('live')?.classList.add('active');
+              document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='live'));
+            });
+            await page.addScriptTag({url:'http://127.0.0.1:8080/navigator-geo-v2.js?v=historical-shot'}).catch(()=>{});
             await page.waitForTimeout(1800);
-            const btn=page.locator('#nav button[data-page="live"]').first();
-            if(await btn.count()) await btn.click();
-            else await page.evaluate(()=>{ if(window.refGo) window.refGo('live'); else if(window.go) window.go('live'); });
-            await page.waitForTimeout(3500);
-            console.log(await page.evaluate(()=>({active:document.querySelector('.page.active')?.id, liveLen:document.getElementById('liveBody')?.innerHTML.length, activity:document.querySelector('.lm-live-card')?.outerHTML.length, geo:document.querySelector('.lm-geo-card')?.outerHTML.length})));
+            console.log(await page.evaluate(()=>({
+              active:document.querySelector('.page.active')?.id,
+              activity:!!document.querySelector('.lm-live-card'),
+              activityLen:document.querySelector('.lm-live-card')?.outerHTML.length||0,
+              geo:!!document.querySelector('.lm-geo-card'),
+              geoV2:!!document.querySelector('.lm-bgmap-stage'),
+              clock:document.getElementById('lmLiveClock')?.textContent||null
+            })));
             await page.screenshot({path:'historical-live-2205.png',fullPage:true});
             await browser.close();
           })();
