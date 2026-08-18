@@ -1,0 +1,1 @@
+Temporary diagnostic trigger for Live Monitoring 30/60/90 period and source status validation.
