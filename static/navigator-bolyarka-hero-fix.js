@@ -1,57 +1,77 @@
 (function(){
   'use strict';
+  const RAW='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-bolyarka-micro.txt';
+  let source='';
+  let loading=null;
 
-  function activeClient(){
-    return (document.body && document.body.dataset && document.body.dataset.client) || '';
+  function isBolyarka(){
+    return !!document.body && document.body.dataset.client==='bolyarka';
   }
 
-  function ensureStyle(){
-    if(document.getElementById('bolyarkaHeroHardFixStyle')) return;
-    const s=document.createElement('style');
-    s.id='bolyarkaHeroHardFixStyle';
-    s.textContent=`
-      .topbar{position:relative!important;overflow:hidden!important;isolation:isolate!important;}
-      .topbar .bolyarka-hard-hero{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 54%!important;display:block!important;opacity:.48!important;z-index:0!important;pointer-events:none!important;}
-      .topbar .bolyarka-hard-hero-shade{position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;background:linear-gradient(90deg,rgba(248,246,241,.97) 0%,rgba(248,246,241,.84) 34%,rgba(248,246,241,.28) 66%,rgba(20,26,34,.08) 100%)!important;}
-      .topbar>.title,.topbar>.toptools{position:relative!important;z-index:3!important;}
-      body:not([data-client="bolyarka"]) .topbar .bolyarka-hard-hero,
-      body:not([data-client="bolyarka"]) .topbar .bolyarka-hard-hero-shade{display:none!important;}
-    `;
-    document.head.appendChild(s);
-  }
-
-  function apply(){
-    ensureStyle();
+  function ensureBg(){
     const top=document.querySelector('.topbar');
-    if(!top) return;
-
-    let img=top.querySelector('.bolyarka-hard-hero');
-    if(!img){
-      img=document.createElement('img');
-      img.className='bolyarka-hard-hero';
-      img.alt='';
-      img.setAttribute('aria-hidden','true');
-      img.src='/home-bolyarka.svg?v=20260818-header-hardfix1';
-      top.prepend(img);
+    if(!top)return null;
+    top.querySelectorAll('.bolyarka-hard-hero,.bolyarka-hard-hero-shade').forEach(x=>x.remove());
+    let bg=top.querySelector('.client-photo-bg');
+    if(!bg){
+      bg=document.createElement('div');
+      bg.className='client-photo-bg';
+      top.prepend(bg);
     }
-
-    let shade=top.querySelector('.bolyarka-hard-hero-shade');
-    if(!shade){
-      shade=document.createElement('div');
-      shade.className='bolyarka-hard-hero-shade';
-      img.after(shade);
+    let veil=top.querySelector('.client-photo-veil');
+    if(!veil){
+      veil=document.createElement('div');
+      veil.className='client-photo-veil';
+      bg.after(veil);
     }
-
-    const on=activeClient()==='bolyarka';
-    img.style.display=on?'block':'none';
-    shade.style.display=on?'block':'none';
+    return bg;
   }
 
-  const observer=new MutationObserver(apply);
+  async function getSource(){
+    if(source)return source;
+    if(loading)return loading;
+    loading=(async()=>{
+      const r=await fetch(RAW+'?v=20260818-valid-webp4',{cache:'no-store',mode:'cors'});
+      if(!r.ok)throw new Error('Bolyarka hero HTTP '+r.status);
+      const txt=(await r.text()).trim();
+      if(!txt.startsWith('UklGR'))throw new Error('Bolyarka hero payload is not WebP');
+      const src='data:image/webp;base64,'+txt;
+      const probe=new Image();
+      probe.src=src;
+      if(probe.decode)await probe.decode();
+      else await new Promise((ok,bad)=>{probe.onload=ok;probe.onerror=bad;});
+      if(!probe.naturalWidth||!probe.naturalHeight)throw new Error('Bolyarka hero decoded with zero dimensions');
+      source=src;
+      return src;
+    })().catch(e=>{
+      console.error('BLIS Bolyarka hero validation failed',e);
+      loading=null;
+      return '';
+    });
+    return loading;
+  }
+
+  async function apply(){
+    if(!isBolyarka())return;
+    const bg=ensureBg();
+    if(!bg)return;
+    const src=await getSource();
+    if(!src||!isBolyarka())return;
+    bg.style.setProperty('background-image','url("'+src+'")','important');
+    bg.style.setProperty('background-size','cover','important');
+    bg.style.setProperty('background-position','34% 50%','important');
+    bg.style.setProperty('background-repeat','no-repeat','important');
+    bg.style.setProperty('opacity','1','important');
+    bg.dataset.bolyarkaHero='valid-webp4';
+  }
+
+  const observer=new MutationObserver(()=>{ if(isBolyarka())apply(); });
   observer.observe(document.body,{attributes:true,attributeFilter:['data-client']});
-  window.addEventListener('load',apply,{once:true});
   document.addEventListener('DOMContentLoaded',apply,{once:true});
-  document.addEventListener('click',()=>setTimeout(apply,50),true);
-  setTimeout(apply,0);
-  setTimeout(apply,250);
+  window.addEventListener('load',apply,{once:true});
+  document.addEventListener('click',()=>setTimeout(apply,120),true);
+  setTimeout(apply,80);
+  setTimeout(apply,500);
+  setTimeout(apply,1400);
+  setTimeout(apply,2600);
 })();
