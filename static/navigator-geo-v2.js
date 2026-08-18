@@ -3,7 +3,7 @@
   const bgPath='M 44.0,20.0 L 68.9,55.6 L 102.5,49.3 L 169.1,62.8 L 296.3,67.4 L 339.3,45.3 L 441.3,25.1 L 504.4,56.6 L 555.3,65.7 L 510.3,101.6 L 478.7,163.6 L 506.7,213.0 L 432.1,201.4 L 343.8,228.7 L 342.8,271.8 L 264.1,280.0 L 203.0,249.7 L 133.7,273.5 L 69.6,271.0 L 63.4,213.7 L 20.0,185.9 L 34.3,173.7 L 24.9,163.4 L 39.4,135.8 L 72.5,108.7 L 30.4,71.3 L 22.6,39.7 L 44.0,20.0 Z';
   function renderGeo(){
     const live=document.getElementById('live');
-    if(!live||!live.classList.contains('active'))return;
+    if(!live)return;
     const cards=[...live.querySelectorAll('.lm-card')];
     const card=cards.find(c=>c.querySelector('.lm-cardhead h3')?.textContent?.includes('ГЕОПОКРИТИЕ'));
     if(!card)return;
@@ -42,6 +42,6 @@
         <span>България <em>82%</em></span><span>Германия <em>5%</em></span><span>Великобритания <em>3%</em></span><span>Румъния <em>2%</em></span><span>Други <em>8%</em></span>
       </div>`;
   }
-  function init(){renderGeo();const root=document.querySelector('.shell')||document.body;new MutationObserver(renderGeo).observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});setInterval(renderGeo,2500)}
+  function init(){renderGeo();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
