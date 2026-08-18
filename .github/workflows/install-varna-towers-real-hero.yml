@@ -1,0 +1,26 @@
+name: Install Varna Towers Real Hero
+on:
+  push:
+    paths:
+      - '.github/workflows/install-varna-towers-real-hero.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Build and install real hero JPEG
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat static/.vt-real-upload/part{01..18}.b64 | tr -d '\n\r ' | base64 -d > static/varna-towers-profile-hero-header-v2.jpg
+          test "$(stat -c%s static/varna-towers-profile-hero-header-v2.jpg)" -eq 39362
+          file static/varna-towers-profile-hero-header-v2.jpg
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add static/varna-towers-profile-hero-header-v2.jpg
+          git commit -m "Install real Varna Towers hero image"
+          git push origin HEAD:main
