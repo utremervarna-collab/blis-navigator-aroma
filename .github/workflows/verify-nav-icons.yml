@@ -1,0 +1,47 @@
+name: Verify Navigator Sidebar Icons
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify production sidebar icons
+        shell: bash
+        run: |
+          cat > verify.cjs <<'NODE'
+          const { chromium }=require('playwright-core');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            let last='';
+            for(let i=1;i<=30;i++){
+              const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+              try{
+                await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:30000});
+                await page.waitForTimeout(1800);
+                const state=await page.evaluate(async()=>{
+                  const html=await (await fetch('/dashboard.html?x='+Date.now(),{cache:'no-store'})).text();
+                  const buttons=[...document.querySelectorAll('#nav button[data-page]')];
+                  const svgs=[...document.querySelectorAll('#nav button[data-page] .navico svg')];
+                  const visible=svgs.filter(x=>{const r=x.getBoundingClientRect(),c=getComputedStyle(x);return r.width>=16&&r.height>=16&&c.display!=='none'&&c.visibility!=='hidden'&&c.opacity!=='0'}).length;
+                  return {key:html.includes('navigator-reference.js?v=20260819-navicons1'),buttons:buttons.length,svgs:svgs.length,visible,pages:buttons.map(b=>b.dataset.page)};
+                });
+                console.log('ATTEMPT',i,JSON.stringify(state));
+                if(!state.key||state.buttons<15||state.svgs!==state.buttons||state.visible!==state.buttons)throw new Error('icons not live yet');
+                await page.locator('.side').screenshot({path:'navigator-sidebar-icons.png'});
+                await page.close();await browser.close();return;
+              }catch(e){last=e.message;await page.close();if(i<30)await sleep(10000)}
+            }
+            await browser.close();throw new Error(last||'verification failed');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node verify.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: navigator-sidebar-icons
+          path: navigator-sidebar-icons.png
