@@ -13,26 +13,21 @@ jobs:
         run: |
           set -euxo pipefail
           BASE='https://blis-navigator-aroma.onrender.com'
-          curl -fsSL -D /tmp/dashboard.headers "$BASE/dashboard.html?client=bolyarka" -o /tmp/dashboard.html
-          echo '=== dashboard ==='; cat /tmp/dashboard.headers
+          curl -fsSL "$BASE/dashboard.html?client=bolyarka" -o /tmp/dashboard.html
           grep -q 'navigator-real-ui.css?v=20260818-finalhero2' /tmp/dashboard.html
-          curl -fsSL -D /tmp/css.headers "$BASE/navigator-real-ui.css?v=20260818-finalhero2" -o /tmp/ui.css
-          echo '=== css ==='; cat /tmp/css.headers
+          curl -fsSL "$BASE/navigator-real-ui.css?v=20260818-finalhero2" -o /tmp/ui.css
           grep -q "bolyarka-profile-hero-final.webp?v=20260818-final2" /tmp/ui.css
           curl -fsSL -D /tmp/img.headers "$BASE/bolyarka-profile-hero-final.webp?v=20260818-final2" -o /tmp/hero.webp
-          echo '=== image ==='; cat /tmp/img.headers
-          file /tmp/hero.webp
+          cat /tmp/img.headers
+          file /tmp/hero.webp | tee /tmp/file.txt
+          BYTES="$(stat -c%s /tmp/hero.webp)"
+          echo "bytes=$BYTES"
+          test "$BYTES" -gt 30000
+          grep -q '1600x221' /tmp/file.txt
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image
-          p=Path('/tmp/hero.webp')
-          b=p.read_bytes()
-          print('bytes',len(b),'prefix',b[:12])
-          assert len(b) > 30000, len(b)
+          b=Path('/tmp/hero.webp').read_bytes()
           assert b[:4]==b'RIFF' and b[8:12]==b'WEBP'
-          im=Image.open(p)
-          print('size',im.size)
-          assert im.size==(1600,221), im.size
           PY
       - name: Browser computed-style probe
         shell: bash
