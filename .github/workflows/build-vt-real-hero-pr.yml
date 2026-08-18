@@ -14,20 +14,42 @@ jobs:
         with:
           ref: vt-real-hero-install
           fetch-depth: 0
-      - name: Build exact JPEG
+      - name: Validate and build exact JPEG
         shell: bash
         run: |
           set -euo pipefail
+          total=0
+          for i in $(seq -w 1 18); do
+            f="static/.vt-real-upload/part${i}.b64"
+            clean="$(tr -d '\n\r ' < "$f")"
+            n=${#clean}
+            echo "PART ${i} LEN ${n}"
+            total=$((total+n))
+            if printf '%s' "$clean" | grep -q '[^A-Za-z0-9+/=]'; then
+              echo "BAD_CHARS_PART=${i}"
+              exit 21
+            fi
+            if [ "$i" != "18" ] && [ "$n" -ne 3000 ]; then
+              echo "BAD_LEN_PART=${i}:${n}"
+              exit 22
+            fi
+            if [ "$i" = "18" ] && [ "$n" -ne 1484 ]; then
+              echo "BAD_LEN_PART=${i}:${n}"
+              exit 23
+            fi
+          done
+          echo "TOTAL_B64=${total}"
+          test "$total" -eq 52484
           cat static/.vt-real-upload/part{01..18}.b64 | tr -d '\n\r ' | base64 -d > /tmp/vt-real.jpg
           test "$(stat -c%s /tmp/vt-real.jpg)" -eq 39362
           file /tmp/vt-real.jpg | grep -q 'JPEG image data'
           cp /tmp/vt-real.jpg static/varna-towers-profile-hero-header-v2.jpg
-          if git diff --quiet -- static/varna-towers-profile-hero-header-v2.jpg; then
-            echo 'Hero already installed.'
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add static/varna-towers-profile-hero-header-v2.jpg
+          if git diff --cached --quiet; then
+            echo 'Hero already installed.'
+            exit 0
+          fi
           git commit -m 'Install verified Varna Towers hero JPEG'
           git push origin HEAD:vt-real-hero-install
