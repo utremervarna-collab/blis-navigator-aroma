@@ -9,13 +9,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 3ec1b8a62f5ddbcb1c197cb99fbe294531885d79
+          fetch-depth: 1
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24.x'
       - name: Start Navigator
         run: |
           PORT=8080 go run . > /tmp/blis.log 2>&1 &
-          for i in {1..30}; do
+          for i in {1..40}; do
             if curl -fsS http://127.0.0.1:8080/dashboard.html >/dev/null; then exit 0; fi
             sleep 1
           done
@@ -28,22 +31,23 @@ jobs:
           npx playwright install --with-deps chromium >/dev/null 2>&1
       - name: Capture historical Live Monitoring
         run: |
-          cat > /tmp/shot.js <<'EOF'
+          cat > shot.cjs <<'EOF'
           const { chromium } = require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:1440,height:1100},deviceScaleFactor:1});
             await page.goto('http://127.0.0.1:8080/dashboard.html',{waitUntil:'networkidle'});
-            await page.waitForTimeout(1200);
+            await page.waitForTimeout(1800);
             const btn=page.locator('#nav button[data-page="live"]').first();
             if(await btn.count()) await btn.click();
             else await page.evaluate(()=>{ if(window.refGo) window.refGo('live'); else if(window.go) window.go('live'); });
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(3500);
+            console.log(await page.evaluate(()=>({active:document.querySelector('.page.active')?.id, liveLen:document.getElementById('liveBody')?.innerHTML.length, activity:document.querySelector('.lm-live-card')?.outerHTML.length, geo:document.querySelector('.lm-geo-card')?.outerHTML.length})));
             await page.screenshot({path:'historical-live-2205.png',fullPage:true});
             await browser.close();
           })();
           EOF
-          node /tmp/shot.js
+          node shot.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: historical-live-2205
