@@ -42,6 +42,12 @@
         <span>България <em>82%</em></span><span>Германия <em>5%</em></span><span>Великобритания <em>3%</em></span><span>Румъния <em>2%</em></span><span>Други <em>8%</em></span>
       </div>`;
   }
-  function init(){renderGeo();}
+  window.BLISGeoV2Render=renderGeo;
+  function init(){
+    renderGeo();
+    document.addEventListener('click',e=>{
+      if(e.target.closest('#nav button[data-page="live"]')) requestAnimationFrame(()=>requestAnimationFrame(renderGeo));
+    });
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
