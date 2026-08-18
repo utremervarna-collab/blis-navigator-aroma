@@ -1,0 +1,141 @@
+name: Navigator Full Diagnostic
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Build Go application
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+
+      - name: Start application and test API/static routes
+        run: |
+          set -euxo pipefail
+          PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
+          echo $! > /tmp/blis.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
+          curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
+          for c in aroma bolyarka astor-garden; do
+            curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
+            curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
+            curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
+            curl -fsS "http://127.0.0.1:10000/api/clients/$c/activity" >/tmp/$c-activity.json
+            curl -fsS "http://127.0.0.1:10000/api/clients/$c/history" >/tmp/$c-history.json
+          done
+          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma' >/tmp/dashboard.html
+          grep -q 'navigator-reference.js?v=20260818-stable1' /tmp/dashboard.html
+          for f in app.js navigator-reference.js navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js; do
+            curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/$f
+            test -s /tmp/$f
+          done
+
+      - name: Locate Chromium
+        id: chrome
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BIN="$(which google-chrome || which chromium || which chromium-browser || true)"
+          echo "bin=$BIN" >> "$GITHUB_OUTPUT"
+          if [ -n "$BIN" ]; then "$BIN" --version; fi
+
+      - name: Install Playwright core
+        run: npm install --no-save playwright-core@1.55.0
+
+      - name: Install Chromium if runner has none
+        if: steps.chrome.outputs.bin == ''
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Browser end-to-end diagnostic
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.bin }}
+        run: |
+          cat > /tmp/diag.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          const fs = require('fs');
+          (async()=>{
+            const executablePath = process.env.CHROME_BIN || undefined;
+            const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox']});
+            const page = await browser.newPage();
+            page.setDefaultTimeout(12000);
+            const errors=[];
+            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{ if(m.type()==='error') errors.push('CONSOLE '+m.text()); });
+            const result={};
+            async function snap(label){
+              result[label]=await page.evaluate(()=>({
+                title:document.title,
+                active:document.querySelector('.page.active')?.id||null,
+                navActive:document.querySelector('#nav button.active')?.dataset.page||null,
+                liveChars:(document.getElementById('liveBody')?.innerHTML||'').length,
+                overviewChars:(document.getElementById('overviewPremium')?.innerHTML||'').length,
+                client:document.body.dataset.client||null,
+                navButtons:document.querySelectorAll('#nav button').length
+              }));
+            }
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:12000});
+            await page.waitForTimeout(2500);
+            await snap('initial');
+            await page.locator('#nav button[data-page="live"]').click();
+            await page.waitForTimeout(3500);
+            await snap('live');
+            await page.locator('#nav button[data-page="digital"]').click();
+            await page.waitForTimeout(1500);
+            await snap('digital');
+            await page.locator('#nav button[data-page="overview"]').click();
+            await page.waitForTimeout(1500);
+            await snap('overviewReturn');
+
+            const p2=await browser.newPage();
+            p2.setDefaultTimeout(12000);
+            const errors2=[];
+            p2.on('pageerror',e=>errors2.push('PAGEERROR '+e.message));
+            p2.on('console',m=>{if(m.type()==='error')errors2.push('CONSOLE '+m.text())});
+            await p2.goto('http://127.0.0.1:10000/dashboard.html?client=bolyarka',{waitUntil:'domcontentloaded',timeout:12000});
+            await p2.waitForTimeout(2500);
+            result.bolyarka=await p2.evaluate(()=>({
+              title:document.title,
+              client:document.body.dataset.client||null,
+              selected:document.getElementById('clientSel')?.value||null,
+              heading:document.querySelector('.topbar .title h1')?.textContent||null,
+              navButtons:document.querySelectorAll('#nav button').length,
+              active:document.querySelector('.page.active')?.id||null
+            }));
+            result.errors=errors;
+            result.bolyarkaErrors=errors2;
+            console.log(JSON.stringify(result,null,2));
+            fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
+            if(result.initial.navButtons < 10) throw new Error('Navigation not initialized');
+            if(result.live.active !== 'live') throw new Error('Live Monitoring did not become active');
+            if(result.digital.active !== 'digital') throw new Error('Digital did not become active');
+            if(errors.length || errors2.length) throw new Error('Browser JavaScript errors detected');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/diag.cjs
+
+      - name: Print server log
+        if: always()
+        run: |
+          echo '=== SERVER LOG ==='
+          cat /tmp/blis-server.log || true
+          echo '=== BROWSER RESULT ==='
+          cat /tmp/browser-result.json || true
