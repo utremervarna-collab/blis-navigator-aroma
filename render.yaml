@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260818-2045-varna-towers-hero-v9"
+        value: "20260818-2056-varna-towers-hero-v9-final"
