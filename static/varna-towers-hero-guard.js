@@ -1,15 +1,19 @@
-/* Varna Towers — final dedicated hero loader. */
+/* Varna Towers — final dedicated hero loader v9. */
 (function(){
   'use strict';
-  let data='';
-  let loading=null;
+  let data='',loading=null;
+  const urls=[1,2,3,4,5].map(n=>`/varna-towers-hero-v9-${n}.js?v=20260818-vt9`);
   function isVT(){return document.body.dataset.client==='varna-towers'}
   function source(){
     if(data)return Promise.resolve(data);
     if(!loading){
-      loading=fetch('/varna-towers-profile-hero-header-v7.js?v=20260818-vt-header8',{cache:'no-store'})
-        .then(r=>{if(!r.ok)throw new Error('VT hero '+r.status);return r.text()})
-        .then(t=>{data='data:image/jpeg;base64,'+t.trim();return data})
+      loading=Promise.all(urls.map(u=>fetch(u,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('VT hero '+r.status);return r.text()})))
+        .then(parts=>{
+          const raw=parts.map(x=>x.trim()).join('');
+          if(raw.length!==32424)throw new Error('VT hero incomplete '+raw.length);
+          data='data:image/jpeg;base64,'+raw;
+          return data;
+        })
         .catch(()=>{loading=null;return''});
     }
     return loading;
@@ -26,7 +30,7 @@
       bg.style.setProperty('background-repeat','no-repeat','important');
       bg.style.setProperty('opacity','1','important');
       bg.style.setProperty('transform','none','important');
-      bg.dataset.varnaTowersHero='ready';
+      bg.dataset.varnaTowersHero='ready-v9';
     });
   }
   function run(){requestAnimationFrame(()=>{apply();setTimeout(apply,120);setTimeout(apply,420);setTimeout(apply,900)})}
