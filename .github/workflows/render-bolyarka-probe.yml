@@ -15,18 +15,24 @@ jobs:
           BASE='https://blis-navigator-aroma.onrender.com'
           curl -fsSL -D /tmp/dashboard.headers "$BASE/dashboard.html?client=bolyarka" -o /tmp/dashboard.html
           echo '=== dashboard ==='; cat /tmp/dashboard.headers
-          grep -o 'navigator-real-ui.css?v=[^"<]*' /tmp/dashboard.html || true
-          curl -fsSL -D /tmp/css.headers "$BASE/navigator-real-ui.css?v=20260818-finalhero1" -o /tmp/ui.css
+          grep -q 'navigator-real-ui.css?v=20260818-finalhero2' /tmp/dashboard.html
+          curl -fsSL -D /tmp/css.headers "$BASE/navigator-real-ui.css?v=20260818-finalhero2" -o /tmp/ui.css
           echo '=== css ==='; cat /tmp/css.headers
-          grep -n 'bolyarka-profile-hero-final.webp' /tmp/ui.css || true
-          curl -fsSL -D /tmp/img.headers "$BASE/bolyarka-profile-hero-final.webp?v=20260818-final1" -o /tmp/hero.webp
+          grep -q "bolyarka-profile-hero-final.webp?v=20260818-final2" /tmp/ui.css
+          curl -fsSL -D /tmp/img.headers "$BASE/bolyarka-profile-hero-final.webp?v=20260818-final2" -o /tmp/hero.webp
           echo '=== image ==='; cat /tmp/img.headers
           file /tmp/hero.webp
           python - <<'PY'
           from pathlib import Path
-          b=Path('/tmp/hero.webp').read_bytes()
+          from PIL import Image
+          p=Path('/tmp/hero.webp')
+          b=p.read_bytes()
           print('bytes',len(b),'prefix',b[:12])
+          assert len(b) > 30000, len(b)
           assert b[:4]==b'RIFF' and b[8:12]==b'WEBP'
+          im=Image.open(p)
+          print('size',im.size)
+          assert im.size==(1600,221), im.size
           PY
       - name: Browser computed-style probe
         shell: bash
@@ -42,31 +48,25 @@ jobs:
             const responses=[];
             page.on('response',r=>{if(r.url().includes('bolyarka-profile-hero-final.webp'))responses.push({url:r.url(),status:r.status(),type:r.headers()['content-type']||''})});
             await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=bolyarka',{waitUntil:'networkidle',timeout:30000});
-            await page.waitForTimeout(1500);
+            await page.waitForTimeout(1200);
             const state=await page.evaluate(()=>{
               const top=document.querySelector('.topbar');
               const cs=getComputedStyle(top);
               const r=top.getBoundingClientRect();
-              const kids=[...top.children].map(el=>{const s=getComputedStyle(el);return {tag:el.tagName,cls:el.className,display:s.display,position:s.position,z:s.zIndex,bg:s.backgroundColor,opacity:s.opacity}});
-              const p=document.elementFromPoint(r.left+r.width*.78,r.top+r.height*.5);
               return {
                 bodyClient:document.body.dataset.client,
                 heading:document.querySelector('.topbar .title h1')?.textContent,
                 backgroundImage:cs.backgroundImage,
-                backgroundColor:cs.backgroundColor,
                 width:r.width,height:r.height,
-                topElement:p?{tag:p.tagName,cls:p.className}:null,
-                children:kids,
                 photoBg:document.querySelector('.topbar .client-photo-bg')?getComputedStyle(document.querySelector('.topbar .client-photo-bg')).display:null,
                 veil:document.querySelector('.topbar .client-photo-veil')?getComputedStyle(document.querySelector('.topbar .client-photo-veil')).display:null
               };
             });
             console.log('LIVE_STATE '+JSON.stringify(state,null,2));
             console.log('HERO_RESPONSES '+JSON.stringify(responses,null,2));
-            await page.screenshot({path:'/tmp/bolyarka-live.png',clip:await page.locator('.topbar').boundingBox()});
             await browser.close();
             if(state.bodyClient!=='bolyarka') throw new Error('body client is not bolyarka');
-            if(!state.backgroundImage.includes('bolyarka-profile-hero-final.webp')) throw new Error('hero absent from computed background');
+            if(!state.backgroundImage.includes('20260818-final2')) throw new Error('final2 hero absent from computed background');
             if(!responses.some(x=>x.status===200 && x.type.includes('image/webp'))) throw new Error('browser did not load hero WebP');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
