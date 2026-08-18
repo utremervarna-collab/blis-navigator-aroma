@@ -1,4 +1,4 @@
-/* BLIS Navigator — abstract monitored territory geo focus */
+/* BLIS Navigator — abstract monitored territory geo focus + interactive radar */
 (function(){
   const territoryPath='M 55 58 L 137 27 L 222 48 L 308 25 L 395 48 L 486 34 L 544 72 L 526 126 L 552 176 L 513 222 L 430 246 L 350 232 L 274 274 L 188 249 L 105 266 L 51 225 L 66 174 L 34 126 L 47 91 Z';
   function renderGeo(){
@@ -8,12 +8,12 @@
     const card=cards.find(c=>c.querySelector('.lm-cardhead h3')?.textContent?.includes('ГЕОПОКРИТИЕ'));
     if(!card)return;
     const old=card.querySelector('.lm-map');
-    if(!old||old.dataset.geoV2==='territory')return;
-    old.dataset.geoV2='territory';
+    if(!old||old.dataset.geoV2==='territory-radar')return;
+    old.dataset.geoV2='territory-radar';
     old.className='lm-map lm-map-real';
     old.innerHTML=`
       <div class="lm-bgmap-wrap">
-        <div class="lm-bgmap-stage">
+        <div class="lm-bgmap-stage" style="--radar-x:54%;--radar-y:50%">
           <div class="lm-bgmap-grid"></div>
           <div class="lm-bgmap-zoom">
             <svg class="lm-bgmap-svg" viewBox="0 0 580 300" role="img" aria-label="Карта на наблюдаваната територия">
@@ -34,6 +34,11 @@
             </svg>
             <div class="lm-bgmap-focusring"></div>
           </div>
+          <div class="lm-territory-radar" aria-hidden="true">
+            <span class="lm-radar-ring r1"></span><span class="lm-radar-ring r2"></span><span class="lm-radar-ring r3"></span>
+            <span class="lm-radar-cross x"></span><span class="lm-radar-cross y"></span>
+            <span class="lm-radar-sweep"></span><span class="lm-radar-center"></span>
+          </div>
           <div class="lm-bgmap-live"><i></i><span>LIVE GEO FOCUS</span></div>
           <div class="lm-bgmap-caption"><b>Наблюдавана територия</b><span>активен географски мониторинг</span></div>
         </div>
@@ -42,6 +47,22 @@
         <b>Активни зони</b>
         <span>Централна <em>46%</em></span><span>Североизточна <em>22%</em></span><span>Западна <em>18%</em></span><span>Южна <em>14%</em></span>
       </div>`;
+    const stage=old.querySelector('.lm-bgmap-stage');
+    if(stage){
+      stage.addEventListener('pointermove',e=>{
+        const r=stage.getBoundingClientRect();
+        const x=Math.max(10,Math.min(90,((e.clientX-r.left)/r.width)*100));
+        const y=Math.max(12,Math.min(88,((e.clientY-r.top)/r.height)*100));
+        stage.style.setProperty('--radar-x',x.toFixed(1)+'%');
+        stage.style.setProperty('--radar-y',y.toFixed(1)+'%');
+        stage.classList.add('radar-interacting');
+      },{passive:true});
+      stage.addEventListener('pointerleave',()=>{
+        stage.style.setProperty('--radar-x','54%');
+        stage.style.setProperty('--radar-y','50%');
+        stage.classList.remove('radar-interacting');
+      },{passive:true});
+    }
   }
   function init(){renderGeo();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
