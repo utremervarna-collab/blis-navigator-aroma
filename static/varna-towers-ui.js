@@ -17,7 +17,7 @@
   function loadHero(){
     if(heroData)return Promise.resolve(heroData);
     if(!heroPromise){
-      heroPromise=fetch('/varna-towers-profile-hero-header-v7.txt?v=20260818-vt-header7',{cache:'no-store'})
+      heroPromise=fetch('/varna-towers-profile-hero-header-v7.js?v=20260818-vt-header8',{cache:'no-store'})
         .then(r=>{if(!r.ok)throw new Error('Varna Towers hero '+r.status);return r.text()})
         .then(t=>{heroData='data:image/jpeg;base64,'+t.trim();return heroData})
         .catch(()=>{heroPromise=null;return''});
