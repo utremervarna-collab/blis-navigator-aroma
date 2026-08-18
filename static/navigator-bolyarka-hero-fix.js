@@ -1,12 +1,12 @@
 (function(){
-  const asset='/hero-bolyarka-micro.txt';
+  const asset='https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-bolyarka-micro.txt';
   let data='';
   let loading=null;
 
   async function load(){
     if(data)return data;
     if(loading)return loading;
-    loading=fetch(asset+'?v=20260818-hero2',{cache:'no-store'})
+    loading=fetch(asset+'?v=20260818-hero3',{cache:'no-store',mode:'cors'})
       .then(r=>{if(!r.ok)throw new Error('Bolyarka hero '+r.status);return r.text()})
       .then(txt=>{
         txt=(txt||'').trim();
