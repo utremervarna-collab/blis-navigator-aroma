@@ -90,3 +90,12 @@
   s.dataset.blisPageState='1';
   document.head.appendChild(s);
 })();
+
+/* Social Signals: measured chart repair + KPI drill-down navigation. */
+(function(){
+  if(document.querySelector('script[data-blis-social-interactive]'))return;
+  const s=document.createElement('script');
+  s.src='/navigator-social-interactive.js?v=20260819-socialinteractive1';
+  s.dataset.blisSocialInteractive='1';
+  document.head.appendChild(s);
+})();
