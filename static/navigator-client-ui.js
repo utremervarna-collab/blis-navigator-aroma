@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   const clients={
-    aroma:{name:'AROMA',full:'AROMA Cosmetics AD',type:'Козметика',mark:'A',theme:'aroma'},
+    aroma:{name:'Aroma Cosmetics',full:'Aroma Cosmetics',type:'Козметика',mark:'A',theme:'aroma'},
     bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ',theme:'bolyarka'},
     'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG',theme:'astor-garden'},
     'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers'}
@@ -21,7 +21,10 @@
     document.querySelectorAll('.client-brand-type').forEach(x=>x.textContent=c.type);
     document.querySelectorAll('.client-brand-mark').forEach(x=>x.textContent=c.mark);
     document.querySelectorAll('.client-option').forEach(x=>{
-      const on=x.dataset.clientKey===key;
+      const optionKey=x.dataset.clientKey;
+      const optionClient=clients[optionKey];
+      if(optionClient){const b=x.querySelector('b');if(b)b.textContent=optionClient.full;const small=x.querySelector('small');if(small)small.textContent=optionClient.type;}
+      const on=optionKey===key;
       x.classList.toggle('active',on);
       x.setAttribute('aria-selected',on?'true':'false');
       const ck=x.querySelector('.client-option-check');if(ck)ck.textContent=on?'✓':'';
