@@ -41,11 +41,11 @@ jobs:
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
-          npx playwright install chromium --with-deps
+          npx playwright install chromium
 
       - name: Browser social diagnostic
         run: |
-          cat > /tmp/diag.cjs <<'NODE'
+          cat > .diag-social.cjs <<'NODE'
           const { chromium } = require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -62,9 +62,9 @@ jobs:
               feeds:document.querySelectorAll('#socialBody .sm-network-feed').length,
               posts:document.querySelectorAll('#socialBody .sm-network-post').length,
               linkedinPosts:[...document.querySelectorAll('#socialBody .sm-network-feed')].filter(x=>(x.querySelector('b')?.textContent||'').includes('LinkedIn')).reduce((n,x)=>n+x.querySelectorAll('.sm-network-post').length,0),
-              text:(document.getElementById('socialBody')?.innerText||'').slice(0,2000)
+              text:(document.getElementById('socialBody')?.innerText||'').slice(0,2500)
             }));
-            console.log(JSON.stringify({result,errors},null,2));
+            console.log('SOCIAL_RESULT',JSON.stringify({result,errors},null,2));
             if(errors.length) throw new Error(errors.join('\n'));
             if(result.active!=='social') throw new Error('Social page not active');
             if(result.socialChars<500) throw new Error('Social renderer did not render');
@@ -79,7 +79,7 @@ jobs:
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node /tmp/diag.cjs
+          node .diag-social.cjs
 
       - name: Print server log
         if: always()
