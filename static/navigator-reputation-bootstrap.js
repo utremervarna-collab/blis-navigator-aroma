@@ -24,7 +24,7 @@ function loadRealDataPatch(){
 function loadRefinePatch(){
   if(document.querySelector('script[data-blis-reputation-refine30]'))return;
   const s=document.createElement('script');
-  s.src='/navigator-reputation-refine-v30.js?v=20260819-reputation30';
+  s.src='/navigator-reputation-refine-v30.js?v=20260819-reputation31';
   s.dataset.blisReputationRefine30='1';
   s.onload=()=>setTimeout(()=>window.BLISReputationRefineV30?.apply?.(),80);
   document.head.appendChild(s);
