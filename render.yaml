@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0902-social-posts-v6-precise"
+        value: "20260819-0907-social-posts-v7-verified-fallback"
