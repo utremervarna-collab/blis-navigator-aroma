@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1055-digital-radar-v2"
+        value: "20260819-1102-digital-radar-v3"
