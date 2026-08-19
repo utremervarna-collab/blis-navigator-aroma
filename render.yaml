@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1642-reputation-context-sources-v36"
+        value: "20260819-1655-global-metric-inspector-v37"
