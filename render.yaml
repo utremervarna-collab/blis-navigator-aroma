@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0940-social-truth-v6"
+        value: "20260819-0952-social-interactive-chart-v7"
