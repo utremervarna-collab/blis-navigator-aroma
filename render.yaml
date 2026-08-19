@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1032-social-single-date-axis-v11"
+        value: "20260819-1045-digital-radar-v1"
