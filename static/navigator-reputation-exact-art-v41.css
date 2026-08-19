@@ -1,0 +1,36 @@
+/* BLIS Navigator — exact uploaded Aroma artwork placement v41. */
+#reputationBody .rp-totem.rp-exact-aroma{
+  min-height:390px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  perspective:none!important;
+  isolation:isolate;
+  overflow:visible!important;
+}
+#reputationBody .rp-totem.rp-exact-aroma:before,
+#reputationBody .rp-totem.rp-exact-aroma:after,
+#reputationBody .rp-totem.rp-exact-aroma .rp-emblem,
+#reputationBody .rp-totem.rp-exact-aroma .rp-prism,
+#reputationBody .rp-totem.rp-exact-aroma .rp-base{display:none!important}
+#reputationBody .rp-exact-art{
+  position:relative;
+  z-index:4;
+  display:block;
+  width:auto;
+  height:390px;
+  max-width:100%;
+  object-fit:contain;
+  object-position:center center;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  transform:none!important;
+  filter:none!important;
+  user-select:none;
+  pointer-events:none;
+}
+@media(max-width:1450px){#reputationBody .rp-exact-art{height:360px}#reputationBody .rp-totem.rp-exact-aroma{min-height:360px!important}}
+@media(max-width:1180px){#reputationBody .rp-exact-art{height:350px}#reputationBody .rp-totem.rp-exact-aroma{min-height:350px!important}}
+@media(max-width:760px){#reputationBody .rp-exact-art{height:330px}#reputationBody .rp-totem.rp-exact-aroma{min-height:330px!important}}
