@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1202-bolyarka-social-sources-v15"
+        value: "20260819-1246-home-live-tape-v16"
