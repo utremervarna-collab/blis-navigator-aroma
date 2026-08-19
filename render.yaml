@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0922-social-posts-v11-master5"
+        value: "20260819-0940-social-truth-v6"
