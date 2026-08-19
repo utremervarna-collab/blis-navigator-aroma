@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0918-social-posts-v10-scroll-stable"
+        value: "20260819-0922-social-posts-v11-master5"
