@@ -29,5 +29,15 @@
   function bind(chs){const detail=document.getElementById('smChannelDetail');const buttons=[...document.querySelectorAll('[data-sm-channel]')];const show=key=>{const c=chs.find(x=>x.key===key)||chs[0];if(!detail||!c)return;buttons.forEach(b=>b.classList.toggle('active',b.dataset.smChannel===c.key));detail.innerHTML=`<div class="sm-detail-box"><h4>${esc(c.platform)} — текущо състояние</h4><div class="sm-detail-stats"><div><small>Аудитория</small><b>${fmt(c.followers)}</b></div><div><small>Публикации</small><b>${fmt(c.posts)}</b></div><div><small>Ангажираност</small><b>${pct(c.engagement)}</b></div><div><small>Споменавания</small><b>${fmt(c.mentions)}</b></div></div></div><div class="sm-detail-box"><h4>Източник и наблюдение</h4><div class="sm-kpi-foot">${esc(c.method)}. Детайлният изглед използва само измеримите данни за този канал.</div></div>`};buttons.forEach(b=>b.addEventListener('click',()=>show(b.dataset.smChannel)));if(chs.length)show(chs[0].key)}
   const oldRefGo=window.refGo;
   if(typeof oldRefGo==='function')window.refGo=function(id){oldRefGo(id);if(id==='social')setTimeout(render,0)};
+  
+  function renameSocialNav(){
+    const b=document.querySelector('#nav button[data-page="social"]');
+    if(!b)return;
+    const spans=b.querySelectorAll('span');
+    const label=spans[spans.length-1];
+    if(label)label.textContent='Социални сигнали';
+  }
+  renameSocialNav();
+  setTimeout(renameSocialNav,900);
   window.BLISSocialSignalsRender=render;
 })();

@@ -1,6 +1,6 @@
 /* BLIS Navigator 2.0 — complete reference screen system. Uses existing source-driven globals/API where available. */
 (function(){
-const NAV=[['overview','⌂','Общ преглед'],['live','◉','Live Monitoring'],['social','✣','Социални канали'],['digital','◎','Дигитална видимост'],['reputation','◇','Репутация'],['market','◉','Потребителски интерес'],['competition','⚑','Конкуренти'],['signals','♧','Сигнали'],['reports','▤','Месечни доклади'],['sources','▥','Източници на данни'],['history','◷','История'],['timeline','◫','Intelligence Timeline'],['profile','♙','Клиентски профил'],['settings','⚙','Настройки'],['help','?','Помощ']];
+const NAV=[['overview','⌂','Общ преглед'],['live','◉','Live Monitoring'],['social','✣','Социални сигнали'],['digital','◎','Дигитална видимост'],['reputation','◇','Репутация'],['market','◉','Потребителски интерес'],['competition','⚑','Конкуренти'],['signals','♧','Сигнали'],['reports','▤','Месечни доклади'],['sources','▥','Източници на данни'],['history','◷','История'],['timeline','◫','Intelligence Timeline'],['profile','♙','Клиентски профил'],['settings','⚙','Настройки'],['help','?','Помощ']];
 const accent=['#1766e8','#32ad66','#7546d8','#ff7a19','#ef4f78'];
 function E(s){return typeof esc==='function'?esc(s):String(s??'')}
 function V(k){try{let v=score(k);return v==null?'—':val(v)}catch{return'—'}}
