@@ -13,8 +13,10 @@ type socialSearchEvidence struct {
 	Reactions float64
 }
 
-var socialAudienceSearchRE = regexp.MustCompile(`(?i)([0-9][0-9.,\s]*|[0-9]+(?:[.,][0-9]+)?\s*[KMB])\s*(followers|последователи|subscribers|абонати)`)
-var socialReactionSearchRE = regexp.MustCompile(`(?i)([0-9][0-9.,\s]*|[0-9]+(?:[.,][0-9]+)?\s*[KMB])\s*(reactions?|likes?|харесвания|comments?|коментари|shares?|споделяния)`)
+const socialPublicNumber = `([0-9]{1,3}(?:[ .][0-9]{3})+|[0-9]+(?:[.,][0-9]+)?\s*[KMB]?)`
+
+var socialAudienceSearchRE = regexp.MustCompile(`(?i)` + socialPublicNumber + `\s*(followers|последователи|subscribers|абонати)`)
+var socialReactionSearchRE = regexp.MustCompile(`(?i)` + socialPublicNumber + `\s*(reactions?|likes?|харесвания|comments?|коментари|shares?|споделяния)`)
 
 func socialFallbackQuery(c *Client, src *Source, platform string) string {
 	if c == nil || src == nil {
@@ -105,7 +107,7 @@ func extractSocialSearchEvidence(c *Client, src *Source, platform string) social
 			ev.Reactions += r
 		}
 
-		if !isSocialPostURL(platform, resultURL) || seenPosts[resultKey] {
+		if len(ev.Posts) >= 3 || !isSocialPostURL(platform, resultURL) || seenPosts[resultKey] {
 			continue
 		}
 		seenPosts[resultKey] = true
@@ -122,14 +124,6 @@ func extractSocialSearchEvidence(c *Client, src *Source, platform string) social
 			continue
 		}
 		ev.Posts = append(ev.Posts, socialPost{Text: text, URL: resultURL, Published: nowISO(), Origin: "public_search"})
-		if len(ev.Posts) >= 3 {
-			// Metrics have already been read from this result; three clean post
-			// examples are enough for the feed.
-			continue
-		}
-	}
-	if len(ev.Posts) > 3 {
-		ev.Posts = ev.Posts[:3]
 	}
 	return ev
 }
