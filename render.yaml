@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0910-social-posts-v8-direct"
+        value: "20260819-0914-social-posts-v9-persistent"
