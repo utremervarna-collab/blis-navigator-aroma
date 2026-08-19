@@ -138,14 +138,17 @@ func sessionFromRequest(r *http.Request) (clientSession, bool) {
 	return s, true
 }
 
+func secureRequest(r *http.Request) bool {
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") || strings.HasSuffix(strings.ToLower(r.Host), ".onrender.com")
+}
+
 func setSessionCookie(w http.ResponseWriter, r *http.Request, s clientSession) {
-	secure := strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") || strings.HasSuffix(strings.ToLower(r.Host), ".onrender.com")
 	http.SetCookie(w, &http.Cookie{
 		Name:     clientCookieName,
 		Value:    s.Token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   secure,
+		Secure:   secureRequest(r),
 		SameSite: http.SameSiteLaxMode,
 		Expires:  s.ExpiresAt,
 		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
@@ -158,7 +161,7 @@ func clearSession(w http.ResponseWriter, r *http.Request) {
 		delete(clientSessions.m, c.Value)
 		clientSessions.Unlock()
 	}
-	http.SetCookie(w, &http.Cookie{Name: clientCookieName, Value: "", Path: "/", HttpOnly: true, MaxAge: -1, Expires: time.Unix(0, 0), SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{Name: clientCookieName, Value: "", Path: "/", HttpOnly: true, Secure: secureRequest(r), MaxAge: -1, Expires: time.Unix(0, 0), SameSite: http.SameSiteLaxMode})
 }
 
 func accountForSession(s clientSession) (clientAccount, bool) {
@@ -170,15 +173,23 @@ func accountForSession(s clientSession) (clientAccount, bool) {
 	return clientAccount{}, false
 }
 
+func accountForSlug(slug string) (clientAccount, bool) {
+	for _, a := range clientAccounts {
+		if a.ClientSlug == slug {
+			return a, true
+		}
+	}
+	return clientAccount{}, false
+}
+
 func clientGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	switch path {
 	case "/client-login", "/client-login/", "/login":
-		if _, ok := sessionFromRequest(r); ok {
-			http.Redirect(w, r, "/dashboard.html", http.StatusFound)
-			return
-		}
+		// A shared/email login link must always show the login form. An old browser
+		// session must never silently send the visitor into another client's profile.
+		clearSession(w, r)
 		serveClientLogin(w, r)
 		return
 	case "/api/client-login":
@@ -255,9 +266,14 @@ func handleClientLogin(w http.ResponseWriter, r *http.Request) {
 	username := strings.ToLower(strings.TrimSpace(r.FormValue("username")))
 	password := r.FormValue("password")
 	a, ok := clientAccounts[username]
-	if !ok || !passwordOK(a, password) {
+	if !ok {
 		time.Sleep(180 * time.Millisecond)
 		http.Redirect(w, r, "/client-login?error=1", http.StatusFound)
+		return
+	}
+	if !passwordOK(a, password) {
+		time.Sleep(180 * time.Millisecond)
+		http.Redirect(w, r, "/client-login?client="+url.QueryEscape(a.ClientSlug)+"&error=1", http.StatusFound)
 		return
 	}
 	s, err := newClientSession(a)
@@ -274,10 +290,20 @@ func serveClientLogin(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("error") != "" {
 		errMsg = `<div class="error">Невалидно потребителско име или парола.</div>`
 	}
+
+	prefill := ""
+	readonly := ""
+	clientTag := ""
+	if a, ok := accountForSlug(strings.TrimSpace(r.URL.Query().Get("client"))); ok {
+		prefill = a.Username
+		readonly = " readonly"
+		clientTag = `<div class="clienttag"><span>Клиентски профил</span><b>` + a.ClientName + `</b></div>`
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 	io.WriteString(w, `<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLIS Navigator — Клиентски вход</title><style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#17324c}body{min-height:100vh;display:grid;place-items:center;padding:28px;background:linear-gradient(135deg,#fff 0%,#f5f8fb 65%,#eef3f7 100%)}.wrap{width:min(100%,430px)}.brand{text-align:center;margin-bottom:26px}.brand strong{display:block;font:600 38px/1 Georgia,serif;color:#153652}.brand span{display:block;margin-top:8px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#708095}.card{background:#fff;border:1px solid #e0e6ec;border-radius:18px;padding:34px;box-shadow:0 24px 70px rgba(20,48,73,.12)}h1{font:500 28px/1.15 Georgia,serif;margin:0 0 8px;color:#153652}.sub{font-size:12px;line-height:1.55;color:#718196;margin:0 0 24px}.field{margin:0 0 15px}.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#52677b;margin-bottom:7px}.field input{width:100%;height:48px;border:1px solid #d7e0e8;border-radius:9px;padding:0 13px;font-size:14px;outline:none;background:#fff;color:#17324c}.field input:focus{border-color:#2e6f9d;box-shadow:0 0 0 3px rgba(46,111,157,.10)}button{width:100%;height:50px;border:0;border-radius:9px;background:#153652;color:#fff;font-weight:800;cursor:pointer;margin-top:4px}button:hover{background:#1d4769}.error{background:#fff1f1;border:1px solid #f0cccc;color:#a23e3e;padding:10px 12px;border-radius:8px;font-size:11px;margin-bottom:15px}.back{display:block;text-align:center;margin-top:18px;color:#60788c;font-size:11px;text-decoration:none}.lock{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:20px;color:#8593a1;font-size:9px}.lock i{width:6px;height:6px;border-radius:50%;background:#53a978}</style></head><body><div class="wrap"><div class="brand"><strong>BLIS™</strong><span>Brand Lab Intelligence System</span></div><div class="card"><h1>Клиентски вход</h1><p class="sub">Влезте в защитения профил на вашата организация в BLIS Navigator.</p>`+errMsg+`<form method="post" action="/api/client-login" autocomplete="on"><div class="field"><label for="username">Потребителско име</label><input id="username" name="username" type="text" autocomplete="username" required autofocus></div><div class="field"><label for="password">Парола</label><input id="password" name="password" type="password" autocomplete="current-password" required></div><button type="submit">Вход в Navigator</button></form><div class="lock"><i></i> Защитена клиентска сесия</div></div><a class="back" href="/">← Към началната страница</a></div></body></html>`)
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#17324c}body{min-height:100vh;display:grid;place-items:center;padding:28px;background:linear-gradient(135deg,#fff 0%,#f5f8fb 65%,#eef3f7 100%)}.wrap{width:min(100%,430px)}.brand{text-align:center;margin-bottom:26px}.brand strong{display:block;font:600 38px/1 Georgia,serif;color:#153652}.brand span{display:block;margin-top:8px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#708095}.card{background:#fff;border:1px solid #e0e6ec;border-radius:18px;padding:34px;box-shadow:0 24px 70px rgba(20,48,73,.12)}h1{font:500 28px/1.15 Georgia,serif;margin:0 0 8px;color:#153652}.sub{font-size:12px;line-height:1.55;color:#718196;margin:0 0 20px}.clienttag{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid #dfe7ee;background:#f7fafc;border-radius:9px;padding:11px 12px;margin:0 0 18px}.clienttag span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7b8998}.clienttag b{font-size:12px;color:#153652}.field{margin:0 0 15px}.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#52677b;margin-bottom:7px}.field input{width:100%;height:48px;border:1px solid #d7e0e8;border-radius:9px;padding:0 13px;font-size:14px;outline:none;background:#fff;color:#17324c}.field input[readonly]{background:#f5f7f9;color:#52677b}.field input:focus{border-color:#2e6f9d;box-shadow:0 0 0 3px rgba(46,111,157,.10)}button{width:100%;height:50px;border:0;border-radius:9px;background:#153652;color:#fff;font-weight:800;cursor:pointer;margin-top:4px}button:hover{background:#1d4769}.error{background:#fff1f1;border:1px solid #f0cccc;color:#a23e3e;padding:10px 12px;border-radius:8px;font-size:11px;margin-bottom:15px}.back{display:block;text-align:center;margin-top:18px;color:#60788c;font-size:11px;text-decoration:none}.lock{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:20px;color:#8593a1;font-size:9px}.lock i{width:6px;height:6px;border-radius:50%;background:#53a978}</style></head><body><div class="wrap"><div class="brand"><strong>BLIS™</strong><span>Brand Lab Intelligence System</span></div><div class="card"><h1>Клиентски вход</h1><p class="sub">Влезте в защитения профил на вашата организация в BLIS Navigator.</p>`+clientTag+errMsg+`<form method="post" action="/api/client-login" autocomplete="on"><div class="field"><label for="username">Потребителско име</label><input id="username" name="username" type="text" value="`+prefill+`" autocomplete="username" required`+readonly+`></div><div class="field"><label for="password">Парола</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus></div><button type="submit">Вход в Navigator</button></form><div class="lock"><i></i> Защитена клиентска сесия</div></div><a class="back" href="/">← Към началната страница</a></div></body></html>`)
 }
 
 func scopeDashboardResponse(resp *http.Response) error {
