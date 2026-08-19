@@ -39,15 +39,29 @@
   function smoothPath(pts){
     if(!pts.length)return'';
     if(pts.length===1)return`M ${pts[0][0]} ${pts[0][1]}`;
-    if(pts.length===2){const [a,b]=pts,dx=b[0]-a[0];return`M ${a[0]} ${a[1]} C ${a[0]+dx*.34} ${a[1]}, ${a[0]+dx*.66} ${b[1]}, ${b[0]} ${b[1]}`}
-    let d=`M ${pts[0][0]} ${pts[0][1]}`;
-    for(let i=0;i<pts.length-1;i++){
-      const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
-      const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6];
-      const c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
-      d+=` C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${p2[0]} ${p2[1]}`;
+    if(pts.length===2){const [a,b]=pts,dx=b[0]-a[0];return`M ${a[0]} ${a[1]} C ${a[0]+dx/3} ${a[1]}, ${b[0]-dx/3} ${b[1]}, ${b[0]} ${b[1]}`}
+    const n=pts.length,d=[],m=new Array(n).fill(0);
+    for(let i=0;i<n-1;i++){
+      const dx=pts[i+1][0]-pts[i][0];
+      d[i]=dx?((pts[i+1][1]-pts[i][1])/dx):0;
     }
-    return d;
+    m[0]=d[0];
+    m[n-1]=d[n-2];
+    for(let i=1;i<n-1;i++){
+      const a=d[i-1],b=d[i];
+      m[i]=(a===0||b===0||a*b<=0)?0:(a+b)/2;
+    }
+    for(let i=0;i<n-1;i++){
+      if(d[i]===0){m[i]=0;m[i+1]=0;continue}
+      const a=m[i]/d[i],b=m[i+1]/d[i],q=a*a+b*b;
+      if(q>9){const tau=3/Math.sqrt(q);m[i]=tau*a*d[i];m[i+1]=tau*b*d[i]}
+    }
+    let path=`M ${pts[0][0]} ${pts[0][1]}`;
+    for(let i=0;i<n-1;i++){
+      const p0=pts[i],p1=pts[i+1],dx=p1[0]-p0[0],c1x=p0[0]+dx/3,c2x=p1[0]-dx/3,c1y=p0[1]+m[i]*dx/3,c2y=p1[1]-m[i+1]*dx/3;
+      path+=` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p1[0]} ${p1[1]}`;
+    }
+    return path;
   }
   function draw(key,opt={}){
     const s=series(key),compact=!!opt.compact,w=compact?210:(opt.width||720),h=compact?46:(opt.height||220),l=compact?3:38,r=compact?3:16,t=compact?4:16,b=compact?4:30,color=opt.color||'#1766e8';
