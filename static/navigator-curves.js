@@ -1,7 +1,6 @@
-/* BLIS Navigator — Temporal Dynamics Engine v3.
-   Uses measured daily history when it contains real movement. When the measured
-   series is flat or too short, builds a deterministic client+metric analytical
-   micro-dynamic anchored to the latest measured value. No random values. */
+/* BLIS Navigator — Temporal Dynamics Engine v3.1.
+   Measured history is used when it contains real movement. Flat/short series
+   receive deterministic analytical micro-dynamics anchored to the latest value. */
 (function(){
   'use strict';
   const N=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
@@ -11,6 +10,7 @@
   const round1=v=>Math.round(v*10)/10;
   const client=()=>String(document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.slug||'client');
   const periodDays=()=>Math.max(7,Math.min(30,Number(window.BLISPeriod?.days)||30));
+  let drawSeq=0;
 
   const aliases={
     blis:['blis','blis_index','overall'],
@@ -144,9 +144,7 @@
     vals=vals.map(v=>clamp(v+offset));
     vals[vals.length-1]=anchor;
     for(let i=1;i<vals.length-1;i++){
-      if(Math.abs(round1(vals[i])-round1(vals[i-1]))<.05){
-        vals[i]=clamp(vals[i]+(((seed+i)&1)?0.18:-0.18));
-      }
+      if(Math.abs(round1(vals[i])-round1(vals[i-1]))<.05)vals[i]=clamp(vals[i]+(((seed+i)&1)?0.18:-0.18));
     }
     return dates.map((date,i)=>({date,value:round1(vals[i]),mode:'analytical'}));
   }
@@ -178,20 +176,39 @@
     }
     return path;
   }
+  function sharpPath(pts){return pts.map((p,i)=>`${i?'L':'M'} ${p[0]} ${p[1]}`).join(' ')}
+  function bgPoint(date,value){
+    const d=String(date||'').slice(0,10).split('-');
+    const label=d.length===3?`${d[2]}.${d[1]}.${d[0]}`:String(date||'');
+    return `${label} · ${Number(value).toLocaleString('bg-BG',{maximumFractionDigits:1})}/100`;
+  }
 
   function draw(key,opt={}){
     const k=keyNorm(key),s=series(k),compact=!!opt.compact,w=compact?210:(opt.width||720),h=compact?46:(opt.height||220),l=compact?3:38,r=compact?3:16,t=compact?4:16,b=compact?4:30,color=opt.color||'#1766e8';
     if(s.length<2)return`<div class="${compact?'scan':'ov-no-data'}">Няма достатъчно стойности за тенденция.</div>`;
     const vals=s.map(x=>x.value),rawMin=Math.min(...vals),rawMax=Math.max(...vals),spread=Math.max(.8,rawMax-rawMin),pad=Math.max(1.4,spread*.28),min=Math.max(0,rawMin-pad),max=Math.min(100,rawMax+pad),span=Math.max(1,max-min);
-    const X=i=>l+(w-l-r)*i/(s.length-1),Y=v=>t+(h-t-b)*(1-(v-min)/span),pts=s.map((x,i)=>[X(i),Y(x.value)]),path=smoothPath(pts),id=('curve-'+client()+'-'+k).replace(/[^a-z0-9_-]/gi,'');
+    const X=i=>l+(w-l-r)*i/(s.length-1),Y=v=>t+(h-t-b)*(1-(v-min)/span),pts=s.map((x,i)=>[X(i),Y(x.value)]);
+    const path=compact?sharpPath(pts):smoothPath(pts);
+    const instance=++drawSeq,id=('curve-'+client()+'-'+k+'-'+instance).replace(/[^a-z0-9_-]/gi,'');
     const grid=compact?'':[0,.25,.5,.75,1].map(q=>{const v=max-(max-min)*q,y=t+(h-t-b)*q;return`<line x1="${l}" y1="${y}" x2="${w-r}" y2="${y}" stroke="#e8edf4"/><text x="2" y="${y+4}" font-size="9" fill="#74839a">${Math.round(v)}</text>`}).join('');
     const area=compact?'':`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".18"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${path} L ${pts[pts.length-1][0]} ${h-b} L ${pts[0][0]} ${h-b} Z" fill="url(#${id})"/>`;
     const mode=s.some(x=>x.mode==='analytical')?'analytical':'measured';
-    const dots=compact?'':pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="2.8" fill="${color}"><title>${E(s[i].date)}: ${s[i].value.toFixed(Number.isInteger(s[i].value)?0:1)}/100</title></circle>`).join('');
+    const interactive=!compact&&k==='blis';
+    const dots=compact?'':pts.map((p,i)=>interactive?`<circle class="blis-curve-point" data-blis-date="${E(s[i].date)}" data-blis-value="${E(s[i].value)}" data-blis-readout="${id}-readout" cx="${p[0]}" cy="${p[1]}" r="4.2" fill="${color}" stroke="#fff" stroke-width="1.5" tabindex="0" role="button" style="cursor:pointer"><title>${E(bgPoint(s[i].date,s[i].value))}</title></circle>`:`<circle cx="${p[0]}" cy="${p[1]}" r="2.8" fill="${color}"><title>${E(bgPoint(s[i].date,s[i].value))}</title></circle>`).join('');
     const labels=compact?'':(()=>{const step=Math.max(1,Math.ceil(s.length/7));return s.map((x,i)=>(i%step===0||i===s.length-1)?`<text x="${X(i)}" y="${h-8}" text-anchor="middle" font-size="9" fill="#74839a">${E((x.date||'').slice(5).split('-').reverse().join('.'))}</text>`:'').join('')})();
+    const readout=interactive?`<div id="${id}-readout" class="blis-point-readout" style="margin-top:8px;min-height:28px;padding:7px 10px;border:1px solid #e4e9f1;border-radius:8px;background:#f8fafc;color:#23344f;font-size:12px"><b>Кликнете върху точка</b> · ще видите датата и стойността на BLIS индекса.</div>`:'';
     const note=compact?'':`<div class="blis-series-note" style="margin-top:7px;font-size:10px;color:#7b8798">${mode==='measured'?'Измерена дневна динамика.':'Аналитична микродинамика при недостатъчна вариация; последната точка е текущата измерена стойност.'}</div>`;
-    return`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" data-curve-key="${E(k)}" data-curve-client="${E(client())}" data-series-mode="${mode}">${grid}${area}<path d="${path}" fill="none" stroke="${color}" stroke-width="${compact?2.5:3}" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>${dots}${labels}</svg>${note}`;
+    return`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" data-curve-key="${E(k)}" data-curve-client="${E(client())}" data-series-mode="${mode}">${grid}${area}<path d="${path}" fill="none" stroke="${color}" stroke-width="${compact?2.5:3}" stroke-linecap="${compact?'butt':'round'}" stroke-linejoin="${compact?'miter':'round'}" vector-effect="non-scaling-stroke"/>${dots}${labels}</svg>${readout}${note}`;
   }
 
-  window.BLISCurves={series,draw,smoothPath,keyNorm,version:'3.0-temporal-dynamics'};
+  function showPoint(dot){
+    const rid=dot?.getAttribute?.('data-blis-readout');if(!rid)return;
+    const box=document.getElementById(rid);if(!box)return;
+    box.innerHTML=`<b>${E(bgPoint(dot.getAttribute('data-blis-date'),dot.getAttribute('data-blis-value')))}</b>`;
+    const svg=dot.ownerSVGElement;svg?.querySelectorAll('.blis-curve-point').forEach(x=>{x.setAttribute('r',x===dot?'5.5':'4.2');x.setAttribute('stroke-width',x===dot?'2.4':'1.5')});
+  }
+  document.addEventListener('click',e=>{const dot=e.target?.closest?.('.blis-curve-point');if(dot)showPoint(dot)});
+  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target?.matches?.('.blis-curve-point')){e.preventDefault();showPoint(e.target)}});
+
+  window.BLISCurves={series,draw,smoothPath,sharpPath,keyNorm,version:'3.1-temporal-dynamics'};
 })();
