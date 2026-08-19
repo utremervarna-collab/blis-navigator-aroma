@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"crypto/rand"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -16,7 +16,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -53,11 +52,6 @@ var clientAccounts = map[string]clientAccount{
 	},
 }
 
-var clientSessions = struct {
-	sync.Mutex
-	m map[string]clientSession
-}{m: map[string]clientSession{}}
-
 var authProxy *httputil.ReverseProxy
 var authExternalPort string
 var authInternalPort string
@@ -66,6 +60,7 @@ const clientCookieName = "blis_client_session"
 const clientHashPrefix = "blis-client-v1|"
 const ownerHashPrefix = "blis-owner-v1|"
 const ownerAccessHash = "464e29c18c1cfc4d7061965f0d1a7f59661a97f17cc59f26b92ea0694abbd3a9"
+const sessionVersion = "v2"
 
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" {
@@ -118,30 +113,42 @@ func ownerTokenOK(token string) bool {
 	return subtle.ConstantTimeCompare(sum[:], expected) == 1
 }
 
-func newSession(clientSlug, username string, admin bool, ttl time.Duration) (clientSession, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return clientSession{}, err
+func sessionSecret() string {
+	if s := strings.TrimSpace(os.Getenv("BLIS_SESSION_SECRET")); s != "" {
+		return s
 	}
-	s := clientSession{
-		Token:      hex.EncodeToString(b),
-		ClientSlug: clientSlug,
-		Username:   username,
-		Admin:      admin,
-		ExpiresAt:  time.Now().Add(ttl),
+	return ownerAccessHash
+}
+
+func sessionMAC(payload, key string) string {
+	m := hmac.New(sha256.New, []byte(key))
+	_, _ = m.Write([]byte(payload))
+	return hex.EncodeToString(m.Sum(nil))
+}
+
+func validMAC(payload, key, got string) bool {
+	expected, err1 := hex.DecodeString(sessionMAC(payload, key))
+	actual, err2 := hex.DecodeString(got)
+	if err1 != nil || err2 != nil || len(expected) != len(actual) {
+		return false
 	}
-	clientSessions.Lock()
-	clientSessions.m[s.Token] = s
-	clientSessions.Unlock()
-	return s, nil
+	return subtle.ConstantTimeCompare(expected, actual) == 1
 }
 
 func newClientSession(a clientAccount) (clientSession, error) {
-	return newSession(a.ClientSlug, a.Username, false, 7*24*time.Hour)
+	expires := time.Now().Add(7 * 24 * time.Hour)
+	base := strings.Join([]string{sessionVersion, "client", a.Username, a.ClientSlug, strconv.FormatInt(expires.Unix(), 10)}, "|")
+	key := sessionSecret() + "|client|" + a.PasswordHash
+	token := base + "|" + sessionMAC(base, key)
+	return clientSession{Token: token, ClientSlug: a.ClientSlug, Username: a.Username, Admin: false, ExpiresAt: expires}, nil
 }
 
 func newOwnerSession() (clientSession, error) {
-	return newSession("", "owner", true, 30*24*time.Hour)
+	expires := time.Now().Add(30 * 24 * time.Hour)
+	base := strings.Join([]string{sessionVersion, "owner", strconv.FormatInt(expires.Unix(), 10)}, "|")
+	key := sessionSecret() + "|owner|" + ownerAccessHash
+	token := base + "|" + sessionMAC(base, key)
+	return clientSession{Token: token, Username: "owner", Admin: true, ExpiresAt: expires}, nil
 }
 
 func sessionFromRequest(r *http.Request) (clientSession, bool) {
@@ -149,17 +156,38 @@ func sessionFromRequest(r *http.Request) (clientSession, bool) {
 	if err != nil || c.Value == "" {
 		return clientSession{}, false
 	}
-	clientSessions.Lock()
-	defer clientSessions.Unlock()
-	s, ok := clientSessions.m[c.Value]
-	if !ok {
+	parts := strings.Split(c.Value, "|")
+	if len(parts) < 4 || parts[0] != sessionVersion {
 		return clientSession{}, false
 	}
-	if time.Now().After(s.ExpiresAt) {
-		delete(clientSessions.m, c.Value)
-		return clientSession{}, false
+	if parts[1] == "owner" && len(parts) == 4 {
+		exp, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil || time.Now().Unix() >= exp {
+			return clientSession{}, false
+		}
+		base := strings.Join(parts[:3], "|")
+		if !validMAC(base, sessionSecret()+"|owner|"+ownerAccessHash, parts[3]) {
+			return clientSession{}, false
+		}
+		return clientSession{Token: c.Value, Username: "owner", Admin: true, ExpiresAt: time.Unix(exp, 0)}, true
 	}
-	return s, true
+	if parts[1] == "client" && len(parts) == 6 {
+		username, clientSlug := parts[2], parts[3]
+		exp, err := strconv.ParseInt(parts[4], 10, 64)
+		if err != nil || time.Now().Unix() >= exp {
+			return clientSession{}, false
+		}
+		a, ok := clientAccounts[username]
+		if !ok || a.ClientSlug != clientSlug {
+			return clientSession{}, false
+		}
+		base := strings.Join(parts[:5], "|")
+		if !validMAC(base, sessionSecret()+"|client|"+a.PasswordHash, parts[5]) {
+			return clientSession{}, false
+		}
+		return clientSession{Token: c.Value, ClientSlug: clientSlug, Username: username, Admin: false, ExpiresAt: time.Unix(exp, 0)}, true
+	}
+	return clientSession{}, false
 }
 
 func secureRequest(r *http.Request) bool {
@@ -184,11 +212,6 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, s clientSession) {
 }
 
 func clearSession(w http.ResponseWriter, r *http.Request) {
-	if c, err := r.Cookie(clientCookieName); err == nil {
-		clientSessions.Lock()
-		delete(clientSessions.m, c.Value)
-		clientSessions.Unlock()
-	}
 	http.SetCookie(w, &http.Cookie{Name: clientCookieName, Value: "", Path: "/", HttpOnly: true, Secure: secureRequest(r), MaxAge: -1, Expires: time.Unix(0, 0), SameSite: http.SameSiteLaxMode})
 }
 
