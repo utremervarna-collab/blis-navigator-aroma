@@ -1,2 +1,29 @@
-/* Legacy social feed overlay retired. Social posts are rendered per network by navigator-social-master.js v4. */
-(function(){'use strict';})();
+/* BLIS Navigator — verified social post feed sanitizer v2. */
+(function(){
+  'use strict';
+  const ORDER=['LinkedIn','Facebook','Instagram','YouTube','TikTok','X'];
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const client=()=>String(document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.slug||'aroma');
+  const arr=x=>Array.isArray(x)?x:[];
+  const sourceKey=s=>String(s?.key||s?.source_key||s?.id||'').toLowerCase();
+  const sourceText=s=>[s?.key,s?.label,s?.url,s?.method].filter(Boolean).join(' ').toLowerCase();
+  const platform=s=>{const q=typeof s==='string'?s.toLowerCase():sourceText(s);if(q.includes('linkedin'))return'LinkedIn';if(q.includes('facebook'))return'Facebook';if(q.includes('instagram'))return'Instagram';if(q.includes('youtube'))return'YouTube';if(q.includes('tiktok'))return'TikTok';if(q.includes('twitter')||q.includes('x.com'))return'X';return''};
+  const pClass=p=>p.toLowerCase().replace(/[^a-z]/g,'');
+  const glyph=p=>({LinkedIn:'in',Facebook:'f',Instagram:'◎',YouTube:'▶',TikTok:'♪',X:'𝕏'}[p]||'•');
+  const icon=p=>`<span class="sm-platform-icon ${pClass(p)}">${esc(glyph(p))}</span>`;
+  const norm=o=>({source:String(o?.source_key||o?.source||'').toLowerCase(),metric:String(o?.metric_key||o?.metric||o?.key||'').toLowerCase(),value:o?.value,time:o?.observed_at||o?.time||''});
+  const latestExact=(obs,keys,metric)=>{let best=null,t0=-Infinity;for(const raw of obs){const o=norm(raw);if(!keys.has(o.source)||o.metric!==metric)continue;const t=new Date(o.time||0).getTime()||0;if(t>=t0){best=o;t0=t}}return best};
+  const isRoot=u=>/^(https?:\/\/)?(www\.)?(facebook\.com|instagram\.com|youtube\.com|tiktok\.com)\/?$/i.test(String(u||'').trim());
+  const score=s=>{const q=sourceText(s);let v=0;if(/official|официал/.test(q))v+=20;if(/_official/.test(sourceKey(s)))v+=30;if(!isRoot(s?.url))v+=10;return v};
+  const validURL=(p,u)=>{u=String(u||'').toLowerCase();if(!/^https?:\/\//.test(u))return false;if(p==='LinkedIn')return u.includes('linkedin.com/posts/')||u.includes('/feed/update/');if(p==='Facebook')return u.includes('facebook.com/')&&(u.includes('/posts/')||u.includes('/reel/')||u.includes('/videos/')||u.includes('story_fbid='));if(p==='Instagram')return u.includes('instagram.com/p/')||u.includes('instagram.com/reel/');if(p==='YouTube')return u.includes('youtube.com/watch')||u.includes('youtu.be/')||u.includes('youtube.com/shorts/');if(p==='TikTok')return u.includes('tiktok.com/')&&u.includes('/video/');return false};
+  const validText=s=>{s=String(s||'').trim();if(s.length<16||s==='__BLIS_EMPTY__')return false;const q=s.toLowerCase();const bad=['class=','data-tracking','data-control','data-delayed-url','tracking-will-navigate','<img','<svg','aria-','href=','src=','public_biz_employees','organization_guest_main-feed','inline-block relative','ng-control-name'];if(bad.some(x=>q.includes(x)))return false;return /[a-zа-я]/i.test(s)};
+  const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
+  const publishedLabel=s=>{if(!s||s==='__BLIS_EMPTY__')return'публично открит пост';const d=new Date(s);return isNaN(d)?'публично открит пост':d.toLocaleDateString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric'})};
+  function groups(sources){const m=new Map();for(const s of sources){const p=platform(s);if(!p)continue;if(!m.has(p))m.set(p,[]);m.get(p).push(s)}const out=[];for(const [p,list] of m){list.sort((a,b)=>score(b)-score(a));const specific=list.filter(x=>!isRoot(x?.url));if(!specific.length)continue;out.push({platform:p,keys:new Set(list.map(sourceKey)),source:specific[0]})}return out.sort((a,b)=>ORDER.indexOf(a.platform)-ORDER.indexOf(b.platform))}
+  function postsFor(g,obs){const out=[],seen=new Set();for(let i=1;i<=5;i++){const t=latestExact(obs,g.keys,`post_${i}_text`),u=latestExact(obs,g.keys,`post_${i}_url`),pub=latestExact(obs,g.keys,`post_${i}_published`);if(!t||!validText(t.value))continue;const text=clean(t.value),url=u&&validURL(g.platform,u.value)?String(u.value):'';if(!url)continue;const k=url.toLowerCase();if(seen.has(k))continue;seen.add(k);out.push({text:text.length>240?text.slice(0,239)+'…':text,url,published:pub?.value||'',observed:t.time});if(out.length>=3)break}return out}
+  function card(g,posts){return `<section class="sm-network-feed" data-verified-platform="${esc(g.platform)}"><div class="sm-network-feed-head">${icon(g.platform)}<b>${esc(g.platform)}</b><small>${posts.length} ${posts.length===1?'публикация':'публикации'}</small></div><div class="sm-network-posts">${posts.length?posts.map(p=>`<a class="sm-network-post" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer"><div><p>${esc(p.text)}</p><span>${esc(publishedLabel(p.published))}</span></div><em>Отвори ↗</em></a>`).join(''):'<div class="sm-network-empty">Не е открит надежден публичен текст на последна публикация. Профилът продължава да се наблюдава.</div>'}</div></section>`}
+  let busy=false;
+  async function patch(){if(busy)return;const root=document.getElementById('socialBody');if(!root||!document.getElementById('social')?.classList.contains('active'))return;const host=root.querySelector('.sm-network-feeds');if(!host)return;busy=true;try{const r=await fetch('/api/store/export',{cache:'no-store'});if(!r.ok)return;const st=await r.json(),data=st?.clients?.[client()];if(!data)return;const gs=groups(arr(data.sources)),obs=arr(data.observations),grid=host.querySelector('.sm-network-feed-grid');if(!grid)return;grid.innerHTML=gs.map(g=>card(g,postsFor(g,obs))).join('')}catch(e){}finally{busy=false}}
+  function init(){setTimeout(patch,250);const root=document.getElementById('socialBody');if(root)new MutationObserver(()=>setTimeout(patch,80)).observe(root,{childList:true,subtree:true});setInterval(patch,15000)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
