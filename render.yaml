@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0838-social-signals-v3"
+        value: "20260819-0848-social-posts-v4"
