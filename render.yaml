@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1134-global-nozero-v2"
+        value: "20260819-1144-social-valid-evidence-v13"
