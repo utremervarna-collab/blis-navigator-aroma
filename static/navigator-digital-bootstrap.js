@@ -10,7 +10,7 @@
   }
   function loadInteractions(){
     if(document.querySelector('script[data-blis-digital-interactions]'))return;
-    const s=document.createElement('script');s.src='/navigator-digital-interactions.js?v=20260819-interactions1';s.dataset.blisDigitalInteractions='1';document.head.appendChild(s);
+    const s=document.createElement('script');s.src='/navigator-digital-interactions.js?v=20260819-interactions2';s.dataset.blisDigitalInteractions='1';document.head.appendChild(s);
   }
   function renderSoon(delay=60){setTimeout(()=>{try{if(document.getElementById('digital')?.classList.contains('active')){window.BLISDigitalRadar?.render?.();setTimeout(()=>window.BLISDigitalInteractionsPatch?.(),40)}}catch(e){}},delay)}
   function wrapRefGo(){
