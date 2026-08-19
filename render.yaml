@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-0959-social-original-chart-v8"
+        value: "20260819-1001-social-green-smooth-v9"
