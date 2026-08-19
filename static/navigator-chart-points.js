@@ -86,7 +86,7 @@
 (function(){
   if(document.querySelector('script[data-blis-page-state]'))return;
   const s=document.createElement('script');
-  s.src='/navigator-page-state.js?v=20260819-page1';
+  s.src='/navigator-page-state.js?v=20260819-page2';
   s.dataset.blisPageState='1';
   document.head.appendChild(s);
 })();
