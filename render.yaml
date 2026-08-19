@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1407-client-login-routing-v22"
+        value: "20260819-1418-client-overview-live-v23"
