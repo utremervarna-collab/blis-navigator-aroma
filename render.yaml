@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1130-global-nozero-v1"
+        value: "20260819-1134-global-nozero-v2"
