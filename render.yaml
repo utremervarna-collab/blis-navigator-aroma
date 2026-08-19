@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1538-reputation-realdata-layout-v29"
+        value: "20260819-1604-reputation-refine-v30"
