@@ -12,48 +12,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Deduplicate social channels by platform
+      - name: Apply readable Social Signals typography
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          p=Path('static/navigator-social-master.js')
-          s=p.read_text()
-          replacement=r'''  function channels(S,A){
-    const list=arr(S).filter(s=>SOCIAL_RE.test(sourceKey(s)+' '+sourceLabel(s)));
-    const acts=activitiesFor(A,list);
-    const grouped=new Map();
-    const mergeMax=(a,b)=>a==null?b:(b==null?a:Math.max(a,b));
-    list.forEach(s=>{
-      const originalKey=sourceKey(s),platform=platformOf(s);
-      const sa=acts.filter(a=>String(a.source||a.source_key||'').toLowerCase()===originalKey);
-      const pick=re=>{const z=sa.find(a=>re.test(String(a.metric||a.key||'').toLowerCase()));return z?n(z.value):null};
-      const current=grouped.get(platform)||{key:platform.toLowerCase().replace(/[^a-zа-я0-9]+/g,'-'),platform,label:platform,methods:[],followers:null,posts:null,engagement:null,mentions:null,active:true};
-      current.methods.push(s.method||sourceLabel(s)||'Публичен социален канал');
-      current.followers=mergeMax(current.followers,pick(/followers|audience|последовател|аудитория/));
-      current.posts=mergeMax(current.posts,pick(/posts|publications|публикац/));
-      current.engagement=mergeMax(current.engagement,pick(/engagement|ангаж/));
-      current.mentions=mergeMax(current.mentions,pick(/mentions|споменав/));
-      grouped.set(platform,current);
-    });
-    return [...grouped.values()].map(c=>({...c,method:[...new Set(c.methods)].join(' · ')}));
-  }
-  function historicalPresence'''
-          s2,n=re.subn(r'  function channels\(S,A\)\{.*?\}\n  function historicalPresence',replacement,s,count=1,flags=re.S)
-          if n!=1:
-              raise SystemExit('channels() replacement failed')
-          p.write_text(s2)
-
           p=Path('static/dashboard.html')
-          s=p.read_text().replace('/navigator-social-master.js?v=20260819-social1','/navigator-social-master.js?v=20260819-social2')
+          s=p.read_text()
+          s=s.replace('/navigator-social-master.css?v=20260819-social1','/navigator-social-master.css?v=20260819-font2')
           p.write_text(s)
           PY
-      - name: Commit channel deduplication
+      - name: Commit typography cache refresh
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add static/navigator-social-master.js static/dashboard.html
+          git add static/dashboard.html
           if ! git diff --cached --quiet; then
-            git commit -m 'Deduplicate Social Signals channels by platform'
+            git commit -m 'Apply readable Social Signals typography'
             git push origin HEAD:main
           fi
