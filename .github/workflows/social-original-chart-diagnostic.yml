@@ -1,0 +1,25 @@
+name: Social Original Chart Diagnostic
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Build and browser test
+        run: |
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:10000/api/health && break || sleep 1; done
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+          cat > .diag.cjs <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{const b=await chromium.launch({headless:true,args:['--no-sandbox']});const p=await b.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=social',{waitUntil:'domcontentloaded'});await p.waitForTimeout(3000);const x=await p.evaluate(()=>{const svg=document.querySelector('#socialTrend .sm-chart svg');const circles=[...svg?.querySelectorAll('circle')||[]];return{active:document.querySelector('.page.active')?.id,viewBox:svg?.getAttribute('viewBox'),svgText:svg?.querySelectorAll('text').length||0,readout:!!document.getElementById('smChartReadout'),circles:circles.length,radii:circles.map(c=>c.getAttribute('r')),kpis:document.querySelectorAll('#socialBody .sm-kpi[data-sm-destination]').length,points3:[...document.scripts].some(s=>s.src.includes('navigator-chart-points.js?v=20260819-points3'))}});console.log(x,errors);if(errors.length||x.active!=='social'||x.viewBox!=='0 0 760 190'||x.svgText!==0||x.readout||x.circles<2||x.radii.some(r=>r!=='2.5')||x.kpis<5||!x.points3)throw new Error('original chart appearance not preserved');await p.locator('#socialTrend circle').first().click();await p.waitForTimeout(150);const tip=await p.evaluate(()=>getComputedStyle(document.getElementById('blisGlobalPointTip')).display);if(tip==='none')throw new Error('chart point is not interactive');await p.locator('#socialBody .sm-kpi[data-sm-destination="part:socialChannels"]').click();await p.waitForTimeout(250);await p.locator('#socialBody .sm-kpi[data-sm-destination="page:signals"]').click();await p.waitForTimeout(500);const active=await p.evaluate(()=>document.querySelector('.page.active')?.id);if(active!=='signals')throw new Error('KPI module navigation failed');await b.close();})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node .diag.cjs
