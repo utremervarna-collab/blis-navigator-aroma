@@ -1,0 +1,83 @@
+name: Digital Interactions v4 Diagnostic
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Build and start
+        run: |
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:10000/api/health && break || sleep 1; done
+          node --check static/navigator-digital-master.js
+          node --check static/navigator-digital-bootstrap.js
+          node --check static/navigator-digital-interactions.js
+      - name: Browser test
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+          cat > .diag-digital-v4.cjs <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const p=await b.newPage({viewport:{width:1600,height:1100}});
+            const errors=[];p.on('pageerror',e=>errors.push(e.message));
+            await p.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=digital',{waitUntil:'domcontentloaded'});
+            await p.waitForTimeout(3200);
+            const base=await p.evaluate(()=>({
+              active:document.querySelector('.page.active')?.id,
+              radar:!!document.getElementById('dvRadar'),
+              detailRows:document.querySelectorAll('#digitalBody .dv-detail-metrics>div[data-dv-metric-action]').length,
+              kpis:document.querySelectorAll('#digitalBody .dv-kpi').length,
+              sectors:document.querySelectorAll('#digitalBody .dv-radar-sector').length,
+              interactionScript:[...document.scripts].some(s=>s.src.includes('navigator-digital-interactions.js?v=20260819-interactions1')),
+              badgeWidth:parseFloat(getComputedStyle(document.querySelector('#digitalBody .dv-radar-sector b')).minWidth),
+              detailFont:parseFloat(getComputedStyle(document.querySelector('#digitalBody .dv-detail-title strong')).fontSize),
+              sweepOpacity:parseFloat(getComputedStyle(document.querySelector('#digitalBody .dv-sweep')).opacity)
+            }));
+            console.log('BASE',base,'ERRORS',errors);
+            if(errors.length||base.active!=='digital'||!base.radar||base.detailRows!==4||base.kpis!==4||base.sectors!==5||!base.interactionScript||base.badgeWidth<70||base.detailFont<14||base.sweepOpacity>.7)throw new Error('Digital interactions base state failed');
+
+            const rows=p.locator('#digitalBody .dv-detail-metrics>div');
+            await rows.nth(0).click();await p.waitForTimeout(120);
+            let text=await p.locator('#dvMetricDrilldown').innerText();
+            if(!/Разбивка/.test(text))throw new Error('Main value drilldown failed');
+
+            await rows.nth(1).click();await p.waitForTimeout(150);
+            text=await p.locator('#dvMetricDrilldown').innerText();
+            if(!/Дневна история/.test(text))throw new Error('Daily history drilldown failed');
+
+            await rows.nth(2).click();await p.waitForTimeout(150);
+            text=await p.locator('#dvMetricDrilldown').innerText();
+            if(!/Промяна/.test(text))throw new Error('Change drilldown failed');
+
+            await rows.nth(3).click();await p.waitForTimeout(350);
+            text=await p.locator('#dvMetricDrilldown').innerText();
+            if(!/Наблюдавани източници/.test(text))throw new Error('Sources drilldown failed');
+
+            await p.locator('#digitalBody .dv-radar-sector.external').click();await p.waitForTimeout(160);
+            const ext=await p.locator('#dvDetail h3').innerText();
+            if(!/Външна видимост/.test(ext))throw new Error('Radar sector navigation failed');
+
+            await p.locator('#digitalBody .dv-kpi.search').click();await p.waitForTimeout(160);
+            const search=await p.locator('#dvDetail h3').innerText();
+            if(!/Търсене/.test(search))throw new Error('KPI navigation failed');
+
+            await p.screenshot({path:'digital-interactions-v4.png',fullPage:true});
+            await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node .diag-digital-v4.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: digital-interactions-v4-screenshot
+          path: digital-interactions-v4.png
+          if-no-files-found: warn
