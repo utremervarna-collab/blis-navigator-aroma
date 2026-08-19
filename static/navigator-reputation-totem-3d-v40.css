@@ -1,0 +1,60 @@
+/* BLIS Navigator — Reputation trophy v40. Closer to approved reference. */
+#reputationBody .rp-totem{
+  --rp-client:var(--client,#147d8b);
+  --rp-client-deep:color-mix(in srgb,var(--client,#147d8b) 72%,#061b2a 28%);
+  --rp-client-mid:color-mix(in srgb,var(--client,#147d8b) 78%,white 22%);
+  --rp-gold:#d89a1f;--rp-gold-mid:#e8b542;--rp-gold-light:#ffe79a;--rp-gold-deep:#8e5809;
+  min-height:430px!important;perspective:1200px!important;perspective-origin:50% 48%!important;
+  justify-content:flex-end!important;overflow:visible!important;
+}
+#reputationBody .rp-totem:after{content:""!important;position:absolute!important;left:50%!important;bottom:0!important;width:360px!important;height:52px!important;transform:translateX(-50%)!important;border-radius:50%!important;background:radial-gradient(ellipse at center,rgba(12,38,61,.22) 0%,rgba(12,38,61,.10) 40%,transparent 72%)!important;filter:blur(7px)!important;z-index:0!important;pointer-events:none!important}
+
+/* Large premium medallion */
+#reputationBody .rp-emblem{
+  top:-2px!important;z-index:2!important;width:202px!important;height:202px!important;min-height:202px!important;padding:0 24px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;
+  border-radius:50%!important;background:radial-gradient(circle at 36% 28%,#fff 0 34%,#fbfbfa 58%,#eef0f1 100%)!important;
+  border:1px solid #bcc4cb!important;
+  box-shadow:0 17px 30px rgba(18,43,67,.14),0 0 0 4px #fff,0 0 0 7px #d7dce0,0 0 0 9px #fff,0 0 0 11px #d7a034,inset 11px 11px 25px rgba(255,255,255,.97),inset -11px -13px 24px rgba(24,47,67,.06)!important;
+  transform:translateX(-50%) translateZ(0)!important;
+}
+#reputationBody .rp-emblem:before{inset:10px!important;border-radius:50%!important;border:1px solid rgba(216,160,46,.64)!important;box-shadow:inset 0 0 0 4px rgba(255,255,255,.94),inset 0 0 22px rgba(216,160,46,.06)!important}
+#reputationBody .rp-emblem:after{content:""!important;position:absolute!important;inset:13px!important;border-radius:50%!important;background:linear-gradient(120deg,transparent 10%,rgba(255,255,255,.88) 29%,transparent 48%)!important;opacity:.55!important;pointer-events:none!important}
+#reputationBody .rp-emblem>b{z-index:3!important;width:150px!important;max-width:150px!important;margin:0!important;white-space:normal!important;text-wrap:balance!important;text-align:center!important;font:700 24px/1.02 Georgia,serif!important;letter-spacing:-.02em!important;text-transform:none!important;color:var(--client-ink,#123f48)!important;text-shadow:0 1px 0 #fff!important}
+#reputationBody .rp-emblem[data-client="bolyarka"]>b{width:auto!important;max-width:154px!important;white-space:nowrap!important;font-size:25px!important}
+#reputationBody .rp-emblem>span{display:none!important}
+
+/* Main faceted body */
+#reputationBody .rp-prism{
+  z-index:4!important;width:304px!important;height:330px!important;margin-bottom:48px!important;transform-style:preserve-3d!important;
+  transform:rotateX(var(--rp-rx)) rotateY(var(--rp-ry)) translateZ(18px)!important;transform-origin:50% 88%!important;
+  filter:drop-shadow(0 19px 17px rgba(19,42,66,.20))!important;transition:transform .18s ease,filter .18s ease!important;
+}
+#reputationBody .rp-prism:before{content:""!important;position:absolute!important;left:34px!important;right:24px!important;bottom:2px!important;height:246px!important;z-index:-1!important;clip-path:polygon(4% 25%,19% 8%,37% 25%,54% 0,70% 20%,86% 5%,100% 27%,91% 100%,9% 100%,0 33%)!important;background:linear-gradient(90deg,rgba(255,255,255,.86),rgba(210,216,221,.54) 27%,rgba(255,255,255,.20) 45%,rgba(218,160,40,.17) 72%,rgba(255,229,144,.32))!important}
+#reputationBody .rp-prism:after{content:""!important;position:absolute!important;z-index:9!important;left:34%!important;top:18%!important;width:30%!important;height:61%!important;background:linear-gradient(112deg,transparent 20%,rgba(255,255,255,.55) 43%,transparent 55%)!important;clip-path:polygon(0 10%,68% 0,100% 82%,27% 100%)!important;opacity:.60!important;pointer-events:none!important;animation:rpPrismSheen 6s ease-in-out infinite!important}
+#reputationBody .rp-prism i{position:absolute!important;bottom:0!important;border:1px solid rgba(255,255,255,.56)!important;box-shadow:inset 1px 0 rgba(255,255,255,.60),inset -3px -4px 10px rgba(3,23,42,.13)!important;overflow:hidden!important}
+#reputationBody .rp-prism i:before{content:""!important;position:absolute!important;inset:0!important;background:linear-gradient(135deg,rgba(255,255,255,.66),transparent 26%,transparent 62%,rgba(255,255,255,.16))!important;opacity:.78!important}
+#reputationBody .rp-prism i:after{content:""!important;position:absolute!important;left:13%!important;top:8%!important;width:2px!important;height:82%!important;background:linear-gradient(transparent,rgba(255,255,255,.82),transparent)!important;opacity:.50!important;transform:rotate(7deg)!important}
+
+/* left white crystal */
+#reputationBody .rp-prism i:nth-child(1){left:18px!important;width:80px!important;height:224px!important;clip-path:polygon(48% 0,100% 22%,85% 100%,9% 100%,0 30%)!important;background:linear-gradient(108deg,#fff 0%,#eef1f3 31%,#c8d0d8 67%,#fff 100%)!important;transform:translateZ(-10px) rotateY(-8deg)!important}
+/* second white crystal */
+#reputationBody .rp-prism i:nth-child(2){left:72px!important;width:78px!important;height:255px!important;clip-path:polygon(52% 0,100% 18%,83% 100%,8% 100%,0 24%)!important;background:linear-gradient(112deg,#fff 2%,#f8f9fa 30%,#d2d9df 67%,#b8c2cb 100%)!important;transform:translateZ(0) rotateY(-3deg)!important}
+/* dominant client crystal */
+#reputationBody .rp-prism i:nth-child(3){left:128px!important;width:82px!important;height:267px!important;clip-path:polygon(60% 0,100% 20%,87% 100%,8% 100%,0 25%)!important;background:linear-gradient(108deg,var(--rp-client-deep) 0%,var(--rp-client) 48%,var(--rp-client-mid) 73%,var(--rp-client-deep) 100%)!important;transform:translateZ(21px) rotateY(1deg)!important;border-color:color-mix(in srgb,var(--client,#147d8b) 30%,white 70%)!important}
+/* broad gold crystal */
+#reputationBody .rp-prism i:nth-child(4){left:190px!important;width:72px!important;height:252px!important;clip-path:polygon(50% 0,100% 24%,82% 100%,10% 100%,0 24%)!important;background:linear-gradient(110deg,var(--rp-gold-light) 0%,var(--rp-gold-mid) 29%,var(--rp-gold) 60%,var(--rp-gold-deep) 100%)!important;transform:translateZ(10px) rotateY(5deg)!important;border-color:rgba(255,235,177,.74)!important}
+/* narrow rear gold crystal */
+#reputationBody .rp-prism i:nth-child(5){left:241px!important;width:48px!important;height:222px!important;clip-path:polygon(48% 0,100% 29%,78% 100%,11% 100%,0 23%)!important;background:linear-gradient(110deg,#fff2bd 0%,#efc45a 28%,#d79518 69%,#9e620a 100%)!important;transform:translateZ(-2px) rotateY(10deg)!important}
+
+/* Wider multi-level podium */
+#reputationBody .rp-base{z-index:6!important;bottom:10px!important;width:324px!important;height:46px!important;border-radius:50%!important;border:1px solid #b4bdc5!important;background:linear-gradient(180deg,#fff 0%,#eef1f3 29%,#bcc5cc 49%,#f7f8f9 53%,#bec6cc 76%,#fff 100%)!important;box-shadow:0 15px 23px rgba(20,43,67,.18),0 0 0 2px rgba(255,255,255,.88),0 2px 0 var(--rp-gold)!important;transform:rotateX(calc(var(--rp-rx) * .28)) rotateY(calc(var(--rp-ry) * .20)) translateZ(4px)!important}
+#reputationBody .rp-base:before{left:22px!important;right:22px!important;top:-14px!important;height:25px!important;border-radius:50%!important;background:linear-gradient(180deg,#fff 0%,#f4f6f7 42%,#d0d7dc 100%)!important;border:1px solid #c3cbd1!important;box-shadow:0 -2px 0 rgba(216,154,31,.82),inset 0 4px 8px rgba(255,255,255,.96)!important}
+#reputationBody .rp-base:after{content:""!important;position:absolute!important;left:38px!important;right:38px!important;bottom:-11px!important;height:16px!important;border-radius:50%!important;background:linear-gradient(180deg,#e7ba50,#b87913 56%,#f2ce72)!important;border:1px solid #c4861c!important;z-index:-1!important}
+
+#reputationBody .rp-totem.rp-3d-ready:hover .rp-prism{filter:drop-shadow(0 22px 19px rgba(19,42,66,.24))!important}
+@keyframes rpPrismSheen{0%,72%,100%{transform:translateX(-38px);opacity:.16}82%{transform:translateX(37px);opacity:.68}}
+@media(prefers-reduced-motion:reduce){#reputationBody .rp-prism:after{animation:none!important}}
+@media(max-width:1450px){#reputationBody .rp-totem{min-height:395px!important}#reputationBody .rp-emblem{width:178px!important;height:178px!important;min-height:178px!important}#reputationBody .rp-emblem>b{font-size:21px!important;width:132px!important;max-width:132px!important}#reputationBody .rp-prism{transform:scale(.90) rotateX(var(--rp-rx)) rotateY(var(--rp-ry)) translateZ(18px)!important;transform-origin:50% 100%!important;margin-bottom:45px!important}#reputationBody .rp-base{width:286px!important}}
+@media(max-width:1180px){#reputationBody .rp-totem{min-height:375px!important}}
+@media(max-width:760px){#reputationBody .rp-totem{min-height:350px!important}#reputationBody .rp-emblem{width:156px!important;height:156px!important;min-height:156px!important}#reputationBody .rp-emblem>b{font-size:19px!important;width:116px!important;max-width:116px!important}#reputationBody .rp-prism{transform:scale(.78)!important;transform-origin:50% 100%!important}#reputationBody .rp-base{width:246px!important}}
