@@ -33,22 +33,27 @@
 <footer class="footer"><div class="container"><div class="footGrid"><div class="footBrand"><strong>BLIS™</strong><span>BY BRAND LAB<br>Brand Lab Intelligence System</span></div><div><h4>Платформа</h4><a href="#platform">Как работи</a><a href="#solutions">Функционалности</a><a href="/dashboard.html">Вход за клиенти</a><a href="/demo.html">Заяви демо</a></div><div><h4>Решения</h4><a href="#clients">Брандове</a><a href="#clients">Хотели и туризъм</a><a href="#clients">Търговски центрове</a><a href="#clients">Услуги</a></div><div><h4>Ресурси</h4><a href="#resources">Intelligence Hub</a><a href="/methodology.html">Методология</a><a href="#resources">Анализи</a><a href="#resources">Новини</a></div><div><h4>Компания</h4><a href="/brand-lab.html">За Brand Lab</a><a href="/contact.html">Контакти</a><a href="/privacy.html">Поверителност</a><a href="/terms.html">Условия за ползване</a></div></div><div class="footBottom"><span>© 2026 Brand Lab. BLIS™ — Brand Lab Intelligence System.</span><div class="legal"><a href="/privacy.html">Политика за поверителност</a><a href="/terms.html">Условия за ползване</a></div></div></div></footer>
 <script>
 (function(){
-  const clients=[['aroma','AROMA'],['bolyarka','БОЛЯРКА'],['astor-garden','ASTOR GARDEN']];
+  const clients=[['aroma','AROMA'],['bolyarka','БОЛЯРКА'],['astor-garden','ASTOR GARDEN'],['varna-towers','VARNA TOWERS']];
   const metrics=[['blis','BLIS'],['digital','DIGITAL'],['reputation','REPUTATION'],['competitive','COMPETITIVE']];
   const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const from=(payload,key)=>{if(!payload)return null;if(key==='blis')return n(payload.blis_index);const x=(payload.indices||[]).find(i=>i.key===key);return x?n(x.value):null};
   const current=(d,key)=>{if(key==='blis')return n(d?.blis_index);const x=(d?.indices||[]).find(i=>i.key===key);return x?n(x.value):null};
+  const previousPayload=h=>{if(!Array.isArray(h)||!h.length)return null;const rows=h.filter(x=>x&&x.payload);if(!rows.length)return null;return rows.length>1?rows[rows.length-2].payload:rows[0].payload};
   async function one(slug,name){
     try{
-      const [d,h]=await Promise.all([fetch(`/api/clients/${slug}/dashboard`,{cache:'no-store'}).then(r=>r.ok?r.json():null),fetch(`/api/clients/${slug}/history`,{cache:'no-store'}).then(r=>r.ok?r.json():[])]);
-      const prev=(Array.isArray(h)&&h.length)?h[h.length-1]?.payload:null;
+      const bust=Date.now();
+      const [d,h]=await Promise.all([fetch(`/api/clients/${slug}/dashboard?_=${bust}`,{cache:'no-store'}).then(r=>r.ok?r.json():null),fetch(`/api/clients/${slug}/history?_=${bust}`,{cache:'no-store'}).then(r=>r.ok?r.json():[])]);
+      const prev=previousPayload(h);
       return metrics.map(([key,label])=>{const v=current(d,key);if(v==null)return null;const p=from(prev,key),delta=p==null?null:v-p;return{name,label,value:v,delta}}).filter(Boolean)
     }catch(e){return[]}
   }
   function item(x){const d=x.delta,cls=d==null||Math.abs(d)<.05?'flat':d>0?'up':'down',txt=d==null?'• LIVE':Math.abs(d)<.05?'→ 0':`${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)}`;return `<div class="tapeItem"><span class="tapeClient">${esc(x.name)}</span><span class="tapeMetric">${esc(x.label)}</span><span class="tapeValue">${x.value.toFixed(1)}</span><span class="tapeDelta ${cls}">${txt}</span></div>`}
   async function loadTape(){const track=document.getElementById('blisTapeTrack');if(!track)return;const packs=await Promise.all(clients.map(c=>one(c[0],c[1]))),items=packs.flat();if(!items.length){track.innerHTML='<div class="tapeItem"><span class="tapeMetric">BLIS LIVE • активните показатели се синхронизират</span></div>';return}const html=items.map(item).join('');track.innerHTML=html+html;track.style.animationDuration=Math.max(30,items.length*3.2)+'s'}
-  loadTape();setInterval(loadTape,300000);
+  loadTape();
+  setInterval(loadTape,60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadTape()});
+  window.addEventListener('focus',loadTape);
 })();
 </script>
 </body></html>
