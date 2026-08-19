@@ -35,6 +35,48 @@
     }
   }
 
+  function patchSocialModule(){
+    const root=document.getElementById('socialBody');if(!root)return;
+    const s=getSeries('presence');if(s.length<2)return;
+    const d=Math.round((s[s.length-1].value-s[s.length-2].value)*10)/10;
+    [...root.querySelectorAll('.sm-kpi')].forEach(card=>{
+      const label=(card.querySelector('.sm-kpi-head')?.textContent||'').trim();
+      if(label.includes('Социална динамика')){
+        const value=card.querySelector('.sm-kpi-value');
+        if(value)value.innerHTML=`${d>0?'+':''}${fmt(d)}<small> т.</small>`;
+        const foot=card.querySelector('.sm-kpi-foot');if(foot)foot.textContent='Промяна спрямо предходния ден';
+      }
+    });
+    const meta=root.querySelector('.sm-chart-meta span:first-child b');if(meta)meta.textContent=String(s.length);
+    const pill=[...root.querySelectorAll('.sm-card-head .sm-pill')].find(x=>(x.textContent||'').includes('ИЗМЕРЕНИ ДАННИ'));
+    if(pill)pill.textContent='ДНЕВНА ДИНАМИКА';
+  }
+
+  function patchDigitalModule(){
+    const root=document.getElementById('digitalBody');if(!root)return;
+    const cards=[...root.querySelectorAll('.dm-kpi')];
+    const map=[['Дигитална видимост','digital'],['Търсене на марката','content'],['Видимост в търсачки','presence'],['Външно присъствие','blis']];
+    map.forEach(([label,key])=>{
+      const card=cards.find(x=>(x.querySelector('.dm-kpi-top')?.textContent||'').includes(label));if(!card)return;
+      const d=diff(key),delta=card.querySelector('.dm-delta');
+      if(delta&&d!=null)delta.textContent=`${d>0?'↑':d<0?'↓':'→'} ${Math.abs(d).toLocaleString('bg-BG',{maximumFractionDigits:1})}`;
+      const foot=card.querySelector('.dm-foot');if(foot)foot.textContent='спрямо предходния ден';
+    });
+    const rowKeys=['content','digital','blis','presence','reputation'];
+    root.querySelectorAll('.dm-table tbody tr').forEach((tr,i)=>{
+      const key=rowKeys[i];if(!key)return;const s=getSeries(key);if(!s.length)return;
+      const valueCell=tr.children[1],changeCell=tr.children[2],last=s[s.length-1].value,d=diff(key);
+      if(valueCell)valueCell.innerHTML=`<b>${fmt(last)}</b>/100`;
+      if(changeCell&&d!=null){changeCell.textContent=`${d>0?'↑':d<0?'↓':'→'} ${Math.abs(d).toLocaleString('bg-BG',{maximumFractionDigits:1})}`;changeCell.className=d>0?'dm-up':d<0?'dm-down':'dm-flat'}
+    });
+    const d=diff('digital'),score=root.querySelector('.dm-score');
+    if(score&&d!=null){
+      const h=score.querySelector('h4'),p=score.querySelector('p');
+      if(h)h.textContent=d>0?'Положителна динамика':d<0?'Отрицателна динамика':'Стабилна динамика';
+      if(p)p.textContent=d>0?'Дигиталната видимост се подобрява спрямо предходния ден.':d<0?'Дигиталната видимост отслабва спрямо предходния ден и изисква наблюдение.':'Дигиталната видимост е стабилна спрямо предходния ден.';
+    }
+  }
+
   function patchOverviewCopy(){
     const cards=[...document.querySelectorAll('#overviewPremium .ov-card')];
     for(const card of cards){
@@ -63,7 +105,7 @@
     if(title&&/ИСТОРИЧЕСКА ДИНАМИКА/.test(title.textContent||''))title.textContent='ИСТОРИЧЕСКА ДИНАМИКА НА BLIS ИНДЕКСА';
   }
 
-  function patch(){patchKpis();patchDigitalComparison();patchOverviewCopy()}
+  function patch(){patchKpis();patchDigitalComparison();patchOverviewCopy();patchSocialModule();patchDigitalModule()}
   function wrapRefGo(){
     const old=window.refGo;if(typeof old!=='function'||old.__temporalUI)return false;
     const wrapped=function(id){const r=old.apply(this,arguments);requestAnimationFrame(()=>{patch();if(id==='history')patchHistory()});return r};
