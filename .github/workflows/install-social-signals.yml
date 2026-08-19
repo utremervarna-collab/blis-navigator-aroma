@@ -1,0 +1,53 @@
+name: Install Social Signals
+on:
+  push:
+    paths:
+      - '.github/workflows/install-social-signals.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Install Social Signals assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('static/dashboard.html')
+          s=p.read_text()
+          css='<link rel="stylesheet" href="/navigator-social-master.css?v=20260819-social1">'
+          js='<script src="/navigator-social-master.js?v=20260819-social1"></script>'
+          if css not in s:
+              s=s.replace('</head>',css+'</head>')
+          if js not in s:
+              anchor='<script src="/navigator-reference.js?v=20260819-navicons1"></script>'
+              s=s.replace(anchor,anchor+js)
+          s=s.replace('/navigator-reference.js?v=20260819-navicons1','/navigator-reference.js?v=20260819-social1')
+          p.write_text(s)
+
+          p=Path('static/navigator-reference.js')
+          s=p.read_text()
+          s=s.replace("['social','✣','Социални канали']","['social','✣','Социални сигнали']")
+          p.write_text(s)
+
+          p=Path('static/navigator-social-master.js')
+          s=p.read_text()
+          marker='window.BLISSocialSignalsRender=render;'
+          inject="""\n  function renameSocialNav(){\n    const b=document.querySelector('#nav button[data-page=\"social\"]');\n    if(!b)return;\n    const spans=b.querySelectorAll('span');\n    const label=spans[spans.length-1];\n    if(label)label.textContent='Социални сигнали';\n  }\n  renameSocialNav();\n  setTimeout(renameSocialNav,900);\n"""
+          if 'function renameSocialNav()' not in s:
+              s=s.replace(marker,inject+'  '+marker)
+          p.write_text(s)
+          PY
+      - name: Commit installation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/dashboard.html static/navigator-reference.js static/navigator-social-master.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Activate Bulgarian Social Signals analytics'
+            git push origin HEAD:main
+          fi
