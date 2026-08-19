@@ -11,7 +11,7 @@ function loadPolishStyle(){
 function loadRefineStyle(){
   let l=document.querySelector('link[data-blis-reputation-refine30]');
   if(!l){l=document.createElement('link');l.rel='stylesheet';l.dataset.blisReputationRefine30='1';document.head.appendChild(l)}
-  l.href='/navigator-reputation-refine-v30.css?v=20260819-reputation30';
+  l.href='/navigator-reputation-refine-v30.css?v=20260819-reputation31';
 }
 function loadRealDataPatch(){
   if(document.querySelector('script[data-blis-reputation-real29]'))return;
