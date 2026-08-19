@@ -1,4 +1,4 @@
-/* BLIS Navigator — persistent verified social posts layer v3. */
+/* BLIS Navigator — verified social posts in normal document flow v4. */
 (function(){
   'use strict';
 
@@ -20,51 +20,52 @@
   const client=()=>String(document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.slug||'aroma').toLowerCase();
   const dirty=t=>/class=|data-tracking|data-control|href=|<img|<svg|organization_guest|public_biz|__blis_empty__/i.test(String(t||''));
 
-  function hasCleanAutomaticFeed(){
+  function apply(){
     const root=document.getElementById('socialBody');
-    if(!root)return false;
-    return [...root.querySelectorAll('.sm-network-post p')].some(p=>{
-      const t=(p.textContent||'').trim();
-      return t.length>12&&!dirty(t);
+    const map=VERIFIED[client()];
+    if(!root||!map)return;
+
+    root.querySelectorAll('.sm-network-feed').forEach(section=>{
+      const name=section.querySelector('.sm-network-feed-head b')?.textContent?.trim()||'';
+      const data=map[name];
+      if(!data?.posts?.length)return;
+      const host=section.querySelector('.sm-network-posts');
+      if(!host)return;
+
+      const clean=[...host.querySelectorAll('.sm-network-post p')].some(p=>{
+        const t=(p.textContent||'').trim();
+        return t.length>12&&!dirty(t);
+      });
+      if(clean)return;
+
+      const count=section.querySelector('.sm-network-feed-head small');
+      if(count)count.textContent=data.posts.length+' публикации';
+      host.innerHTML=data.posts.map(p=>`<a class="sm-network-post" href="${esc(data.profile)}" target="_blank" rel="noopener noreferrer" data-verified-public-post="1"><div><p>${esc(p.text)}</p><span>${esc(p.when)} · проверено ${esc(data.checked)}</span></div><em>Отвори ↗</em></a>`).join('');
+
+      const head=section.querySelector('.sm-network-feed-head');
+      if(head&&!head.querySelector('[data-social-profile-link]')){
+        const a=document.createElement('a');
+        a.dataset.socialProfileLink='1';
+        a.href=data.profile;
+        a.target='_blank';
+        a.rel='noopener noreferrer';
+        a.textContent='Профил ↗';
+        a.style.cssText='margin-left:8px;color:#1766e8;text-decoration:none;font-size:10px;font-weight:700';
+        head.appendChild(a);
+      }
     });
   }
 
-  function persistentHTML(map){
-    const networks=Object.entries(map).filter(([,d])=>d?.posts?.length);
-    if(!networks.length)return '';
-    return `<div class="sm-card sm-network-feeds" id="blisPersistentVerifiedPosts" data-verified-feed="v3" style="margin-top:14px"><div class="sm-card-head"><div><h3>ПОСЛЕДНИ ПУБЛИКАЦИИ ПО КАНАЛИ</h3><p>Последни публично потвърдени публикации от наблюдаваните профили</p></div><span class="sm-pill live">● REAL DATA</span></div><div class="sm-network-feed-grid">${networks.map(([name,data])=>`<section class="sm-network-feed"><div class="sm-network-feed-head"><span class="sm-platform-icon ${name.toLowerCase()}">${name==='LinkedIn'?'in':name.slice(0,1)}</span><b>${esc(name)}</b><small>${data.posts.length} публикации</small><a href="${esc(data.profile)}" target="_blank" rel="noopener noreferrer" style="margin-left:8px;color:#1766e8;text-decoration:none;font-size:10px;font-weight:700">Профил ↗</a></div><div class="sm-network-posts">${data.posts.map(p=>`<a class="sm-network-post" href="${esc(data.profile)}" target="_blank" rel="noopener noreferrer"><div><p>${esc(p.text)}</p><span>${esc(p.when)} · проверено ${esc(data.checked)}</span></div><em>Отвори ↗</em></a>`).join('')}</div></section>`).join('')}</div></div>`;
+  function applySeries(){
+    [0,60,180,450,900,1600,2800].forEach(ms=>setTimeout(apply,ms));
   }
 
-  function ensurePersistent(){
-    const section=document.getElementById('social');
-    const body=document.getElementById('socialBody');
-    const map=VERIFIED[client()];
-    if(!section||!body||!map)return;
+  document.addEventListener('click',e=>{
+    if(e.target?.closest?.('#nav button[data-page="social"]'))applySeries();
+    if(e.target?.closest?.('.client-option[data-client-key]'))setTimeout(applySeries,120);
+  },true);
+  window.addEventListener('popstate',()=>setTimeout(applySeries,80));
 
-    const automatic=body.querySelector('.sm-network-feeds');
-    const clean=hasCleanAutomaticFeed();
-    let persistent=document.getElementById('blisPersistentVerifiedPosts');
-
-    if(clean){
-      if(automatic)automatic.style.display='';
-      if(persistent)persistent.style.display='none';
-      return;
-    }
-
-    if(automatic)automatic.style.display='none';
-    if(!persistent){
-      body.insertAdjacentHTML('afterend',persistentHTML(map));
-      persistent=document.getElementById('blisPersistentVerifiedPosts');
-    }
-    if(persistent)persistent.style.display='';
-  }
-
-  function init(){
-    [0,60,150,350,700,1200,2000,3500].forEach(ms=>setTimeout(ensurePersistent,ms));
-    const social=document.getElementById('social');
-    if(social)new MutationObserver(()=>setTimeout(ensurePersistent,25)).observe(social,{childList:true,subtree:true});
-    setInterval(()=>{if(document.getElementById('social')?.classList.contains('active'))ensurePersistent()},400);
-  }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applySeries,{once:true});
+  else applySeries();
 })();
