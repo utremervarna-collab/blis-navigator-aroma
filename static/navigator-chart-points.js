@@ -5,7 +5,7 @@
   const labels={blis:'BLIS общ индекс',presence:'Социален индекс',social:'Социален индекс',digital:'Дигитална видимост',reputation:'Репутационен индекс',content:'Съдържание / интерес',interest:'Потребителски интерес',experience:'Потребителско изживяване',competitive:'Конкурентна позиция',competition:'Конкурентна позиция',market:'Пазарни сигнали',signals:'Пазарни сигнали'};
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
   const fmt=v=>v==null?'—':Number(v).toLocaleString('bg-BG',{maximumFractionDigits:1});
-  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
   function dateBG(s){const p=String(s||'').slice(0,10).split('-');return p.length===3?`${p[2]}.${p[1]}.${p[0]}`:String(s||'')}
   function series(key){try{return window.BLISCurves?.series(key)||[]}catch(e){return[]}}
   function chartTitle(svg,key){const box=svg.closest('.ov-card,.sm-card,.dm-card,.ref-card,.page');const h=box?.querySelector('h3,h2');return labels[key]||h?.textContent?.trim()||'Показател'}
@@ -22,4 +22,4 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 (function(){if(document.querySelector('script[data-blis-page-state]'))return;const s=document.createElement('script');s.src='/navigator-page-state.js?v=20260819-page2';s.dataset.blisPageState='1';document.head.appendChild(s)})();
-(function(){if(document.querySelector('script[data-blis-social-interactive]'))return;const s=document.createElement('script');s.src='/navigator-social-interactive.js?v=20260819-socialinteractive5';s.dataset.blisSocialInteractive='1';document.head.appendChild(s)})();
+(function(){if(document.querySelector('script[data-blis-social-interactive]'))return;const s=document.createElement('script');s.src='/navigator-social-interactive.js?v=20260819-socialinteractive6';s.dataset.blisSocialInteractive='1';document.head.appendChild(s)})();
