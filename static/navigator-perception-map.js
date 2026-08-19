@@ -60,8 +60,12 @@ function patchNav(){
   const b=document.querySelector('#nav [data-page="market"]');
   if(!b)return;
   const label=b.querySelector('.navtxt')||b.querySelector('span:last-child');
-  if(label)label.textContent='Карта на възприятията';
-  else b.childNodes[b.childNodes.length-1].textContent='Карта на възприятията';
+  if(label){
+    if(label.textContent!=='Карта на възприятията')label.textContent='Карта на възприятията';
+  }else{
+    const last=b.childNodes[b.childNodes.length-1];
+    if(last&&last.textContent!=='Карта на възприятията')last.textContent='Карта на възприятията';
+  }
 }
 function setActive(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
