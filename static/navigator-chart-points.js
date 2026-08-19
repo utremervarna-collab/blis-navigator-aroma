@@ -81,3 +81,12 @@
   function init(){enhance();new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)enhance(n.matches?.('.page')?n:n)}))).observe(document.querySelector('.main')||document.body,{subtree:true,childList:true});setInterval(()=>enhance(),1200)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+
+/* Load the global dashboard page-state controller after the navigation stack is ready. */
+(function(){
+  if(document.querySelector('script[data-blis-page-state]'))return;
+  const s=document.createElement('script');
+  s.src='/navigator-page-state.js?v=20260819-page1';
+  s.dataset.blisPageState='1';
+  document.head.appendChild(s);
+})();
