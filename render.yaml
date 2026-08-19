@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1332-home-live-measured-deltas-v19"
+        value: "20260819-1347-home-live-last-change-v20"
