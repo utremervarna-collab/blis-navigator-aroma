@@ -1,8 +1,6 @@
-name: Navigator Full Diagnostic
+name: Navigator Social v6 Diagnostic
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -18,126 +16,75 @@ jobs:
         with:
           go-version: '1.23.x'
 
-      - name: Build Go application
+      - name: Build and start Navigator
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
-
-      - name: Start application and test API/static routes
-        run: |
-          set -euxo pipefail
           PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
-          echo $! > /tmp/blis.pid
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
-          curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
-          for c in aroma bolyarka astor-garden; do
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/activity" >/tmp/$c-activity.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/history" >/tmp/$c-history.json
-          done
-          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma' >/tmp/dashboard.html
-          grep -q 'navigator-reference.js?v=20260818-stable1' /tmp/dashboard.html
-          for f in app.js navigator-reference.js navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js; do
-            curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/$f
-            test -s /tmp/$f
-          done
+          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=social' >/tmp/dashboard.html
+          grep -q 'navigator-social-master.js?v=20260819-socialmaster6' /tmp/dashboard.html
+          grep -q 'navigator-temporal-ui.js?v=20260819-temporal3' /tmp/dashboard.html
+          curl -fsS http://127.0.0.1:10000/navigator-social-master.js >/tmp/social.js
+          curl -fsS http://127.0.0.1:10000/navigator-temporal-ui.js >/tmp/temporal.js
+          node --check /tmp/social.js
+          node --check /tmp/temporal.js
 
-      - name: Locate Chromium
-        id: chrome
-        shell: bash
-        run: |
-          set -euxo pipefail
-          BIN="$(which google-chrome || which chromium || which chromium-browser || true)"
-          echo "bin=$BIN" >> "$GITHUB_OUTPUT"
-          if [ -n "$BIN" ]; then "$BIN" --version; fi
-
-      - name: Install Playwright core
-        run: npm install --no-save playwright-core@1.55.0
-
-      - name: Install Chromium if runner has none
-        if: steps.chrome.outputs.bin == ''
+      - name: Install browser runtime
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Browser end-to-end diagnostic
-        env:
-          CHROME_BIN: ${{ steps.chrome.outputs.bin }}
+      - name: Browser Social Signals test
         run: |
-          cat > /tmp/diag.cjs <<'NODE'
-          const { chromium } = require('playwright-core');
-          const fs = require('fs');
+          cat > .diag-social.cjs <<'NODE'
+          const { chromium } = require('playwright');
           (async()=>{
-            const executablePath = process.env.CHROME_BIN || undefined;
-            const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox']});
-            const page = await browser.newPage();
-            page.setDefaultTimeout(12000);
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const page=await browser.newPage();
             const errors=[];
             page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
-            page.on('console',m=>{ if(m.type()==='error') errors.push('CONSOLE '+m.text()); });
-            const result={};
-            async function snap(label){
-              result[label]=await page.evaluate(()=>({
-                title:document.title,
-                active:document.querySelector('.page.active')?.id||null,
-                navActive:document.querySelector('#nav button.active')?.dataset.page||null,
-                liveChars:(document.getElementById('liveBody')?.innerHTML||'').length,
-                overviewChars:(document.getElementById('overviewPremium')?.innerHTML||'').length,
-                client:document.body.dataset.client||null,
-                navButtons:document.querySelectorAll('#nav button').length
-              }));
-            }
-            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:12000});
-            await page.waitForTimeout(2500);
-            await snap('initial');
-            await page.locator('#nav button[data-page="live"]').click();
-            await page.waitForTimeout(3500);
-            await snap('live');
-            await page.locator('#nav button[data-page="digital"]').click();
-            await page.waitForTimeout(1500);
-            await snap('digital');
-            await page.locator('#nav button[data-page="overview"]').click();
-            await page.waitForTimeout(1500);
-            await snap('overviewReturn');
-
-            const p2=await browser.newPage();
-            p2.setDefaultTimeout(12000);
-            const errors2=[];
-            p2.on('pageerror',e=>errors2.push('PAGEERROR '+e.message));
-            p2.on('console',m=>{if(m.type()==='error')errors2.push('CONSOLE '+m.text())});
-            await p2.goto('http://127.0.0.1:10000/dashboard.html?client=bolyarka',{waitUntil:'domcontentloaded',timeout:12000});
-            await p2.waitForTimeout(2500);
-            result.bolyarka=await p2.evaluate(()=>({
-              title:document.title,
-              client:document.body.dataset.client||null,
-              selected:document.getElementById('clientSel')?.value||null,
-              heading:document.querySelector('.topbar .title h1')?.textContent||null,
-              navButtons:document.querySelectorAll('#nav button').length,
-              active:document.querySelector('.page.active')?.id||null
+            page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=social',{waitUntil:'domcontentloaded',timeout:15000});
+            await page.waitForTimeout(3000);
+            const snap=()=>page.evaluate(()=>({
+              active:document.querySelector('.page.active')?.id||null,
+              channels:document.querySelectorAll('#socialBody .sm-channel').length,
+              feeds:document.querySelectorAll('#socialBody .sm-network-feed').length,
+              posts:document.querySelectorAll('#socialBody .sm-network-post').length,
+              linkedinPosts:[...document.querySelectorAll('#socialBody .sm-network-feed')].filter(x=>(x.querySelector('b')?.textContent||'').includes('LinkedIn')).reduce((n,x)=>n+x.querySelectorAll('.sm-network-post').length,0),
+              text:document.getElementById('socialBody')?.innerText||'',
+              header:[...document.querySelectorAll('#socialBody .sm-card-head .sm-pill')].map(x=>x.textContent||'').find(x=>x.includes('наблюдавани'))||''
             }));
-            result.errors=errors;
-            result.bolyarkaErrors=errors2;
-            console.log(JSON.stringify(result,null,2));
-            fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-            if(result.initial.navButtons < 10) throw new Error('Navigation not initialized');
-            if(result.live.active !== 'live') throw new Error('Live Monitoring did not become active');
-            if(result.digital.active !== 'digital') throw new Error('Digital did not become active');
-            if(errors.length || errors2.length) throw new Error('Browser JavaScript errors detected');
+            const before=await snap();
+            console.log('BEFORE',JSON.stringify({...before,text:before.text.slice(0,2500)},null,2));
+            if(errors.length)throw new Error(errors.join('\n'));
+            if(before.active!=='social')throw new Error('Social page not active');
+            if(before.channels<1||before.feeds<1)throw new Error('Social cards did not render');
+            if(before.linkedinPosts<3)throw new Error('LinkedIn verified posts did not render');
+            if(before.text.includes('аналитична микродинамика'))throw new Error('Synthetic social history is still visible');
+            if(!before.header.includes('наблюдавани'))throw new Error('Active/observed channel distinction missing');
+
+            await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+            await page.waitForTimeout(500);
+            const afterScroll=await snap();
+            if(afterScroll.active!=='social'||afterScroll.posts!==before.posts)throw new Error('Social layout changed or broke after scroll');
+
+            await page.reload({waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(2500);
+            const afterReload=await snap();
+            console.log('AFTER_RELOAD',JSON.stringify({...afterReload,text:afterReload.text.slice(0,1200)},null,2));
+            if(afterReload.active!=='social')throw new Error('Reload did not preserve social page');
+            if(afterReload.linkedinPosts<3)throw new Error('Posts disappeared after reload');
+            if(afterReload.text.includes('аналитична микродинамика'))throw new Error('Synthetic social history returned after reload');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node /tmp/diag.cjs
+          node .diag-social.cjs
 
       - name: Print server log
         if: always()
-        run: |
-          echo '=== SERVER LOG ==='
-          cat /tmp/blis-server.log || true
-          echo '=== BROWSER RESULT ==='
-          cat /tmp/browser-result.json || true
+        run: cat /tmp/blis-server.log || true
