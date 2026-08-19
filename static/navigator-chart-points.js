@@ -22,4 +22,4 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 (function(){if(document.querySelector('script[data-blis-page-state]'))return;const s=document.createElement('script');s.src='/navigator-page-state.js?v=20260819-page2';s.dataset.blisPageState='1';document.head.appendChild(s)})();
-(function(){if(document.querySelector('script[data-blis-social-interactive]'))return;const s=document.createElement('script');s.src='/navigator-social-interactive.js?v=20260819-socialinteractive4';s.dataset.blisSocialInteractive='1';document.head.appendChild(s)})();
+(function(){if(document.querySelector('script[data-blis-social-interactive]'))return;const s=document.createElement('script');s.src='/navigator-social-interactive.js?v=20260819-socialinteractive5';s.dataset.blisSocialInteractive='1';document.head.appendChild(s)})();
