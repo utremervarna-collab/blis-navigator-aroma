@@ -32,6 +32,7 @@ type clientSession struct {
 	Token      string
 	ClientSlug string
 	Username   string
+	Admin      bool
 	ExpiresAt  time.Time
 }
 
@@ -63,6 +64,8 @@ var authInternalPort string
 
 const clientCookieName = "blis_client_session"
 const clientHashPrefix = "blis-client-v1|"
+const ownerHashPrefix = "blis-owner-v1|"
+const ownerAccessHash = "464e29c18c1cfc4d7061965f0d1a7f59661a97f17cc59f26b92ea0694abbd3a9"
 
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" {
@@ -103,21 +106,42 @@ func passwordOK(a clientAccount, password string) bool {
 	return subtle.ConstantTimeCompare(sum[:], expected) == 1
 }
 
-func newClientSession(a clientAccount) (clientSession, error) {
+func ownerTokenOK(token string) bool {
+	if token == "" {
+		return false
+	}
+	sum := sha256.Sum256([]byte(ownerHashPrefix + token))
+	expected, err := hex.DecodeString(ownerAccessHash)
+	if err != nil || len(expected) != len(sum) {
+		return false
+	}
+	return subtle.ConstantTimeCompare(sum[:], expected) == 1
+}
+
+func newSession(clientSlug, username string, admin bool, ttl time.Duration) (clientSession, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return clientSession{}, err
 	}
 	s := clientSession{
 		Token:      hex.EncodeToString(b),
-		ClientSlug: a.ClientSlug,
-		Username:   a.Username,
-		ExpiresAt:  time.Now().Add(7 * 24 * time.Hour),
+		ClientSlug: clientSlug,
+		Username:   username,
+		Admin:      admin,
+		ExpiresAt:  time.Now().Add(ttl),
 	}
 	clientSessions.Lock()
 	clientSessions.m[s.Token] = s
 	clientSessions.Unlock()
 	return s, nil
+}
+
+func newClientSession(a clientAccount) (clientSession, error) {
+	return newSession(a.ClientSlug, a.Username, false, 7*24*time.Hour)
+}
+
+func newOwnerSession() (clientSession, error) {
+	return newSession("", "owner", true, 30*24*time.Hour)
 }
 
 func sessionFromRequest(r *http.Request) (clientSession, bool) {
@@ -143,6 +167,10 @@ func secureRequest(r *http.Request) bool {
 }
 
 func setSessionCookie(w http.ResponseWriter, r *http.Request, s clientSession) {
+	maxAge := int(time.Until(s.ExpiresAt).Seconds())
+	if maxAge < 1 {
+		maxAge = 1
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     clientCookieName,
 		Value:    s.Token,
@@ -151,7 +179,7 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, s clientSession) {
 		Secure:   secureRequest(r),
 		SameSite: http.SameSiteLaxMode,
 		Expires:  s.ExpiresAt,
-		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+		MaxAge:   maxAge,
 	})
 }
 
@@ -165,6 +193,9 @@ func clearSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func accountForSession(s clientSession) (clientAccount, bool) {
+	if s.Admin {
+		return clientAccount{}, false
+	}
 	for _, a := range clientAccounts {
 		if a.ClientSlug == s.ClientSlug && a.Username == s.Username {
 			return a, true
@@ -186,9 +217,21 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	switch path {
+	case "/owner-access":
+		if r.Method != http.MethodGet || !ownerTokenOK(r.URL.Query().Get("key")) {
+			http.NotFound(w, r)
+			return
+		}
+		clearSession(w, r)
+		s, err := newOwnerSession()
+		if err != nil {
+			http.Error(w, "Неуспешно създаване на администраторска сесия", http.StatusInternalServerError)
+			return
+		}
+		setSessionCookie(w, r, s)
+		http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
+		return
 	case "/client-login", "/client-login/", "/login":
-		// A shared/email login link must always show the login form. An old browser
-		// session must never silently send the visitor into another client's profile.
 		clearSession(w, r)
 		serveClientLogin(w, r)
 		return
@@ -206,10 +249,14 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(map[string]interface{}{"authenticated": false})
 			return
 		}
-		a, _ := accountForSession(s)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		json.NewEncoder(w).Encode(map[string]interface{}{"authenticated": true, "client_slug": s.ClientSlug, "client_name": a.ClientName, "username": s.Username})
+		if s.Admin {
+			json.NewEncoder(w).Encode(map[string]interface{}{"authenticated": true, "admin": true, "username": s.Username})
+			return
+		}
+		a, _ := accountForSession(s)
+		json.NewEncoder(w).Encode(map[string]interface{}{"authenticated": true, "admin": false, "client_slug": s.ClientSlug, "client_name": a.ClientName, "username": s.Username})
 		return
 	}
 
@@ -221,14 +268,19 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/client-login?next="+next, http.StatusFound)
 			return
 		}
-		if r.URL.Query().Get("client") != s.ClientSlug {
-			http.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(s.ClientSlug), http.StatusFound)
+		if !s.Admin {
+			if r.URL.Query().Get("client") != s.ClientSlug {
+				http.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(s.ClientSlug)+"&page=overview", http.StatusFound)
+				return
+			}
+			r.Header.Set("X-BLIS-Client-Scope", s.ClientSlug)
+		} else if r.URL.Query().Get("client") == "" {
+			http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
 			return
 		}
-		r.Header.Set("X-BLIS-Client-Scope", s.ClientSlug)
 	}
 
-	if loggedIn && path == "/api/clients" {
+	if loggedIn && !s.Admin && path == "/api/clients" {
 		a, _ := accountForSession(s)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
@@ -236,7 +288,7 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if loggedIn && strings.HasPrefix(path, "/api/clients/") {
+	if loggedIn && !s.Admin && strings.HasPrefix(path, "/api/clients/") {
 		rest := strings.TrimPrefix(path, "/api/clients/")
 		slug := strings.Split(rest, "/")[0]
 		if slug != "" && slug != s.ClientSlug {
@@ -282,7 +334,7 @@ func handleClientLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setSessionCookie(w, r, s)
-	http.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(a.ClientSlug), http.StatusFound)
+	http.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(a.ClientSlug)+"&page=overview", http.StatusFound)
 }
 
 func serveClientLogin(w http.ResponseWriter, r *http.Request) {
