@@ -1,0 +1,42 @@
+/* BLIS Navigator — global metric inspector + KPI alignment v1 */
+[data-blis-metric-clickable="1"]{cursor:pointer!important;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease!important}
+[data-blis-metric-clickable="1"]:hover{border-color:#b9c9d8!important;box-shadow:0 8px 24px rgba(24,58,89,.08)!important}
+[data-blis-metric-clickable="1"]:focus-visible{outline:2px solid #4c86c6!important;outline-offset:2px!important}
+
+/* Reputation KPI strip: same baseline for label, value and explanatory text. */
+#reputationBody .rp-kpi-strip{grid-auto-rows:124px!important;height:124px!important;min-height:124px!important;max-height:124px!important;align-items:stretch!important}
+#reputationBody .rp-kpi{display:grid!important;grid-template-rows:30px 48px minmax(30px,1fr)!important;align-content:start!important;justify-content:stretch!important;align-items:start!important;height:124px!important;min-height:124px!important;max-height:124px!important;padding:15px 22px 13px!important;overflow:hidden!important}
+#reputationBody .rp-kpi>span{display:flex!important;align-items:flex-start!important;height:30px!important;margin:0!important;font-size:13px!important;line-height:1.25!important}
+#reputationBody .rp-kpi>strong{display:flex!important;align-items:baseline!important;gap:4px!important;height:48px!important;margin:0!important;font-size:35px!important;line-height:1!important;white-space:nowrap!important}
+#reputationBody .rp-kpi>strong small{display:inline-block!important;margin:0!important;font-size:13px!important;line-height:1!important}
+#reputationBody .rp-kpi>small{display:block!important;margin:0!important;align-self:start!important;font-size:10.5px!important;line-height:1.35!important;max-width:100%!important}
+@media(max-width:980px){#reputationBody .rp-kpi-strip{height:auto!important;min-height:0!important;max-height:none!important;grid-auto-rows:116px!important}#reputationBody .rp-kpi{height:116px!important;min-height:116px!important;max-height:116px!important;grid-template-rows:28px 44px minmax(28px,1fr)!important;padding:13px 16px!important}}
+
+/* Existing Navigator modal, upgraded for metric details. */
+#modal .modalbox:has(.blis-metric-inspector){width:min(760px,calc(100vw - 40px))!important;max-width:760px!important;padding:0!important;overflow:hidden!important}
+#modal .modalbox:has(.blis-metric-inspector)>h3{display:none!important}
+#modal .modalbox:has(.blis-metric-inspector)>.close{z-index:4;top:15px!important;right:17px!important;background:#f2f5f8!important;border-radius:50%!important;width:30px!important;height:30px!important;color:#39546c!important}
+.blis-metric-inspector{color:#173a59;background:#fff}
+.blis-mi-head{padding:24px 26px 20px;border-bottom:1px solid #e7edf2;background:linear-gradient(180deg,#fbfcfd,#fff)}
+.blis-mi-kicker{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7e91a3}
+.blis-mi-title{margin:5px 44px 0 0;font-size:22px;line-height:1.2;color:#123958}
+.blis-mi-current{display:flex;align-items:flex-end;gap:10px;margin-top:14px}
+.blis-mi-current strong{font:700 38px/1 Georgia,serif;color:#173a59}
+.blis-mi-current span{margin-bottom:3px;padding:5px 8px;border-radius:999px;background:#eef6f1;color:#2b8d58;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.blis-mi-current span.derived{background:#fff5df;color:#a86c00}.blis-mi-current span.missing{background:#f3f5f7;color:#7d8b99}
+.blis-mi-body{padding:20px 26px 24px}
+.blis-mi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.blis-mi-cell{padding:11px 12px;border:1px solid #e4eaf0;border-radius:10px;background:#fbfcfd;min-width:0}
+.blis-mi-cell span{display:block;font-size:9px;font-weight:700;color:#8292a3;text-transform:uppercase;letter-spacing:.035em}
+.blis-mi-cell b{display:block;margin-top:4px;font-size:11.5px;line-height:1.35;color:#24435e;white-space:normal;overflow-wrap:anywhere}
+.blis-mi-section{margin-top:15px}
+.blis-mi-section h4{margin:0 0 7px;font-size:12px;color:#173a59}
+.blis-mi-section p{margin:0;color:#667c90;font-size:11px;line-height:1.5}
+.blis-mi-components{display:grid;gap:6px}
+.blis-mi-component{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid #e7edf2;border-radius:8px;background:#fff}
+.blis-mi-component span{font-size:10.5px;color:#536d84}.blis-mi-component b{font-size:10.5px;color:#173a59;text-align:right}
+.blis-mi-history{display:flex;gap:6px;flex-wrap:wrap}
+.blis-mi-history span{padding:5px 7px;border:1px solid #e3e9ee;border-radius:7px;background:#f8fafb;color:#5e758a;font-size:9px}.blis-mi-history b{color:#173a59}
+.blis-mi-sources{display:flex;gap:5px;flex-wrap:wrap}.blis-mi-sources span{padding:5px 7px;border-radius:999px;background:#edf3f7;color:#557087;font-size:9px}
+.blis-mi-note{margin-top:15px;padding:9px 10px;border-radius:8px;background:#f7f9fb;color:#7a8d9f;font-size:9.5px;line-height:1.45}
+@media(max-width:680px){.blis-mi-grid{grid-template-columns:1fr}.blis-mi-head,.blis-mi-body{padding-left:18px;padding-right:18px}.blis-mi-current strong{font-size:32px}}
