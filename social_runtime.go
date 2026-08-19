@@ -28,7 +28,6 @@ type socialPost struct {
 }
 
 var socialMetricRE = regexp.MustCompile(`(?i)([0-9][0-9.,\s]*|[0-9]+(?:[.,][0-9]+)?\s*[KMB])\s+(followers|последователи|subscribers|абонати|posts|публикации|videos|видеа|likes|харесвания|comments|коментари|shares|споделяния)`)
-var hrefRE = regexp.MustCompile(`(?is)href=["']([^"']+)["']`)
 
 func compactSocialNumber(raw string) float64 {
 	s := strings.TrimSpace(strings.ToUpper(raw))
@@ -140,7 +139,7 @@ func isSocialPostURL(platform, raw string) bool {
 
 func cleanPostSnippet(raw string) string {
 	s := html.UnescapeString(stripHTML(raw))
-	s = regexp.MustCompile(`(?i)\b(log in|sign in|join now|view profile|follow|connect|see more)\b`).ReplaceAllString(s, " ")
+	s = regexp.MustCompile(`(?i)\b(log in|sign in|join now|view profile|follow|connect|see more|see all employees|updates)\b`).ReplaceAllString(s, " ")
 	s = regexp.MustCompile(`\s+`).ReplaceAllString(s, " ")
 	s = strings.TrimSpace(s)
 	if len([]rune(s)) > 420 {
@@ -150,37 +149,29 @@ func cleanPostSnippet(raw string) string {
 	return s
 }
 
-func extractPostsFromHTML(body, platform string) []socialPost {
-	matches := hrefRE.FindAllStringSubmatchIndex(body, -1)
-	out := []socialPost{}
-	seen := map[string]bool{}
-	for _, m := range matches {
-		if len(m) < 4 {
-			continue
-		}
-		u := normalizeSocialURL(body[m[2]:m[3]], platform)
-		if !isSocialPostURL(platform, u) || seen[u] {
-			continue
-		}
-		seen[u] = true
-		start := m[0] - 900
-		if start < 0 {
-			start = 0
-		}
-		end := m[1] + 1500
-		if end > len(body) {
-			end = len(body)
-		}
-		text := cleanPostSnippet(body[start:end])
-		if len([]rune(text)) < 24 {
-			continue
-		}
-		out = append(out, socialPost{Text: text, URL: u, Origin: "public_page"})
-		if len(out) >= 5 {
-			break
+func validPostText(s string) bool {
+	s = strings.TrimSpace(s)
+	if len([]rune(s)) < 16 {
+		return false
+	}
+	low := strings.ToLower(s)
+	bad := []string{
+		"class=", "data-tracking", "data-control", "data-delayed-url", "tracking-will-navigate",
+		"<img", "<svg", "aria-", "href=", "src=", "public_biz_employees", "organization_guest_main-feed",
+		"inline-block relative", "__blis_empty__",
+	}
+	for _, x := range bad {
+		if strings.Contains(low, x) {
+			return false
 		}
 	}
-	return out
+	letters := 0
+	for _, r := range s {
+		if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= 'А' && r <= 'я') {
+			letters++
+		}
+	}
+	return letters >= 8
 }
 
 func socialSearchQuery(c *Client, src *Source, platform string) string {
@@ -193,11 +184,14 @@ func socialSearchQuery(c *Client, src *Source, platform string) string {
 	}
 	site := u.Host
 	path := strings.Trim(u.Path, "/")
-	if platform == "linkedin" {
+	switch platform {
+	case "linkedin":
 		site = "linkedin.com/posts"
+	case "youtube":
+		site = "youtube.com"
 	}
 	q := "site:" + site
-	if path != "" && platform != "linkedin" {
+	if path != "" && platform != "linkedin" && platform != "youtube" {
 		q += " \"" + path + "\""
 	}
 	if c != nil && c.Name != "" {
@@ -240,60 +234,56 @@ func extractSearchPosts(c *Client, src *Source, platform string) []socialPost {
 			snippet = cleanPostSnippet(pm[1])
 		}
 		text := snippet
-		if len([]rune(text)) < 24 {
+		if !validPostText(text) {
 			text = title
 		}
-		if len([]rune(text)) < 12 {
+		if !validPostText(text) {
 			continue
 		}
-		out = append(out, socialPost{Text: text, URL: u, Published: nowISO(), Origin: "public_search"})
-		if len(out) >= 3 {
+		out = append(out, socialPost{Text: text, URL: u, Origin: "public_search"})
+		if len(out) >= 5 {
 			break
 		}
 	}
 	return out
 }
 
-func mergeSocialPosts(a, b []socialPost) []socialPost {
-	out := []socialPost{}
-	seen := map[string]bool{}
-	for _, group := range [][]socialPost{a, b} {
-		for _, p := range group {
-			key := p.URL
-			if key == "" {
-				key = strings.ToLower(p.Text)
-			}
-			if key == "" || seen[key] {
-				continue
-			}
-			seen[key] = true
-			out = append(out, p)
-			if len(out) >= 5 {
-				return out
-			}
-		}
-	}
-	return out
-}
-
 func persistSocialPosts(c *Client, key string, posts []socialPost, stamp string) {
-	limit := len(posts)
-	if limit > 5 {
-		limit = 5
+	valid := make([]socialPost, 0, len(posts))
+	seen := map[string]bool{}
+	for _, p := range posts {
+		p.Text = cleanPostSnippet(p.Text)
+		if !validPostText(p.Text) || !isSocialPostURL(socialPlatform(sourceByKey(c, key)), p.URL) {
+			continue
+		}
+		id := strings.ToLower(p.URL)
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		valid = append(valid, p)
+		if len(valid) >= 5 {
+			break
+		}
 	}
-	add(c, key, "recent_public_posts", float64(limit), stamp)
-	for i := 0; i < limit; i++ {
-		p := posts[i]
+	add(c, key, "recent_public_posts", float64(len(valid)), stamp)
+	for i := 0; i < 5; i++ {
 		idx := strconv.Itoa(i + 1)
-		postStamp := stamp
+		if i >= len(valid) {
+			add(c, key, "post_"+idx+"_text", "__BLIS_EMPTY__", stamp)
+			add(c, key, "post_"+idx+"_url", "__BLIS_EMPTY__", stamp)
+			add(c, key, "post_"+idx+"_published", "__BLIS_EMPTY__", stamp)
+			continue
+		}
+		p := valid[i]
+		add(c, key, "post_"+idx+"_text", p.Text, stamp)
+		add(c, key, "post_"+idx+"_url", p.URL, stamp)
 		if p.Published != "" {
-			postStamp = p.Published
+			add(c, key, "post_"+idx+"_published", p.Published, stamp)
+		} else {
+			add(c, key, "post_"+idx+"_published", "__BLIS_EMPTY__", stamp)
 		}
-		add(c, key, "post_"+idx+"_text", p.Text, postStamp)
-		if p.URL != "" {
-			add(c, key, "post_"+idx+"_url", p.URL, postStamp)
-		}
-		add(c, key, "post_"+idx+"_origin", p.Origin, postStamp)
+		add(c, key, "post_"+idx+"_origin", p.Origin, stamp)
 	}
 }
 
@@ -305,55 +295,48 @@ func socialPageMetrics(c *Client, key string) {
 	stamp := nowISO()
 	platform := socialPlatform(src)
 	status, body, _, err := timedFetch(src.URL, 4*1024*1024)
-	if err != nil || status < 200 || status >= 400 {
+	pageOK := err == nil && status >= 200 && status < 400
+	if pageOK {
+		add(c, key, "public_page_access", 100.0, stamp)
+		add(c, key, "profile_active", 1.0, stamp)
+		clean := stripHTML(body)
+		add(c, key, "brand_mentions_visible", brandMentionsVisible(c, clean), stamp)
+		add(c, key, "visible_reaction_markers", visibleReactionMarkers(clean), stamp)
+		add(c, key, "page_words", float64(len(strings.Fields(clean))), stamp)
+		for _, m := range socialMetricRE.FindAllStringSubmatch(clean, -1) {
+			if len(m) < 3 {
+				continue
+			}
+			v := compactSocialNumber(m[1])
+			if v < 0 {
+				continue
+			}
+			kind := strings.ToLower(m[2])
+			switch {
+			case strings.Contains(kind, "follower"), strings.Contains(kind, "последовател"), strings.Contains(kind, "subscriber"), strings.Contains(kind, "абонат"):
+				if v > 0 { add(c, key, "followers", v, stamp) }
+			case strings.Contains(kind, "post"), strings.Contains(kind, "публикац"), strings.Contains(kind, "video"), strings.Contains(kind, "виде"):
+				if v > 0 { add(c, key, "visible_posts", v, stamp) }
+			case strings.Contains(kind, "like"), strings.Contains(kind, "харес"):
+				add(c, key, "likes", v, stamp)
+			case strings.Contains(kind, "comment"), strings.Contains(kind, "коментар"):
+				add(c, key, "comments_visible", v, stamp)
+			case strings.Contains(kind, "share"), strings.Contains(kind, "сподел"):
+				add(c, key, "shares_visible", v, stamp)
+			}
+		}
+	} else {
 		add(c, key, "public_page_access", 0.0, stamp)
-		add(c, key, "recent_public_posts", 0.0, stamp)
-		return
-	}
-	add(c, key, "public_page_access", 100.0, stamp)
-	add(c, key, "profile_active", 1.0, stamp)
-	clean := stripHTML(body)
-	add(c, key, "brand_mentions_visible", brandMentionsVisible(c, clean), stamp)
-	add(c, key, "visible_reaction_markers", visibleReactionMarkers(clean), stamp)
-	add(c, key, "page_words", float64(len(strings.Fields(clean))), stamp)
-
-	for _, m := range socialMetricRE.FindAllStringSubmatch(clean, -1) {
-		if len(m) < 3 {
-			continue
-		}
-		v := compactSocialNumber(m[1])
-		if v < 0 {
-			continue
-		}
-		kind := strings.ToLower(m[2])
-		switch {
-		case strings.Contains(kind, "follower"), strings.Contains(kind, "последовател"), strings.Contains(kind, "subscriber"), strings.Contains(kind, "абонат"):
-			if v > 0 {
-				add(c, key, "followers", v, stamp)
-			}
-		case strings.Contains(kind, "post"), strings.Contains(kind, "публикац"), strings.Contains(kind, "video"), strings.Contains(kind, "виде"):
-			if v > 0 {
-				add(c, key, "visible_posts", v, stamp)
-			}
-		case strings.Contains(kind, "like"), strings.Contains(kind, "харес"):
-			add(c, key, "likes", v, stamp)
-		case strings.Contains(kind, "comment"), strings.Contains(kind, "коментар"):
-			add(c, key, "comments_visible", v, stamp)
-		case strings.Contains(kind, "share"), strings.Contains(kind, "сподел"):
-			add(c, key, "shares_visible", v, stamp)
-		}
 	}
 
-	if platform == "youtube" {
-		collectYouTubeFeed(c, key, src.URL, body)
-		return
+	if platform == "youtube" && pageOK {
+		if collectYouTubeFeed(c, key, src.URL, body) {
+			return
+		}
 	}
-	pagePosts := extractPostsFromHTML(body, platform)
-	searchPosts := []socialPost{}
-	if len(pagePosts) < 3 {
-		searchPosts = extractSearchPosts(c, src, platform)
-	}
-	persistSocialPosts(c, key, mergeSocialPosts(pagePosts, searchPosts), stamp)
+	// Platforms frequently block unauthenticated page reads. Public search is still attempted.
+	posts := extractSearchPosts(c, src, platform)
+	persistSocialPosts(c, key, posts, stamp)
 }
 
 func youtubeChannelID(rawURL, body string) string {
@@ -370,22 +353,19 @@ func youtubeChannelID(rawURL, body string) string {
 	return ""
 }
 
-func collectYouTubeFeed(c *Client, key, rawURL, pageBody string) {
+func collectYouTubeFeed(c *Client, key, rawURL, pageBody string) bool {
 	channelID := youtubeChannelID(rawURL, pageBody)
 	if channelID == "" {
-		add(c, key, "recent_public_posts", 0.0, nowISO())
-		return
+		return false
 	}
 	feedURL := "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelID
 	status, body, _, err := timedFetch(feedURL, 3*1024*1024)
 	if err != nil || status < 200 || status >= 400 {
-		add(c, key, "recent_public_posts", 0.0, nowISO())
-		return
+		return false
 	}
 	var feed youtubeAtomFeed
 	if xml.Unmarshal([]byte(body), &feed) != nil || len(feed.Entries) == 0 {
-		add(c, key, "recent_public_posts", 0.0, nowISO())
-		return
+		return false
 	}
 	cut90 := time.Now().Add(-90 * 24 * time.Hour)
 	recent90 := 0
@@ -398,13 +378,16 @@ func collectYouTubeFeed(c *Client, key, rawURL, pageBody string) {
 		if published.After(cut90) {
 			recent90++
 		}
-		if strings.TrimSpace(e.Title) != "" && len(posts) < 5 {
-			posts = append(posts, socialPost{Text: strings.TrimSpace(e.Title), URL: strings.TrimSpace(e.Link.Href), Published: published.Format(time.RFC3339), Origin: "youtube_rss"})
+		text := strings.TrimSpace(e.Title)
+		u := strings.TrimSpace(e.Link.Href)
+		if validPostText(text) && isSocialPostURL("youtube", u) && len(posts) < 5 {
+			posts = append(posts, socialPost{Text: text, URL: u, Published: published.Format(time.RFC3339), Origin: "youtube_rss"})
 		}
 	}
 	persistSocialPosts(c, key, posts, nowISO())
 	add(c, key, "recent_videos_90d", float64(recent90), nowISO())
 	add(c, key, "youtube_channel_id", channelID, nowISO())
+	return len(posts) > 0
 }
 
 func isSpecificSocialSource(s Source) bool {
@@ -443,7 +426,7 @@ func runSocialContentCollector() {
 
 func init() {
 	go func() {
-		time.Sleep(45 * time.Second)
+		time.Sleep(20 * time.Second)
 		runSocialContentCollector()
 		t := time.NewTicker(24 * time.Hour)
 		defer t.Stop()
