@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1636-reputation-client-names-v35"
+        value: "20260819-1642-reputation-context-sources-v36"
