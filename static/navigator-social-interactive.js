@@ -1,59 +1,29 @@
-/* BLIS Navigator — Social Signals interaction controller v3.
-   Green smooth measured curve + interactive points + KPI drill-down. */
+/* BLIS Navigator — Social Signals interaction controller v4.
+   Restores the prior BLISCurves visual: green wavy curve, shaded area and interactive points. */
 (function(){
   'use strict';
-  if(window.__BLISSocialInteractiveV3)return;
-  window.__BLISSocialInteractiveV3=true;
+  if(window.__BLISSocialInteractiveV4)return;
+  window.__BLISSocialInteractiveV4=true;
 
-  const NS='http://www.w3.org/2000/svg';
   const GREEN='#2daf65';
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
   const fmt=v=>Number(v).toLocaleString('bg-BG',{maximumFractionDigits:1});
 
   function styles(){
-    if(document.getElementById('smInteractiveStylesV3'))return;
-    const s=document.createElement('style');s.id='smInteractiveStylesV3';s.textContent=`
+    if(document.getElementById('smInteractiveStylesV4'))return;
+    const s=document.createElement('style');s.id='smInteractiveStylesV4';s.textContent=`
       #socialBody .sm-kpi[data-sm-destination]{cursor:pointer;position:relative;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}
       #socialBody .sm-kpi[data-sm-destination]:hover{border-color:#b9cceb;transform:translateY(-1px);box-shadow:0 8px 22px rgba(23,49,92,.08)}
       #socialBody .sm-kpi[data-sm-destination]:focus-visible{outline:2px solid #1766e8;outline-offset:3px}
       #socialBody .sm-kpi-link{display:block;margin-top:8px;color:#1766e8;font-size:10px;font-weight:700;letter-spacing:.01em}
       #socialBody .sm-anchor-flash{animation:smAnchorFlash .9s ease}
       @keyframes smAnchorFlash{0%{box-shadow:0 0 0 3px rgba(23,102,232,.20)}100%{box-shadow:none}}
+      #socialBody #socialTrend .sm-chart{height:205px!important;min-height:205px!important;overflow:hidden!important;padding:0!important}
       #socialBody #socialTrend .sm-chart svg{width:100%;height:100%;display:block}
-      #socialBody #socialTrend .sm-social-line{fill:none;stroke:${GREEN};stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-      #socialBody #socialTrend circle.sm-social-point{fill:${GREEN};stroke:#fff;stroke-width:1.7;cursor:pointer;vector-effect:non-scaling-stroke;transition:r .12s ease,stroke-width .12s ease}
-      #socialBody #socialTrend circle.sm-social-point:hover,#socialBody #socialTrend circle.sm-social-point.is-selected{r:5.5;stroke-width:2.3}
+      #socialBody #socialTrend .blis-click-point{cursor:pointer;transition:r .12s ease}
+      #socialBody #socialTrend .blis-click-point:hover,#socialBody #socialTrend .blis-click-point.is-selected{r:5.2}
+      #socialBody #socialTrend .blis-series-note{margin-top:7px!important}
     `;document.head.appendChild(s);
-  }
-
-  function measuredRows(){
-    const src=(typeof H!=='undefined'&&Array.isArray(H))?H:[];
-    const byDay=new Map();
-    for(const x of src){
-      const p=x?.payload||x||{};
-      const idx=Array.isArray(p.indices)?p.indices.find(i=>String(i?.key||i?.name||'').toLowerCase()==='presence'):null;
-      const value=num(idx?.value),time=x?.time||x?.created_at||x?.date||p?.time||p?.date;
-      if(value==null||!time)continue;
-      const day=String(time).slice(0,10);
-      byDay.set(day,{date:day,value});
-    }
-    return [...byDay.values()].sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-  }
-
-  function smoothPath(pts){
-    if(pts.length<2)return'';
-    if(pts.length===2)return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
-    let d=`M ${pts[0].x} ${pts[0].y}`;
-    for(let i=0;i<pts.length-1;i++){
-      const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
-      const c1x=p1.x+(p2.x-p0.x)/6;
-      const c1y=p1.y+(p2.y-p0.y)/6;
-      const c2x=p2.x-(p3.x-p1.x)/6;
-      const c2y=p2.y-(p3.y-p1.y)/6;
-      d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-    }
-    return d;
   }
 
   const KPI_MAP=[
@@ -82,50 +52,43 @@
     });
   }
 
-  function repairGreenChart(root){
-    const host=root.querySelector('#socialTrend .sm-chart');
-    const svg=host?.querySelector('svg');
-    const rows=measuredRows();
-    if(!svg||rows.length<2)return;
+  function restorePriorCurve(root){
+    if(!window.BLISCurves?.draw||!window.BLISCurves?.series)return;
+    const card=root.querySelector('#socialTrend');
+    const host=card?.querySelector('.sm-chart');
+    if(!host)return;
 
-    const vb=(svg.getAttribute('viewBox')||'0 0 760 190').trim().split(/\s+/).map(Number);
-    const w=vb[2]||760,h=vb[3]||190,l=28,r=10,t=12,b=22;
-    const vals=rows.map(x=>x.value),min0=Math.min(...vals),max0=Math.max(...vals);
-    const min=Math.max(0,min0-5),max=Math.min(100,max0+5),span=Math.max(1,max-min);
-    const X=i=>l+(w-l-r)*i/(rows.length-1),Y=v=>t+(h-t-b)*(1-(v-min)/span);
-    const pts=rows.map((row,i)=>({x:X(i),y:Y(row.value),...row}));
+    const series=window.BLISCurves.series('presence')||[];
+    if(series.length<2)return;
 
-    let path=[...svg.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='none'&&p.getAttribute('stroke'));
-    if(!path){path=document.createElementNS(NS,'path');svg.appendChild(path)}
-    path.classList.add('sm-social-line');
-    path.setAttribute('d',smoothPath(pts));
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke',GREEN);
-    path.setAttribute('stroke-width','3');
-    path.setAttribute('stroke-linecap','round');
-    path.setAttribute('stroke-linejoin','round');
+    host.innerHTML=window.BLISCurves.draw('presence',{color:GREEN,width:760,height:190});
 
-    svg.querySelectorAll('circle').forEach(c=>c.remove());
-    for(const p of pts){
-      const c=document.createElementNS(NS,'circle');
-      c.classList.add('sm-social-point','blis-click-point');
-      c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','3.5');
-      c.setAttribute('fill',GREEN);c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','1.7');
-      c.setAttribute('role','button');c.setAttribute('tabindex','0');
-      c.dataset.chartDate=p.date;c.dataset.chartValue=String(p.value);c.dataset.chartLabel='Социален индекс';
-      c.style.cursor='pointer';c.style.pointerEvents='all';
-      const title=document.createElementNS(NS,'title');title.textContent=`${p.date} · ${fmt(p.value)}/100`;c.appendChild(title);
-      svg.appendChild(c);
-    }
+    const svg=host.querySelector('svg[data-curve-key="presence"]');
+    const dots=[...svg?.querySelectorAll('circle')||[]];
+    dots.forEach((dot,i)=>{
+      const row=series[i];if(!row)return;
+      dot.classList.add('blis-click-point');
+      dot.dataset.chartKey='presence';
+      dot.dataset.chartLabel='Социален индекс';
+      dot.dataset.chartDate=row.date||'';
+      dot.dataset.chartValue=String(row.value??'');
+      dot.setAttribute('role','button');dot.setAttribute('tabindex','0');
+      dot.style.cursor='pointer';dot.style.pointerEvents='all';
+      dot.setAttribute('stroke','#fff');dot.setAttribute('stroke-width','1.5');dot.setAttribute('r','3.6');
+    });
 
-    const meta=root.querySelector('#socialTrend .sm-chart-meta span:first-child b');
-    if(meta)meta.textContent=String(rows.length);
+    const sub=card.querySelector('.sm-card-head p');
+    if(sub)sub.textContent='Дневна динамика на социалния индекс';
+    const pill=card.querySelector('.sm-card-head .sm-pill');
+    if(pill)pill.textContent='ДНЕВНА ДИНАМИКА';
+    const meta=card.querySelector('.sm-chart-meta span:first-child');
+    if(meta)meta.innerHTML=`<b>${series.length}</b> дневни точки`;
   }
 
   function patch(){
     const root=document.getElementById('socialBody');
     if(!root||!root.children.length)return false;
-    styles();markSections(root);makeKpisInteractive(root);repairGreenChart(root);return true;
+    styles();markSections(root);makeKpisInteractive(root);restorePriorCurve(root);return true;
   }
 
   function gotoPart(id){
@@ -148,9 +111,9 @@
   });
 
   const oldRefGo=window.refGo;
-  if(typeof oldRefGo==='function'&&!oldRefGo.__socialInteractiveV3){
+  if(typeof oldRefGo==='function'&&!oldRefGo.__socialInteractiveV4){
     const wrapped=function(id){const r=oldRefGo.apply(this,arguments);if(id==='social'){setTimeout(patch,120);setTimeout(patch,650)}return r};
-    wrapped.__socialInteractiveV3=true;wrapped.__previous=oldRefGo;window.refGo=wrapped;
+    wrapped.__socialInteractiveV4=true;wrapped.__previous=oldRefGo;window.refGo=wrapped;
   }
 
   setTimeout(patch,900);setTimeout(patch,1800);
