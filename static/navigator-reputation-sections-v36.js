@@ -1,0 +1,44 @@
+/* BLIS Navigator — Reputation Context + Sources clarity layer v36. */
+(function(){
+'use strict';
+if(window.__BLISReputationSectionsV36)return;window.__BLISReputationSectionsV36=true;
+const A=v=>Array.isArray(v)?v:[];
+const N=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
+const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const F=(v,d=1)=>v==null?'—':Number(v).toLocaleString('bg-BG',{maximumFractionDigits:d});
+let filter='all',lastKey='';
+function slugNow(){try{return (typeof slug!=='undefined'&&slug)||window.BLIS_INITIAL_CLIENT||new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||'aroma'}catch(e){return'aroma'}}
+async function getJSON(u){try{const r=await fetch(u,{cache:'no-store'});return r.ok?await r.json():null}catch(e){return null}}
+function ownSource(s){const q=String(s?.key||s?.source_key||'').toLowerCase();return !/^(cmp_|competitor_)|competitor|конкурент|сравним/.test(q)}
+function topicLabel(x){return String(x?.title||x?.keyword||x?.label||x?.name||'Тема').trim()}
+function topicValue(x){for(const k of ['value','count','score','numeric']){const v=N(x?.[k]);if(v!==null)return v}return null}
+function topicCategory(label){const q=String(label||'').toLowerCase();if(/качество|продукт|състав|формул|опаков|дизайн|аромат|вкус/.test(q))return'Продукт';if(/цен|промо|оферт|достъп|магазин|налич|дистриб|търгов/.test(q))return'Търговска среда';if(/обслуж|достав|сервиз|поддръж|персонал/.test(q))return'Обслужване';if(/кампан|реклам|комуника|публикац|съдърж|меди|новин|социал/.test(q))return'Комуникация';if(/марка|репутац|довер|имидж|история|корпоратив/.test(q))return'Марка';return'Публичен контекст'}
+function sourceMeta(s){const q=`${s?.key||''} ${s?.label||''} ${s?.method||''}`.toLowerCase();if(/facebook|instagram|linkedin|youtube|social|социал/.test(q))return{filter:'social',label:'Социален'};if(/news|media|новин|меди|google_news|google_search/.test(q))return{filter:'media',label:'Медиен'};if(/review|rating|оцен|отзив|untappd|tripadvisor|booking|trustpilot|google_business/.test(q))return{filter:'reviews',label:'Оценки/отзиви'};if(/official|brand_site|corporate|официал|собствен сайт/.test(q))return{filter:'other',label:'Собствен'};if(/registry|nsi|euipo|wipo|kzp|cosing|eurostat|commission|патент|регистър|нси/.test(q))return{filter:'other',label:'Официален'};if(/dm|lilly|douglas|notino|makeup|kaufland|billa|metro|retail|търгов/.test(q))return{filter:'other',label:'Търговски'};if(/industry|cosmetics|brewers|бранш/.test(q))return{filter:'other',label:'Браншов'};return{filter:'other',label:'Друг'};}
+function reliability(s){const v=N(s?.reliability);if(v===null)return null;return v<=1?v*100:v}
+function short(s,n=86){s=String(s||'').trim();return s.length>n?s.slice(0,n-1).trim()+'…':s}
+function renderContext(keywords){
+ const host=document.querySelector('#reputationBody .rp-topics'),head=document.querySelector('#rpTopics header p');if(!host)return;
+ const rows=A(keywords).map(x=>({raw:x,label:topicLabel(x),value:topicValue(x),display:x?.display,source:x?.source||x?.source_key||''})).filter(x=>x.label&&(x.value!==null||x.display)).sort((a,b)=>(b.value??-Infinity)-(a.value??-Infinity)).slice(0,8);
+ if(head)head.textContent='Какви теми присъстват в измерената публична среда';
+ if(!rows.length){host.innerHTML='<div class="rp-empty">Няма отделно измерени контекстни теми за текущия профил.</div>';return}
+ const numeric=rows.filter(x=>x.value!==null),max=Math.max(1,...numeric.map(x=>Math.max(0,x.value))),cats=new Set(rows.map(x=>topicCategory(x.label)));
+ host.innerHTML=`<div class="rp-context-summary"><span><b>${rows.length}</b> теми</span><span><b>${cats.size}</b> категории</span><span><b>${numeric.length}</b> с числова стойност</span></div><div class="rp-context-list">${rows.map((x,i)=>{const cat=topicCategory(x.label),v=x.value,ratio=v===null?0:Math.max(0,Math.min(100,v/max*100)),level=i===0&&v!==null?'Водеща тема':ratio>=55?'Силно присъствие':ratio>=25?'Видимо присъствие':'По-слабо присъствие',shown=v===null?String(x.display||'—'):F(v);return `<div class="rp-context-row"><div class="rp-context-copy"><div><span class="rp-context-cat">${E(cat)}</span>${i===0&&v!==null?'<em>водеща</em>':''}</div><b>${E(x.label)}</b><small>${E(level)}${x.source?` • ${E(x.source)}`:''}</small></div><div class="rp-context-measure"><strong>${E(shown)}</strong><i><b style="width:${ratio}%"></b></i></div></div>`}).join('')}</div><div class="rp-section-note">Лентите сравняват относителната сила на темите в текущия измерен набор. Те <b>не показват позитивен или негативен тон</b>.</div>`;
+}
+function renderSources(activity,sources){
+ const host=document.querySelector('#reputationBody .rp-sources'),head=document.querySelector('#rpSources header p'),filters=document.querySelector('#rpSources .rp-source-filters');if(!host)return;
+ const src=A(sources).filter(ownSource),srcMap=new Map(),counts=new Map();src.forEach(s=>{const k=String(s?.key||s?.source_key||'');if(k)srcMap.set(k,s)});A(activity).forEach(x=>{const k=String(x?.source_key||x?.source||'');if(!k||!ownSource({key:k}))return;counts.set(k,(counts.get(k)||0)+1)});
+ const total=[...counts.values()].reduce((a,b)=>a+b,0),measured=[...counts.keys()].filter(k=>srcMap.has(k)).length,avgRel=(()=>{const vals=src.map(reliability).filter(v=>v!==null);return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null})();
+ const categoryCount=new Set(src.map(s=>sourceMeta(s).label)).size;
+ let rows=src.map(s=>{const key=String(s?.key||s?.source_key||''),count=counts.get(key)||0,meta=sourceMeta(s),rel=reliability(s);return{s,key,count,meta,rel,share:total?count/total*100:0}}).sort((a,b)=>b.count-a.count||(b.rel||0)-(a.rel||0));
+ const activeRows=rows.filter(x=>x.count>0);rows=(activeRows.length?activeRows:rows).slice(0,8);
+ if(head)head.textContent='Откъде идват данните, които изграждат репутационния профил';
+ if(filters){filters.innerHTML='<button data-rp-filter="all" class="active">Всички</button><button data-rp-filter="social">Социални</button><button data-rp-filter="media">Медии</button><button data-rp-filter="reviews">Оценки/отзиви</button><button data-rp-filter="other">Други</button>'}
+ host.innerHTML=`<div class="rp-source-summary"><span><b>${src.length}</b> наблюдавани</span><span><b>${measured}</b> с измервания</span><span><b>${categoryCount}</b> типа</span>${avgRel!==null?`<span><b>${F(avgRel,0)}%</b> ср. надеждност</span>`:''}</div><div class="rp-source-list">${rows.map(x=>{const s=x.s,url=String(s?.url||''),method=short(s?.method||''),measuredText=x.count?`${x.count} измервания`:'наблюдаван',shareText=x.count&&total?`${F(x.share,0)}% от активността`:'без ново измерване',relText=x.rel!==null?`${F(x.rel,0)}% надеждност`:'надеждност —';return `<button class="rp-source-card" type="button" data-rp-source-cat="${x.meta.filter}" ${/^https?:\/\//i.test(url)?`data-rp-url="${E(url)}"`:''}><span class="rp-source-dot ${x.meta.filter}">●</span><span class="rp-source-main"><span><b>${E(s?.label||s?.name||x.key)}</b><em>${E(x.meta.label)}</em></span><small>${E(method||'Публичен наблюдаван източник')}</small></span><span class="rp-source-stats"><b>${E(measuredText)}</b><small>${E(shareText)}</small><small>${E(relText)}</small></span><i>›</i></button>`}).join('')}</div><div class="rp-section-note">„Дял от активността“ означава дял от <b>броя измервания</b> в текущия профил. Това не е оценка за влиянието или качеството на самия източник.</div>`;
+ applyFilter(filter);
+}
+function applyFilter(f){filter=f||'all';document.querySelectorAll('#rpSources [data-rp-filter]').forEach(b=>b.classList.toggle('active',b.dataset.rpFilter===filter));document.querySelectorAll('#rpSources .rp-source-card').forEach(x=>x.hidden=filter!=='all'&&x.dataset.rpSourceCat!==filter)}
+async function apply(force=false){if(!document.getElementById('reputation')?.classList.contains('active'))return;const c=slugNow(),stamp=Date.now(),key=c+'|'+document.querySelector('#reputationBody')?.dataset?.rpStable;if(!force&&key===lastKey)return;const [a,s,k]=await Promise.all([getJSON(`/api/clients/${encodeURIComponent(c)}/activity?_=${stamp}`),getJSON(`/api/clients/${encodeURIComponent(c)}/sources?_=${stamp}`),getJSON(`/api/clients/${encodeURIComponent(c)}/keywords?_=${stamp}`)]);if(!document.getElementById('reputation')?.classList.contains('active'))return;renderContext(k);renderSources(a,s);lastKey=key;}
+function init(){document.addEventListener('click',e=>{const f=e.target?.closest?.('#rpSources [data-rp-filter]');if(f){e.preventDefault();applyFilter(f.dataset.rpFilter);return}const row=e.target?.closest?.('#rpSources .rp-source-card[data-rp-url]');if(row){e.preventDefault();window.open(row.dataset.rpUrl,'_blank','noopener')}} ,true)}
+window.BLISReputationSectionsV36={apply,applyFilter};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
