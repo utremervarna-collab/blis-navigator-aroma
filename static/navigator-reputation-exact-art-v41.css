@@ -1,4 +1,4 @@
-/* BLIS Navigator — exact uploaded Aroma artwork placement v41. */
+/* BLIS Navigator — exact reputation artwork placement v47. */
 #reputationBody .rp-totem.rp-exact-aroma{
   min-height:390px!important;
   display:flex!important;
@@ -8,6 +8,7 @@
   perspective:none!important;
   isolation:isolate;
   overflow:visible!important;
+  position:relative!important;
 }
 #reputationBody .rp-totem.rp-exact-aroma:before,
 #reputationBody .rp-totem.rp-exact-aroma:after,
@@ -31,6 +32,29 @@
   user-select:none;
   pointer-events:none;
 }
-@media(max-width:1450px){#reputationBody .rp-exact-art{height:360px}#reputationBody .rp-totem.rp-exact-aroma{min-height:360px!important}}
-@media(max-width:1180px){#reputationBody .rp-exact-art{height:350px}#reputationBody .rp-totem.rp-exact-aroma{min-height:350px!important}}
-@media(max-width:760px){#reputationBody .rp-exact-art{height:330px}#reputationBody .rp-totem.rp-exact-aroma{min-height:330px!important}}
+#reputationBody .rp-exact-label{
+  position:absolute;
+  z-index:6;
+  left:50%;
+  top:83px;
+  width:154px;
+  min-height:73px;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 13px;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 45%,#fff 0 62%,rgba(255,255,255,.97) 78%,rgba(255,255,255,.92) 100%);
+  color:#0b3159;
+  font:700 22px/1.03 Georgia,serif;
+  text-align:center;
+  text-wrap:balance;
+  pointer-events:none;
+}
+#reputationBody .rp-exact-label[data-client="astor-garden"]{color:#173e40}
+#reputationBody .rp-exact-label[data-client="bolyarka"]{color:#4a2024;font-size:24px;white-space:nowrap}
+#reputationBody .rp-exact-label[data-client="varna-towers"]{color:#18384f}
+@media(max-width:1450px){#reputationBody .rp-exact-art{height:360px}#reputationBody .rp-totem.rp-exact-aroma{min-height:360px!important}#reputationBody .rp-exact-label{top:77px;width:143px;min-height:68px;font-size:20px}}
+@media(max-width:1180px){#reputationBody .rp-exact-art{height:350px}#reputationBody .rp-totem.rp-exact-aroma{min-height:350px!important}#reputationBody .rp-exact-label{top:75px;width:139px;min-height:65px;font-size:19px}}
+@media(max-width:760px){#reputationBody .rp-exact-art{height:330px}#reputationBody .rp-totem.rp-exact-aroma{min-height:330px!important}#reputationBody .rp-exact-label{top:70px;width:131px;min-height:62px;font-size:18px}}
