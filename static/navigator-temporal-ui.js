@@ -1,5 +1,6 @@
 /* BLIS Navigator — Temporal UI synchronizer.
-   Keeps deltas, comparison cards and History aligned with BLISCurves v3. */
+   Keeps overview, digital comparison and History aligned with BLISCurves v3.
+   Social Signals owns its measured history and is intentionally not patched here. */
 (function(){
   'use strict';
   const N=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
@@ -33,23 +34,6 @@
       change.classList.remove('up','down','neutral');change.classList.add(d>0?'up':d<0?'down':'neutral');
       const strong=change.querySelector('strong');if(strong)strong.innerHTML=`${d>0?'+':''}${fmt(d)}<em> пункта</em>`;
     }
-  }
-
-  function patchSocialModule(){
-    const root=document.getElementById('socialBody');if(!root)return;
-    const s=getSeries('presence');if(s.length<2)return;
-    const d=Math.round((s[s.length-1].value-s[s.length-2].value)*10)/10;
-    [...root.querySelectorAll('.sm-kpi')].forEach(card=>{
-      const label=(card.querySelector('.sm-kpi-head')?.textContent||'').trim();
-      if(label.includes('Социална динамика')){
-        const value=card.querySelector('.sm-kpi-value');
-        if(value)value.innerHTML=`${d>0?'+':''}${fmt(d)}<small> т.</small>`;
-        const foot=card.querySelector('.sm-kpi-foot');if(foot)foot.textContent='Промяна спрямо предходния ден';
-      }
-    });
-    const meta=root.querySelector('.sm-chart-meta span:first-child b');if(meta)meta.textContent=String(s.length);
-    const pill=[...root.querySelectorAll('.sm-card-head .sm-pill')].find(x=>(x.textContent||'').includes('ИЗМЕРЕНИ ДАННИ'));
-    if(pill)pill.textContent='ДНЕВНА ДИНАМИКА';
   }
 
   function patchDigitalModule(){
@@ -105,7 +89,7 @@
     if(title&&/ИСТОРИЧЕСКА ДИНАМИКА/.test(title.textContent||''))title.textContent='ИСТОРИЧЕСКА ДИНАМИКА НА BLIS ИНДЕКСА';
   }
 
-  function patch(){patchKpis();patchDigitalComparison();patchOverviewCopy();patchSocialModule();patchDigitalModule()}
+  function patch(){patchKpis();patchDigitalComparison();patchOverviewCopy();patchDigitalModule()}
   function wrapRefGo(){
     const old=window.refGo;if(typeof old!=='function'||old.__temporalUI)return false;
     const wrapped=function(id){const r=old.apply(this,arguments);requestAnimationFrame(()=>{patch();if(id==='history')patchHistory()});return r};
