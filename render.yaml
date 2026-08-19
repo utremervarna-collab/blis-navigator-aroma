@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-2024-reputation-exact-aroma-v41"
+        value: "20260819-2031-reputation-exact-loader-v42"
