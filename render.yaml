@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1347-home-live-last-change-v20"
+        value: "20260819-1356-client-access-v21"
