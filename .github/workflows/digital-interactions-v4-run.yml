@@ -1,0 +1,9 @@
+name: Digital Interactions v4 Run
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo trigger
