@@ -28,7 +28,13 @@
     '.score-value',
     '[class*="kpi-value"]',
     '[class*="metric-value"]',
-    '[class*="score-value"]'
+    '[class*="score-value"]',
+    '.page [class*="value"]',
+    '.page [class*="score"]',
+    '.page [class*="metric"] b',
+    '.page [class*="metric"] strong',
+    '.page [class*="stat"] b',
+    '.page [class*="stat"] strong'
   ].join(',');
 
   function cleanText(el){return String(el?.textContent||'').replace(/\s+/g,' ').trim()}
