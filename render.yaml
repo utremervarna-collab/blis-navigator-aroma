@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-2108-reputation-exact-v45"
+        value: "20260819-2149-reputation-exact-allclients-v47"
