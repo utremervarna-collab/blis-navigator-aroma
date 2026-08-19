@@ -4,7 +4,6 @@
   const SOCIAL_RE=/facebook|instagram|linkedin|youtube|tiktok|twitter|x\.com|(^|[_-])x($|[_-])/i;
   const TEXT_METRIC_RE=/(post|publication|comment|caption|message|video[_-]?title|latest[_-]?(post|comment)|social[_-]?(text|content)|excerpt|snippet)/i;
   const URL_METRIC_RE=/(post|comment|publication|video|permalink|social).*url|url.*(post|comment|publication|video)/i;
-  const TYPE_METRIC_RE=/(post|publication|comment|caption|message|video)/i;
   const arr=x=>Array.isArray(x)?x:[];
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const text=v=>typeof v==='string'?v.trim():'';
@@ -17,7 +16,6 @@
   const isHumanText=v=>{const s=text(v);if(s.length<18||s.length>4000)return false;if(/^https?:\/\//i.test(s))return false;if(/^[-+]?\d+(?:[.,]\d+)?%?$/.test(s))return false;if(/^(true|false|ok|active|reachable)$/i.test(s))return false;return /[A-Za-zА-Яа-я]/.test(s)};
   const truncate=(s,n=240)=>{s=text(s).replace(/\s+/g,' ');return s.length>n?s.slice(0,n-1).trimEnd()+'…':s};
   const timeValue=x=>x?.published_at||x?.created_at||x?.captured_at||x?.observed_at||x?.time||x?.date||x?.timestamp||x?.meta?.published_at||x?.meta?.created_at||x?.meta?.observed_at||'';
-  const timeNum=x=>{const d=new Date(timeValue(x)||0);return isNaN(d)?0:d.getTime()};
   const dateBG=x=>{const d=new Date(timeValue(x)||0);if(isNaN(d))return'дата не е налична';return d.toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
   const sourceKey=x=>String(x?.source_key||x?.source||x?.channel||x?.platform||x?.network||'').toLowerCase();
   const metricKey=x=>String(x?.metric_key||x?.metric||x?.key||x?.type||x?.kind||'').toLowerCase();
@@ -39,17 +37,18 @@
     return arr(obs).map(o=>{if(directURL(o))return o;const sk=sourceKey(o),mk=metricKey(o),stem=mk.replace(/text|content|caption|message|title|snippet|excerpt/g,'').replace(/[^a-z0-9]+/g,'');const u=links.get(sk+'|'+stem);return u?{...o,url:u}:o});
   }
   function dedupe(rows){const seen=new Set();return rows.filter(r=>{const k=(r.url&&r.direct?r.url:'')+'|'+r.platform+'|'+r.text.toLowerCase().replace(/\s+/g,' ').slice(0,150);if(seen.has(k))return false;seen.add(k);return true})}
+  let cache={client:'',at:0,rows:[]};
   async function collect(){
+    const current=slug();if(cache.client===current&&Date.now()-cache.at<15000)return cache.rows;
     const {A,S}=state();let raw=[...arr(A)];
-    try{
-      const r=await fetch('/api/store/export',{cache:'no-store'});if(r.ok){const store=await r.json();const c=store?.clients?.[slug()];if(c?.observations)raw.push(...c.observations)}
-    }catch(e){}
+    try{const r=await fetch('/api/store/export',{cache:'no-store'});if(r.ok){const store=await r.json();const c=store?.clients?.[current];if(c?.observations)raw.push(...c.observations)}}catch(e){}
     try{if(Array.isArray(window.SOCIALSIGNAL_TABLE))raw.push(...window.SOCIALSIGNAL_TABLE)}catch(e){}
     raw=pairObservationURLs(raw);
     const rows=dedupe(raw.map(x=>normalizeRecord(x,S)).filter(Boolean));
     rows.sort((a,b)=>{const ta=new Date(a.time||0).getTime()||0,tb=new Date(b.time||0).getTime()||0;return tb-ta});
-    return rows.slice(0,8);
+    cache={client:current,at:Date.now(),rows:rows.slice(0,8)};return cache.rows;
   }
+  function signature(rows){let h=2166136261>>>0;const s=rows.map(r=>[r.platform,r.type,r.time,r.text,r.url].join('|')).join('~');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return String(h>>>0)}
   function styles(){if(document.getElementById('blisSocialFeedStyles'))return;const s=document.createElement('style');s.id='blisSocialFeedStyles';s.textContent=`
     .sm-platform-icon{width:29px;height:29px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font:800 14px/1 Arial;color:#fff;box-shadow:0 3px 10px rgba(20,40,75,.12)}
     .sm-platform-icon.facebook{background:#1877f2}.sm-platform-icon.instagram{background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);font-size:18px}.sm-platform-icon.linkedin{background:#0a66c2;font-size:11px}.sm-platform-icon.youtube{background:#ff0000}.sm-platform-icon.tiktok{background:#111;text-shadow:-1px 0 #25f4ee,1px 0 #fe2c55}.sm-platform-icon.x{background:#111}
@@ -59,20 +58,23 @@
     @media(max-width:760px){.sm-feed-item{grid-template-columns:36px minmax(0,1fr)}.sm-feed-link{grid-column:2;justify-self:start}}
   `;document.head.appendChild(s)}
   function iconHTML(p){return `<span class="sm-platform-icon ${platformClass(p)}">${esc(platformGlyph(p))}</span>`}
-  function colorChannels(){document.querySelectorAll('#socialBody .sm-channel').forEach(ch=>{const name=ch.querySelector('.sm-channel-name')?.textContent?.trim()||ch.dataset.smChannel||'';const p=platformName(name);const logo=ch.querySelector('.sm-channel-logo');if(logo)logo.innerHTML=iconHTML(p)})}
-  function cardHTML(rows){
+  function colorChannels(){document.querySelectorAll('#socialBody .sm-channel').forEach(ch=>{const name=ch.querySelector('.sm-channel-name')?.textContent?.trim()||ch.dataset.smChannel||'';const p=platformName(name);const logo=ch.querySelector('.sm-channel-logo');if(logo&&logo.dataset.platformIcon!==p){logo.dataset.platformIcon=p;logo.innerHTML=iconHTML(p)}})}
+  function cardHTML(rows,sig){
     const body=rows.length?`<div class="sm-feed-list">${rows.map(r=>`<div class="sm-feed-item"><div>${iconHTML(r.platform)}</div><div><div class="sm-feed-meta"><b>${esc(r.platform)}</b><span class="sm-feed-type">${esc(r.type)}</span><span>${esc(dateBG(r))}</span></div><div class="sm-feed-text">${esc(r.text)}</div>${r.engagement.length?`<div class="sm-feed-eng">${esc(r.engagement.join(' · '))}</div>`:''}</div>${r.url?`<a class="sm-feed-link" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${r.direct?'Оригинал ↗':'Към канала ↗'}</a>`:''}</div>`).join('')}</div>`:`<div class="sm-feed-empty"><b>Няма налични реални публикации или коментари за избрания период.</b><br>Блокът показва само текст, действително получен от свързан социален източник.</div>`;
-    return `<div class="sm-card sm-social-feed" data-social-real-feed="1"><div class="sm-card-head"><div><h3>ПОСЛЕДНИ ПУБЛИКАЦИИ И КОМЕНТАРИ</h3><p>Последни реални текстови записи от наблюдаваните социални канали</p></div><span class="sm-pill live">● REAL DATA</span></div>${body}</div>`;
+    return `<div class="sm-card sm-social-feed" data-social-real-feed="1" data-feed-sig="${esc(sig)}"><div class="sm-card-head"><div><h3>ПОСЛЕДНИ ПУБЛИКАЦИИ И КОМЕНТАРИ</h3><p>Последни реални текстови записи от наблюдаваните социални канали</p></div><span class="sm-pill live">● REAL DATA</span></div>${body}</div>`;
   }
   async function mount(){
-    const root=document.getElementById('socialBody');if(!root)return;styles();colorChannels();
-    const channelCard=[...root.querySelectorAll('.sm-card')].find(c=>(c.querySelector('h3')?.textContent||'').includes('КАНАЛИ И ПРИНОС'));
-    if(!channelCard)return;
-    const rows=await collect();let card=root.querySelector('[data-social-real-feed="1"]');
-    if(card){card.outerHTML=cardHTML(rows)}else channelCard.insertAdjacentHTML('afterend',cardHTML(rows));
-    colorChannels();
+    if(mount.busy)return;mount.busy=true;
+    try{
+      const root=document.getElementById('socialBody');if(!root)return;styles();colorChannels();
+      const channelCard=[...root.querySelectorAll('.sm-card')].find(c=>(c.querySelector('h3')?.textContent||'').includes('КАНАЛИ И ПРИНОС'));if(!channelCard)return;
+      const rows=await collect(),sig=signature(rows);let card=root.querySelector('[data-social-real-feed="1"]');
+      if(card?.dataset.feedSig===sig){colorChannels();return}
+      if(card)card.outerHTML=cardHTML(rows,sig);else channelCard.insertAdjacentHTML('afterend',cardHTML(rows,sig));
+      colorChannels();
+    }finally{mount.busy=false}
   }
-  let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(mount,80)}
+  let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(mount,100)}
   function init(){schedule();const root=document.getElementById('socialBody');if(root)new MutationObserver(schedule).observe(root,{childList:true,subtree:true});setInterval(()=>{if(document.getElementById('social')?.classList.contains('active'))mount()},60000)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
