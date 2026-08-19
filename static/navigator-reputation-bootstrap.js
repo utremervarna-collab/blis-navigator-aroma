@@ -9,7 +9,7 @@ function run(delay=80,force=false){setTimeout(()=>{if(!active())return;const p=w
 function wrapRefGo(){const old=window.refGo;if(typeof old!=='function'||old.__repStable34)return false;const wrapped=function(id){const r=old.apply(this,arguments);if(id==='reputation')run(90,false);return r};wrapped.__repStable34=true;window.refGo=wrapped;return true}
 function init(){
  style('data-blis-reputation-polish','/navigator-reputation-polish.css?v=20260819-reputation29');
- style('data-blis-reputation-refine30','/navigator-reputation-refine-v30.css?v=20260819-reputation33');
+ style('data-blis-reputation-refine30','/navigator-reputation-refine-v30.css?v=20260819-reputation34');
  script('data-blis-reputation-stable33','/navigator-reputation-stable-v33.js?v=20260819-reputation33',()=>{
    script('data-blis-reputation-opinion34','/navigator-reputation-opinion-v34.js?v=20260819-reputation34',()=>run(70,false));
  });
