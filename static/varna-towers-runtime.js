@@ -123,7 +123,7 @@
     return nativeFetch(input,init);
   };
 
-  /* Home BLIS LIVE visual override: stable brand colors independent of ticker order. */
+  /* Home BLIS LIVE visual + real delta override. */
   if(typeof document!=='undefined'){
     const css=document.createElement('style');
     css.textContent=`
@@ -135,11 +135,110 @@
     `;
     document.head.appendChild(css);
     const colors={'AROMA':'#56d6df','БОЛЯРКА':'#f0b24a','ASTOR GARDEN':'#8fd3a8','VARNA TOWERS':'#91b3ff'};
+    const tapeClients=[['aroma','AROMA'],['bolyarka','БОЛЯРКА'],['astor-garden','ASTOR GARDEN'],['varna-towers','VARNA TOWERS']];
+    const tapeMetrics=[['blis','BLIS'],['digital','DIGITAL'],['reputation','REPUTATION'],['competitive','COMPETITIVE']];
+    const num=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
+    const valueOf=(payload,key)=>{
+      if(!payload)return null;
+      if(key==='blis')return num(payload.blis_index);
+      const x=(payload.indices||[]).find(i=>i&&i.key===key);
+      return x?num(x.value):null;
+    };
+    const explicitDelta=(d,key)=>{
+      if(!d)return null;
+      const obj=key==='blis'?d:(d.indices||[]).find(i=>i&&i.key===key);
+      if(!obj)return null;
+      for(const k of ['delta','change','change_value','trend_delta','trend']){
+        const v=num(obj[k]);
+        if(v!==null)return v;
+      }
+      return null;
+    };
+    const historyDelta=(d,h,key)=>{
+      const cur=valueOf(d,key);
+      if(cur===null||!Array.isArray(h))return null;
+      const rows=h.filter(r=>r&&r.payload&&valueOf(r.payload,key)!==null);
+      if(!rows.length)return null;
+      rows.sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')));
+      const currentStamp=String(d.data_updated||d.updated_at||'');
+      let prev=null;
+      if(currentStamp){
+        let idx=-1;
+        for(let i=rows.length-1;i>=0;i--){
+          const ps=String(rows[i].payload?.data_updated||rows[i].created_at||'');
+          if(ps===currentStamp||String(rows[i].created_at||'')===currentStamp){idx=i;break}
+        }
+        if(idx>0)prev=valueOf(rows[idx-1].payload,key);
+        else if(idx<0)prev=valueOf(rows[rows.length-1].payload,key);
+      }else{
+        const last=valueOf(rows[rows.length-1].payload,key);
+        prev=Math.abs(last-cur)<1e-9&&rows.length>1?valueOf(rows[rows.length-2].payload,key):last;
+      }
+      return prev===null?null:cur-prev;
+    };
+    let deltaMap=new Map();
+    let applying=false;
+    const loadRealDeltas=async()=>{
+      const next=new Map();
+      await Promise.all(tapeClients.map(async([slug,name])=>{
+        try{
+          const bust=Date.now();
+          const [d,h]=await Promise.all([
+            fetch(`/api/clients/${slug}/dashboard?_=${bust}`,{cache:'no-store'}).then(r=>r.ok?r.json():null),
+            fetch(`/api/clients/${slug}/history?_=${bust}`,{cache:'no-store'}).then(r=>r.ok?r.json():[])
+          ]);
+          for(const [key,label] of tapeMetrics){
+            if(valueOf(d,key)===null)continue;
+            let delta=explicitDelta(d,key);
+            if(delta===null)delta=historyDelta(d,h,key);
+            next.set(`${name}|${label}`,delta);
+          }
+        }catch(e){}
+      }));
+      deltaMap=next;
+      applyTape();
+    };
     const paint=()=>document.querySelectorAll('#blisTapeTrack .tapeItem').forEach(el=>{
-      const n=(el.querySelector('.tapeClient')?.textContent||'').trim().toUpperCase();
-      if(colors[n])el.style.setProperty('--client-accent',colors[n]);
+      const name=(el.querySelector('.tapeClient')?.textContent||'').trim().toUpperCase();
+      if(colors[name])el.style.setProperty('--client-accent',colors[name]);
     });
-    const boot=()=>{paint();const t=document.getElementById('blisTapeTrack');if(t)new MutationObserver(paint).observe(t,{childList:true,subtree:true});};
+    const applyTape=()=>{
+      if(applying)return;
+      applying=true;
+      paint();
+      document.querySelectorAll('#blisTapeTrack .tapeItem').forEach(el=>{
+        const name=(el.querySelector('.tapeClient')?.textContent||'').trim().toUpperCase();
+        const label=(el.querySelector('.tapeMetric')?.textContent||'').trim().toUpperCase();
+        const deltaEl=el.querySelector('.tapeDelta');
+        if(!name||!label||!deltaEl)return;
+        const key=`${name}|${label}`;
+        const d=deltaMap.has(key)?deltaMap.get(key):null;
+        deltaEl.classList.remove('up','down','flat');
+        if(d===null||Math.abs(d)<0.05){
+          deltaEl.classList.add('flat');
+          deltaEl.textContent='•';
+          deltaEl.title=d===null?'Няма надеждно предходно измерване':'Без промяна спрямо предходното измерване';
+        }else if(d>0){
+          deltaEl.classList.add('up');
+          deltaEl.textContent=`+${d.toFixed(1)}`;
+          deltaEl.title='Реална промяна спрямо предходното измерване';
+        }else{
+          deltaEl.classList.add('down');
+          deltaEl.textContent=`−${Math.abs(d).toFixed(1)}`;
+          deltaEl.title='Реална промяна спрямо предходното измерване';
+        }
+      });
+      applying=false;
+    };
+    const boot=()=>{
+      applyTape();
+      loadRealDeltas();
+      const t=document.getElementById('blisTapeTrack');
+      if(t)new MutationObserver(()=>{if(!applying)setTimeout(applyTape,0)}).observe(t,{childList:true,subtree:true});
+      setInterval(loadRealDeltas,60000);
+      document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadRealDeltas()});
+      window.addEventListener('focus',loadRealDeltas);
+    };
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   }
 })();
