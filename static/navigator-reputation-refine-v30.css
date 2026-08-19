@@ -1,9 +1,11 @@
-/* BLIS Navigator — Reputation refinement v33 */
+/* BLIS Navigator — Reputation refinement v34 */
 #reputationBody .rp-emblem{padding:0 12px!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;min-height:128px!important}
 #reputationBody .rp-emblem>span{display:none!important}
-#reputationBody .rp-emblem>b{display:block!important;margin:0!important;max-width:124px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:center!important;font:700 18px/1.18 Georgia,serif!important;letter-spacing:0!important;text-transform:none!important;color:#0a315a!important}
+#reputationBody .rp-emblem>b{display:block!important;margin:0 auto!important;width:104px!important;max-width:104px!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:center!important;text-wrap:balance!important;word-break:normal!important;overflow-wrap:normal!important;font:700 18px/1.12 Georgia,serif!important;letter-spacing:0!important;text-transform:none!important;color:#0a315a!important}
 #reputationBody .rp-emblem[data-client="aroma"]{padding:0 7px!important}
-#reputationBody .rp-emblem[data-client="aroma"]>b{max-width:142px!important;white-space:nowrap!important;font-size:17px!important;line-height:1!important;letter-spacing:-.01em!important}
+#reputationBody .rp-emblem[data-client="aroma"]>b{width:112px!important;max-width:112px!important;white-space:normal!important;font-size:18px!important;line-height:1.08!important;letter-spacing:-.01em!important}
+#reputationBody .rp-emblem[data-client="varna-towers"]>b,#reputationBody .rp-emblem[data-client="astor-garden"]>b{width:106px!important;max-width:106px!important;white-space:normal!important}
+#reputationBody .rp-emblem[data-client="bolyarka"]>b{width:auto!important;max-width:118px!important;white-space:nowrap!important}
 #reputationBody .rp-hero{grid-template-columns:minmax(330px,1fr) minmax(300px,.82fr) minmax(410px,1.18fr)!important;gap:30px!important}
 #reputationBody .rp-side.right{min-width:0!important;gap:16px!important}
 #reputationBody .rp-side.right .rp-dimension{grid-template-columns:52px minmax(0,1fr) minmax(112px,auto) 18px!important;column-gap:14px!important;min-height:112px!important;padding:16px 14px!important;align-items:center!important}
