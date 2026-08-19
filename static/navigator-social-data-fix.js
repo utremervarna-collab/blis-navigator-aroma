@@ -1,2 +1,9 @@
-/* Legacy social data overlay retired. Canonical channels and real metrics are handled by navigator-social-master.js v4. */
-(function(){'use strict';})();
+/* BLIS Navigator — social data compatibility loader. */
+(function(){
+  'use strict';
+  if(document.querySelector('script[data-blis-social-verified]'))return;
+  const s=document.createElement('script');
+  s.src='/navigator-social-verified-fallback.js?v=20260819-verified1';
+  s.dataset.blisSocialVerified='1';
+  document.head.appendChild(s);
+})();
