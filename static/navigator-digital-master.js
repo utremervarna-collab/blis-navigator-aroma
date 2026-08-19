@@ -3,15 +3,16 @@
   const E=s=>typeof esc==='function'?esc(s):String(s??'');
   const V=k=>{try{const v=score(k);return v==null?'—':val(v)}catch{return'—'}};
   const H=k=>{try{return hist(k)||[]}catch{return[]}};
-  const spark=(k,c)=>{try{return window.spark?window.spark(H(k),c):''}catch{return''}};
+  const spark=(k,c)=>{try{return window.BLISCurves?BLISCurves.draw(k,{color:c,compact:true}):(window.spark?window.spark(H(k),c):'')}catch{return''}};
 
   function kpi(label,key,color,icon,delta){
     return `<div class="dm-card dm-kpi"><div class="dm-kpi-top"><span class="dm-orb" style="background:${color}18;color:${color}">${icon}</span>${E(label)}</div><div class="dm-value">${E(V(key))}<small>/100</small><span class="dm-delta">↑ ${delta}</span></div><div class="dm-spark">${spark(key,color)}</div><div class="dm-foot">спрямо предходния период</div></div>`;
   }
 
   function trend(){
+    if(window.BLISCurves)return BLISCurves.draw('digital',{color:'#1766e8',width:700,height:240});
     let series=H('digital');
-    if(!series.length) series=[40,45,48,44,52,56,57,58,68,63,66,72,68,74,76,83,82];
+    if(series.length<2)return '<div class="scan">Историята на дигиталната видимост се натрупва.</div>';
     const w=700,h=240,p=28,max=100;
     const pts=series.map((v,i)=>`${p+i*(w-2*p)/(series.length-1)},${h-p-(Number(v)||0)*(h-2*p)/max}`).join(' ');
     return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Динамика на дигиталната видимост"><defs><linearGradient id="digFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1766e8" stop-opacity=".18"/><stop offset="1" stop-color="#1766e8" stop-opacity="0"/></linearGradient></defs>${[25,50,75,100].map(v=>`<line x1="${p}" y1="${h-p-v*(h-2*p)/100}" x2="${w-p}" y2="${h-p-v*(h-2*p)/100}" stroke="#edf1f6"/>`).join('')}<polygon points="${p},${h-p} ${pts} ${w-p},${h-p}" fill="url(#digFill)"/><polyline points="${pts}" fill="none" stroke="#1766e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${series.map((v,i)=>`<circle cx="${p+i*(w-2*p)/(series.length-1)}" cy="${h-p-(Number(v)||0)*(h-2*p)/100}" r="3" fill="#1766e8"/>`).join('')}</svg>`;
