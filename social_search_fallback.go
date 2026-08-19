@@ -115,7 +115,7 @@ func runSocialSearchFallback() {
 
 func init() {
 	go func() {
-		time.Sleep(15 * time.Second)
+		time.Sleep(1 * time.Second)
 		runSocialSearchFallback()
 		t := time.NewTicker(24 * time.Hour)
 		defer t.Stop()
