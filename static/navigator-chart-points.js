@@ -91,11 +91,11 @@
   document.head.appendChild(s);
 })();
 
-/* Social Signals: restore original chart look + KPI drill-down navigation. */
+/* Social Signals: green smooth measured curve + KPI drill-down. */
 (function(){
   if(document.querySelector('script[data-blis-social-interactive]'))return;
   const s=document.createElement('script');
-  s.src='/navigator-social-interactive.js?v=20260819-socialinteractive2';
+  s.src='/navigator-social-interactive.js?v=20260819-socialinteractive3';
   s.dataset.blisSocialInteractive='1';
   document.head.appendChild(s);
 })();
