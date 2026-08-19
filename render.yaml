@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1516-persistent-auth-reputation-v26"
+        value: "20260819-1521-reputation-bootstrap-v27"
