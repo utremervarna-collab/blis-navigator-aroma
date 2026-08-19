@@ -1,55 +1,48 @@
-/* BLIS Navigator — Reputation layout correction v3.
-   Keeps the KPI strip compact and prevents global button/grid styles from stretching it. */
+/* BLIS Navigator — Reputation layout/type correction v29. */
 #reputationBody .rp-screen{display:block!important;height:auto!important;min-height:0!important}
-#reputationBody .rp-hero{height:auto!important;min-height:365px!important;max-height:none!important}
-#reputationBody .rp-kpi-strip{
-  display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  grid-auto-rows:104px!important;
-  align-items:stretch!important;
-  align-self:start!important;
-  height:104px!important;
-  min-height:104px!important;
-  max-height:104px!important;
-  margin:10px 0 0!important;
-  overflow:hidden!important;
-}
-#reputationBody .rp-kpi{
-  box-sizing:border-box!important;
-  display:flex!important;
-  flex-direction:column!important;
-  justify-content:center!important;
-  align-items:flex-start!important;
-  height:104px!important;
-  min-height:0!important;
-  max-height:104px!important;
-  padding:12px 16px!important;
-  margin:0!important;
-  line-height:normal!important;
-  overflow:hidden!important;
-}
-#reputationBody .rp-kpi>span{flex:0 0 auto!important;margin:0!important}
-#reputationBody .rp-kpi>strong{flex:0 0 auto!important;margin:5px 0 0!important;line-height:1.02!important}
-#reputationBody .rp-kpi>small{flex:0 0 auto!important;margin:6px 0 0!important;line-height:1.3!important;max-width:100%!important}
-#reputationBody .rp-bottom{
-  display:grid!important;
-  grid-template-columns:1.04fr .76fr .76fr 1.15fr!important;
-  align-items:start!important;
-  height:auto!important;
-  min-height:0!important;
-  margin-top:10px!important;
-}
-#reputationBody .rp-panel{height:auto!important;min-height:260px!important;align-self:start!important}
-#reputationBody .rp-kpi strong .rp-na{font-size:24px!important;color:#a3adb8!important}
-#reputationBody .rp-kpi[data-rp-truth="missing"] strong{color:#a3adb8!important}
-@media(max-width:1320px){
-  #reputationBody .rp-bottom{grid-template-columns:1fr 1fr!important}
-}
-@media(max-width:980px){
-  #reputationBody .rp-kpi-strip{grid-template-columns:repeat(3,1fr)!important;grid-auto-rows:96px!important;height:auto!important;min-height:0!important;max-height:none!important}
-  #reputationBody .rp-kpi{height:96px!important;max-height:96px!important}
-}
-@media(max-width:700px){
-  #reputationBody .rp-kpi-strip{grid-template-columns:1fr 1fr!important}
-  #reputationBody .rp-bottom{grid-template-columns:1fr!important}
-}
+#reputationBody .rp-head{margin-bottom:18px!important}
+#reputationBody .rp-head h2{font-size:44px!important;line-height:1.02!important}
+#reputationBody .rp-head p{font-size:14px!important;line-height:1.55!important;max-width:900px!important}
+#reputationBody .rp-head-tools button{font-size:11px!important;height:38px!important}
+#reputationBody .rp-hero{height:auto!important;min-height:390px!important;max-height:none!important;gap:34px!important}
+#reputationBody .rp-side{gap:16px!important}
+#reputationBody .rp-dimension{grid-template-columns:52px minmax(0,1fr) minmax(105px,auto) 18px!important;column-gap:14px!important;min-height:112px!important;padding:16px 16px!important;overflow:visible!important}
+#reputationBody .rp-dim-icon{width:46px!important;height:46px!important;font-size:17px!important}
+#reputationBody .rp-dim-copy{min-width:0!important;padding-right:6px!important;overflow:hidden!important}
+#reputationBody .rp-dim-copy b{font-size:15px!important;line-height:1.22!important}
+#reputationBody .rp-dim-copy small{font-size:11px!important;line-height:1.38!important;margin-top:5px!important;white-space:normal!important;overflow-wrap:anywhere!important}
+#reputationBody .rp-dim-copy em{font-size:10px!important;line-height:1.32!important;margin-top:7px!important;white-space:normal!important;max-width:100%!important}
+#reputationBody .rp-dimension>strong{justify-self:end!important;align-self:center!important;min-width:105px!important;max-width:135px!important;padding-left:10px!important;text-align:right!important;font-size:30px!important;line-height:1!important;white-space:nowrap!important;position:relative!important;z-index:3!important}
+#reputationBody .rp-dimension>strong small{font-size:11px!important;margin-left:3px!important}
+#reputationBody .rp-chevron{font-size:22px!important;justify-self:end!important}
+#reputationBody .rp-side.right .rp-dimension{grid-template-columns:52px minmax(0,1fr) minmax(118px,auto) 18px!important}
+#reputationBody .rp-side.right .rp-dim-copy{padding-right:12px!important}
+#reputationBody .rp-side.right .rp-dimension>strong{min-width:118px!important;max-width:148px!important}
+#reputationBody .rp-emblem{width:162px!important;height:140px!important;padding-top:29px!important}
+#reputationBody .rp-emblem span{font-size:34px!important}
+#reputationBody .rp-emblem b{font-size:12px!important;margin-top:7px!important;text-transform:none!important}
+#reputationBody .rp-kpi-strip{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-auto-rows:118px!important;align-items:stretch!important;align-self:start!important;height:118px!important;min-height:118px!important;max-height:118px!important;margin:14px 0 0!important;overflow:hidden!important}
+#reputationBody .rp-kpi{box-sizing:border-box!important;display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;height:118px!important;min-height:0!important;max-height:118px!important;padding:14px 20px!important;margin:0!important;line-height:normal!important;overflow:hidden!important}
+#reputationBody .rp-kpi>span{flex:0 0 auto!important;margin:0!important;font-size:11px!important;font-weight:750!important}
+#reputationBody .rp-kpi>strong{flex:0 0 auto!important;margin:7px 0 0!important;line-height:1!important;font-size:31px!important}
+#reputationBody .rp-kpi>strong small{font-size:11px!important}
+#reputationBody .rp-kpi>small{flex:0 0 auto!important;margin:7px 0 0!important;line-height:1.35!important;max-width:100%!important;font-size:9.5px!important;white-space:normal!important}
+#reputationBody .rp-kpi strong .rp-na{font-size:31px!important;color:#a3adb8!important}
+#reputationBody .rp-kpi[data-rp-real="derived"] strong{color:#1d8f57!important}
+#reputationBody .rp-kpi[data-rp-real="count"] strong{color:#173b58!important}
+#reputationBody .rp-kpi[data-rp-real="missing"] strong{color:#a3adb8!important}
+#reputationBody .rp-bottom{display:grid!important;grid-template-columns:1.04fr .76fr .76fr 1.15fr!important;align-items:start!important;height:auto!important;min-height:0!important;margin-top:12px!important;gap:12px!important}
+#reputationBody .rp-panel{height:auto!important;min-height:285px!important;align-self:start!important;padding:16px 17px!important}
+#reputationBody .rp-panel header h3{font-size:13px!important}
+#reputationBody .rp-panel header p{font-size:9.5px!important;line-height:1.4!important}
+#reputationBody .rp-panel header>b{font-size:22px!important}
+#reputationBody .rp-topic span,#reputationBody .rp-source-row b,#reputationBody .rp-signal span b{font-size:10px!important}
+#reputationBody .rp-topic strong,#reputationBody .rp-source-row em{font-size:9.5px!important}
+#reputationBody .rp-source-row small,#reputationBody .rp-signal span small{font-size:8.5px!important}
+#reputationBody .rp-panel-link{font-size:9.5px!important}
+#reputationBody .rp-updated{font-size:9px!important;margin-top:10px!important}
+#reputationBody[data-rp-hydrated="1"] .rp-dimension{cursor:pointer!important}
+#reputationBody[data-rp-hydrated="1"] .rp-kpi{cursor:pointer!important}
+@media(max-width:1320px){#reputationBody .rp-hero{grid-template-columns:minmax(280px,1fr) 280px minmax(280px,1fr)!important;gap:22px!important}#reputationBody .rp-dimension{grid-template-columns:44px minmax(0,1fr) minmax(92px,auto) 14px!important;padding:13px!important}#reputationBody .rp-side.right .rp-dimension{grid-template-columns:44px minmax(0,1fr) minmax(100px,auto) 14px!important}#reputationBody .rp-dim-icon{width:40px!important;height:40px!important}#reputationBody .rp-dim-copy b{font-size:13px!important}#reputationBody .rp-dim-copy small{font-size:9.5px!important}#reputationBody .rp-dim-copy em{font-size:8.7px!important}#reputationBody .rp-dimension>strong{font-size:26px!important;min-width:92px!important}#reputationBody .rp-bottom{grid-template-columns:1fr 1fr!important}}
+@media(max-width:980px){#reputationBody .rp-head h2{font-size:38px!important}#reputationBody .rp-head p{font-size:12px!important}#reputationBody .rp-kpi-strip{grid-template-columns:repeat(3,1fr)!important;grid-auto-rows:108px!important;height:auto!important;min-height:0!important;max-height:none!important}#reputationBody .rp-kpi{height:108px!important;max-height:108px!important}#reputationBody .rp-hero{grid-template-columns:1fr 1fr!important}#reputationBody .rp-totem{grid-column:1/-1!important}}
+@media(max-width:700px){#reputationBody .rp-head h2{font-size:34px!important}#reputationBody .rp-hero{display:flex!important;flex-direction:column!important}#reputationBody .rp-side{width:100%!important}#reputationBody .rp-dimension,#reputationBody .rp-side.right .rp-dimension{grid-template-columns:44px minmax(0,1fr) minmax(88px,auto) 14px!important}#reputationBody .rp-kpi-strip{grid-template-columns:1fr 1fr!important}#reputationBody .rp-bottom{grid-template-columns:1fr!important}}
