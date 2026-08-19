@@ -1,0 +1,52 @@
+name: Digital Radar Diagnostic V3
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Build and start
+        run: |
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:10000/api/health && break || sleep 1; done
+          node --check static/navigator-digital-master.js
+          node --check static/navigator-digital-bootstrap.js
+          node --check static/navigator-digital-truth-fix.js
+      - name: Browser test
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+          cat > .diag-digital-v3.cjs <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const p=await b.newPage({viewport:{width:1600,height:1100}});
+            const errors=[];p.on('pageerror',e=>errors.push(e.message));
+            await p.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=digital',{waitUntil:'domcontentloaded'});
+            await p.waitForTimeout(3600);
+            const base=await p.evaluate(()=>({active:document.querySelector('.page.active')?.id,radar:!!document.getElementById('dvRadar'),sectors:document.querySelectorAll('#digitalBody .dv-radar-sector').length,kpis:document.querySelectorAll('#digitalBody .dv-kpi').length,boot:[...document.scripts].some(s=>String(s.src||'').includes('navigator-digital-bootstrap.js?v=20260819-radarboot2')),truth:[...document.scripts].some(s=>String(s.src||'').includes('navigator-digital-truth-fix.js?v=20260819-truth1')),externalRadar:document.querySelector('.dv-radar-sector.external b')?.textContent?.trim(),externalKpi:document.querySelector('.dv-kpi.external .dv-kpi-body strong')?.textContent?.trim()}));
+            console.log('BASE',base,'ERRORS',errors);
+            if(errors.length||base.active!=='digital'||!base.radar||base.sectors!==5||base.kpis!==4||!base.boot||!base.truth)throw new Error('Digital v3 base render failed');
+            await p.locator('#digitalBody .dv-radar-sector.external').click();await p.waitForTimeout(180);
+            const ext=await p.evaluate(()=>({title:document.querySelector('#dvDetail h3')?.textContent?.trim(),score:document.querySelector('#dvDetail .dv-detail-title strong')?.textContent?.trim()}));
+            console.log('EXTERNAL',ext);
+            if(!/Външна видимост/.test(ext.title||''))throw new Error('External interaction failed');
+            await p.locator('#digitalBody .dv-radar-sector.search').click();await p.waitForTimeout(120);
+            const search=await p.locator('#dvDetail h3').textContent();if(!/Търсене/.test(search||''))throw new Error('Search interaction failed');
+            await p.locator('#dvSearchButton').click();if(!(await p.locator('#dvRadar').evaluate(el=>el.classList.contains('is-scanning'))))throw new Error('Scan state missing');
+            await p.screenshot({path:'digital-radar-v3.png',fullPage:true});await b.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node .diag-digital-v3.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: digital-radar-v3-screenshot
+          path: digital-radar-v3.png
