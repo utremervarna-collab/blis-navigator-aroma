@@ -122,4 +122,24 @@
     }
     return nativeFetch(input,init);
   };
+
+  /* Home BLIS LIVE visual override: stable brand colors independent of ticker order. */
+  if(typeof document!=='undefined'){
+    const css=document.createElement('style');
+    css.textContent=`
+      .marketTape{background:linear-gradient(90deg,#11263a 0%,#183149 52%,#1b3954 100%)!important;color:#eef5fb!important}
+      .tapeItem{position:relative}
+      .tapeItem::before{content:"";width:4px;height:18px;border-radius:4px;background:var(--client-accent,#9fb3c6);flex:0 0 4px}
+      .tapeClient{color:var(--client-accent,#9fb3c6)!important;font-weight:900!important}
+      .tapeDelta.up{color:#4fd18b!important}.tapeDelta.down{color:#ff7070!important}.tapeDelta.flat{color:#69aff8!important}
+    `;
+    document.head.appendChild(css);
+    const colors={'AROMA':'#56d6df','БОЛЯРКА':'#f0b24a','ASTOR GARDEN':'#8fd3a8','VARNA TOWERS':'#91b3ff'};
+    const paint=()=>document.querySelectorAll('#blisTapeTrack .tapeItem').forEach(el=>{
+      const n=(el.querySelector('.tapeClient')?.textContent||'').trim().toUpperCase();
+      if(colors[n])el.style.setProperty('--client-accent',colors[n]);
+    });
+    const boot=()=>{paint();const t=document.getElementById('blisTapeTrack');if(t)new MutationObserver(paint).observe(t,{childList:true,subtree:true});};
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  }
 })();
