@@ -60,6 +60,21 @@
            document.querySelector('#digitalBody .dv-kpi.active')?.dataset?.sector || 'search';
   }
 
+  function replaceVisibleLabel(el){
+    if(!el)return;
+    const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+    let n;
+    while((n=walker.nextNode())){
+      n.nodeValue=n.nodeValue.replace(/Канално присъствие/g,'Дигитално покритие').replace(/Карти \/ профили/g,'Дигитално покритие');
+    }
+  }
+
+  function renameCoverageLabels(root=document.getElementById('digitalBody')){
+    if(!root)return;
+    root.querySelectorAll('[data-sector="channels"]').forEach(replaceVisibleLabel);
+    if(currentSector()==='channels')replaceVisibleLabel(root.querySelector('#dvDetail'));
+  }
+
   function detailSnapshot(){
     const rows=[...document.querySelectorAll('#digitalBody .dv-detail-metrics>div')];
     const val=i=>(rows[i]?.querySelector('b')?.textContent||'—').trim();
@@ -123,6 +138,7 @@
     const root=document.getElementById('digitalBody');
     if(!root||!root.children.length)return false;
     addStyles();
+    renameCoverageLabels(root);
     const rows=[...root.querySelectorAll('.dv-detail-metrics>div')];
     const hints=['Виж разбивка','Виж дневната история','Виж промяната','Виж източниците'];
     rows.forEach((row,i)=>{
