@@ -1,0 +1,94 @@
+name: Install Metric Curves
+on:
+  push:
+    paths:
+      - '.github/workflows/install-metric-curves.yml'
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Wire metric-specific smooth curves
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # dashboard: load the curve engine before all renderers and bust relevant caches
+          p=Path('static/dashboard.html'); s=p.read_text()
+          curve='<script src="/navigator-curves.js?v=20260819-curves1"></script>'
+          if curve not in s:
+              anchor=re.search(r'<script src="/navigator-reference\.js\?v=[^"]+"></script>',s)
+              if not anchor: raise SystemExit('reference anchor missing')
+              s=s[:anchor.start()]+curve+s[anchor.start():]
+          s=re.sub(r'/navigator-reference\.js\?v=[^"<]+','/navigator-reference.js?v=20260819-curves1',s)
+          s=re.sub(r'/navigator-overview-master\.js\?v=[^"<]+','/navigator-overview-master.js?v=20260819-curves1',s)
+          s=re.sub(r'/navigator-digital-master\.js\?v=[^"<]+','/navigator-digital-master.js?v=20260819-curves1',s)
+          s=re.sub(r'/navigator-social-master\.js\?v=[^"<]+','/navigator-social-master.js?v=20260819-curves1',s)
+          p.write_text(s)
+
+          # reference renderer: metric-specific sparklines and large charts; remove common fake fallback
+          p=Path('static/navigator-reference.js'); s=p.read_text()
+          s=re.sub(r"function SLine\(k,c\)\{.*?\}\nfunction latest", "function SLine(k,c){try{if(window.BLISCurves)return BLISCurves.draw(k,{color:c,compact:true});return spark(H(k),c)}catch{return'<div class=\"ref-spark\"></div>'}}\nfunction latest", s, count=1, flags=re.S)
+          s=re.sub(r"function genericSeries\(\)\{.*?\}\nfunction ensurePages", "function genericSeries(k='blis',c='#1766e8'){try{if(window.BLISCurves)return BLISCurves.draw(k,{color:c,width:760,height:210});let a=H(k);return a.length>=2?spark(a,c):'<div class=\"scan\">Историята за тази метрика се натрупва.</div>'}catch{return''}}\nfunction ensurePages", s, count=1, flags=re.S)
+          def block(src,start,end,key,color):
+              a=src.find(start); b=src.find(end,a+1)
+              if a<0 or b<0: raise SystemExit(f'block missing {start}')
+              part=src[a:b].replace('genericSeries()',f"genericSeries('{key}','{color}')")
+              return src[:a]+part+src[b:]
+          s=block(s,'function overview(){','function live(){','blis','#1766e8')
+          s=block(s,'function social(){','function digital(){','presence','#32ad66')
+          s=block(s,'function digital(){','function reputation(){','digital','#1766e8')
+          s=block(s,'function reputation(){','function market(){','reputation','#7546d8')
+          s=block(s,'function market(){','function competition(){','market','#ef4f78')
+          s=block(s,'function competition(){','function signals(){','competitive','#ff7a19')
+          s=block(s,'function history(){','function timeline(){','blis','#1766e8')
+          p.write_text(s)
+
+          # canonical overview renderer: smooth the real series via the shared engine
+          p=Path('static/navigator-overview-master.js'); s=p.read_text()
+          s=s.replace("const spark=(k,color)=>{const a=series(k).map(x=>x.value);", "const spark=(k,color)=>{if(window.BLISCurves)return BLISCurves.draw(k,{color,compact:true});const a=series(k).map(x=>x.value);")
+          s=s.replace("function trend(){const s=series('blis'),a=s.map(x=>x.value);", "function trend(){if(window.BLISCurves)return BLISCurves.draw('blis',{color:'#2674f2',width:620,height:220});const s=series('blis'),a=s.map(x=>x.value);")
+          p.write_text(s)
+
+          # digital renderer: no shared fallback shape, use the digital series only
+          p=Path('static/navigator-digital-master.js'); s=p.read_text()
+          s=s.replace("const spark=(k,c)=>{try{return window.spark?window.spark(H(k),c):''}catch{return''}};", "const spark=(k,c)=>{try{return window.BLISCurves?BLISCurves.draw(k,{color:c,compact:true}):(window.spark?window.spark(H(k),c):'')}catch{return''}};")
+          s=s.replace("function trend(){\n    let series=H('digital');", "function trend(){\n    if(window.BLISCurves)return BLISCurves.draw('digital',{color:'#1766e8',width:700,height:240});\n    let series=H('digital');")
+          s=s.replace("if(!series.length) series=[40,45,48,44,52,56,57,58,68,63,66,72,68,74,76,83,82];", "if(series.length<2)return '<div class=\"scan\">Историята на дигиталната видимост се натрупва.</div>';")
+          p.write_text(s)
+
+          # social renderer: same smooth engine, but its own presence/social history
+          p=Path('static/navigator-social-master.js'); s=p.read_text()
+          s=s.replace("function lineChart(points){if(points.length<2)", "function lineChart(points){if(window.BLISCurves)return BLISCurves.draw('presence',{color:'#1766e8',width:760,height:190});if(points.length<2)")
+          p.write_text(s)
+          PY
+      - name: Validate no generic hardcoded curve fallback remains
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          d=Path('static/dashboard.html').read_text()
+          r=Path('static/navigator-reference.js').read_text()
+          o=Path('static/navigator-overview-master.js').read_text()
+          g=Path('static/navigator-digital-master.js').read_text()
+          s=Path('static/navigator-social-master.js').read_text()
+          assert '/navigator-curves.js?v=20260819-curves1' in d
+          for key in ['blis','presence','digital','reputation','market','competitive']:
+              assert f"genericSeries('{key}'" in r or key=='presence' and "genericSeries('presence'" in r
+          assert "a=[44,51,48,58,62,65,63,70,68,78,79,84,82,88]" not in r
+          assert "series=[40,45,48,44,52,56,57,58,68,63,66,72,68,74,76,83,82]" not in g
+          assert 'BLISCurves.draw' in o and 'BLISCurves.draw' in g and 'BLISCurves.draw' in s
+          PY
+      - name: Commit curve engine wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/dashboard.html static/navigator-reference.js static/navigator-overview-master.js static/navigator-digital-master.js static/navigator-social-master.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Use client and metric specific smooth curves across Navigator'
+            git push origin HEAD:main
+          fi
