@@ -9,4 +9,4 @@ services:
     autoDeploy: true
     envVars:
       - key: BLIS_DEPLOY_REV
-        value: "20260819-1121-digital-coverage-label-v5"
+        value: "20260819-1130-global-nozero-v1"
