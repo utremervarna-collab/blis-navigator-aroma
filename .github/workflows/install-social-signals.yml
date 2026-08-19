@@ -1,4 +1,4 @@
-name: Install Social Signals
+name: Refresh Social Signals Runtime
 on:
   push:
     paths:
@@ -6,27 +6,33 @@ on:
 permissions:
   contents: write
 jobs:
-  install:
+  refresh:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Apply readable Social Signals typography
+      - name: Refresh Social Signals runtime versions
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('static/dashboard.html')
           s=p.read_text()
-          s=s.replace('/navigator-social-master.css?v=20260819-social1','/navigator-social-master.css?v=20260819-font2')
+          s=s.replace('/navigator-social-master.js?v=20260819-socialmaster5','/navigator-social-master.js?v=20260819-socialmaster6')
+          s=s.replace('/navigator-temporal-ui.js?v=20260819-temporal2','/navigator-temporal-ui.js?v=20260819-temporal3')
           p.write_text(s)
+          r=Path('render.yaml')
+          x=r.read_text()
+          import re
+          x=re.sub(r'value: "[^"]+"', 'value: "20260819-0940-social-truth-v6"', x, count=1)
+          r.write_text(x)
           PY
-      - name: Commit typography cache refresh
+      - name: Commit runtime refresh
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add static/dashboard.html
+          git add static/dashboard.html render.yaml
           if ! git diff --cached --quiet; then
-            git commit -m 'Apply readable Social Signals typography'
+            git commit -m 'Load Social Signals v6 and measured temporal runtime'
             git push origin HEAD:main
           fi
