@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -13,6 +15,7 @@ import (
 )
 
 const legacyClientRememberCookieName = "blis_client_remember"
+const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bbca5d5ced1705"
 
 // Bootstrap exactly one public gateway in front of the internal Navigator engine.
 // The gateway keeps the existing client access rules, but the main Navigator has
@@ -54,12 +57,16 @@ func init() {
 }
 
 func navigatorMagicOK(got string) bool {
-	expected := strings.TrimSpace(os.Getenv("BLIS_NAVIGATOR_MAGIC_KEY"))
 	got = strings.TrimSpace(got)
-	if expected == "" || got == "" || len(expected) != len(got) {
+	if got == "" {
 		return false
 	}
-	return subtle.ConstantTimeCompare([]byte(expected), []byte(got)) == 1
+	sum := sha256.Sum256([]byte(got))
+	expected, err := hex.DecodeString(navigatorMagicHash)
+	if err != nil || len(expected) != len(sum) {
+		return false
+	}
+	return subtle.ConstantTimeCompare(sum[:], expected) == 1
 }
 
 func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +81,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	// The main Navigator is intentionally separate from every client profile.
-	// A valid existing admin session opens it directly. Otherwise the signed
+	// A valid existing admin session opens it directly. Otherwise the protected
 	// Navigator magic link creates a fresh owner session.
 	if path == "/navigator" || path == "/navigator/" {
 		clearLegacyClientRememberCookie(w, r)
