@@ -59,12 +59,22 @@
     if(document.getElementById('blisPerceptionSimpleV1'))return;
     const s=document.createElement('script');
     s.id='blisPerceptionSimpleV1';
-    s.src='/navigator-perception-simple-v1.js?v=20260820-live2';
+    s.src='/navigator-perception-simple-v1.js?v=20260820-live3';
     s.defer=true;
     document.head.appendChild(s);
   }
 
+  function ensurePerceptionReadableCSS(){
+    if(document.getElementById('blisPerceptionReadableCSS'))return;
+    const l=document.createElement('link');
+    l.id='blisPerceptionReadableCSS';
+    l.rel='stylesheet';
+    l.href='/navigator-perception-readable.css?v=20260820-readable1';
+    document.head.appendChild(l);
+  }
+
   ensurePerceptionSimpleLayer();
+  ensurePerceptionReadableCSS();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(openRequestedPage,850),{once:true});
   else setTimeout(openRequestedPage,850);
 })();
