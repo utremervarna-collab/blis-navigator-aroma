@@ -1,6 +1,20 @@
-/* BLIS Navigator — Varna Towers bootstrap + BLIS LIVE v20 loader. */
+/* BLIS Navigator — pre-app client bootstrap + Varna Towers runtime. */
 (function(){
   'use strict';
+
+  /* Wirello must install its synthetic API layer BEFORE app.js executes so the
+     real Navigator can load it exactly like every other client. */
+  try{
+    const q=new URLSearchParams(location.search).get('client');
+    if(q==='wirello'){
+      window.BLIS_INITIAL_CLIENT='wirello';
+      document.body.dataset.client='wirello';
+      const wx=new XMLHttpRequest();
+      wx.open('GET','/wirello-navigator-runtime.js?v=20260820-real1',false);
+      wx.send(null);
+      if(wx.status>=200&&wx.status<300)(0,eval)(wx.responseText||'');
+    }
+  }catch(e){console.warn('Wirello bootstrap:',e)}
 
   /* Preserve the isolated Varna Towers data runtime, but do not execute its obsolete ticker override. */
   try{
