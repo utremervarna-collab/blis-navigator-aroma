@@ -125,8 +125,11 @@
     });
   }
 
-  function schedule(stage=activeStage()){
-    if(!stage)return;
+  function schedule(stage=activeStage(),attempt=0){
+    if(!stage){
+      if(attempt<30)setTimeout(()=>schedule(activeStage(),attempt+1),50);
+      return;
+    }
     rot.stage=stage;
     if(rot.raf)return;
     rot.raf=requestAnimationFrame(()=>{rot.raf=0;draw(stage)});
@@ -165,11 +168,16 @@
   document.addEventListener('pointermove',moveDrag,true);
   document.addEventListener('pointerup',stopDrag,true);
   document.addEventListener('pointercancel',stopDrag,true);
-  document.addEventListener('change',e=>{if(e.target.matches?.('[data-pm-period],[data-pm-type],[data-pm-source]'))setTimeout(()=>schedule(),60)},true);
-  document.addEventListener('click',e=>{if(e.target.closest?.('[data-zoom],#nav [data-page="market"],.client-option'))setTimeout(()=>schedule(),80)},true);
+  document.addEventListener('change',e=>{if(e.target.matches?.('[data-pm-period],[data-pm-type],[data-pm-source]'))schedule(activeStage(),0)},true);
+  document.addEventListener('click',e=>{
+    if(e.target.closest?.('[data-zoom],#nav [data-page="market"],.client-option')){
+      schedule(activeStage(),0);
+      setTimeout(()=>schedule(activeStage(),0),120);
+      setTimeout(()=>schedule(activeStage(),0),420);
+    }
+  },true);
 
   injectStyles();
-  setTimeout(()=>schedule(),100);
-  setTimeout(()=>schedule(),500);
-  window.BLISPerceptionGlobe={apply:()=>schedule(),reset(){rot.x=-10;rot.y=18;schedule()}};
+  schedule(activeStage(),0);
+  window.BLISPerceptionGlobe={apply:()=>schedule(activeStage(),0),reset(){rot.x=-10;rot.y=18;schedule(activeStage(),0)}};
 })();
