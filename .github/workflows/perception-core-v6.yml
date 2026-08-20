@@ -1,0 +1,99 @@
+name: Perception Core v6 Integration
+
+on:
+  push:
+    branches: [perception-core-v6]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: perception-core-v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Build single perception core asset
+        run: |
+          set -euxo pipefail
+          cat static/navigator-perception-core-v5.js static/navigator-perception-globe.js > static/navigator-perception-core-v6.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('static/dashboard.html')
+          s=p.read_text()
+          s=s.replace('<script src="/navigator-perception-core-v5.js?v=20260820-core7"></script>','<script src="/navigator-perception-core-v6.js?v=20260820-coreglobe1"></script>')
+          s=s.replace('<script src="/navigator-perception-globe.js?v=20260820-globe3"></script>','')
+          p.write_text(s)
+          PY
+          node --check static/navigator-perception-core-v6.js
+          grep -q 'navigator-perception-core-v6.js?v=20260820-coreglobe1' static/dashboard.html
+          ! grep -q 'navigator-perception-globe.js' static/dashboard.html
+
+      - name: Build and start Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview' >/tmp/dashboard.html
+          grep -q 'navigator-perception-core-v6.js?v=20260820-coreglobe1' /tmp/dashboard.html
+          ! grep -q 'navigator-perception-globe.js' /tmp/dashboard.html
+
+      - name: Install browser test dependency
+        run: npm install --no-save playwright-core@1.55.0
+
+      - name: Test visible 3D network in Chrome
+        run: |
+          cat > ./diag-core-v6.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(3000);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-wrap');
+            await page.locator('#market [data-view="network"]').click();
+            await page.waitForTimeout(2200);
+            const r=await page.evaluate(()=>({
+              core:[...document.scripts].some(s=>s.src.includes('navigator-perception-core-v6.js')),
+              separateGlobe:[...document.scripts].some(s=>s.src.includes('navigator-perception-globe.js')),
+              stage:document.querySelector('#market .pm-stage')?.className||'',
+              shell:document.querySelectorAll('#market .pm-globe-shell-v2').length,
+              projected:[...document.querySelectorAll('#market .pm-node')].filter(n=>n.dataset.gx).length,
+              label:getComputedStyle(document.querySelector('#market .pm-stage'),'::after').content
+            }));
+            console.log(JSON.stringify({r,errors},null,2));
+            if(!r.core) throw new Error('core-v6 not loaded');
+            if(r.separateGlobe) throw new Error('separate globe asset still loaded');
+            if(!r.stage.includes('network')||!r.stage.includes('pm-globe-active')) throw new Error('3D network not active');
+            if(r.shell<1||r.projected<2) throw new Error('sphere not visibly projected');
+            if(errors.length) throw new Error('JS errors: '+errors.join(' | '));
+            await page.screenshot({path:'/tmp/core-v6-network.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node ./diag-core-v6.cjs
+
+      - name: Commit verified integrated core
+        run: |
+          set -euxo pipefail
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'utremervarna@gmail.com'
+          git add static/navigator-perception-core-v6.js static/dashboard.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Integrate 3D network directly into Perception core v6'
+            git push origin HEAD:perception-core-v6
+          fi
