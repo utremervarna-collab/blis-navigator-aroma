@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   integrate-and-test:
@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: perception-core-v6
 
       - uses: actions/setup-go@v5
         with:
@@ -70,8 +72,7 @@ jobs:
               separateGlobe:[...document.scripts].some(s=>s.src.includes('navigator-perception-globe.js')),
               stage:document.querySelector('#market .pm-stage')?.className||'',
               shell:document.querySelectorAll('#market .pm-globe-shell-v2').length,
-              projected:[...document.querySelectorAll('#market .pm-node')].filter(n=>n.dataset.gx).length,
-              label:getComputedStyle(document.querySelector('#market .pm-stage'),'::after').content
+              projected:[...document.querySelectorAll('#market .pm-node')].filter(n=>n.dataset.gx).length
             }));
             console.log(JSON.stringify({r,errors},null,2));
             if(!r.core) throw new Error('core-v6 not loaded');
@@ -84,6 +85,17 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node ./diag-core-v6.cjs
+
+      - name: Commit browser-verified production files
+        run: |
+          set -euxo pipefail
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'utremervarna@gmail.com'
+          git add static/navigator-perception-core-v6.js static/dashboard.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Integrate verified 3D network into Perception core v6'
+            git push origin HEAD:perception-core-v6
+          fi
 
       - name: Upload verified files
         if: always()
