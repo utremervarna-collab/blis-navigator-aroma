@@ -1,0 +1,110 @@
+name: Perception Premium v9 Visual Test
+
+on:
+  push:
+    branches: [perception-premium-v9]
+
+permissions:
+  contents: write
+
+jobs:
+  visual-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: perception-premium-v9
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Merge premium polish into production stylesheet
+        run: |
+          set -euxo pipefail
+          if ! grep -q 'Perception premium v9' static/navigator-perception-map.css; then
+            printf '\n\n' >> static/navigator-perception-map.css
+            cat static/navigator-perception-premium-v9.css >> static/navigator-perception-map.css
+          fi
+          grep -q 'mask-image:radial-gradient' static/navigator-perception-map.css
+          grep -q 'box-shadow:0 0 0 7px' static/navigator-perception-map.css
+
+      - name: Build and start Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+
+      - name: Install browser dependency
+        run: npm install --no-save playwright-core@1.55.0
+
+      - name: Verify reference-led page composition
+        run: |
+          cat > ./verify-premium-v9.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1680,height:1050}});
+            const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(2600);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-stage.network.pm-globe-v3');
+            await page.waitForTimeout(800);
+            const state=await page.evaluate(()=>({
+              kpis:document.querySelectorAll('#market .pm-kpi').length,
+              globe:document.querySelectorAll('#market .pm-globe-shell-v3').length,
+              nodes:document.querySelectorAll('#market .pm-node').length,
+              drawer:document.querySelectorAll('#market .pm-drawer').length,
+              lower:document.querySelectorAll('#market .pm-lower .pm-card').length,
+              oldControls:document.querySelectorAll('#market [data-view],#market [data-depth]').length,
+              focusDisplay:getComputedStyle(document.querySelector('#market .pm-focusbar')).display,
+              linkMask:getComputedStyle(document.querySelector('#market .pm-links')).webkitMaskImage || getComputedStyle(document.querySelector('#market .pm-links')).maskImage,
+              nodeBg:getComputedStyle(document.querySelector('#market .pm-node')).backgroundColor
+            }));
+            console.log(state);
+            if(state.kpis<5||state.globe!==1||state.nodes<2||state.drawer!==1||state.lower!==3)throw new Error('Premium composition incomplete');
+            if(state.oldControls)throw new Error('Old view/depth controls returned');
+            if(state.focusDisplay!=='none')throw new Error('Focus bar not removed from visual flow');
+            if(!state.linkMask||state.linkMask==='none')throw new Error('Depth mask missing from links');
+            if(!state.nodeBg.includes('255'))throw new Error('Node cards are not opaque white');
+            if(errors.length)throw new Error('JS errors: '+errors.join(' | '));
+            await page.screenshot({path:'perception-premium-v9.png',fullPage:true});
+            const stage=page.locator('#market .pm-stage.network.pm-globe-v3');
+            const box=await stage.boundingBox();
+            if(box){
+              const sx=box.x+box.width*.18,sy=box.y+box.height*.22;
+              await page.mouse.move(sx,sy);await page.mouse.down();
+              await page.mouse.move(sx+180,sy-60,{steps:8});
+              await page.screenshot({path:'perception-premium-v9-drag.png',fullPage:true});
+              await page.mouse.up();
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node ./verify-premium-v9.cjs
+
+      - name: Commit verified stylesheet
+        run: |
+          set -euxo pipefail
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'utremervarna@gmail.com'
+          git add static/navigator-perception-map.css
+          if ! git diff --cached --quiet; then
+            git commit -m 'Optimize Perception page toward premium reference'
+            git push origin HEAD:perception-premium-v9
+          fi
+
+      - name: Upload visual proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-premium-v9
+          path: |
+            perception-premium-v9.png
+            perception-premium-v9-drag.png
+            /tmp/blis.log
