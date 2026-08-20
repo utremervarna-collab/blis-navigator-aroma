@@ -80,6 +80,14 @@ func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	// Public prospect demo entry: always show the Wirello client access screen
+	// with the demo credentials already loaded. The POST is still authenticated by
+	// the regular client gateway and the resulting session is scoped to Wirello.
+	if (path == "/client-login" || path == "/client-login/" || path == "/login") && strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "wirello") && r.Method == http.MethodGet {
+		serveWirelloDemoLogin(w, r)
+		return
+	}
+
 	// The main Navigator is intentionally separate from every client profile.
 	// A valid existing admin session opens it directly. Otherwise the protected
 	// Navigator magic link creates a fresh owner session.
