@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const REF_CSS='/navigator-perception-reference-v10.css?v=20260820-ref13';
-  const STYLE_ID='pmSideModulesV13';
+  const REF_CSS='/navigator-perception-reference-v10.css?v=20260820-ref14';
+  const STYLE_ID='pmSideModulesV14';
 
   function marketActive(){return !!document.getElementById('market')?.classList.contains('active')}
   function qs(s,r=document){return r.querySelector(s)}
@@ -78,10 +78,22 @@
   function setCopy(){
     const nav=qs('#nav [data-page="market"]');
     const label=nav?.querySelector('.navtxt')||nav?.querySelector('span:last-child');
-    if(label)label.textContent='Карта на възприятията';
+    if(label)label.textContent='Мрежа на нагласите';
     const h=qs('#market .pm-hero h2'),p=qs('#market .pm-hero p');
-    if(h)h.textContent='Карта на потребителското възприятие';
-    if(p)p.textContent='Проследяване на потребителските сигнали и възприятия за бранда в реално време.';
+    if(h)h.textContent='Мрежа на бранд нагласите';
+    if(p)p.textContent='Проследяване на измеримите сигнали и нагласи към бранда в реално време.';
+    const active=qs('#blisActiveModule'),detail=qs('#blisSystemDetail');
+    if(active&&marketActive())active.textContent='Мрежа на нагласите';
+    if(detail&&marketActive())detail.textContent='Индекси, измервания и потвърдени връзки между сигналите и нагласите';
+    if(document.body.dataset.client==='wirello'){
+      const badge=qs('#market .pm-client-badge');
+      if(badge){
+        const mark=qs('.pm-client-mark',badge),name=qs('b',badge),type=qs('small',badge);
+        if(mark)mark.textContent='WM';
+        if(name)name.textContent='Wirello Market';
+        if(type)type.textContent='Omnichannel retail';
+      }
+    }
   }
 
   function valFromGrid(name){
@@ -182,8 +194,8 @@
   }
 
   function wrapRoute(name){
-    const fn=window[name];if(typeof fn!=='function'||fn.__pmV13)return;
-    const w=function(id){const r=fn.apply(this,arguments);if(id==='market')requestAnimationFrame(mount);return r};w.__pmV13=true;w.__pmBase=fn;window[name]=w;
+    const fn=window[name];if(typeof fn!=='function'||fn.__pmV14)return;
+    const w=function(id){const r=fn.apply(this,arguments);if(id==='market')requestAnimationFrame(mount);return r};w.__pmV14=true;w.__pmBase=fn;window[name]=w;
   }
 
   function install(){ensureReferenceStyles();ensureStyles();wrapRoute('refGo');wrapRoute('go');setCopy();if(marketActive())mount()}
@@ -196,6 +208,7 @@
     if(e.target.matches?.('#market [data-pm-period],#market [data-pm-type],#market [data-pm-source]'))setTimeout(()=>{const d=document.getElementById('pmDrawer');if(d)d.dataset.v13='';afterCoreRender()},0);
     if(e.target?.id==='clientSel'&&marketActive())setTimeout(mount,120);
   },true);
+  window.addEventListener('blis:clientdata',()=>{setCopy();if(marketActive())setTimeout(mount,40)});
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   window.addEventListener('load',()=>{if(marketActive())setTimeout(mount,80)},{once:true});
