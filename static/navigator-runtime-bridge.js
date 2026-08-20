@@ -21,7 +21,14 @@
         const sel=document.getElementById('clientSel');
         if(sel)sel.value=wanted;
       }
-      return legacyLoad();
+      const result=await legacyLoad();
+      if(wanted==='wirello'){
+        try{
+          document.body.dataset.client='wirello';
+          window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:'wirello',source:'wirello-master-demo'}}));
+        }catch(e){}
+      }
+      return result;
     };
   }
 
