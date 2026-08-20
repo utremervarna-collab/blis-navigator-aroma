@@ -60,6 +60,7 @@
   function loadEnhancements(){
     loadScript('blisAttitudesLiveScript','/navigator-attitudes-live.js?v=20260820-live1');
     loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260820-global1');
+    loadScript('blisCompetitionMasterScript','/navigator-competition-master.js?v=20260820-race1');
   }
 
   function install(){
