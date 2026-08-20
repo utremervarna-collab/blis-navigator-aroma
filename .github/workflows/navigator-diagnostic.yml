@@ -57,7 +57,7 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.bin }}
         run: |
-          cat > /tmp/diag.cjs <<'NODE'
+          cat > ./diag.cjs <<'NODE'
           const { chromium } = require('playwright-core');
           const fs = require('fs');
           (async()=>{
@@ -116,7 +116,7 @@ jobs:
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node /tmp/diag.cjs
+          node ./diag.cjs
 
       - name: Upload diagnostic artifacts
         if: always()
