@@ -2,15 +2,22 @@
 (function(){
   'use strict';
 
-  /* Wirello must install its synthetic API layer BEFORE app.js executes so the
-     real Navigator can load it exactly like every other client. */
+  /* Wirello must exist in the normal client selector for every Navigator client. */
+  try{
+    const lx=new XMLHttpRequest();
+    lx.open('GET','/wirello-client-list-runtime.js?v=20260820-real2',false);
+    lx.send(null);
+    if(lx.status>=200&&lx.status<300)(0,eval)(lx.responseText||'');
+  }catch(e){console.warn('Wirello client-list bootstrap:',e)}
+
+  /* When Wirello is selected, install its full synthetic data layer BEFORE app.js. */
   try{
     const q=new URLSearchParams(location.search).get('client');
     if(q==='wirello'){
       window.BLIS_INITIAL_CLIENT='wirello';
       document.body.dataset.client='wirello';
       const wx=new XMLHttpRequest();
-      wx.open('GET','/wirello-navigator-runtime.js?v=20260820-real1',false);
+      wx.open('GET','/wirello-navigator-runtime.js?v=20260820-real2',false);
       wx.send(null);
       if(wx.status>=200&&wx.status<300)(0,eval)(wx.responseText||'');
     }
