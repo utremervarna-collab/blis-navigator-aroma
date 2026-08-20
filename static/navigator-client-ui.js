@@ -2,6 +2,7 @@
 (function(){
   'use strict';
   const clients={
+    wirello:{name:'Wirello Market',full:'Wirello Market',type:'Omnichannel retail • MASTER DEMO',mark:'WM',theme:'wirello'},
     aroma:{name:'Aroma Cosmetics',full:'Aroma Cosmetics',type:'Козметика',mark:'A',theme:'aroma'},
     bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ',theme:'bolyarka'},
     'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG',theme:'astor-garden'},
