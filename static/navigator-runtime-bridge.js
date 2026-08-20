@@ -45,9 +45,10 @@
     s.async=false;
     document.head.appendChild(s);
   }
-  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260820-2219');
-  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260820-2219');
-  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260820-2219');
-  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260820-2219');
-  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260820-2219');
+  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260820-2233');
+  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260820-2233');
+  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260820-2233');
+  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260820-2233');
+  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260820-2233');
+  loadScript('blisCompetitionFunctionalV7Script','/navigator-competition-functional-v7.js?v=20260820-2233');
 })();
