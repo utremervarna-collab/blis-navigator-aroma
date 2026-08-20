@@ -1,12 +1,13 @@
 (() => {
   'use strict';
 
-  const REF_CSS='/navigator-perception-reference-v10.css?v=20260820-ref10';
+  const REF_CSS='/navigator-perception-reference-v10.css?v=20260820-ref11';
   let tangentRaf=0;
 
   function ensureReferenceStyles(){
-    if(document.getElementById('pmReferenceV10Css'))return;
-    const l=document.createElement('link');
+    let l=document.getElementById('pmReferenceV10Css');
+    if(l){if(l.getAttribute('href')!==REF_CSS)l.setAttribute('href',REF_CSS);return;}
+    l=document.createElement('link');
     l.id='pmReferenceV10Css';l.rel='stylesheet';l.href=REF_CSS;
     document.head.appendChild(l);
   }
