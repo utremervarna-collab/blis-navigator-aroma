@@ -1,0 +1,75 @@
+name: Perception Globe Drag Test
+
+on:
+  push:
+    branches: [perception-drag-test]
+
+permissions:
+  contents: read
+
+jobs:
+  drag-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: perception-drag-test
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Build and start Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+      - name: Install browser test dependency
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Verify real mouse drag rotation
+        run: |
+          cat > ./drag-test.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(3000);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-wrap');
+            await page.locator('#market [data-view="network"]').click();
+            await page.waitForTimeout(1500);
+            const stage=page.locator('#market .pm-stage.network.pm-globe-active');
+            await stage.waitFor();
+            const before=await page.evaluate(()=>[...document.querySelectorAll('#market .pm-node')].slice(0,4).map(n=>({id:n.dataset.node,left:n.style.left,top:n.style.top})));
+            const box=await stage.boundingBox();
+            if(!box) throw new Error('No stage box');
+            const sx=box.x+box.width*0.12, sy=box.y+box.height*0.18;
+            await page.mouse.move(sx,sy);
+            await page.mouse.down();
+            await page.mouse.move(sx+260,sy-110,{steps:16});
+            await page.mouse.up();
+            await page.waitForTimeout(500);
+            const after=await page.evaluate(()=>[...document.querySelectorAll('#market .pm-node')].slice(0,4).map(n=>({id:n.dataset.node,left:n.style.left,top:n.style.top})));
+            const changed=before.filter((b,i)=>after[i]&&(b.left!==after[i].left||b.top!==after[i].top)).length;
+            const dragClass=await page.locator('#market .pm-stage.network').getAttribute('class');
+            console.log(JSON.stringify({before,after,changed,dragClass,errors},null,2));
+            if(changed<2) throw new Error('Mouse drag did not rotate globe nodes');
+            if(errors.length) throw new Error('JS errors: '+errors.join(' | '));
+            await page.screenshot({path:'drag-after.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node ./drag-test.cjs
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-drag-test
+          path: |
+            drag-after.png
+            /tmp/blis.log
