@@ -52,19 +52,20 @@
     w.__attitudesTerminology=true;w.__base=fn;window[name]=w;
   };
 
-  function loadLiveEnhancement(){
-    if(document.getElementById('blisAttitudesLiveScript'))return;
+  function loadScript(id,src){
+    if(document.getElementById(id))return;
     const s=document.createElement('script');
-    s.id='blisAttitudesLiveScript';
-    s.src='/navigator-attitudes-live.js?v=20260820-live1';
-    s.async=false;
-    document.head.appendChild(s);
+    s.id=id;s.src=src;s.async=false;document.head.appendChild(s);
+  }
+  function loadEnhancements(){
+    loadScript('blisAttitudesLiveScript','/navigator-attitudes-live.js?v=20260820-live1');
+    loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260820-global1');
   }
 
   function install(){
     wrap('refGo');wrap('go');wrap('renderAll');
     apply(document.body);
-    loadLiveEnhancement();
+    loadEnhancements();
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
