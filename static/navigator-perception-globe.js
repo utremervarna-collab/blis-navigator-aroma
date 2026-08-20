@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  let rotX=-7, rotY=14, dragging=false, startX=0, startY=0, startRX=0, startRY=0;
+  let rotX=-7,rotY=14,dragging=false,startX=0,startY=0,startRX=0,startRY=0,coreHooked=false;
   const GOLDEN=Math.PI*(3-Math.sqrt(5));
 
   function styleOnce(){
@@ -40,89 +40,68 @@
 
   function shell(stage,canvas){
     if(canvas.querySelector('.pm-globe-shell'))return;
-    const globe=document.createElement('div');
-    globe.className='pm-globe-shell';
-    globe.innerHTML='<i></i><i></i><i></i><i></i>';
+    const globe=document.createElement('div');globe.className='pm-globe-shell';globe.innerHTML='<i></i><i></i><i></i><i></i>';
     const axis=document.createElement('div');axis.className='pm-globe-axis';
     canvas.prepend(axis);canvas.prepend(globe);
   }
 
   function degreeMap(stage){
-    const deg={};
-    stage.querySelectorAll('.pm-node').forEach(n=>deg[n.dataset.node]=0);
+    const deg={};stage.querySelectorAll('.pm-node').forEach(n=>deg[n.dataset.node]=0);
     stage.querySelectorAll('.pm-link').forEach(l=>{if(l.dataset.a in deg)deg[l.dataset.a]++;if(l.dataset.b in deg)deg[l.dataset.b]++});
     return deg;
   }
 
   function seedPoints(stage){
-    const nodes=[...stage.querySelectorAll('.pm-node')];
-    if(!nodes.length)return;
-    const deg=degreeMap(stage);
-    nodes.sort((a,b)=>(deg[b.dataset.node]||0)-(deg[a.dataset.node]||0));
+    const nodes=[...stage.querySelectorAll('.pm-node')];if(!nodes.length)return;
+    const deg=degreeMap(stage);nodes.sort((a,b)=>(deg[b.dataset.node]||0)-(deg[a.dataset.node]||0));
     nodes.forEach((node,i)=>{
       let x,y,z;
-      if(i===0){x=0;y=0;z=.98}
-      else{
-        const k=i-1,n=Math.max(1,nodes.length-1);
-        y=1-2*((k+.5)/n);
-        const r=Math.sqrt(Math.max(0,1-y*y));
-        const theta=k*GOLDEN+.45;
-        x=Math.cos(theta)*r;
-        z=Math.sin(theta)*r;
-      }
+      if(i===0){x=0;y=0;z=.98}else{const k=i-1,n=Math.max(1,nodes.length-1);y=1-2*((k+.5)/n);const r=Math.sqrt(Math.max(0,1-y*y)),theta=k*GOLDEN+.45;x=Math.cos(theta)*r;z=Math.sin(theta)*r}
       node.dataset.gx=x.toFixed(5);node.dataset.gy=y.toFixed(5);node.dataset.gz=z.toFixed(5);
     });
   }
 
   function rotatePoint(x,y,z,rx,ry){
-    const ax=rx*Math.PI/180,ay=ry*Math.PI/180;
-    const cy=Math.cos(ay),sy=Math.sin(ay),cx=Math.cos(ax),sx=Math.sin(ax);
-    const x1=x*cy+z*sy,z1=-x*sy+z*cy;
-    const y1=y*cx-z1*sx,z2=y*sx+z1*cx;
+    const ax=rx*Math.PI/180,ay=ry*Math.PI/180,cy=Math.cos(ay),sy=Math.sin(ay),cx=Math.cos(ax),sx=Math.sin(ax);
+    const x1=x*cy+z*sy,z1=-x*sy+z*cy,y1=y*cx-z1*sx,z2=y*sx+z1*cx;
     return{x:x1,y:y1,z:z2};
   }
 
   function redraw(stage){
     if(!stage?.classList.contains('network'))return;
-    const depth=stage.classList.contains('depth');
-    const nodes=[...stage.querySelectorAll('.pm-node')];
-    const pos={};
+    const depth=stage.classList.contains('depth'),nodes=[...stage.querySelectorAll('.pm-node')],pos={};
     nodes.forEach(node=>{
-      const base={x:Number(node.dataset.gx||0),y:Number(node.dataset.gy||0),z:Number(node.dataset.gz||0)};
-      const p=depth?rotatePoint(base.x,base.y,base.z,rotX,rotY):base;
-      const perspective=.88+(p.z+1)*.075;
-      const left=52+p.x*35*perspective,top=50+p.y*39*perspective;
-      const scale=depth?.78+(p.z+1)*.14:1;
-      const opacity=depth?.56+(p.z+1)*.22:1;
-      node.style.left=`${left}%`;node.style.top=`${top}%`;
-      node.style.setProperty('--globe-scale',scale.toFixed(3));
-      node.style.opacity=String(Math.min(1,opacity));
-      node.style.zIndex=String(20+Math.round((p.z+1)*35));
+      const base={x:Number(node.dataset.gx||0),y:Number(node.dataset.gy||0),z:Number(node.dataset.gz||0)},p=depth?rotatePoint(base.x,base.y,base.z,rotX,rotY):base;
+      const perspective=.88+(p.z+1)*.075,left=52+p.x*35*perspective,top=50+p.y*39*perspective,scale=depth?.78+(p.z+1)*.14:1,opacity=depth?.56+(p.z+1)*.22:1;
+      node.style.left=`${left}%`;node.style.top=`${top}%`;node.style.setProperty('--globe-scale',scale.toFixed(3));node.style.opacity=String(Math.min(1,opacity));node.style.zIndex=String(20+Math.round((p.z+1)*35));
       pos[node.dataset.node]={x:left*10,y:top*5.9,z:p.z};
     });
-    stage.querySelectorAll('.pm-link').forEach((path,i)=>{
+    stage.querySelectorAll('.pm-link').forEach(path=>{
       const a=pos[path.dataset.a],b=pos[path.dataset.b];if(!a||!b)return;
-      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
-      const dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy));
-      const nx=-dy/len,ny=dx/len;
-      const depthAvg=(a.z+b.z)/2,curve=18+Math.min(48,len*.055)+(depthAvg+1)*7;
+      const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,len=Math.max(1,Math.hypot(dx,dy)),nx=-dy/len,ny=dx/len,depthAvg=(a.z+b.z)/2,curve=18+Math.min(48,len*.055)+(depthAvg+1)*7;
       path.setAttribute('d',`M${a.x.toFixed(1)} ${a.y.toFixed(1)} Q${(mx+nx*curve).toFixed(1)} ${(my+ny*curve).toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`);
       if(!path.classList.contains('hot')&&!path.classList.contains('muted'))path.style.opacity=String(.28+(depthAvg+1)*.17);
     });
     const globe=stage.querySelector('.pm-globe-shell');
-    if(globe&&depth)globe.style.transform=`translate(-50%,-50%) rotateX(${rotX*.42}deg) rotateY(${rotY*.42}deg)`;
-    else if(globe)globe.style.transform='translate(-50%,-50%)';
+    if(globe)globe.style.transform=depth?`translate(-50%,-50%) rotateX(${rotX*.42}deg) rotateY(${rotY*.42}deg)`:'translate(-50%,-50%)';
   }
 
   function apply(){
-    styleOnce();
-    const stage=document.querySelector('.pm-stage.network'),canvas=stage?.querySelector('.pm-canvas');
-    if(!stage||!canvas)return;
+    styleOnce();const stage=document.querySelector('.pm-stage.network'),canvas=stage?.querySelector('.pm-canvas');if(!stage||!canvas)return;
     shell(stage,canvas);seedPoints(stage);redraw(stage);
   }
-
   function schedule(){requestAnimationFrame(()=>requestAnimationFrame(apply))}
 
+  function attachCoreHooks(){
+    if(coreHooked)return true;
+    const pm=window.BLISPerceptionMap;if(!pm)return false;
+    const mount=pm.mount,render=pm.render;
+    pm.mount=function(){const r=mount.apply(this,arguments);setTimeout(schedule,20);return r};
+    pm.render=function(){const r=render.apply(this,arguments);setTimeout(schedule,20);return r};
+    coreHooked=true;setTimeout(schedule,20);return true;
+  }
+
+  window.addEventListener('blis:perception-core-ready',()=>{attachCoreHooks();schedule()});
   document.addEventListener('click',e=>{
     if(e.target.closest?.('[data-view="network"],[data-depth],[data-zoom]'))setTimeout(schedule,10);
     if(e.target.closest?.('#nav [data-page="market"]'))setTimeout(schedule,80);
@@ -130,30 +109,16 @@
   document.addEventListener('change',e=>{if(e.target.matches?.('[data-pm-period],[data-pm-type],[data-pm-source]'))setTimeout(schedule,40)});
 
   document.addEventListener('pointerdown',e=>{
-    const stage=e.target.closest?.('.pm-stage.network');
-    if(!stage||!stage.classList.contains('depth')||e.button!==0)return;
-    if(e.target.closest('.pm-node'))return;
+    const stage=e.target.closest?.('.pm-stage.network');if(!stage||!stage.classList.contains('depth')||e.button!==0||e.target.closest('.pm-node'))return;
     dragging=true;startX=e.clientX;startY=e.clientY;startRX=rotX;startRY=rotY;stage.classList.add('pm-globe-dragging');stage.setPointerCapture?.(e.pointerId);e.preventDefault();
   });
   document.addEventListener('pointermove',e=>{
     const stage=document.querySelector('.pm-stage.network');if(!stage||!stage.classList.contains('depth'))return;
-    if(dragging){rotY=startRY+(e.clientX-startX)*.34;rotX=Math.max(-55,Math.min(55,startRX-(e.clientY-startY)*.28));redraw(stage);return}
-    if(e.target.closest?.('.pm-stage.network')&&!e.target.closest('.pm-node')){
-      const r=stage.getBoundingClientRect(),nx=(e.clientX-r.left)/r.width-.5,ny=(e.clientY-r.top)/r.height-.5;
-      const hoverY=rotY+nx*.35,hoverX=rotX-ny*.25;
-      const oldX=rotX,oldY=rotY;rotX=hoverX;rotY=hoverY;redraw(stage);rotX=oldX;rotY=oldY;
-    }
+    if(dragging){rotY=startRY+(e.clientX-startX)*.34;rotX=Math.max(-55,Math.min(55,startRX-(e.clientY-startY)*.28));redraw(stage)}
   });
-  document.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;document.querySelector('.pm-stage.network')?.classList.remove('pm-globe-dragging')});
+  document.addEventListener('pointerup',()=>{dragging=false;document.querySelector('.pm-stage.network')?.classList.remove('pm-globe-dragging')});
   document.addEventListener('pointercancel',()=>{dragging=false;document.querySelector('.pm-stage.network')?.classList.remove('pm-globe-dragging')});
 
-  const pm=window.BLISPerceptionMap;
-  if(pm){
-    const mount=pm.mount,render=pm.render;
-    pm.mount=function(){const r=mount.apply(this,arguments);setTimeout(schedule,20);return r};
-    pm.render=function(){const r=render.apply(this,arguments);setTimeout(schedule,20);return r};
-  }
-
-  [0,180,500,1000,1800].forEach(ms=>setTimeout(schedule,ms));
+  [0,150,400,800,1400,2400].forEach(ms=>setTimeout(()=>{attachCoreHooks();schedule()},ms));
   window.BLISPerceptionGlobe={apply:schedule,reset(){rotX=-7;rotY=14;schedule()}};
 })();
