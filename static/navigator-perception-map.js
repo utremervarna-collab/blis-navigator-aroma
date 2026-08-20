@@ -225,10 +225,30 @@
     const card=themes?.closest('.pm-card');if(card){let f=card.querySelector('.pm-ref-topic-footer');if(!f){f=document.createElement('div');f.className='pm-ref-topic-footer';card.appendChild(f)}const count=themes.querySelectorAll('button').length;f.textContent=count?`${count} измерими теми в текущия набор`:'Няма достатъчно измерими теми в текущия набор.'}
   }
 
+  function normalizeMapHead(){
+    const maphead=document.querySelector('#market .pm-maphead');
+    if(!maphead)return;
+    let group=maphead.querySelector(':scope > div');
+    if(!group){group=document.createElement('div');maphead.prepend(group)}
+    const titles=[...group.querySelectorAll(':scope > b')];
+    const badges=[...group.querySelectorAll(':scope > small')];
+    let title=titles[0];if(!title){title=document.createElement('b');group.prepend(title)}
+    let badge=badges[0];if(!badge){badge=document.createElement('small');group.appendChild(badge)}
+    titles.slice(1).forEach(el=>el.remove());
+    badges.slice(1).forEach(el=>el.remove());
+    title.textContent='Интерактивна карта на възприятието';
+    badge.textContent='● В реално време';
+    [...maphead.querySelectorAll(':scope > b,:scope > small')].forEach(el=>el.remove());
+    [...maphead.querySelectorAll(':scope > div')].slice(1).forEach(extra=>{
+      const hasHeader=extra.querySelector('b,small');
+      if(hasHeader)extra.remove();
+    });
+  }
+
   function enhanceStructure(){
     if(!document.getElementById('market')?.classList.contains('active'))return;
     const hero=document.querySelector('#market .pm-hero');if(hero){const h=hero.querySelector('h2'),p=hero.querySelector('p');if(h)h.textContent='Карта на потребителското възприятие';if(p)p.textContent='Проследяване на потребителските сигнали и възприятия за бранда в реално време.'}
-    const maphead=document.querySelector('#market .pm-maphead');if(maphead){const b=maphead.querySelector('b'),s=maphead.querySelector('small');if(b)b.textContent='Интерактивна карта на възприятието';if(s)s.textContent='● В реално време'}
+    normalizeMapHead();
     const lowers=[...document.querySelectorAll('#market .pm-lower .pm-card h3')];if(lowers[0])lowers[0].textContent='Динамика на индекса';if(lowers[1])lowers[1].textContent='Ключови промени';if(lowers[2])lowers[2].textContent='Топ теми';
     enhanceToolbar();enhanceKpis();enhanceDrawer();enhanceLowerPanels();
   }
