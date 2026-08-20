@@ -1,0 +1,136 @@
+name: Perception Globe Clean v8
+
+on:
+  push:
+    branches: [perception-globe-clean-v8]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: perception-globe-clean-v8
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Build clean globe-only core v8
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          core=Path('static/navigator-perception-core-v5.js').read_text()
+          globe=Path('static/navigator-perception-globe-v3.js').read_text()
+          core=core.replace("view:'map'","view:'network'",1)
+          old='<div class="pm-viewset"><button class="pm-view${state.view===\'map\'?\' active\':\'\'}" data-view="map" title="Подрежда елементите по тип сигнал">Карта</button><button class="pm-view${state.view===\'network\'?\' active\':\'\'}" data-view="network" title="Подрежда елементите по свързаност">Мрежа</button></div><button class="pm-depth${state.depth?\' active\':\'\'}" data-depth title="Включва перспектива и дълбочина">3D</button>'
+          if old not in core:
+              raise SystemExit('view/depth controls marker not found')
+          core=core.replace(old,'',1)
+          core=core.replace("${state.view==='map'?'Карта на сигналите':'Мрежа на връзките'}",'3D мрежа на възприятията',1)
+          core=core.replace("${state.view==='map'?'подреждане по тип сигнал':'подреждане по свързаност'} ·",'интерактивна сферична мрежа ·',1)
+          core=core.replace("pm-stage${state.view==='network'?' network':''}${state.depth?' depth':''}",'pm-stage network depth',1)
+          Path('static/navigator-perception-core-v8.js').write_text(core+'\n'+globe)
+          p=Path('static/dashboard.html')
+          s=p.read_text()
+          s=s.replace('/navigator-perception-core-v7.js?v=20260820-globevisual1','/navigator-perception-core-v8.js?v=20260820-globeclean1')
+          p.write_text(s)
+          PY
+          node --check static/navigator-perception-core-v8.js
+          grep -q 'navigator-perception-core-v8.js?v=20260820-globeclean1' static/dashboard.html
+          ! grep -q 'pmGlobeSimpleStyles' static/navigator-perception-core-v8.js
+          test "$(grep -o 'pmGlobeV3Styles' static/navigator-perception-core-v8.js | wc -l)" -ge 1
+
+      - name: Build and start Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+
+      - name: Install browser test dependency
+        run: npm install --no-save playwright-core@1.55.0
+
+      - name: Verify globe-only UI and smooth drag frames
+        run: |
+          cat > ./verify-globe-v8.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(2800);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-stage.network.pm-globe-v3');
+            await page.waitForTimeout(900);
+            const controls=await page.evaluate(()=>({
+              map:document.querySelectorAll('#market [data-view="map"]').length,
+              network:document.querySelectorAll('#market [data-view="network"]').length,
+              depth:document.querySelectorAll('#market [data-depth]').length,
+              shell:document.querySelectorAll('#market .pm-globe-shell-v3').length,
+              nodes:document.querySelectorAll('#market .pm-node').length
+            }));
+            console.log('controls',controls);
+            if(controls.map||controls.network||controls.depth)throw new Error('Old view/depth controls still visible');
+            if(controls.shell!==1||controls.nodes<2)throw new Error('Globe-only visual not mounted');
+
+            const stage=page.locator('#market .pm-stage.network.pm-globe-v3');
+            const box=await stage.boundingBox();
+            if(!box)throw new Error('No globe stage box');
+            const before=await page.evaluate(()=>[...document.querySelectorAll('#market .pm-node')].slice(0,4).map(n=>({id:n.dataset.node,left:n.style.left,top:n.style.top})));
+            const sx=box.x+box.width*.15, sy=box.y+box.height*.22;
+            await page.mouse.move(sx,sy);
+            await page.mouse.down();
+            for(let i=1;i<=12;i++){
+              await page.mouse.move(sx+i*20,sy-i*7,{steps:1});
+              if(i===4)await page.screenshot({path:'globe-drag-mid1.png',fullPage:true});
+              if(i===8)await page.screenshot({path:'globe-drag-mid2.png',fullPage:true});
+            }
+            await page.mouse.up();
+            await page.waitForTimeout(250);
+            const after=await page.evaluate(()=>[...document.querySelectorAll('#market .pm-node')].slice(0,4).map(n=>({id:n.dataset.node,left:n.style.left,top:n.style.top})));
+            const changed=before.filter((b,i)=>after[i]&&(b.left!==after[i].left||b.top!==after[i].top)).length;
+            const dragging=await page.locator('#market .pm-stage').evaluate(el=>el.classList.contains('pm-globe-drag'));
+            console.log(JSON.stringify({before,after,changed,dragging,errors},null,2));
+            if(changed<2)throw new Error('Globe nodes did not rotate');
+            if(dragging)throw new Error('Drag state remained stuck');
+            if(errors.length)throw new Error('JS errors: '+errors.join(' | '));
+            await page.screenshot({path:'globe-drag-after.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node ./verify-globe-v8.cjs
+
+      - name: Commit browser-verified production files
+        run: |
+          set -euxo pipefail
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'utremervarna@gmail.com'
+          git add static/navigator-perception-core-v8.js static/dashboard.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Use single smooth globe-only Perception renderer'
+            git push origin HEAD:perception-globe-clean-v8
+          fi
+
+      - name: Upload verification frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-globe-clean-v8
+          path: |
+            globe-drag-mid1.png
+            globe-drag-mid2.png
+            globe-drag-after.png
+            static/navigator-perception-core-v8.js
+            static/dashboard.html
+            /tmp/blis.log
