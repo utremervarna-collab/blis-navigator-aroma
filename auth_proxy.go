@@ -136,7 +136,7 @@ func validMAC(payload, key, got string) bool {
 }
 
 func newClientSession(a clientAccount) (clientSession, error) {
-	expires := time.Now().Add(7 * 24 * time.Hour)
+	expires := time.Now().Add(30 * 24 * time.Hour)
 	base := strings.Join([]string{sessionVersion, "client", a.Username, a.ClientSlug, strconv.FormatInt(expires.Unix(), 10)}, "|")
 	key := sessionSecret() + "|client|" + a.PasswordHash
 	token := base + "|" + sessionMAC(base, key)
@@ -255,7 +255,16 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
 		return
 	case "/client-login", "/client-login/", "/login":
-		clearSession(w, r)
+		// Visiting the login URL must not destroy an already valid session.
+		// This protects normal browser tab restore and Render deploy/restart flows.
+		if s, ok := sessionFromRequest(r); ok {
+			if s.Admin {
+				http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
+			} else {
+				http.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(s.ClientSlug)+"&page=overview", http.StatusFound)
+			}
+			return
+		}
 		serveClientLogin(w, r)
 		return
 	case "/api/client-login":
