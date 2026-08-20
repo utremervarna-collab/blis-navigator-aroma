@@ -36,4 +36,16 @@
       if(sync)sync.textContent=D?.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'няма синхронизация';
     }catch(e){console.error('BLIS bridge render state failed',e)}
   };
+
+  function loadScript(id,src){
+    if(document.getElementById(id))return;
+    const s=document.createElement('script');
+    s.id=id;
+    s.src=src;
+    s.async=false;
+    document.head.appendChild(s);
+  }
+  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260820-main1');
+  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260820-main1');
+  loadScript('blisCompetitionMasterV3Script','/navigator-competition-master-v3.js?v=20260820-main1');
 })();
