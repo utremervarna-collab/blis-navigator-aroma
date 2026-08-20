@@ -1,0 +1,128 @@
+name: Session persistence and Perception UI v11
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'session-ui-fix-v11'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Patch gateway and Perception surrounding UI
+        shell: python
+        run: |
+          from pathlib import Path
+
+          auth = Path('auth_proxy.go')
+          text = auth.read_text(encoding='utf-8')
+
+          text = text.replace(
+              'expires := time.Now().Add(7 * 24 * time.Hour)',
+              'expires := time.Now().Add(30 * 24 * time.Hour)',
+              1,
+          )
+
+          old = '''\tcase "/client-login", "/client-login/", "/login":
+\t\tclearSession(w, r)
+\t\tserveClientLogin(w, r)
+\t\treturn'''
+          new = '''\tcase "/client-login", "/client-login/", "/login":
+\t\t// Visiting the login URL must never destroy an already valid session.
+\t\t// This matters after browser tab restore and Render deploy/restart redirects.
+\t\tif s, ok := sessionFromRequest(r); ok {
+\t\t\tif s.Admin {
+\t\t\t\thttp.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
+\t\t\t} else {
+\t\t\t\thttp.Redirect(w, r, "/dashboard.html?client="+url.QueryEscape(s.ClientSlug)+"&page=overview", http.StatusFound)
+\t\t\t}
+\t\t\treturn
+\t\t}
+\t\tserveClientLogin(w, r)
+\t\treturn'''
+          if old not in text:
+              raise SystemExit('expected client-login block not found')
+          text = text.replace(old, new, 1)
+          auth.write_text(text, encoding='utf-8')
+
+          css = Path('static/navigator-perception-reference-v10.css')
+          styles = css.read_text(encoding='utf-8')
+          marker = '/* Perception surrounding UI v11 */'
+          if marker not in styles:
+              styles += r'''
+
+/* Perception surrounding UI v11 */
+#market .pm-main{grid-template-columns:minmax(0,1fr) 330px!important;gap:12px!important}
+#market .pm-mapcard,#market .pm-drawer{min-height:650px!important}
+#market .pm-maphead{height:54px!important;padding:0 15px!important;display:flex!important;align-items:center!important}
+#market .pm-maphead>div{display:flex!important;align-items:center!important;gap:9px!important}
+#market .pm-toolbar{min-height:50px!important;padding:9px 12px!important;gap:10px!important}
+#market .pm-filterbar{gap:7px!important}
+#market .pm-ref-filter-trigger{height:32px!important;padding:0 13px!important;border-radius:8px!important}
+#market .pm-filterbar select{height:32px!important;border-color:#dce4ee!important;box-shadow:0 1px 2px rgba(16,24,40,.018)!important}
+#market .pm-ref-stage-tools{top:13px!important;right:12px!important;gap:7px!important}
+#market .pm-ref-stage-tools .pm-zoom{width:32px!important;height:32px!important;border-radius:8px!important;border-color:#dce4ee!important}
+
+#market .pm-drawer{padding:0 16px 16px!important;max-height:650px!important;border-color:#e2e8f0!important;box-shadow:none!important}
+#market .pm-ref-drawer-titlebar{height:52px!important;margin:0 -16px 14px!important;padding:0 16px!important;border-bottom:1px solid #e9eef5!important}
+#market .pm-ref-drawer-titlebar b{font-size:15px!important;font-weight:790!important;color:#101828!important}
+#market .pm-ref-drawer-titlebar button{font-size:21px!important;color:#475467!important}
+#market .pm-ref-identity{grid-template-columns:40px 1fr!important;column-gap:11px!important;padding-bottom:9px!important}
+#market .pm-ref-signal-icon{width:38px!important;height:38px!important;box-shadow:none!important}
+#market .pm-drawer h3{font-size:13.5px!important;font-weight:780!important}
+#market .pm-ref-identity-meta{padding:0 0 13px 51px!important;margin-bottom:13px!important;gap:9px!important}
+#market .pm-ref-identity-meta span,#market .pm-ref-identity-meta strong{font-size:9.5px!important}
+#market .pm-ref-section,#market .pm-drawer-section{margin-top:0!important;padding:13px 0!important;border-top:1px solid #edf1f5!important}
+#market .pm-ref-section h4,#market .pm-drawer-section h4{font-size:9.5px!important;margin-bottom:8px!important;color:#344054!important}
+#market .pm-ref-section p,#market .pm-drawer-section p{font-size:9.7px!important;line-height:1.55!important;color:#475467!important}
+#market .pm-ref-sentbar{height:6px!important;margin:9px 0 8px!important}
+#market .pm-ref-sentlegend{font-size:7.8px!important}
+#market .pm-related{display:grid!important;grid-template-columns:1fr!important;gap:6px!important}
+#market .pm-related button{width:100%!important;text-align:left!important;border-radius:8px!important;padding:7px 9px!important;background:#fff!important;border:1px solid #e1e7ef!important;font-size:9px!important;color:#475467!important}
+#market .pm-ref-source-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;gap:8px!important;padding:6px 0!important;border-bottom:1px solid #f2f4f7!important}
+#market .pm-ref-source-row span{display:flex!important;align-items:center!important;gap:7px!important;font-size:9px!important;color:#344054!important;min-width:0!important}
+#market .pm-ref-source-row span i{width:18px!important;height:18px!important;border-radius:50%!important;background:#f4f7fb!important;display:grid!important;place-items:center!important;font-style:normal!important;font-size:7px!important;color:#667085!important;flex:0 0 auto!important}
+#market .pm-ref-source-row b{font-size:9px!important;color:#344054!important}
+#market .pm-ref-source-row small{display:none!important}
+#market .pm-ref-examples article{padding:9px 10px!important;margin-bottom:7px!important;border:1px solid #e7edf4!important;border-radius:8px!important;background:#f8fafc!important}
+#market .pm-ref-examples article p{margin:0 0 4px!important;font-size:9px!important;line-height:1.45!important;color:#344054!important}
+#market .pm-ref-examples article small{font-size:7.8px!important;color:#98a2b3!important}
+#market .pm-ref-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important;padding-top:12px!important;margin-top:0!important;border-top:1px solid #edf1f5!important}
+#market .pm-ref-actions .pm-action{margin:0!important;min-height:36px!important;padding:8px 9px!important;border-radius:8px!important;font-size:9px!important;text-align:center!important}
+#market .pm-ref-actions .linklike{border:1px solid #dfe6ef!important;background:#fff!important;padding:8px 9px!important;color:#344054!important}
+
+#market .pm-lower{grid-template-columns:1.28fr 1fr 1fr!important;gap:10px!important;margin-top:10px!important}
+#market .pm-lower .pm-card{min-height:166px!important;padding:13px 14px!important}
+#market .pm-lower h3{font-size:13px!important;font-weight:780!important;color:#101828!important}
+#market .pm-change{padding:7px 0!important}
+#market .pm-theme-cloud button{border-radius:8px!important;background:#f8fafc!important;border-color:#e3e9f1!important}
+
+@media(max-width:1180px){#market .pm-main{grid-template-columns:1fr!important}#market .pm-drawer{max-height:none!important}}
+'''
+              css.write_text(styles, encoding='utf-8')
+
+      - name: Format Go
+        run: gofmt -w auth_proxy.go
+
+      - name: Verify build
+        run: go build ./...
+
+      - name: Commit patch to branch
+        run: |
+          if git diff --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "BLIS Navigator Bot"
+          git config user.email "utremervarna@gmail.com"
+          git add auth_proxy.go static/navigator-perception-reference-v10.css
+          git commit -m "Persist client login and refine Perception surrounding panels"
+          git push origin HEAD:${{ github.head_ref }}
