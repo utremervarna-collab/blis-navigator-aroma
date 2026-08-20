@@ -3,6 +3,8 @@ name: Perception Globe Drag Test
 on:
   push:
     branches: [perception-drag-test]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
