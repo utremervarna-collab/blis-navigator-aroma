@@ -1,7 +1,6 @@
 (() => {
   'use strict';
   const CORE_URL='/navigator-perception-core-v5.js?v=20260819-v5';
-  const GLOBE_URL='/navigator-perception-globe.js?v=20260820-globe1';
   let ready=false;
 
   function labelMarket(){
@@ -45,7 +44,7 @@
 
   import(CORE_URL).then(()=>{
     ready=true;
-    import(GLOBE_URL).catch(err=>console.error('BLIS Perception Globe failed',err));
+    window.dispatchEvent(new CustomEvent('blis:perception-core-ready'));
     [0,180,500,900,1500,2600].forEach(ms=>setTimeout(ensure,ms));
   }).catch(err=>console.error('BLIS Perception Map v5 core failed',err));
 
