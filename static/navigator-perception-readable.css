@@ -1,81 +1,81 @@
-/* BLIS Navigator — Perception page readability pass.
-   Purpose: make metrics readable at normal laptop distance and Windows 125% scaling. */
-#market .pms-kpis{gap:12px!important}
-#market .pms-kpi{height:116px!important;padding:15px 16px!important;border-radius:14px!important}
-#market .pms-kpi-label{font-size:13px!important;line-height:1.25!important;font-weight:800!important;color:#475467!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
-#market .pms-kpi-row{margin-top:8px!important;gap:8px!important}
-#market .pms-kpi-value{font-size:32px!important;line-height:1!important;font-weight:850!important}
-#market .pms-kpi-value small{font-size:12px!important}
-#market .pms-kpi-delta{font-size:11px!important;line-height:1.15!important}
-#market .pms-kpi-foot{margin-top:9px!important;font-size:11px!important;line-height:1.25!important;color:#7b8798!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+/* BLIS Navigator — Perception page readability pass v2.
+   High-specificity rules intentionally override runtime-injected compact styles. */
+html body #market .pms-kpis{gap:14px!important}
+html body #market .pms-kpi{height:124px!important;padding:17px 18px!important;border-radius:15px!important}
+html body #market .pms-kpi-label{font-size:15px!important;line-height:1.25!important;font-weight:800!important;color:#344054!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
+html body #market .pms-kpi-row{margin-top:9px!important;gap:9px!important}
+html body #market .pms-kpi-value{font-size:36px!important;line-height:1!important;font-weight:850!important}
+html body #market .pms-kpi-value small{font-size:13px!important}
+html body #market .pms-kpi-delta{font-size:12px!important;line-height:1.2!important}
+html body #market .pms-kpi-foot{margin-top:10px!important;font-size:12px!important;line-height:1.35!important;color:#667085!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
 
-#market .pm-main{grid-template-columns:minmax(0,1fr) 390px!important;gap:14px!important}
-#market .pm-drawer{border-radius:16px!important}
-#market .pms-live-head{height:56px!important;padding:0 18px!important}
-#market .pms-live-head b{font-size:14px!important;font-weight:850!important}
-#market .pms-live-chip{font-size:9px!important;padding:6px 9px!important}
-#market .pms-live-body{padding:18px!important}
-#market .pms-signal-top{grid-template-columns:50px minmax(0,1fr)!important;gap:13px!important}
-#market .pms-signal-icon{width:50px!important;height:50px!important;font-size:20px!important}
-#market .pms-signal-top small{font-size:10px!important;line-height:1.2!important}
-#market .pms-signal-top h3{font-size:18px!important;line-height:1.25!important;margin:4px 0 3px!important}
-#market .pms-signal-top p{font-size:11px!important;line-height:1.25!important}
-#market .pms-signal-value{margin:17px 0 13px!important;padding:17px!important;border-radius:14px!important}
-#market .pms-value-label{font-size:10px!important}
-#market .pms-value-row{margin-top:6px!important;gap:10px!important}
-#market .pms-value-row strong{font-size:38px!important}
-#market .pms-value-row em{font-size:12px!important;margin-bottom:4px!important}
-#market .pms-meter{height:8px!important;margin-top:13px!important}
-#market .pms-value-foot{margin-top:9px!important;font-size:10px!important;line-height:1.25!important}
-#market .pms-facts{gap:9px!important;margin:13px 0 5px!important}
-#market .pms-fact{padding:11px!important;border-radius:11px!important}
-#market .pms-fact span{font-size:10px!important;line-height:1.2!important;margin-bottom:5px!important}
-#market .pms-fact b{font-size:12px!important;line-height:1.25!important}
-#market .pms-section{padding:16px 0!important}
-#market .pms-section h4{font-size:12.5px!important;margin:0 0 9px!important;font-weight:850!important}
-#market .pms-section p{font-size:12px!important;line-height:1.6!important}
-#market .pms-source-chips,#market .pms-related{gap:8px!important}
-#market .pms-source-chip,#market .pms-related button{padding:7px 10px!important;font-size:10px!important;line-height:1.2!important}
-#market .pms-actions{gap:9px!important;margin-top:16px!important}
-#market .pms-actions button{min-height:42px!important;font-size:11px!important}
+html body #market .pm-main{grid-template-columns:minmax(0,1fr) 410px!important;gap:16px!important}
+html body #market .pm-drawer{border-radius:17px!important}
+html body #market .pms-live-head{height:60px!important;padding:0 20px!important}
+html body #market .pms-live-head b{font-size:16px!important;font-weight:850!important}
+html body #market .pms-live-chip{font-size:10px!important;padding:7px 10px!important}
+html body #market .pms-live-body{padding:20px!important}
+html body #market .pms-signal-top{grid-template-columns:54px minmax(0,1fr)!important;gap:14px!important}
+html body #market .pms-signal-icon{width:54px!important;height:54px!important;font-size:22px!important}
+html body #market .pms-signal-top small{font-size:11px!important;line-height:1.25!important}
+html body #market .pms-signal-top h3{font-size:20px!important;line-height:1.25!important;margin:5px 0 4px!important}
+html body #market .pms-signal-top p{font-size:12px!important;line-height:1.35!important}
+html body #market .pms-signal-value{margin:18px 0 14px!important;padding:18px!important;border-radius:15px!important}
+html body #market .pms-value-label{font-size:11px!important}
+html body #market .pms-value-row{margin-top:7px!important;gap:11px!important}
+html body #market .pms-value-row strong{font-size:42px!important}
+html body #market .pms-value-row em{font-size:13px!important;margin-bottom:5px!important}
+html body #market .pms-meter{height:9px!important;margin-top:14px!important}
+html body #market .pms-value-foot{margin-top:10px!important;font-size:11px!important;line-height:1.3!important}
+html body #market .pms-facts{gap:10px!important;margin:14px 0 6px!important}
+html body #market .pms-fact{padding:12px!important;border-radius:12px!important}
+html body #market .pms-fact span{font-size:11px!important;line-height:1.2!important;margin-bottom:5px!important}
+html body #market .pms-fact b{font-size:13px!important;line-height:1.3!important}
+html body #market .pms-section{padding:17px 0!important}
+html body #market .pms-section h4{font-size:14px!important;margin:0 0 10px!important;font-weight:850!important}
+html body #market .pms-section p{font-size:13px!important;line-height:1.65!important}
+html body #market .pms-source-chips,html body #market .pms-related{gap:8px!important}
+html body #market .pms-source-chip,html body #market .pms-related button{padding:8px 11px!important;font-size:11px!important;line-height:1.25!important}
+html body #market .pms-actions{gap:10px!important;margin-top:17px!important}
+html body #market .pms-actions button{min-height:44px!important;font-size:12px!important}
 
-#market .pm-lower{gap:14px!important;margin-top:14px!important}
-#market .pms-bottom-card{min-height:270px!important;padding:18px!important;border-radius:16px!important}
-#market .pms-bottom-head{margin-bottom:13px!important}
-#market .pms-bottom-head h3{font-size:15px!important;line-height:1.25!important}
-#market .pms-bottom-head p{margin-top:5px!important;font-size:11px!important;line-height:1.35!important}
-#market .pms-bottom-live{font-size:9.5px!important}
-#market .pms-trend-top{margin-bottom:10px!important}
-#market .pms-trend-number strong{font-size:34px!important}
-#market .pms-trend-number span{font-size:11px!important}
-#market .pms-trend-change{font-size:11px!important}
-#market .pms-chart{height:155px!important}
-#market .pms-chart text{font-size:9px!important}
-#market .pms-chart-empty{height:145px!important;font-size:11px!important;line-height:1.45!important}
-#market .pms-stream-row{grid-template-columns:11px minmax(0,1fr) auto!important;gap:10px!important;padding:11px 0!important}
-#market .pms-stream-dot{width:8px!important;height:8px!important}
-#market .pms-stream-copy b{font-size:11px!important;line-height:1.25!important}
-#market .pms-stream-copy small{margin-top:3px!important;font-size:9.5px!important;line-height:1.25!important}
-#market .pms-stream-value b{font-size:11px!important}
-#market .pms-stream-value small{font-size:9px!important}
-#market .pms-stream-foot{padding-top:10px!important;margin-top:7px!important;font-size:9.5px!important;line-height:1.3!important}
+html body #market .pm-lower{gap:16px!important;margin-top:16px!important}
+html body #market .pms-bottom-card{min-height:285px!important;padding:20px!important;border-radius:17px!important}
+html body #market .pms-bottom-head{margin-bottom:14px!important}
+html body #market .pms-bottom-head h3{font-size:17px!important;line-height:1.25!important}
+html body #market .pms-bottom-head p{margin-top:5px!important;font-size:12px!important;line-height:1.4!important}
+html body #market .pms-bottom-live{font-size:10px!important}
+html body #market .pms-trend-top{margin-bottom:11px!important}
+html body #market .pms-trend-number strong{font-size:38px!important}
+html body #market .pms-trend-number span{font-size:12px!important}
+html body #market .pms-trend-change{font-size:12px!important}
+html body #market .pms-chart{height:165px!important}
+html body #market .pms-chart text{font-size:10px!important}
+html body #market .pms-chart-empty{height:150px!important;font-size:12px!important;line-height:1.5!important}
+html body #market .pms-stream-row{grid-template-columns:12px minmax(0,1fr) auto!important;gap:11px!important;padding:12px 0!important}
+html body #market .pms-stream-dot{width:9px!important;height:9px!important}
+html body #market .pms-stream-copy b{font-size:12px!important;line-height:1.3!important}
+html body #market .pms-stream-copy small{margin-top:3px!important;font-size:10.5px!important;line-height:1.3!important}
+html body #market .pms-stream-value b{font-size:12px!important}
+html body #market .pms-stream-value small{font-size:10px!important}
+html body #market .pms-stream-foot{padding-top:11px!important;margin-top:8px!important;font-size:10.5px!important;line-height:1.35!important}
 
-#market .pm-hero h2{font-size:24px!important}
-#market .pm-hero p{font-size:12px!important;line-height:1.5!important}
+html body #market .pm-hero h2{font-size:26px!important}
+html body #market .pm-hero p{font-size:13px!important;line-height:1.55!important}
 
 @media(max-width:1280px){
-  #market .pm-main{grid-template-columns:minmax(0,1fr) 360px!important}
-  #market .pms-kpi-value{font-size:29px!important}
-  #market .pms-kpi-label{font-size:12px!important}
+  html body #market .pm-main{grid-template-columns:minmax(0,1fr) 380px!important}
+  html body #market .pms-kpi-value{font-size:33px!important}
+  html body #market .pms-kpi-label{font-size:14px!important}
 }
 @media(max-width:1100px){
-  #market .pm-main{grid-template-columns:1fr!important}
-  #market .pms-kpi{height:108px!important}
+  html body #market .pm-main{grid-template-columns:1fr!important}
+  html body #market .pms-kpi{height:auto!important;min-height:114px!important}
 }
 @media(max-width:560px){
-  #market .pms-kpis{grid-template-columns:1fr!important}
-  #market .pms-kpi{height:auto!important;min-height:104px!important}
-  #market .pms-kpi-value{font-size:30px!important}
-  #market .pms-facts{grid-template-columns:1fr 1fr!important}
-  #market .pms-actions{grid-template-columns:1fr!important}
+  html body #market .pms-kpis{grid-template-columns:1fr!important}
+  html body #market .pms-kpi{height:auto!important;min-height:108px!important}
+  html body #market .pms-kpi-value{font-size:32px!important}
+  html body #market .pms-facts{grid-template-columns:1fr 1fr!important}
+  html body #market .pms-actions{grid-template-columns:1fr!important}
 }
