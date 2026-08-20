@@ -1,54 +1,42 @@
 (() => {
   'use strict';
 
-  const STYLE_ID='pmsSimpleV1Styles';
-  let scheduled=0;
-
-  const qs=(s,r=document)=>r.querySelector(s);
-  const qsa=(s,r=document)=>[...r.querySelectorAll(s)];
+  const STYLE_ID='pmsSimpleV2Styles';
+  let scheduled=0,lastInfo=null,lastNodeId='',ticker=0;
+  const qs=(s,r=document)=>r?.querySelector?.(s)||null;
+  const qsa=(s,r=document)=>r?.querySelectorAll?[...r.querySelectorAll(s)]:[];
   const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const num=v=>{const m=String(v??'').replace(',','.').match(/-?\d+(?:\.\d+)?/);return m?Number(m[0]):null};
   const marketActive=()=>!!qs('#market.page.active');
   const getD=()=>{try{return typeof D!=='undefined'&&D?D:{}}catch(_){return{}}};
   const getA=()=>{try{return typeof A!=='undefined'&&Array.isArray(A)?A:[]}catch(_){return[]}};
+  const getH=()=>{try{return typeof H!=='undefined'&&Array.isArray(H)?H:[]}catch(_){return[]}};
+  const getS=()=>{try{return typeof S!=='undefined'&&Array.isArray(S)?S:[]}catch(_){return[]}};
   const periodDays=()=>Number(qs('#market [data-pm-period]')?.value)||30;
-  const timeOf=x=>{const raw=x?.observed_at||x?.time||x?.created_at||x?.createdAt||x?.timestamp||x?.date;const t=raw?new Date(raw).getTime():NaN;return Number.isFinite(t)?t:null};
+  const timeOf=x=>{const raw=x?.observed_at||x?.time||x?.created_at||x?.createdAt||x?.timestamp||x?.date||x?.updated_at;const t=raw?new Date(raw).getTime():NaN;return Number.isFinite(t)?t:null};
   const sourceOf=x=>String(x?.source||x?.source_key||'').trim();
+  const fmt=(v,d=1)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString('bg-BG',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+  function sourceName(key){const hit=getS().find(x=>String(x.key||x.source_key||'').toLowerCase()===String(key||'').toLowerCase());return hit?.label||hit?.name||key||'Източник'}
+  function metricName(k){const key=String(k||'').toLowerCase();const map={followers:'Аудитория',visible_posts_90d:'Публикации',news_mentions_30d:'Медийни споменавания',news_mentions_7d:'Медийни споменавания',rating:'Оценка',reviews:'Отзиви',review_count:'Отзиви',profile_active:'Публичен профил',website_active:'Официален сайт',ecommerce_active:'Електронна търговия',pricing_visible:'Видими цени',cart_active:'Функция за покупка',product_details:'Продуктова информация',category_count:'Продуктови категории',language_count:'Езиково покритие',direct_booking:'Директна резервация',monthly_activity:'Месечна активност',portfolio_items:'Портфолио'};return map[key]||key.replaceAll('_',' ').replace(/^./,m=>m.toUpperCase())}
+  function valueText(x){const k=String(x?.metric||'').toLowerCase(),v=x?.value,n=Number(v);if(Number.isFinite(n)&&(/_active$|profile_active|website_active|pricing_visible|cart_active|ecommerce_active|direct_booking/.test(k)))return n>0?'Потвърдено':'Не е потвърдено';if(Number.isFinite(n)&&/rating/.test(k))return n.toLocaleString('bg-BG',{maximumFractionDigits:1});if(Number.isFinite(n))return n.toLocaleString('bg-BG',{maximumFractionDigits:1});return String(v??'—').slice(0,26)}
+  function relTime(t){if(!t)return'—';const s=Math.max(0,Math.floor((Date.now()-t)/1000));if(s<60)return'преди малко';if(s<3600)return`${Math.floor(s/60)} мин.`;if(s<86400)return`${Math.floor(s/3600)} ч.`;return new Date(t).toLocaleDateString('bg-BG',{day:'2-digit',month:'2-digit'})}
 
   function ensureStyles(){
     if(document.getElementById(STYLE_ID))return;
+    document.getElementById('pmsSimpleV1Styles')?.remove();
     const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
-#market .pm-focusbar{display:none!important}
-#market .pm-kpis>.pmx-kpis{display:none!important}
-#market .pm-kpis{margin-bottom:12px!important}
-#market .pms-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-#market .pms-kpi{min-width:0;height:92px;padding:12px 13px;border:1px solid #e4e9f0;border-radius:12px;background:#fff;text-align:left;cursor:pointer;transition:.16s ease;position:relative;overflow:hidden}
-#market .pms-kpi:hover,#market .pms-kpi.active{border-color:#b8cef7;box-shadow:0 7px 18px rgba(29,78,216,.06);transform:translateY(-1px)}
-#market .pms-kpi.active:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pm-accent,#1766e8)}
-#market .pms-kpi-label{display:block;font-size:10px!important;color:#667085;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#market .pms-kpi-row{display:flex;align-items:baseline;gap:6px;margin-top:5px}
-#market .pms-kpi-value{font-size:25px!important;line-height:1;color:#101828;font-weight:800;letter-spacing:-.035em;white-space:nowrap}
-#market .pms-kpi-delta{margin-left:auto;font-size:8.5px!important;font-weight:800;white-space:nowrap;color:#98a2b3}
-#market .pms-kpi-delta.up{color:#0b9555}#market .pms-kpi-delta.down{color:#d34f59}
-#market .pms-kpi-foot{display:block;margin-top:8px;font-size:8px!important;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#market .pm-main{grid-template-columns:minmax(0,1fr) 326px!important;gap:12px!important}
-#market .pmx-inspector-head b{font-size:12px!important}
-#market .pmx-signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-#market .pmx-signal-stat.pms-empty{display:none!important}
-#market .pmx-section.pms-hidden{display:none!important}
-#market .pmx-section h4{font-size:9px!important;text-transform:none!important;letter-spacing:0!important}
-#market .pmx-section p{font-size:9.5px!important}
-#market .pmx-actions{grid-template-columns:1fr!important;gap:7px!important}
-#market .pmx-actions button{min-height:37px!important;font-size:9px!important}
-#market .pm-lower{grid-template-columns:1.35fr 1fr!important;gap:10px!important}
-#market .pm-lower>.pmx-lower-card:nth-child(3){display:none!important}
-#market .pm-lower.pms-one{grid-template-columns:1fr!important}
-#market .pm-lower.pms-empty{display:none!important}
-#market .pmx-lower-card.pms-hidden{display:none!important}
-#market .pmx-lower-head h3{font-size:12px!important}
-#market .pm-hero h2{font-size:21px!important}
-#market .pm-hero p{max-width:700px!important;font-size:10px!important;line-height:1.45!important}
-@media(max-width:980px){#market .pms-kpis{grid-template-columns:repeat(2,1fr)}#market .pm-main{grid-template-columns:1fr!important}#market .pm-lower{grid-template-columns:1fr!important}}
-@media(max-width:560px){#market .pms-kpis{grid-template-columns:1fr 1fr}#market .pms-kpi{height:86px;padding:10px}#market .pms-kpi-value{font-size:21px!important}}
+#market .pm-focusbar{display:none!important}#market .pm-kpis>.pmx-kpis{display:none!important}#market .pm-kpis{margin-bottom:12px!important}
+#market .pms-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}#market .pms-kpi{min-width:0;height:92px;padding:12px 13px;border:1px solid #e3e9f1;border-radius:13px;background:#fff;text-align:left;cursor:pointer;transition:.16s ease;position:relative;overflow:hidden}#market .pms-kpi:hover{border-color:#b6caf0;box-shadow:0 8px 24px rgba(24,76,160,.07);transform:translateY(-1px)}#market .pms-kpi-label{display:block;font-size:10px!important;color:#667085;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#market .pms-kpi-row{display:flex;align-items:baseline;gap:6px;margin-top:5px}#market .pms-kpi-value{font-size:25px!important;line-height:1;color:#101828;font-weight:820;letter-spacing:-.035em;white-space:nowrap}#market .pms-kpi-value small{font-size:9px!important;color:#98a2b3}.pms-kpi-delta{margin-left:auto;font-size:8px!important;font-weight:800;color:#98a2b3}.pms-kpi-delta.up{color:#0b9555}.pms-kpi-delta.down{color:#d34f59}.pms-kpi-foot{display:block;margin-top:8px;font-size:8px!important;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#market .pm-main{grid-template-columns:minmax(0,1fr) 350px!important;gap:12px!important;align-items:stretch!important}#market .pm-drawer{padding:0!important;min-height:650px!important;overflow:auto!important;border-radius:15px!important;background:linear-gradient(180deg,#fff 0,#fbfdff 100%)!important;border:1px solid #e1e8f0!important;box-shadow:0 10px 30px rgba(16,24,40,.035)!important}
+#market .pms-live-panel{min-height:100%;display:flex;flex-direction:column}.pms-live-head{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;border-bottom:1px solid #edf1f5;background:rgba(255,255,255,.92);position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}.pms-live-head b{font-size:12px;color:#101828}.pms-live-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;background:#ecfdf3;color:#087a48;font-size:7.5px!important;font-weight:850;letter-spacing:.05em}.pms-live-chip i{width:6px;height:6px;border-radius:50%;background:#12b76a;box-shadow:0 0 0 0 rgba(18,183,106,.35);animation:pmsPulse 1.8s infinite}@keyframes pmsPulse{70%{box-shadow:0 0 0 7px rgba(18,183,106,0)}100%{box-shadow:0 0 0 0 rgba(18,183,106,0)}}
+.pms-live-body{padding:15px}.pms-signal-top{display:grid;grid-template-columns:44px minmax(0,1fr);gap:11px;align-items:center}.pms-signal-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#1766e8,#63a4ff);color:#fff;font-size:17px;font-weight:900;box-shadow:0 9px 22px rgba(23,102,232,.18)}.pms-signal-top small{display:block;font-size:7.5px!important;color:#137d52;font-weight:850;text-transform:uppercase;letter-spacing:.06em}.pms-signal-top h3{margin:3px 0 2px!important;font-size:14px!important;line-height:1.25!important;color:#101828!important}.pms-signal-top p{margin:0;font-size:8px!important;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pms-signal-value{margin:14px 0 10px;padding:14px;border-radius:13px;background:linear-gradient(135deg,#f5f9ff,#eef5ff 52%,#f8fbff);border:1px solid #dce9fb}.pms-value-label{font-size:7.5px!important;color:#667085;font-weight:750}.pms-value-row{display:flex;align-items:flex-end;gap:8px;margin-top:3px}.pms-value-row strong{font-size:30px;line-height:1;color:#0f2f5f;letter-spacing:-.045em}.pms-value-row em{font-style:normal;font-size:9px!important;font-weight:850;margin-bottom:3px;color:#667085}.pms-value-row em.up{color:#0b9555}.pms-value-row em.down{color:#d34f59}.pms-meter{height:6px;border-radius:999px;background:#dfeafb;overflow:hidden;margin-top:11px}.pms-meter i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1766e8,#69a7ff);transition:width .5s ease}.pms-value-foot{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:7.5px!important;color:#7b8798}
+.pms-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 3px}.pms-fact{min-width:0;padding:9px;border:1px solid #e9eef4;border-radius:10px;background:#fff}.pms-fact span{display:block;font-size:7px!important;color:#98a2b3;margin-bottom:3px}.pms-fact b{display:block;font-size:9px;color:#344054;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pms-section{padding:13px 0;border-top:1px solid #edf1f5}.pms-section h4{margin:0 0 7px;font-size:9px!important;color:#344054}.pms-section p{margin:0;font-size:9.5px!important;line-height:1.55;color:#475467}.pms-source-chips,.pms-related{display:flex;flex-wrap:wrap;gap:6px}.pms-source-chip,.pms-related button{border:1px solid #dfe7f0;background:#fff;border-radius:999px;padding:6px 8px;font-size:8px!important;color:#475467}.pms-related button{cursor:pointer}.pms-related button:hover{border-color:#9bbcf2;color:#1766e8}.pms-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}.pms-actions button{min-height:38px;border-radius:9px;border:1px solid #dfe7f0;background:#fff;color:#344054;font-size:8.5px!important;font-weight:800;cursor:pointer}.pms-actions .primary{background:#1766e8;border-color:#1766e8;color:#fff}.pms-actions .saved{background:#ecfdf3;border-color:#c4ead5;color:#0c8050}
+#market .pm-lower{display:grid!important;grid-template-columns:minmax(0,1.35fr) minmax(330px,.75fr)!important;gap:12px!important;margin-top:12px!important}#market .pm-lower>*{display:none!important}.pms-bottom-card{display:block!important;min-height:232px;padding:15px!important;border-radius:15px!important;border:1px solid #e1e8f0!important;background:#fff!important;overflow:hidden}.pms-bottom-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.pms-bottom-head h3{margin:0!important;font-size:13px!important;color:#101828}.pms-bottom-head p{margin:3px 0 0;font-size:8px!important;color:#98a2b3}.pms-bottom-live{display:inline-flex;align-items:center;gap:5px;font-size:7.5px!important;color:#0d8652;font-weight:800}.pms-bottom-live i{width:6px;height:6px;border-radius:50%;background:#12b76a}.pms-trend-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:7px}.pms-trend-number strong{font-size:27px;color:#101828;letter-spacing:-.04em}.pms-trend-number span{margin-left:7px;font-size:8.5px!important;color:#98a2b3}.pms-trend-change{font-size:9px!important;font-weight:850;color:#667085}.pms-trend-change.up{color:#0b9555}.pms-trend-change.down{color:#d34f59}.pms-chart{height:135px}.pms-chart svg{width:100%;height:100%;overflow:visible}.pms-chart .grid{stroke:#edf2f7;stroke-width:1}.pms-chart .area{fill:url(#pmsArea)}.pms-chart .line{fill:none;stroke:#1766e8;stroke-width:2.4;vector-effect:non-scaling-stroke}.pms-chart circle{fill:#fff;stroke:#1766e8;stroke-width:2;vector-effect:non-scaling-stroke}.pms-chart text{font-size:7px;fill:#98a2b3}.pms-chart-empty{height:128px;display:grid;place-items:center;text-align:center;color:#98a2b3;font-size:9px;padding:16px}
+.pms-stream{display:grid;gap:0}.pms-stream-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f3f6}.pms-stream-row:last-child{border-bottom:0}.pms-stream-dot{width:7px;height:7px;border-radius:50%;background:#7aa8f5;box-shadow:0 0 0 3px #edf4ff}.pms-stream-row:first-child .pms-stream-dot{background:#12b76a;box-shadow:0 0 0 3px #e9f9f0}.pms-stream-copy{min-width:0}.pms-stream-copy b{display:block;font-size:8.5px;color:#344054;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pms-stream-copy small{display:block;margin-top:2px;font-size:7px!important;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pms-stream-value{text-align:right}.pms-stream-value b{display:block;font-size:8.5px;color:#344054}.pms-stream-value small{font-size:7px!important;color:#98a2b3}.pms-stream-foot{display:flex;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid #edf1f5;margin-top:5px;font-size:7px!important;color:#98a2b3}
+#market .pm-hero h2{font-size:21px!important}#market .pm-hero p{max-width:700px!important;font-size:10px!important;line-height:1.45!important}
+@media(max-width:1100px){#market .pm-main{grid-template-columns:1fr!important}#market .pm-drawer{min-height:auto!important}#market .pm-lower{grid-template-columns:1fr!important}.pms-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){#market .pms-kpis{grid-template-columns:1fr 1fr}.pms-kpi{height:86px;padding:10px}.pms-kpi-value{font-size:21px!important}.pms-facts{grid-template-columns:1fr 1fr}.pms-actions{grid-template-columns:1fr}}
 `;
     document.head.appendChild(s)
   }
@@ -56,101 +44,33 @@
   function existingCard(id){return qs(`#market .pmx-kpi[data-pmx-kpi="${id}"]`)}
   function cardValue(id){return existingCard(id)?.querySelector('.pmx-kpi-main strong')?.textContent?.trim()||'—'}
   function cardSuffix(id){return existingCard(id)?.querySelector('.pmx-kpi-main small')?.textContent?.trim()||''}
-  function cardDelta(id){
-    const e=existingCard(id)?.querySelector('.pmx-kpi-delta');
-    return{text:e?.textContent?.trim()||'',cls:e?.classList.contains('up')?'up':e?.classList.contains('down')?'down':''}
-  }
+  function cardDelta(id){const e=existingCard(id)?.querySelector('.pmx-kpi-delta');return{text:e?.textContent?.trim()||'',cls:e?.classList.contains('up')?'up':e?.classList.contains('down')?'down':''}}
   function noValue(v){return !v||v==='—'||/^0(?:[.,]0+)?(?:\s*\/5)?$/.test(v)}
-  function realSignalCount(){
-    const d=getD(),arr=Array.isArray(d?.signals)?d.signals:[];
-    if(arr.length)return arr.length;
-    return qsa('#market .pm-node.kind-signal').length
-  }
-  function measuredSourceCount(){
-    const cut=Date.now()-periodDays()*864e5,set=new Set();
-    getA().forEach(x=>{const t=timeOf(x);if(t!=null&&t<cut)return;const s=sourceOf(x);if(s)set.add(s)});
-    return set.size
-  }
-  function simplePack(){
-    const pDelta=cardDelta('perception'),tDelta=cardDelta('trend'),rating=cardValue('rating'),ratingDelta=cardDelta('rating'),signals=realSignalCount();
-    const fourth=!noValue(rating)
-      ?{id:'rating',label:'Средна оценка',value:rating,suffix:cardSuffix('rating'),delta:ratingDelta.text,deltaCls:ratingDelta.cls,foot:'от наличните измерени рейтинги',action:'rating'}
-      :{id:'sources',label:'Източници с данни',value:String(measuredSourceCount()),suffix:'',delta:'',deltaCls:'',foot:`с измервания за ${periodDays()} дни`,action:'sources'};
-    return[
-      {id:'perception',label:'Общо възприятие',value:cardValue('perception'),suffix:cardSuffix('perception'),delta:pDelta.text,deltaCls:pDelta.cls,foot:'обща картина от наличните измервания',action:'perception'},
-      {id:'trend',label:'Промяна',value:cardValue('trend'),suffix:cardSuffix('trend'),delta:tDelta.text,deltaCls:tDelta.cls,foot:'спрямо предходното сравнимо измерване',action:'trend'},
-      {id:'signals',label:'Наблюдавани сигнали',value:String(signals),suffix:'',delta:'',deltaCls:'',foot:`потвърдени сигнали в текущия профил`,action:'signals'},
-      fourth
-    ]
-  }
-  function topCard(x){return`<button type="button" class="pms-kpi" data-pms-action="${esc(x.action)}"><span class="pms-kpi-label">${esc(x.label)}</span><div class="pms-kpi-row"><strong class="pms-kpi-value">${esc(x.value)}${x.suffix?` <small>${esc(x.suffix)}</small>`:''}</strong>${x.delta?`<em class="pms-kpi-delta ${esc(x.deltaCls)}">${esc(x.delta)}</em>`:''}</div><span class="pms-kpi-foot">${esc(x.foot)}</span></button>`}
-  function renderTop(){
-    const host=qs('#market .pm-kpis');if(!host)return;
-    let simple=qs('.pms-kpis',host);if(!simple){simple=document.createElement('div');simple.className='pms-kpis';host.appendChild(simple)}
-    const html=simplePack().map(topCard).join('');if(simple.dataset.html!==html){simple.innerHTML=html;simple.dataset.html=html}
-    qsa('[data-pms-action]',simple).forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.addEventListener('click',()=>handleTop(b.dataset.pmsAction))})
-  }
-  function handleTop(action){
-    if(action==='perception'||action==='trend'||action==='rating'){existingCard(action)?.click();return}
-    if(action==='signals'){
-      const sel=qs('#market .pmx-kind-filter');if(sel){sel.value='signal';sel.dispatchEvent(new Event('change',{bubbles:true}))}
-      setTimeout(()=>qs('#market .pm-node.kind-signal:not(.pmx-kind-hidden)')?.click(),40);return
-    }
-    if(action==='sources')window.refGo?.('sources')
-  }
+  function realSignalCount(){const d=getD(),arr=Array.isArray(d?.signals)?d.signals:[];return arr.length||qsa('#market .pm-node.kind-signal').length}
+  function measuredSourceCount(){const cut=Date.now()-periodDays()*864e5,set=new Set();getA().forEach(x=>{const t=timeOf(x);if(t!=null&&t<cut)return;const s=sourceOf(x);if(s)set.add(s)});return set.size}
+  function simplePack(){const p=cardDelta('perception'),t=cardDelta('trend'),rating=cardValue('rating'),rd=cardDelta('rating'),signals=realSignalCount();const fourth=!noValue(rating)?{label:'Средна оценка',value:rating,suffix:cardSuffix('rating'),delta:rd.text,cls:rd.cls,foot:'от наличните измерени рейтинги',action:'rating'}:{label:'Източници с данни',value:String(measuredSourceCount()),suffix:'',delta:'',cls:'',foot:`с измервания за ${periodDays()} дни`,action:'sources'};return[{label:'Общо възприятие',value:cardValue('perception'),suffix:cardSuffix('perception'),delta:p.text,cls:p.cls,foot:'обща картина от наличните измервания',action:'perception'},{label:'Промяна',value:cardValue('trend'),suffix:cardSuffix('trend'),delta:t.text,cls:t.cls,foot:'спрямо предходното измерване',action:'trend'},{label:'Наблюдавани сигнали',value:String(signals),suffix:'',delta:'',cls:'',foot:'потвърдени сигнали в профила',action:'signals'},fourth]}
+  function renderTop(){const host=qs('#market .pm-kpis');if(!host)return;let wrap=qs('.pms-kpis',host);if(!wrap){wrap=document.createElement('div');wrap.className='pms-kpis';host.appendChild(wrap)}const html=simplePack().map(x=>`<button type="button" class="pms-kpi" data-pms-action="${x.action}"><span class="pms-kpi-label">${esc(x.label)}</span><div class="pms-kpi-row"><strong class="pms-kpi-value">${esc(x.value)}${x.suffix?` <small>${esc(x.suffix)}</small>`:''}</strong>${x.delta?`<em class="pms-kpi-delta ${x.cls}">${esc(x.delta)}</em>`:''}</div><span class="pms-kpi-foot">${esc(x.foot)}</span></button>`).join('');if(wrap.dataset.html!==html){wrap.innerHTML=html;wrap.dataset.html=html}qsa('[data-pms-action]',wrap).forEach(b=>{if(b.dataset.bound)return;b.dataset.bound='1';b.onclick=()=>{const a=b.dataset.pmsAction;if(['perception','trend','rating'].includes(a))existingCard(a)?.click();else if(a==='signals'){const s=qs('#market .pmx-kind-filter');if(s){s.value='signal';s.dispatchEvent(new Event('change',{bubbles:true}))}setTimeout(()=>qs('#market .pm-node.kind-signal:not(.pmx-kind-hidden)')?.click(),40)}else window.refGo?.('sources')}})}
 
-  function simplifyInspector(){
-    const d=qs('#pmDrawer');if(!d)return;
-    const head=qs('.pmx-inspector-head b',d);if(head)head.textContent='Избран сигнал';
-    qsa('.pmx-signal-stat',d).forEach(x=>{const v=qs('b',x)?.textContent?.trim()||'';x.classList.toggle('pms-empty',!v||v==='—'||/няма сравнима/i.test(v))});
-    qsa('.pmx-section',d).forEach(sec=>{
-      const h=qs('h4',sec),title=h?.textContent?.trim()||'';
-      if(title==='Ключова тема')h.textContent='Какво се случва';
-      if(title==='Настроение')h.textContent='Как се възприема';
-      if(title==='Свързани подтеми')h.textContent='Свързани теми';
-      if(title==='Източници')h.textContent='Къде го виждаме';
-      if(title==='Примери за сигнали')h.textContent='Примери';
-      const hasRealSent=!!qs('.pmx-sentbar',sec);
-      const hasRelated=qsa('button',sec).length>0;
-      const hasSource=qsa('.pmx-source-row',sec).length>0;
-      const hasExample=qsa('.pmx-example',sec).length>0;
-      const emptyText=/^Няма /i.test(qs('p',sec)?.textContent?.trim()||'');
-      const hide=(title==='Настроение'&&!hasRealSent)||(title==='Свързани подтеми'&&!hasRelated)||(title==='Източници'&&!hasSource)||(title==='Примери за сигнали'&&!hasExample)||emptyText;
-      sec.classList.toggle('pms-hidden',hide)
-    });
-    const alert=qs('[data-pmx-alert]',d);if(alert){alert.textContent=alert.classList.contains('saved')?'✓ Следиш сигнала':'Следи сигнал'}
-    const analytics=qs('[data-pmx-analytics]',d);if(analytics)analytics.textContent='Виж свързания модул'
-  }
+  function captureInfo(){const d=qs('#pmDrawer'),node=qs('#market .pm-node.selected');if(!d||!node)return lastInfo;if(qs('.pms-live-panel',d))return lastInfo;const head=qs('.pm-drawer-head',d),grid=qsa('.pm-detail-grid>div',d);if(!head)return lastInfo;const grab=label=>{const x=grid.find(z=>(qs('span',z)?.textContent||'').trim().toLowerCase()===label.toLowerCase());return qs('b',x)?.textContent?.trim()||'—'};const sections=qsa('.pm-drawer-section',d),desc=sections.map(x=>qs('p',x)?.textContent?.trim()).find(Boolean)||'Проверим сигнал от текущата информационна среда.';const related=qsa('[data-related]',d).map(x=>({id:x.dataset.related,title:x.textContent.trim()}));lastNodeId=node.dataset.node||'';lastInfo={id:lastNodeId,cat:node.dataset.cat||'content',title:qs('h3',head)?.textContent?.trim()||qs('b',node)?.textContent?.trim()||'Избран сигнал',source:qs('small',head)?.textContent?.trim()||node.dataset.src||'Източник',value:grab('Стойност'),change:grab('Промяна'),period:grab('Период'),description:desc,related};return lastInfo}
+  function normalizedWidth(v){const n=num(v);if(n==null)return 38;if(String(v).includes('/5'))return Math.max(4,Math.min(100,n*20));if(String(v).includes('/100'))return Math.max(4,Math.min(100,n));if(n>=0&&n<=100)return Math.max(4,n);return Math.min(100,28+Math.log10(Math.max(1,n))*15)}
+  function latestUpdate(){const d=getD(),t=timeOf({time:d?.data_updated||d?.updated_at});if(t)return t;const rows=getA().map(x=>({x,t:timeOf(x)})).filter(r=>r.t).sort((a,b)=>b.t-a.t);return rows[0]?.t||null}
+  function relatedSources(info){const names=new Set([info.source]);info.related.forEach(r=>{const n=qs(`#market .pm-node[data-node="${CSS.escape(r.id)}"]`);if(n?.dataset.src)names.add(n.dataset.src)});return[...names].filter(Boolean).slice(0,5)}
+  function catLabel(cat){return({search:'Търсене',social:'Социални сигнали',reviews:'Отзиви',content:'Съдържание',behavior:'Поведение'})[cat]||'Сигнал'}
+  function renderInspector(){const d=qs('#pmDrawer');if(!d)return;const info=captureInfo();if(!info)return;const sources=relatedSources(info),upd=latestUpdate(),changeCls=/^\+|↑/.test(info.change)?'up':/^-|↓/.test(info.change)?'down':'';const saved=(()=>{try{return localStorage.getItem(`blis-watch:${document.body.dataset.client||'client'}:${info.id}`)==='1'}catch(_){return false}})();d.innerHTML=`<div class="pms-live-panel"><div class="pms-live-head"><b>Избран сигнал</b><span class="pms-live-chip"><i></i>LIVE VIEW</span></div><div class="pms-live-body"><div class="pms-signal-top"><span class="pms-signal-icon">◎</span><div><small>${esc(catLabel(info.cat))}</small><h3>${esc(info.title)}</h3><p>${esc(info.source)}</p></div></div><div class="pms-signal-value"><span class="pms-value-label">Текущо измерване</span><div class="pms-value-row"><strong>${esc(info.value)}</strong>${info.change&&info.change!=='—'?`<em class="${changeCls}">${esc(info.change)}</em>`:''}</div><div class="pms-meter"><i style="width:${normalizedWidth(info.value)}%"></i></div><div class="pms-value-foot"><span>${esc(info.period||'Текущ период')}</span><span>обновено ${esc(relTime(upd))}</span></div></div><div class="pms-facts"><div class="pms-fact"><span>Свързани теми</span><b>${info.related.length}</b></div><div class="pms-fact"><span>Източници</span><b>${sources.length}</b></div><div class="pms-fact"><span>Последно обновяване</span><b>${esc(relTime(upd))}</b></div></div><section class="pms-section"><h4>Какво се случва</h4><p>${esc(info.description)}</p></section>${sources.length?`<section class="pms-section"><h4>Къде го виждаме</h4><div class="pms-source-chips">${sources.map(x=>`<span class="pms-source-chip">${esc(x)}</span>`).join('')}</div></section>`:''}${info.related.length?`<section class="pms-section"><h4>Свързани теми</h4><div class="pms-related">${info.related.slice(0,6).map(r=>`<button type="button" data-pms-related="${esc(r.id)}">${esc(r.title)}</button>`).join('')}</div></section>`:''}<div class="pms-actions"><button type="button" data-pms-watch class="${saved?'saved':''}">${saved?'✓ Следиш сигнала':'Следи сигнал'}</button><button type="button" class="primary" data-pms-module>Виж свързания модул</button></div></div></div>`;qsa('[data-pms-related]',d).forEach(b=>b.onclick=()=>qs(`#market .pm-node[data-node="${CSS.escape(b.dataset.pmsRelated)}"]`)?.click());qs('[data-pms-watch]',d)?.addEventListener('click',e=>{let on=false;try{const k=`blis-watch:${document.body.dataset.client||'client'}:${info.id}`;on=localStorage.getItem(k)!=='1';localStorage.setItem(k,on?'1':'0')}catch(_){}e.currentTarget.classList.toggle('saved',on);e.currentTarget.textContent=on?'✓ Следиш сигнала':'Следи сигнал'});qs('[data-pms-module]',d)?.addEventListener('click',()=>window.refGo?.(info.cat==='reviews'?'reputation':info.cat==='social'?'social':info.cat==='search'||info.cat==='behavior'?'digital':'sources'))}
 
-  function simplifyLower(){
-    const host=qs('#market .pm-lower');if(!host)return;
-    const cards=qsa(':scope > .pmx-lower-card',host);if(!cards.length)return;
-    cards.forEach((c,i)=>c.classList.toggle('pms-hidden',i>1));
-    if(cards[0]){
-      const h=qs('h3',cards[0]);if(h)h.textContent='Как се променя възприятието';
-      cards[0].classList.toggle('pms-hidden',!!qs('.pmx-chart-empty',cards[0]))
-    }
-    if(cards[1]){
-      const h=qs('h3',cards[1]);if(h)h.textContent='Какво се промени най-много';
-      cards[1].classList.toggle('pms-hidden',qsa('.pmx-change-row',cards[1]).length===0)
-    }
-    const visible=cards.slice(0,2).filter(c=>!c.classList.contains('pms-hidden')).length;
-    host.classList.toggle('pms-empty',visible===0);host.classList.toggle('pms-one',visible===1)
-  }
+  function indexValue(payload,keys){const arr=Array.isArray(payload?.indices)?payload.indices:[];for(const k of keys){const hit=arr.find(x=>String(x.key||'').toLowerCase()===k),v=Number(hit?.value);if(Number.isFinite(v))return v}return null}
+  function composite(payload){const parts=[[indexValue(payload,['reputation','experience','product']),.30],[indexValue(payload,['interest','content']),.25],[indexValue(payload,['digital']),.25],[indexValue(payload,['presence','info']),.20]].filter(x=>x[0]!=null&&x[0]>0),sw=parts.reduce((a,x)=>a+x[1],0);return sw?parts.reduce((a,x)=>a+x[0]*x[1],0)/sw:null}
+  function perceptionSeries(){const cut=Date.now()-periodDays()*864e5,by=new Map();getH().forEach(row=>{const t=timeOf(row),v=composite(row?.payload||row);if(!t||t<cut||v==null)return;const day=new Date(t).toISOString().slice(0,10),prev=by.get(day);if(!prev||t>prev.t)by.set(day,{t,v})});return[...by.values()].sort((a,b)=>a.t-b.t)}
+  function chart(series){if(series.length<2)return'<div class="pms-chart-empty">Графиката ще се появи след поне две сравними измервания.</div>';const w=640,h=138,l=8,r=8,t=8,b=20,vals=series.map(x=>x.v),mn=Math.min(...vals),mx=Math.max(...vals),pad=Math.max((mx-mn)*.22,1),min=mn-pad,max=mx+pad,span=max-min||1,minT=series[0].t,maxT=series.at(-1).t,tr=Math.max(1,maxT-minT),X=x=>l+(w-l-r)*(x.t-minT)/tr,Y=v=>t+(h-t-b)*(1-(v-min)/span),line=series.map((x,i)=>`${i?'L':'M'}${X(x).toFixed(1)} ${Y(x.v).toFixed(1)}`).join(' '),area=`${line} L${X(series.at(-1)).toFixed(1)} ${h-b} L${X(series[0]).toFixed(1)} ${h-b} Z`;return`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="pmsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1766e8" stop-opacity=".20"/><stop offset="1" stop-color="#1766e8" stop-opacity=".015"/></linearGradient></defs><line class="grid" x1="${l}" y1="${t+25}" x2="${w-r}" y2="${t+25}"/><line class="grid" x1="${l}" y1="${t+65}" x2="${w-r}" y2="${t+65}"/><line class="grid" x1="${l}" y1="${h-b}" x2="${w-r}" y2="${h-b}"/><path class="area" d="${area}"/><path class="line" d="${line}"/>${series.map(x=>`<circle cx="${X(x)}" cy="${Y(x.v)}" r="2.7"><title>${new Date(x.t).toLocaleDateString('bg-BG')} · ${fmt(x.v,1)}</title></circle>`).join('')}<text x="${l}" y="${h-3}">${new Date(minT).toLocaleDateString('bg-BG',{day:'2-digit',month:'2-digit'})}</text><text x="${w-r}" y="${h-3}" text-anchor="end">${new Date(maxT).toLocaleDateString('bg-BG',{day:'2-digit',month:'2-digit'})}</text></svg>`}
+  function latestRows(){const cut=Date.now()-periodDays()*864e5;return getA().map(x=>({x,t:timeOf(x)})).filter(r=>r.t&&r.t>=cut).sort((a,b)=>b.t-a.t).slice(0,6)}
+  function renderLower(){const host=qs('#market .pm-lower');if(!host)return;const series=perceptionSeries(),current=series.at(-1)?.v??num(cardValue('perception')),delta=series.length>1?series.at(-1).v-series.at(-2).v:null,rows=latestRows(),today=rows.filter(r=>new Date(r.t).toDateString()===new Date().toDateString()).length,sources=new Set(rows.map(r=>sourceOf(r.x)).filter(Boolean)).size;host.innerHTML=`<section class="pm-card pms-bottom-card"><div class="pms-bottom-head"><div><h3>Движение на възприятието</h3><p>Как се променя общата картина през избрания период</p></div><span class="pms-bottom-live"><i></i>актуални данни</span></div><div class="pms-trend-top"><div class="pms-trend-number"><strong>${current==null?'—':fmt(current,1)}</strong><span>/100</span></div>${delta==null?'':`<div class="pms-trend-change ${delta>0?'up':delta<0?'down':''}">${delta>0?'↑':delta<0?'↓':'→'} ${fmt(Math.abs(delta),1)} т.</div>`}</div><div class="pms-chart">${chart(series)}</div></section><section class="pm-card pms-bottom-card"><div class="pms-bottom-head"><div><h3>Последни измервания</h3><p>Най-новите данни, постъпили в текущия профил</p></div><span class="pms-bottom-live"><i></i>LIVE</span></div><div class="pms-stream">${rows.length?rows.map(({x,t})=>`<div class="pms-stream-row"><i class="pms-stream-dot"></i><div class="pms-stream-copy"><b>${esc(metricName(x.metric))}</b><small>${esc(sourceName(sourceOf(x)))}</small></div><div class="pms-stream-value"><b>${esc(valueText(x))}</b><small>${esc(relTime(t))}</small></div></div>`).join(''):'<div class="pms-chart-empty">Няма нови измервания за избрания период.</div>'}</div>${rows.length?`<div class="pms-stream-foot"><span>${today} измервания днес</span><span>${sources} активни източника в потока</span></div>`:''}</section>`}
 
-  function simplifyCopy(){
-    const h=qs('#market .pm-hero h2'),p=qs('#market .pm-hero p');
-    if(h)h.textContent='Карта на възприятието';
-    if(p)p.textContent='Избери елемент от глобуса, за да видиш какво показва, откъде идва и как се променя.'
-  }
-  function apply(){if(!marketActive())return;ensureStyles();renderTop();simplifyInspector();simplifyLower();simplifyCopy()}
+  function simplifyCopy(){const h=qs('#market .pm-hero h2'),p=qs('#market .pm-hero p');if(h)h.textContent='Карта на възприятието';if(p)p.textContent='Избери елемент от глобуса, за да видиш какво показва, откъде идва и как се променя.'}
+  function apply(){if(!marketActive())return;ensureStyles();renderTop();captureInfo();renderInspector();renderLower();simplifyCopy()}
   function schedule(delay=0){clearTimeout(scheduled);scheduled=setTimeout(()=>requestAnimationFrame(apply),delay)}
-  function install(){ensureStyles();schedule(0);const root=qs('#marketBody');if(root)new MutationObserver(()=>schedule(40)).observe(root,{childList:true,subtree:true,characterData:true})}
-
-  document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page="market"],#market .pm-node,#market [data-pmx-kpi]'))schedule(60)},true);
-  document.addEventListener('change',e=>{if(e.target.matches?.('#market select,#clientSel'))schedule(100)},true);
-  window.addEventListener('blis:clientdata',()=>schedule(120));
-  window.addEventListener('blis:periodchange',()=>schedule(80));
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-  window.addEventListener('load',()=>schedule(100),{once:true});
+  function install(){ensureStyles();schedule(0);const root=qs('#marketBody');if(root)new MutationObserver(()=>schedule(60)).observe(root,{childList:true,subtree:true,characterData:true});clearInterval(ticker);ticker=setInterval(()=>{if(marketActive()){renderTop();renderInspector();renderLower()}},5000)}
+  document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page="market"],#market .pm-node,#market [data-pmx-kpi]')){const n=e.target.closest?.('#market .pm-node');if(n&&n.dataset.node!==lastNodeId)lastInfo=null;schedule(80)}},true);
+  document.addEventListener('change',e=>{if(e.target.matches?.('#market select,#clientSel')){lastInfo=null;schedule(120)}},true);
+  window.addEventListener('blis:clientdata',()=>{lastInfo=null;schedule(140)});window.addEventListener('blis:periodchange',()=>schedule(100));
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();window.addEventListener('load',()=>schedule(120),{once:true});
 })();
