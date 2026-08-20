@@ -119,6 +119,7 @@
   document.addEventListener('pointerup',()=>{dragging=false;document.querySelector('.pm-stage.network')?.classList.remove('pm-globe-dragging')});
   document.addEventListener('pointercancel',()=>{dragging=false;document.querySelector('.pm-stage.network')?.classList.remove('pm-globe-dragging')});
 
+  attachCoreHooks();
   [0,150,400,800,1400,2400].forEach(ms=>setTimeout(()=>{attachCoreHooks();schedule()},ms));
   window.BLISPerceptionGlobe={apply:schedule,reset(){rotX=-7;rotY=14;schedule()}};
 })();
