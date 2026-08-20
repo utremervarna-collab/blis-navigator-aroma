@@ -1,0 +1,114 @@
+/* BLIS Navigator — Perception premium v9
+   Reference-led page polish: lighter dashboard, stronger hierarchy, globe depth,
+   line fading inside the sphere, and protected node labels. */
+
+#market.page{--pm-panel:#ffffff;--pm-border:#e7edf4;--pm-ink:#111827;--pm-muted:#667085;--pm-subtle:#98a2b3;--pm-blue:var(--client-accent,#1677ff)}
+#market .pm-wrap{padding:0 0 34px!important}
+#market .pm-hero{margin:2px 0 12px!important;align-items:center!important}
+#market .pm-hero h2{font-size:22px!important;font-weight:760!important;letter-spacing:-.025em!important;margin-bottom:3px!important}
+#market .pm-hero p{font-size:12px!important;color:#667085!important;max-width:760px!important}
+#market .pm-client-badge{display:none!important}
+
+/* KPI strip — closer to the reference: compact, consistent, calm. */
+#market .pm-kpis{gap:9px!important;margin-bottom:12px!important}
+#market .pm-kpi{min-height:94px!important;padding:11px 12px 10px!important;border-radius:12px!important;border-color:#e4eaf2!important;box-shadow:0 1px 2px rgba(16,24,40,.018)!important;transform:none!important}
+#market .pm-kpi:hover,#market .pm-kpi.active{border-color:color-mix(in srgb,var(--pm-blue) 30%,#dce4ef)!important;box-shadow:0 7px 18px rgba(16,24,40,.045)!important;transform:none!important}
+#market .pm-kpi-label{font-size:10px!important;color:#667085!important;font-weight:700!important}
+#market .pm-kpi-value{font-size:24px!important;margin:5px 0 2px!important;letter-spacing:-.035em!important}
+#market .pm-kpi-delta{font-size:9px!important;margin:0!important}
+#market .pm-kpi-note{display:none!important}
+#market .pm-focusbar{display:none!important}
+
+/* Main composition */
+#market .pm-main{grid-template-columns:minmax(0,1fr) 318px!important;gap:12px!important}
+#market .pm-card{border-color:#e5ebf3!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.015)!important}
+#market .pm-mapcard{min-height:646px!important;overflow:hidden!important}
+#market .pm-maphead{padding:13px 15px!important;background:#fff!important}
+#market .pm-maphead b{font-size:0!important}
+#market .pm-maphead b:before{content:'Интерактивна карта на възприятията';font-size:16px!important;font-weight:760!important;letter-spacing:-.015em!important;color:#111827}
+#market .pm-maphead b:after{content:'  ● В РЕАЛНО ВРЕМЕ';font-size:8px!important;font-weight:800!important;letter-spacing:.04em!important;color:#11845b;margin-left:9px;vertical-align:2px}
+#market .pm-maphead small{font-size:10px!important;color:#98a2b3!important}
+#market .pm-expand{border-color:#e0e6ef!important;border-radius:8px!important;background:#fff!important}
+
+#market .pm-toolbar{padding:9px 11px!important;background:#fbfcfe!important;border-bottom-color:#e9eef5!important;align-items:center!important}
+#market .pm-filterbar{gap:6px!important}
+#market .pm-filterbar label{font-size:8.5px!important;color:#98a2b3!important;gap:2px!important}
+#market .pm-filterbar select,#market .pm-zoom{height:30px!important;border-radius:8px!important;border-color:#dfe6ef!important;background:#fff!important;font-size:10px!important}
+#market .pm-tools{gap:5px!important}
+
+/* Globe scene */
+#market .pm-stage.network.pm-globe-v3{height:548px!important;background:
+  radial-gradient(ellipse at 50% 48%,rgba(227,240,255,.65) 0,rgba(246,250,255,.72) 34%,rgba(255,255,255,.97) 70%,#fff 100%)!important;
+  overflow:hidden!important;isolation:isolate!important}
+#market .pm-stage.network.pm-globe-v3:before{opacity:.035!important;background:linear-gradient(#e8eef6 1px,transparent 1px)!important;background-size:100% 20%!important}
+#market .pm-stage.network.pm-globe-v3:after{content:'ПЛЪЗНИ, ЗА ДА ЗАВЪРТИШ'!important;right:15px!important;bottom:11px!important;color:#98a2b3!important;font-size:8px!important;letter-spacing:.08em!important}
+#market .pm-stage.network.pm-globe-v3 .pm-canvas{transform-origin:50% 50%!important}
+
+/* Sphere volume: brighter front rim, restrained rear depth. */
+#market .pm-globe-shell-v3{width:69%!important;height:86%!important;border:1px solid rgba(90,151,216,.26)!important;background:
+  radial-gradient(circle at 34% 27%,rgba(255,255,255,.99) 0,rgba(242,249,255,.92) 28%,rgba(220,237,253,.46) 55%,rgba(194,220,245,.16) 72%,rgba(255,255,255,.02) 83%)!important;
+  box-shadow:inset -40px -30px 78px rgba(35,83,128,.075),inset 20px 14px 44px rgba(255,255,255,.86),0 22px 58px rgba(37,99,160,.055)!important;overflow:hidden!important}
+#market .pm-globe-shell-v3:before{content:'';position:absolute;inset:2.5%;border-radius:50%;border:1px solid rgba(74,139,207,.11);box-shadow:inset 20px 0 34px rgba(255,255,255,.5),inset -24px 0 46px rgba(74,126,181,.035);pointer-events:none}
+#market .pm-globe-shell-v3:after{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(90deg,rgba(255,255,255,.38),transparent 35%,transparent 63%,rgba(104,157,209,.045));pointer-events:none}
+#market .pm-globe-shell-v3 .meridian,#market .pm-globe-shell-v3 .parallel{border-color:rgba(75,137,202,.12)!important;border-width:1px!important}
+#market .pm-globe-shell-v3 .m1,#market .pm-globe-shell-v3 .p1{opacity:.72!important}
+#market .pm-globe-shell-v3 .m2,#market .pm-globe-shell-v3 .p2{opacity:.56!important}
+#market .pm-globe-shell-v3 .m3,#market .pm-globe-shell-v3 .p3{opacity:.42!important}
+
+/* The network lives inside the sphere: center fades, edges remain readable. */
+#market .pm-stage.network.pm-globe-v3 .pm-links{
+  z-index:2!important;
+  -webkit-mask-image:radial-gradient(ellipse 48% 58% at 50% 50%,rgba(0,0,0,.16) 0%,rgba(0,0,0,.30) 28%,rgba(0,0,0,.60) 52%,rgba(0,0,0,.92) 76%,#000 100%)!important;
+  mask-image:radial-gradient(ellipse 48% 58% at 50% 50%,rgba(0,0,0,.16) 0%,rgba(0,0,0,.30) 28%,rgba(0,0,0,.60) 52%,rgba(0,0,0,.92) 76%,#000 100%)!important;
+}
+#market .pm-stage.network.pm-globe-v3 .pm-link{stroke:#a8bad0!important;stroke-width:1.05!important}
+#market .pm-stage.network.pm-globe-v3 .pm-link.hot{stroke:var(--pm-blue)!important;stroke-width:1.65!important;opacity:.72!important;filter:none!important}
+
+/* Cards float over the sphere. Opaque body + halo prevents lines crossing labels. */
+#market .pm-stage.network.pm-globe-v3 .pm-node{min-width:126px!important;max-width:170px!important;border-radius:13px!important;padding:9px 11px 9px!important;background:#fff!important;border:1px solid #dfe7f0!important;box-shadow:0 0 0 7px rgba(255,255,255,.88),0 8px 22px rgba(16,24,40,.075)!important;overflow:visible!important}
+#market .pm-stage.network.pm-globe-v3 .pm-node b{font-size:10.5px!important;line-height:1.2!important;color:#1d2939!important}
+#market .pm-stage.network.pm-globe-v3 .pm-node small{font-size:9px!important;color:#667085!important;margin-top:3px!important}
+#market .pm-stage.network.pm-globe-v3 .pm-node.globe-back{filter:saturate(.68) blur(.08px)!important}
+#market .pm-stage.network.pm-globe-v3 .pm-node.globe-front{filter:none!important}
+#market .pm-stage.network.pm-globe-v3 .pm-node.selected{border-color:var(--pm-blue)!important;box-shadow:0 0 0 7px rgba(255,255,255,.95),0 0 0 9px color-mix(in srgb,var(--pm-blue) 11%,transparent),0 14px 32px rgba(16,24,40,.11)!important}
+#market .pm-stage.network.pm-globe-v3.pm-globe-drag .pm-node{transition:none!important}
+#market .pm-stage.network.pm-globe-v3.pm-globe-drag .pm-link{transition:none!important}
+
+/* Drawer closer to the reference */
+#market .pm-drawer{min-height:646px!important;padding:16px!important;background:#fff!important}
+#market .pm-drawer-head{padding-bottom:12px!important}
+#market .pm-drawer h3{font-size:16px!important;letter-spacing:-.015em!important}
+#market .pm-category{font-size:8.5px!important}
+#market .pm-detail-grid{gap:7px!important;margin-top:12px!important}
+#market .pm-detail-grid>div{padding:9px!important;background:#f8fafc!important;border:1px solid #f0f3f7!important}
+#market .pm-drawer-section{margin-top:14px!important}
+#market .pm-related button{background:#fff!important;border-color:#e1e7ef!important}
+#market .pm-actions{margin-top:16px!important}
+#market .pm-action{border-radius:9px!important;background:#fff!important}
+
+/* Bottom analytic strip */
+#market .pm-lower{grid-template-columns:1.35fr .96fr 1fr!important;gap:10px!important;margin-top:10px!important}
+#market .pm-lower .pm-card{padding:13px!important;min-height:158px!important}
+#market .pm-lower h3{font-size:13px!important;margin-bottom:7px!important}
+#market .pm-change{padding:7px 0!important}
+#market .pm-theme-cloud{gap:5px!important}
+#market .pm-theme-cloud button{padding:5px 8px!important;background:#fafbfd!important;border-radius:8px!important;font-size:9.5px!important}
+
+/* Full screen keeps the same visual language. */
+#market .pm-mapcard:fullscreen{padding:0!important;background:#fff!important}
+#market .pm-mapcard:fullscreen .pm-stage.network.pm-globe-v3{height:calc(100vh - 102px)!important}
+
+@media (max-width:1180px){
+  #market .pm-kpis{grid-template-columns:repeat(3,1fr)!important}
+  #market .pm-main{grid-template-columns:1fr!important}
+  #market .pm-drawer{min-height:auto!important;max-height:none!important}
+  #market .pm-lower{grid-template-columns:1fr!important}
+}
+@media (max-width:760px){
+  #market .pm-kpis{grid-template-columns:repeat(2,1fr)!important}
+  #market .pm-maphead{align-items:flex-start!important}
+  #market .pm-toolbar{align-items:flex-start!important;flex-direction:column!important}
+  #market .pm-stage.network.pm-globe-v3{height:510px!important}
+  #market .pm-globe-shell-v3{width:86%!important;height:72%!important}
+  #market .pm-stage.network.pm-globe-v3 .pm-node{min-width:108px!important;max-width:132px!important;padding:7px 9px!important}
+}
