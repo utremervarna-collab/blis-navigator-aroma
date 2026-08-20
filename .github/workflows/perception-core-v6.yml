@@ -1,11 +1,11 @@
 name: Perception Core v6 Integration
 
 on:
-  push:
-    branches: [perception-core-v6]
+  pull_request:
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   integrate-and-test:
@@ -13,8 +13,6 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: perception-core-v6
 
       - uses: actions/setup-go@v5
         with:
@@ -81,19 +79,19 @@ jobs:
             if(!r.stage.includes('network')||!r.stage.includes('pm-globe-active')) throw new Error('3D network not active');
             if(r.shell<1||r.projected<2) throw new Error('sphere not visibly projected');
             if(errors.length) throw new Error('JS errors: '+errors.join(' | '));
-            await page.screenshot({path:'/tmp/core-v6-network.png',fullPage:true});
+            await page.screenshot({path:'core-v6-network.png',fullPage:true});
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node ./diag-core-v6.cjs
 
-      - name: Commit verified integrated core
-        run: |
-          set -euxo pipefail
-          git config user.name 'BLIS Navigator Bot'
-          git config user.email 'utremervarna@gmail.com'
-          git add static/navigator-perception-core-v6.js static/dashboard.html
-          if ! git diff --cached --quiet; then
-            git commit -m 'Integrate 3D network directly into Perception core v6'
-            git push origin HEAD:perception-core-v6
-          fi
+      - name: Upload verified files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-core-v6-verified
+          path: |
+            static/navigator-perception-core-v6.js
+            static/dashboard.html
+            core-v6-network.png
+            /tmp/blis.log
