@@ -52,9 +52,19 @@
     w.__attitudesTerminology=true;w.__base=fn;window[name]=w;
   };
 
+  function loadLiveEnhancement(){
+    if(document.getElementById('blisAttitudesLiveScript'))return;
+    const s=document.createElement('script');
+    s.id='blisAttitudesLiveScript';
+    s.src='/navigator-attitudes-live.js?v=20260820-live1';
+    s.async=false;
+    document.head.appendChild(s);
+  }
+
   function install(){
     wrap('refGo');wrap('go');wrap('renderAll');
     apply(document.body);
+    loadLiveEnhancement();
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
