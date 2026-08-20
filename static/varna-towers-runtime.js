@@ -20,6 +20,12 @@
       wx.open('GET','/wirello-navigator-runtime.js?v=20260820-real2',false);
       wx.send(null);
       if(wx.status>=200&&wx.status<300)(0,eval)(wx.responseText||'');
+
+      /* Use the final user-approved Wirello Market image in the REAL Navigator header. */
+      const wh=document.createElement('script');
+      wh.src='/wirello-header-runtime.js?v=20260820-final2';
+      wh.async=false;
+      document.head.appendChild(wh);
     }
   }catch(e){console.warn('Wirello bootstrap:',e)}
 
