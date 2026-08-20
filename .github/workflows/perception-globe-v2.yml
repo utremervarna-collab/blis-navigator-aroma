@@ -1,0 +1,100 @@
+name: Perception Globe v2 Visual Test
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  globe-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: perception-globe-v2
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - name: Build integrated core v7
+        run: |
+          set -euxo pipefail
+          cat static/navigator-perception-core-v6.js static/navigator-perception-globe-v2.js > static/navigator-perception-core-v7.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('static/dashboard.html')
+          s=p.read_text()
+          s=s.replace('<script src="/navigator-perception-core-v6.js?v=20260820-coreglobe1"></script>','<script src="/navigator-perception-core-v7.js?v=20260820-globevisual1"></script>')
+          p.write_text(s)
+          PY
+          node --check static/navigator-perception-core-v7.js
+          grep -q 'navigator-perception-core-v7.js?v=20260820-globevisual1' static/dashboard.html
+
+      - name: Build and start Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+
+      - name: Install browser test dependency
+        run: npm install --no-save playwright-core@1.55.0
+
+      - name: Verify visible globe in Chrome
+        run: |
+          cat > ./diag-globe-v2.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(3000);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-wrap');
+            await page.locator('#market [data-view="network"]').click();
+            await page.waitForTimeout(2200);
+            const r=await page.evaluate(()=>({
+              core:[...document.scripts].some(s=>s.src.includes('navigator-perception-core-v7.js')),
+              stage:document.querySelector('#market .pm-stage')?.className||'',
+              sphere:document.querySelectorAll('#market .pm-globe-shell-v2').length,
+              grid:document.querySelectorAll('#market .pm-globe-grid-v3').length,
+              badge:document.querySelectorAll('#market .pm-globe-badge-v3').length,
+              projected:[...document.querySelectorAll('#market .pm-node')].filter(n=>n.dataset.gx).length,
+              front:document.querySelectorAll('#market .pm-node.globe-front').length,
+              back:document.querySelectorAll('#market .pm-node.globe-back').length
+            }));
+            console.log(JSON.stringify(r,null,2));
+            if(!r.core||!r.stage.includes('pm-globe-active')||r.sphere<1||r.grid<1||r.badge<1||r.projected<2) throw new Error('Enhanced 3D globe not visible');
+            await page.screenshot({path:'globe-v2-network.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node ./diag-globe-v2.cjs
+
+      - name: Commit browser-verified files
+        run: |
+          set -euxo pipefail
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'utremervarna@gmail.com'
+          git add static/navigator-perception-core-v7.js static/dashboard.html
+          if ! git diff --cached --quiet; then
+            git commit -m 'Render Perception network as explicit 3D globe'
+            git push origin HEAD:perception-globe-v2
+          fi
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-globe-v2
+          path: |
+            globe-v2-network.png
+            static/navigator-perception-core-v7.js
+            static/dashboard.html
