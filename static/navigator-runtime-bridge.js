@@ -59,7 +59,7 @@
     if(document.getElementById('blisPerceptionSimpleV1'))return;
     const s=document.createElement('script');
     s.id='blisPerceptionSimpleV1';
-    s.src='/navigator-perception-simple-v1.js?v=20260820-simple1';
+    s.src='/navigator-perception-simple-v1.js?v=20260820-live2';
     s.defer=true;
     document.head.appendChild(s);
   }
