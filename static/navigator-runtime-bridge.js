@@ -60,13 +60,13 @@
       const l=document.createElement('link');
       l.id='blisPerceptionStableCSS';
       l.rel='stylesheet';
-      l.href='/navigator-perception-stable.css?v=20260820-stable1';
+      l.href='/navigator-perception-stable.css?v=20260820-stable3';
       document.head.appendChild(l);
     }
     if(!document.getElementById('blisPerceptionStableJS')){
       const s=document.createElement('script');
       s.id='blisPerceptionStableJS';
-      s.src='/navigator-perception-stable.js?v=20260820-stable1';
+      s.src='/navigator-perception-stable.js?v=20260820-stable3';
       s.defer=true;
       document.head.appendChild(s);
     }
