@@ -1,35 +1,36 @@
-/* BLIS Navigator — pre-app client bootstrap + Varna Towers runtime. */
+/* BLIS Navigator — pre-app client bootstrap + isolated client runtimes. */
 (function(){
   'use strict';
 
-  /* Wirello must exist in the normal client selector for every Navigator client. */
-  try{
-    const lx=new XMLHttpRequest();
-    lx.open('GET','/wirello-client-list-runtime.js?v=20260820-real2',false);
-    lx.send(null);
-    if(lx.status>=200&&lx.status<300)(0,eval)(lx.responseText||'');
-  }catch(e){console.warn('Wirello client-list bootstrap:',e)}
+  const q=(()=>{try{return new URLSearchParams(location.search).get('client')||''}catch(e){return''}})();
 
-  /* When Wirello is selected, install its full synthetic data layer BEFORE app.js. */
-  try{
-    const q=new URLSearchParams(location.search).get('client');
-    if(q==='wirello'){
-      window.BLIS_INITIAL_CLIENT='wirello';
-      document.body.dataset.client='wirello';
-      const wx=new XMLHttpRequest();
-      wx.open('GET','/wirello-navigator-runtime.js?v=20260820-real2',false);
-      wx.send(null);
-      if(wx.status>=200&&wx.status<300)(0,eval)(wx.responseText||'');
-
-      /* Use the final user-approved Wirello Market image in the REAL Navigator header. */
-      const wh=document.createElement('script');
-      wh.src='/wirello-header-runtime.js?v=20260820-final2';
-      wh.async=false;
-      document.head.appendChild(wh);
+  function parserScript(src){
+    if(typeof document==='undefined')return;
+    if(document.readyState==='loading'){
+      document.write('<script src="'+src.replace(/"/g,'&quot;')+'"><\/script>');
+      return;
     }
-  }catch(e){console.warn('Wirello bootstrap:',e)}
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=false;
+    document.head.appendChild(s);
+  }
 
-  /* Preserve the isolated Varna Towers data runtime, but do not execute its obsolete ticker override. */
+  /* Wirello is a first-class Navigator demo client. Load it as normal scripts,
+     not through eval, so CSP/browser security cannot drop the synthetic data layer. */
+  parserScript('/wirello-client-list-runtime.js?v=20260820-datafix1');
+
+  if(q==='wirello'){
+    window.BLIS_INITIAL_CLIENT='wirello';
+    if(document.body)document.body.dataset.client='wirello';
+    parserScript('/wirello-navigator-runtime.js?v=20260820-datafix1');
+    parserScript('/wirello-header-runtime.js?v=20260820-datafix1');
+
+    /* Wirello must stay isolated from Varna Towers bootstrap/ticker overrides. */
+    return;
+  }
+
+  /* Preserve the isolated Varna Towers data runtime for non-Wirello clients. */
   try{
     const xhr=new XMLHttpRequest();
     xhr.open('GET','/varna-towers-data-v18.js?v=20260819-1329',false);
@@ -45,7 +46,6 @@
 
   if(typeof document==='undefined')return;
 
-  /* One canonical delta resolver: last actual measured movement, skipping duplicate snapshots. */
   const s=document.createElement('script');
   s.src='/home-live-last-change-v20.js?v=20260819-1347';
   s.async=true;
