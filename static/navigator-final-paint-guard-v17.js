@@ -7,7 +7,7 @@ function css(){if($('#blisPaintGuardV17CSS'))return;const s=document.createEleme
 #reputationBody:not(.blis-v17-ready),#marketBody:not(.blis-v17-ready),#competitionBody:not(.blis-v17-ready){visibility:hidden!important;opacity:0!important}
 #reputationBody.blis-v17-ready,#marketBody.blis-v17-ready,#competitionBody.blis-v17-ready{visibility:visible!important;opacity:1!important;transition:opacity .12s ease!important}
 
-/* Competition — stable period signals with a static visual only. */
+/* Competition — period signals with a static 3D flow visual. */
 #competition #competitionBody .cmp-static-signals{padding-bottom:18px!important}
 #competition #competitionBody .cmp-static-signals>h3{font-size:0!important;margin-bottom:12px!important;color:#18362f!important}
 #competition #competitionBody .cmp-static-signals>h3:after{content:'Сигнали за периода';font-size:17px!important;line-height:1.2!important;letter-spacing:-.015em!important;color:#18362f!important}
@@ -15,17 +15,15 @@ function css(){if($('#blisPaintGuardV17CSS'))return;const s=document.createEleme
 #competition #competitionBody .cmp-static-signals .cmpv11-flowmetric{padding:13px 14px!important}
 #competition #competitionBody .cmp-static-signals .cmpv11-flowmetric span{font-size:10px!important;line-height:1.35!important;margin-bottom:5px!important}
 #competition #competitionBody .cmp-static-signals .cmpv11-flowmetric b{font-size:19px!important;line-height:1.15!important}
-#competition #competitionBody .cmp-static-signals .cmpv11-flowbox{display:block!important;height:86px!important;margin:4px 0 0!important;padding:10px 11px!important;border:1px solid #dfe9e5!important;border-radius:12px!important;background:linear-gradient(180deg,#fbfefd,#f5faf7)!important;overflow:hidden!important;box-shadow:none!important}
+#competition #competitionBody .cmp-static-signals .cmpv11-flowbox{display:block!important;height:128px!important;margin:4px 0 0!important;padding:0!important;border:1px solid #dfe9e5!important;border-radius:16px!important;background:#f8fbfa url('/competition-signals-flow.svg?v=20260822') center center/cover no-repeat!important;overflow:hidden!important;box-shadow:0 8px 24px rgba(22,74,89,.06)!important}
 #competition #competitionBody .cmp-static-signals .cmpv11-flowwave,
-#competition #competitionBody .cmp-static-signals .blis-flow-river{display:block!important;width:100%!important;height:100%!important;overflow:hidden!important}
-#competition #competitionBody .cmp-static-signals .cmpv11-wave-base{stroke:#cadbd5!important;stroke-width:6!important;opacity:.38!important}
-#competition #competitionBody .cmp-static-signals .cmpv11-wave-live{stroke:#16a36a!important;stroke-width:3.5!important;stroke-dasharray:none!important;opacity:.78!important;animation:none!important;filter:none!important}
-#competition #competitionBody .cmp-static-signals .v16-flow .base{stroke:#cadbd5!important;stroke-width:6!important;opacity:.32!important}
-#competition #competitionBody .cmp-static-signals .v16-flow .live{stroke:#16a36a!important;stroke-width:3.5!important;stroke-dasharray:none!important;opacity:.78!important;animation:none!important;filter:none!important}
+#competition #competitionBody .cmp-static-signals .blis-flow-river,
+#competition #competitionBody .cmp-static-signals .cmpv11-wave-base,
+#competition #competitionBody .cmp-static-signals .cmpv11-wave-live,
 #competition #competitionBody .cmp-static-signals .cmpv11-wave-dot,
-#competition #competitionBody .cmp-static-signals .v16-flow circle{display:none!important;animation:none!important}
+#competition #competitionBody .cmp-static-signals .v16-flow,
 #competition #competitionBody .cmp-static-signals .cmpv11-flowempty,
-#competition #competitionBody .cmp-static-signals .v16-empty{font-size:10px!important;color:#7e8f88!important}
+#competition #competitionBody .cmp-static-signals .v16-empty{display:none!important;animation:none!important}
 
 /* Competition — Environment Dynamics: readable, stable, never squeezed. */
 #competition #competitionBody .cmpv10-layout>section.cmpv10-card{padding:22px!important;overflow:hidden!important;min-width:0!important}
@@ -46,7 +44,7 @@ function css(){if($('#blisPaintGuardV17CSS'))return;const s=document.createEleme
 #competition #competitionBody .cmpv10-layout>section .cmpv11-active-trace,
 #competition #competitionBody .cmpv10-layout>section .cmpv11-active-dot{display:none!important;animation:none!important}
 @media(max-width:1350px){#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small){grid-template-columns:190px minmax(220px,1fr) 96px!important;gap:13px!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-head h3{font-size:22px!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-head p{font-size:12px!important}}
-@media(max-width:1050px){#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small){grid-template-columns:1fr!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small) .cmpv10-viz{min-width:0!important;height:150px!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small) .cmpv10-current{text-align:left!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-head{display:block!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-period{display:block!important;margin-top:8px!important}}
+@media(max-width:1050px){#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small){grid-template-columns:1fr!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-series:not(.small) .cmpv10-viz{min-width:0!important;height:150px!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-current{text-align:left!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-head{display:block!important}#competition #competitionBody .cmpv10-layout>section.cmpv10-card .cmpv10-period{display:block!important;margin-top:8px!important}}
 `;document.head.appendChild(s)}
 function menuNames(){const n=$('#nav [data-page="social"] .navtxt'),v=$('#nav [data-page="digital"] .navtxt');if(n&&n.textContent!=='Сигнали')n.textContent='Сигнали';if(v&&v.textContent!=='Видимост')v.textContent='Видимост'}
 function copy(){menuNames();const active=$('.page.active')?.id;if(active==='social'){const root=$('#social .n15');if(root){const k=$('.n15-title .n15-k',root),h=$('.n15-title h2',root),p=$('.n15-title p',root),dirs=$$('.n15-dir strong',root);if(k)k.textContent='DIGITAL INTELLIGENCE';if(h)h.textContent='Digital Intelligence';if(p)p.textContent='Проверими сигнали от марката и за марката в наблюдаваната дигитална среда.';if(dirs[0])dirs[0].textContent='Сигнали от марката';if(dirs[1])dirs[1].textContent='Сигнали за марката'}const a=$('#blisActiveModule'),d=$('#blisSystemDetail');if(a)a.textContent='Digital Intelligence';if(d)d.textContent='Сигнали от марката и за марката в наблюдаваната дигитална среда.'}$$('#overview .n15-statpill span').forEach(x=>{if((x.textContent||'').trim()==='Сигнали')x.textContent='Digital Intelligence'})}
