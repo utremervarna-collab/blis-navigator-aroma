@@ -45,12 +45,13 @@
     s.async=false;
     document.head.appendChild(s);
   }
-  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260821-0546');
-  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260821-0546');
-  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260821-0546');
-  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260821-0546');
-  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260821-0546');
-  loadScript('blisCompetitionIntelligenceV9Script','/navigator-competition-intelligence-v9.js?v=20260821-0546');
-  loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v=20260821-0546');
-  loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v=20260821-0546');
+  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260821-0554');
+  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260821-0554');
+  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260821-0554');
+  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260821-0554');
+  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260821-0554');
+  loadScript('blisCompetitionIntelligenceV9Script','/navigator-competition-intelligence-v9.js?v=20260821-0554');
+  loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v=20260821-0554');
+  loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v=20260821-0554');
+  loadScript('blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v=20260821-0554');
 })();
