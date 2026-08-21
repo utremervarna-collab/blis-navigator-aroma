@@ -99,10 +99,33 @@
     })();
   </script>
   <script>try{const q=new URLSearchParams(location.search).get('client');if(q&&['aroma','bolyarka','astor-garden','varna-towers'].includes(q)){window.BLIS_INITIAL_CLIENT=q;document.body.dataset.client=q;const s=document.getElementById('clientSel');if(s)s.value=q}}catch(e){}</script>
+  <script>
+    (function gateLegacyBoot(){
+      const realFetch=window.fetch.bind(window),queued=[];
+      let released=false;
+      window.__BLIS_RELEASE_BOOT_FETCH=function(){
+        if(released)return;released=true;window.fetch=realFetch;
+        queued.splice(0).forEach(run=>run());
+      };
+      window.fetch=function(input,init){
+        const url=typeof input==='string'?input:(input&&input.url)||'';
+        if(!released&&/^\/api\/clients(?:\/|$)/.test(url))return new Promise((resolve,reject)=>queued.push(()=>realFetch(input,init).then(resolve,reject)));
+        return realFetch(input,init);
+      };
+    })();
+  </script>
   <script src="/varna-towers-runtime.js?v=20260818-vt1"></script>
   <script src="/app.js?v=20260818-stable1"></script>
   <script>window.refGo=window.refGo||window.go;</script>
-  <script src="/navigator-reference.js?v=20260819-curves1"></script>
+  <script>
+    window.__BLIS_REAL_SETTIMEOUT=window.setTimeout;
+    window.setTimeout=function(fn,delay,...args){
+      if(Number(delay)===700)return 0;
+      return window.__BLIS_REAL_SETTIMEOUT(fn,delay,...args);
+    };
+  </script>
+  <script src="/navigator-reference.js?v=20260821-noautoboot1"></script>
+  <script>window.setTimeout=window.__BLIS_REAL_SETTIMEOUT;delete window.__BLIS_REAL_SETTIMEOUT;</script>
   <script src="/varna-towers-ui.js?v=20260818-vt8"></script>
   <script src="/navigator-client-ui.js?v=20260819-client2"></script>
   <script src="/navigator-client-hero.js?v=20260818-stable1"></script>
@@ -115,6 +138,12 @@
   <script src="/navigator-architecture-v15.js?v=20260821-1849"></script>
   <script src="/navigator-final-v16.js?v=20260821-1849"></script>
   <script src="/navigator-ui-terminology.js?v=20260821-2049"></script>
-  <script>try{if(window.BLIS_INITIAL_CLIENT){slug=window.BLIS_INITIAL_CLIENT;const s=document.getElementById('clientSel');if(s)s.value=window.BLIS_INITIAL_CLIENT}requestAnimationFrame(()=>window.load&&window.load())}catch(e){console.error(e)}</script>
+  <script>
+    try{
+      if(window.BLIS_INITIAL_CLIENT){slug=window.BLIS_INITIAL_CLIENT;const s=document.getElementById('clientSel');if(s)s.value=window.BLIS_INITIAL_CLIENT}
+      window.__BLIS_ENFORCE_NAV_LABELS?.();
+      window.__BLIS_RELEASE_BOOT_FETCH?.();
+    }catch(e){console.error(e)}
+  </script>
 </body>
 </html>
