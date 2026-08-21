@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="bg">
+<html lang="bg" class="blis-loading">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,7 +9,13 @@
   <title>BLIS Navigator 2.0 — Aroma Cosmetics</title>
   <style>
     .page{visibility:visible!important}.page.active{min-height:560px!important}
-    #nav{visibility:visible!important}
+    html.blis-loading #nav{visibility:hidden!important}
+    html.blis-loading .page.active>div{visibility:hidden!important}
+    html.blis-loading .page.active:before{content:'BLIS LIVE';position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);padding-top:38px;font:800 12px/1 Inter,system-ui,sans-serif;letter-spacing:.12em;color:#31506f;background:radial-gradient(circle at 50% 8px,#25ce8c 0 7px,transparent 8px);z-index:4}
+    #nav [data-page="signals"],#nav [data-page="sources"],#nav [data-page="timeline"]{display:none!important}
+    #nav [data-page="social"] .navtxt,#nav [data-page="digital"] .navtxt{font-size:0!important}
+    #nav [data-page="social"] .navtxt:after{content:'Сигнали';font-size:14px!important}
+    #nav [data-page="digital"] .navtxt:after{content:'Видимост';font-size:14px!important}
   </style>
   <link rel="stylesheet" href="/portal.css?v=20260816-12">
   <link rel="stylesheet" href="/client-themes.css?v=20260816-12">
@@ -72,72 +78,37 @@
       <section id="reputation" class="page"><div id="reputationBody"></div></section>
       <section id="market" class="page"><div id="marketBody"></div></section>
       <section id="competition" class="page"><div id="competitionBody"></div></section>
-      <section id="signals" class="page"><div id="signalsBody"></div></section>
       <section id="reports" class="page"><div id="reportsBody"></div></section>
-      <section id="sources" class="page"><div id="sourcesBody"></div></section>
       <section id="history" class="page"><div id="historyBody"></div></section>
-      <section id="timeline" class="page"><div id="timelineBody"></div></section>
       <section id="profile" class="page"><div id="profileBody"></div></section>
       <section id="settings" class="page"><div id="settingsBody"></div></section>
       <section id="help" class="page"><div id="helpBody"></div></section>
     </div></main>
   </div>
   <div id="modal" class="modal"><div class="modalbox"><button class="close" onclick="closeModal()">×</button><h3 id="modalTitle"></h3><div id="modalBody"></div></div></div>
-  <script>
-    (function lockNavigatorLabels(){
-      const labels={social:'Сигнали',digital:'Видимост',market:'Нагласи',competition:'Конкуренти'};
-      let busy=false;
-      function fix(){
-        const nav=document.getElementById('nav');
-        if(nav)Object.entries(labels).forEach(([id,label])=>{const t=nav.querySelector(`[data-page="${id}"] .navtxt`);if(t&&t.textContent!==label)t.textContent=label});
-        const signalTitle=document.querySelector('#social .n15-title h2');if(signalTitle&&signalTitle.textContent!=='Сигнали')signalTitle.textContent='Сигнали';
-      }
-      window.__BLIS_ENFORCE_NAV_LABELS=fix;fix();
-      const nav=document.getElementById('nav');if(nav)new MutationObserver(()=>{if(busy)return;busy=true;requestAnimationFrame(()=>{fix();busy=false})}).observe(nav,{childList:true,subtree:true,characterData:true});
-      new MutationObserver(()=>requestAnimationFrame(fix)).observe(document.body,{childList:true,subtree:true});
-      setInterval(fix,500);
-    })();
-  </script>
   <script>try{const q=new URLSearchParams(location.search).get('client');if(q&&['aroma','bolyarka','astor-garden','varna-towers'].includes(q)){window.BLIS_INITIAL_CLIENT=q;document.body.dataset.client=q;const s=document.getElementById('clientSel');if(s)s.value=q}}catch(e){}</script>
   <script>
     (function gateLegacyBoot(){
-      const realFetch=window.fetch.bind(window),queued=[];
-      let released=false;
-      window.__BLIS_RELEASE_BOOT_FETCH=function(){
-        if(released)return;released=true;window.fetch=realFetch;
-        queued.splice(0).forEach(run=>run());
-      };
-      window.fetch=function(input,init){
-        const url=typeof input==='string'?input:(input&&input.url)||'';
-        if(!released&&/^\/api\/clients(?:\/|$)/.test(url))return new Promise((resolve,reject)=>queued.push(()=>realFetch(input,init).then(resolve,reject)));
-        return realFetch(input,init);
-      };
+      const realFetch=window.fetch.bind(window),queued=[];let released=false;
+      window.__BLIS_RELEASE_BOOT_FETCH=function(){if(released)return;released=true;window.fetch=realFetch;queued.splice(0).forEach(run=>run())};
+      window.fetch=function(input,init){const url=typeof input==='string'?input:(input&&input.url)||'';if(!released&&/^\/api\/clients(?:\/|$)/.test(url))return new Promise((resolve,reject)=>queued.push(()=>realFetch(input,init).then(resolve,reject)));return realFetch(input,init)};
     })();
   </script>
   <script src="/varna-towers-runtime.js?v=20260818-vt1"></script>
   <script src="/app.js?v=20260818-stable1"></script>
-  <script>window.refGo=window.refGo||window.go;</script>
-  <script>
-    window.__BLIS_REAL_SETTIMEOUT=window.setTimeout;
-    window.setTimeout=function(fn,delay,...args){
-      if(Number(delay)===700)return 0;
-      return window.__BLIS_REAL_SETTIMEOUT(fn,delay,...args);
-    };
-  </script>
-  <script src="/navigator-reference.js?v=20260821-noautoboot1"></script>
-  <script>window.setTimeout=window.__BLIS_REAL_SETTIMEOUT;delete window.__BLIS_REAL_SETTIMEOUT;</script>
+  <script>window.refGo=window.go;</script>
   <script src="/varna-towers-ui.js?v=20260818-vt8"></script>
   <script src="/navigator-client-ui.js?v=20260819-client2"></script>
   <script src="/navigator-client-hero.js?v=20260818-stable1"></script>
   <script src="/varna-towers-hero-guard.js?v=20260818-direct2"></script>
   <script src="/navigator-methods-global.js?v=20260818-stable1"></script>
-  <script src="/navigator-reputation-exact-art-v41.js?v=20260821-1849"></script>
-  <script src="/navigator-perception-core-v8.js?v=20260820-globeclean1"></script>
-  <script src="/navigator-perception-map.js?v=20260820-pm10"></script>
-  <script src="/navigator-runtime-bridge.js?v=20260821-1849"></script>
-  <script src="/navigator-architecture-v15.js?v=20260821-1849"></script>
-  <script src="/navigator-final-v16.js?v=20260821-2100"></script>
-  <script src="/navigator-ui-terminology.js?v=20260821-2049"></script>
+  <script src="/navigator-reputation-exact-art-v41.js?v=20260821-2225"></script>
+  <script src="/navigator-perception-core-v8.js?v=20260821-2225"></script>
+  <script src="/navigator-perception-map.js?v=20260821-2225"></script>
+  <script src="/navigator-runtime-bridge.js?v=20260821-2225"></script>
+  <script src="/navigator-architecture-v15.js?v=20260821-2225"></script>
+  <script src="/navigator-final-v16.js?v=20260821-2225"></script>
+  <script src="/navigator-ui-terminology.js?v=20260821-2225"></script>
   <script>
     try{
       if(window.BLIS_INITIAL_CLIENT){slug=window.BLIS_INITIAL_CLIENT;const s=document.getElementById('clientSel');if(s)s.value=window.BLIS_INITIAL_CLIENT}
