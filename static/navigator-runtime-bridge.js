@@ -54,5 +54,5 @@
   loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v=20260821-0635');
   loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v=20260821-0635');
   loadScript('blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v=20260821-0635');
-  loadScript('blisArchitectureV15Script','/navigator-architecture-v15.js?v=20260821-0635');
+  loadScript('blisArchitectureV15Script','/navigator-architecture-v15.js?v=20260821-0946');
 })();
