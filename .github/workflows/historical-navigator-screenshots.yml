@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - archive/screenshot-20260821-1348
+  pull_request:
+    branches:
+      - main
 
 jobs:
   capture:
