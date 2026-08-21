@@ -1,0 +1,3 @@
+BLIS Navigator visual baseline restore trigger
+baseline: 0ba1637761e7c74766164892a1420dfdb847f741
+purpose: trigger Render auto-deploy without changing UI code
