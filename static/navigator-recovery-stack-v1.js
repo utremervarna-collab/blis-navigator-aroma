@@ -1,9 +1,9 @@
 /* BLIS Navigator — final module recovery stack v1.
-   Restores the approved Social and Reputation modules, persistent navigation
-   state, and removes obsolete white-page paint ownership. */
+   Restores the approved Social and Reputation modules and removes obsolete
+   white-page paint ownership. Page state is loaded synchronously by dashboard. */
 (function(){
 'use strict';
-if(window.__BLIS_RECOVERY_STACK_2318)return;window.__BLIS_RECOVERY_STACK_2318=true;
+if(window.__BLIS_RECOVERY_STACK_2322)return;window.__BLIS_RECOVERY_STACK_2322=true;
 
 document.documentElement.classList.add('blis-final-booted');
 
@@ -31,26 +31,22 @@ function forcePaint(){
 }
 
 function loadSocial(){
-  style('social-master-css','/navigator-social-master.css?v=20260821-2318');
-  script('social-master-js','/navigator-social-master.js?v=20260821-2318',()=>{
-    script('social-interactive','/navigator-social-interactive.js?v=20260821-2318',()=>{
-      script('social-bootstrap','/navigator-social-bootstrap.js?v=20260821-2318');
+  style('social-master-css','/navigator-social-master.css?v=20260821-2322');
+  script('social-master-js','/navigator-social-master.js?v=20260821-2322',()=>{
+    script('social-interactive','/navigator-social-interactive.js?v=20260821-2322',()=>{
+      script('social-bootstrap','/navigator-social-bootstrap.js?v=20260821-2322');
     });
   });
 }
 
 function loadReputation(){
-  style('reputation-master-css','/navigator-reputation-master.css?v=20260821-2318');
-  script('reputation-master-js','/navigator-reputation-master.js?v=20260821-2318',()=>{
-    script('reputation-bootstrap','/navigator-reputation-bootstrap.js?v=20260821-2318');
+  style('reputation-master-css','/navigator-reputation-master.css?v=20260821-2322');
+  script('reputation-master-js','/navigator-reputation-master.js?v=20260821-2322',()=>{
+    script('reputation-bootstrap','/navigator-reputation-bootstrap.js?v=20260821-2322');
   });
 }
 
-function loadPageState(){
-  script('page-state','/navigator-page-state.js?v=20260821-2318');
-}
-
-loadSocial();loadReputation();loadPageState();forcePaint();
+loadSocial();loadReputation();forcePaint();
 
 /* The final runtime and client switchers replace route functions during startup.
    Keep the paint contract applied without introducing another renderer. */
