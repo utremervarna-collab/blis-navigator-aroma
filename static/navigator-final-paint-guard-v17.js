@@ -1,0 +1,16 @@
+/* BLIS Navigator — final paint guard V17. Prevents legacy flashes and blank competition state. */
+(function(){
+'use strict';
+if(window.__BLISPaintGuardV17)return;window.__BLISPaintGuardV17=true;
+const $=(s,r=document)=>r.querySelector(s);
+function css(){if($('#blisPaintGuardV17CSS'))return;const s=document.createElement('style');s.id='blisPaintGuardV17CSS';s.textContent=`
+#reputationBody:not(.blis-v17-ready),#marketBody:not(.blis-v17-ready),#competitionBody:not(.blis-v17-ready){visibility:hidden!important;opacity:0!important}
+#reputationBody.blis-v17-ready,#marketBody.blis-v17-ready,#competitionBody.blis-v17-ready{visibility:visible!important;opacity:1!important;transition:opacity .12s ease!important}
+`;document.head.appendChild(s)}
+function rep(){const r=$('#reputationBody');if(!r)return;const exact=$('.rp-exact-art[data-loaded="1"]',r);if(exact)r.classList.add('blis-v17-ready')}
+function market(){const r=$('#marketBody');if(!r)return;const final=$('.pm-main',r),hist=$('#n15AttHistory',r);if(final&&hist&&(hist.querySelector('.v16-chart,.v16-empty,.v16-one')))r.classList.add('blis-v17-ready')}
+function competition(){const r=$('#competitionBody');if(!r)return;const race=$('.cmpv5',r),layout=$('.cmpv10-layout',r),flow=$('.cmpv11-flowbox .blis-flow-river,.cmpv11-flowbox .v16-empty',r);if(race&&layout&&flow){r.classList.add('blis-v17-ready');document.body.classList.add('blis-competition-ready');r.style.removeProperty('visibility')}}
+function tick(){rep();market();competition()}
+function start(){css();tick();setInterval(tick,120);document.addEventListener('click',e=>{const b=e.target.closest?.('#nav [data-page]');if(!b)return;const id=b.dataset.page;if(id==='reputation')$('#reputationBody')?.classList.remove('blis-v17-ready');if(id==='market')$('#marketBody')?.classList.remove('blis-v17-ready');if(id==='competition')$('#competitionBody')?.classList.remove('blis-v17-ready')},true);window.addEventListener('blis:clientdata',()=>{['reputationBody','marketBody','competitionBody'].forEach(id=>document.getElementById(id)?.classList.remove('blis-v17-ready'));setTimeout(tick,40)})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
