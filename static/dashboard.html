@@ -102,13 +102,21 @@
   <script src="/navigator-client-hero.js?v=20260818-stable1"></script>
   <script src="/varna-towers-hero-guard.js?v=20260818-direct2"></script>
   <script src="/navigator-methods-global.js?v=20260818-stable1"></script>
-  <script src="/navigator-reputation-exact-art-v41.js?v=20260821-2155"></script>
-  <script src="/navigator-perception-core-v8.js?v=20260821-2155"></script>
-  <script src="/navigator-perception-map.js?v=20260821-2155"></script>
-  <script src="/navigator-runtime-bridge.js?v=20260821-2155"></script>
-  <script src="/navigator-architecture-v15.js?v=20260821-2155"></script>
-  <script src="/navigator-final-v16.js?v=20260821-2155"></script>
-  <script src="/navigator-ui-terminology.js?v=20260821-2155"></script>
+  <script src="/navigator-reputation-exact-art-v41.js?v=20260821-2236"></script>
+  <script src="/navigator-perception-core-v8.js?v=20260821-2236"></script>
+  <script src="/navigator-perception-map.js?v=20260821-2236"></script>
+  <script src="/navigator-global-live.js?v=20260821-2236"></script>
+  <script src="/navigator-ui-terminology.js?v=20260821-2236"></script>
+  <script src="/navigator-attitudes-master-v2.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-master-v5.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-motion-fix-v6.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-intelligence-v9.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-environment-v10.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-page-v11.js?v=20260821-2236"></script>
+  <script src="/navigator-competition-page-v12.js?v=20260821-2236"></script>
+  <script src="/navigator-runtime-bridge.js?v=20260821-2236"></script>
+  <script src="/navigator-architecture-v15.js?v=20260821-2236"></script>
+  <script src="/navigator-final-v16.js?v=20260821-2236"></script>
   <script>
     (function lockNavigatorRouting(){
       const nav=document.getElementById('nav');
@@ -117,11 +125,8 @@
         nav.addEventListener('click',function(e){
           const button=e.target.closest?.('button[data-page]');
           if(!button||!nav.contains(button))return;
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          const id=button.dataset.page;
-          if(typeof window.refGo==='function')window.refGo(id);
+          e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+          const id=button.dataset.page;if(typeof window.refGo==='function')window.refGo(id);
         },true);
       }
     })();
