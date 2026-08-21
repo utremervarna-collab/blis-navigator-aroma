@@ -83,6 +83,21 @@
     </div></main>
   </div>
   <div id="modal" class="modal"><div class="modalbox"><button class="close" onclick="closeModal()">×</button><h3 id="modalTitle"></h3><div id="modalBody"></div></div></div>
+  <script>
+    (function lockNavigatorLabels(){
+      const labels={social:'Сигнали',digital:'Видимост',market:'Нагласи',competition:'Конкуренти'};
+      let busy=false;
+      function fix(){
+        const nav=document.getElementById('nav');
+        if(nav)Object.entries(labels).forEach(([id,label])=>{const t=nav.querySelector(`[data-page="${id}"] .navtxt`);if(t&&t.textContent!==label)t.textContent=label});
+        const signalTitle=document.querySelector('#social .n15-title h2');if(signalTitle&&signalTitle.textContent!=='Сигнали')signalTitle.textContent='Сигнали';
+      }
+      window.__BLIS_ENFORCE_NAV_LABELS=fix;fix();
+      const nav=document.getElementById('nav');if(nav)new MutationObserver(()=>{if(busy)return;busy=true;requestAnimationFrame(()=>{fix();busy=false})}).observe(nav,{childList:true,subtree:true,characterData:true});
+      new MutationObserver(()=>requestAnimationFrame(fix)).observe(document.body,{childList:true,subtree:true});
+      setInterval(fix,500);
+    })();
+  </script>
   <script>try{const q=new URLSearchParams(location.search).get('client');if(q&&['aroma','bolyarka','astor-garden','varna-towers'].includes(q)){window.BLIS_INITIAL_CLIENT=q;document.body.dataset.client=q;const s=document.getElementById('clientSel');if(s)s.value=q}}catch(e){}</script>
   <script src="/varna-towers-runtime.js?v=20260818-vt1"></script>
   <script src="/app.js?v=20260818-stable1"></script>
@@ -99,6 +114,7 @@
   <script src="/navigator-runtime-bridge.js?v=20260821-1849"></script>
   <script src="/navigator-architecture-v15.js?v=20260821-1849"></script>
   <script src="/navigator-final-v16.js?v=20260821-1849"></script>
+  <script src="/navigator-ui-terminology.js?v=20260821-2049"></script>
   <script>try{if(window.BLIS_INITIAL_CLIENT){slug=window.BLIS_INITIAL_CLIENT;const s=document.getElementById('clientSel');if(s)s.value=window.BLIS_INITIAL_CLIENT}requestAnimationFrame(()=>window.load&&window.load())}catch(e){console.error(e)}</script>
 </body>
 </html>
