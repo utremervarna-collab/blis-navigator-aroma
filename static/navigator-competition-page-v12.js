@@ -20,11 +20,8 @@ function css(){
 #competition .cmpv11-flowmetric{padding:12px 13px!important;border-color:#dce9e4!important;background:rgba(255,255,255,.88)!important;box-shadow:0 5px 14px rgba(17,83,65,.045)!important}
 #competition .cmpv11-flowmetric span{font-size:9px!important;color:#71847e!important;margin-bottom:5px!important}
 #competition .cmpv11-flowmetric b{font-size:18px!important;color:#173e34!important}
-#competition .cmpv11-flowbox{height:168px!important;margin:4px 0 12px!important;padding:15px 11px!important;border:1px solid #dfece7!important;border-radius:14px!important;background:radial-gradient(circle at 18% 45%,rgba(22,163,106,.10),transparent 26%),linear-gradient(180deg,#fbfffd,#f5fbf8)!important;overflow:hidden!important;box-shadow:inset 0 0 24px rgba(22,163,106,.045)!important}
-#competition .cmpv11-flowwave{height:100%!important;overflow:visible!important}
-#competition .cmpv11-wave-base{stroke:#b9d9ce!important;stroke-width:9!important;opacity:.30!important;filter:drop-shadow(0 3px 7px rgba(22,163,106,.12))}
-#competition .cmpv11-wave-live{stroke:#16a36a!important;stroke-width:5.8!important;stroke-dasharray:24 13!important;opacity:1!important;filter:drop-shadow(0 0 5px rgba(22,163,106,.34));animation:cmpv12flow 1.15s linear infinite!important}
-#competition .cmpv11-wave-dot{fill:#12a46a!important;stroke:#fff!important;stroke-width:3!important;filter:drop-shadow(0 0 7px rgba(22,163,106,.7));animation:cmpv12dot 1.15s ease-in-out infinite alternate}
+#competition .cmpv12-flow-panel .cmpv11-flowbox{display:none!important}
+#competition .cmpv12-static-flow{display:block!important;width:100%!important;height:128px!important;object-fit:cover!important;object-position:center!important;margin:4px 0 12px!important;border:1px solid #dfe9e5!important;border-radius:16px!important;background:#f8fbfa!important;box-shadow:0 8px 24px rgba(22,74,89,.06)!important}
 
 /* Dynamics: one clear active curve; remove the old secondary mini-series, including the blue flat line */
 #competition .cmpv10-layout>section.cmpv10-card .cmpv10-series.small{display:none!important}
@@ -71,15 +68,29 @@ function css(){
 #competition .cmpv5-chart.cmpv10-host>.cmpv5-charthead,
 #competition .cmpv5-chart.cmpv10-host>.cmpv9-chart-empty{display:none!important}
 
-@keyframes cmpv12flow{to{stroke-dashoffset:-74}}
 @keyframes cmpv12curve{to{stroke-dashoffset:-66}}
-@keyframes cmpv12dot{from{opacity:.58;transform:scale(.88)}to{opacity:1;transform:scale(1.25)}}
 @keyframes cmpv12live{0%{box-shadow:0 0 0 0 rgba(22,163,106,.34)}70%{box-shadow:0 0 0 12px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
 @keyframes cmpv12dotpulse{0%{box-shadow:0 0 0 0 rgba(22,163,106,.50)}70%{box-shadow:0 0 0 8px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
 @media(max-width:1100px){#competition .cmpv5-board,#competition .cmpv10-layout{grid-template-columns:1fr!important}#competition .cmpv10-layout>aside.cmpv10-card{min-height:0!important}}
 @media(max-width:700px){#competition .cmpv11-flowmetrics{grid-template-columns:1fr!important}#competition .cmpv10-layout>aside .cmpv10-kpi b{font-size:19px!important}#competition .cmpv10-layout>section .cmpv10-series:not(.small){grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(st);
+}
+function ensureStaticFlow(panel){
+  if(!panel)return;
+  let img=panel.querySelector('.cmpv12-static-flow');
+  if(!img){
+    img=document.createElement('img');
+    img.className='cmpv12-static-flow';
+    img.src='/competition-signals-flow.svg?v=20260822-3';
+    img.alt='';
+    img.decoding='async';
+    img.loading='eager';
+    const metrics=panel.querySelector('.cmpv11-flowmetrics');
+    if(metrics)metrics.insertAdjacentElement('afterend',img);else panel.appendChild(img);
+  }
+  const old=panel.querySelector('.cmpv11-flowbox');
+  if(old)old.style.setProperty('display','none','important');
 }
 function enhance(){
   css();
@@ -89,7 +100,9 @@ function enhance(){
   const panels=[...root.querySelectorAll('.cmpv5-side .cmpv5-panel')];
   panels.forEach(p=>{
     const h=(p.querySelector('h3')?.textContent||'').trim();
-    p.classList.toggle('cmpv12-flow-panel',/ПОТОК ОТ СИГНАЛИ/i.test(h));
+    const isFlow=/ПОТОК ОТ СИГНАЛИ/i.test(h);
+    p.classList.toggle('cmpv12-flow-panel',isFlow);
+    if(isFlow)ensureStaticFlow(p);
   });
   const host=root.querySelector('.cmpv5-chart.cmpv10-host');
   if(host){
