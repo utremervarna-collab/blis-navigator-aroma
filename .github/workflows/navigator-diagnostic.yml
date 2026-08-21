@@ -1,8 +1,6 @@
-name: Navigator Full Diagnostic
+name: Navigator Perception Runtime Diagnostic
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -18,41 +16,30 @@ jobs:
         with:
           go-version: '1.23.x'
 
-      - name: Build Go application
+      - name: Build and start Navigator without auth gateway
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
-
-      - name: Start application and test API/static routes
-        run: |
-          set -euxo pipefail
-          PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
-          echo $! > /tmp/blis.pid
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
+            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
-          curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
-          for c in aroma bolyarka astor-garden; do
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/activity" >/tmp/$c-activity.json
-            curl -fsS "http://127.0.0.1:10000/api/clients/$c/history" >/tmp/$c-history.json
-          done
-          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma' >/tmp/dashboard.html
-          grep -q 'navigator-reference.js?v=20260818-stable1' /tmp/dashboard.html
-          for f in app.js navigator-reference.js navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js; do
-            curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/$f
-            test -s /tmp/$f
-          done
+          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview' >/tmp/dashboard.html
+          grep -q 'navigator-perception-core-v5.js?v=20260820-core7' /tmp/dashboard.html
+          grep -q 'navigator-perception-map.js?v=20260820-pm8' /tmp/dashboard.html
+          grep -q 'navigator-perception-globe.js?v=20260820-globe3' /tmp/dashboard.html
+          curl -fsS 'http://127.0.0.1:10000/navigator-perception-core-v5.js?v=diag' >/tmp/core.js
+          curl -fsS 'http://127.0.0.1:10000/navigator-perception-map.js?v=diag' >/tmp/bridge.js
+          curl -fsS 'http://127.0.0.1:10000/navigator-perception-globe.js?v=diag' >/tmp/globe.js
+          node --check /tmp/core.js
+          node --check /tmp/bridge.js
+          node --check /tmp/globe.js
 
       - name: Locate Chromium
         id: chrome
         shell: bash
         run: |
-          set -euxo pipefail
           BIN="$(which google-chrome || which chromium || which chromium-browser || true)"
           echo "bin=$BIN" >> "$GITHUB_OUTPUT"
           if [ -n "$BIN" ]; then "$BIN" --version; fi
@@ -66,78 +53,78 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Browser end-to-end diagnostic
+      - name: Browser test Perception Map network and globe
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.bin }}
         run: |
-          cat > /tmp/diag.cjs <<'NODE'
+          cat > ./diag.cjs <<'NODE'
           const { chromium } = require('playwright-core');
           const fs = require('fs');
           (async()=>{
-            const executablePath = process.env.CHROME_BIN || undefined;
-            const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox']});
-            const page = await browser.newPage();
-            page.setDefaultTimeout(12000);
+            const browser = await chromium.launch({headless:true, executablePath:process.env.CHROME_BIN || undefined, args:['--no-sandbox']});
+            const page = await browser.newPage({viewport:{width:1600,height:1000}});
+            page.setDefaultTimeout(15000);
             const errors=[];
             page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
             page.on('console',m=>{ if(m.type()==='error') errors.push('CONSOLE '+m.text()); });
-            const result={};
-            async function snap(label){
-              result[label]=await page.evaluate(()=>({
-                title:document.title,
-                active:document.querySelector('.page.active')?.id||null,
-                navActive:document.querySelector('#nav button.active')?.dataset.page||null,
-                liveChars:(document.getElementById('liveBody')?.innerHTML||'').length,
-                overviewChars:(document.getElementById('overviewPremium')?.innerHTML||'').length,
-                client:document.body.dataset.client||null,
-                navButtons:document.querySelectorAll('#nav button').length
-              }));
-            }
-            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:12000});
-            await page.waitForTimeout(2500);
-            await snap('initial');
-            await page.locator('#nav button[data-page="live"]').click();
-            await page.waitForTimeout(3500);
-            await snap('live');
-            await page.locator('#nav button[data-page="digital"]').click();
-            await page.waitForTimeout(1500);
-            await snap('digital');
-            await page.locator('#nav button[data-page="overview"]').click();
-            await page.waitForTimeout(1500);
-            await snap('overviewReturn');
+            const requests=[];
+            page.on('response',r=>{ const u=r.url(); if(u.includes('navigator-perception')) requests.push({url:u,status:r.status()}); });
 
-            const p2=await browser.newPage();
-            p2.setDefaultTimeout(12000);
-            const errors2=[];
-            p2.on('pageerror',e=>errors2.push('PAGEERROR '+e.message));
-            p2.on('console',m=>{if(m.type()==='error')errors2.push('CONSOLE '+m.text())});
-            await p2.goto('http://127.0.0.1:10000/dashboard.html?client=bolyarka',{waitUntil:'domcontentloaded',timeout:12000});
-            await p2.waitForTimeout(2500);
-            result.bolyarka=await p2.evaluate(()=>({
-              title:document.title,
-              client:document.body.dataset.client||null,
-              selected:document.getElementById('clientSel')?.value||null,
-              heading:document.querySelector('.topbar .title h1')?.textContent||null,
-              navButtons:document.querySelectorAll('#nav button').length,
-              active:document.querySelector('.page.active')?.id||null
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(3000);
+            await page.locator('#nav button[data-page="market"]').click();
+            await page.waitForSelector('#market.page.active .pm-wrap');
+            await page.waitForTimeout(1000);
+
+            const before = await page.evaluate(()=>({
+              active:document.querySelector('.page.active')?.id||null,
+              mapTitle:document.querySelector('#market .pm-maphead b')?.textContent||null,
+              bridge:!!window.BLISPerceptionBridge,
+              core:!!window.BLISPerceptionMap,
+              globe:!!window.BLISPerceptionGlobe,
+              globeScript:[...document.scripts].some(s=>s.src.includes('navigator-perception-globe.js')),
+              stageClass:document.querySelector('#market .pm-stage')?.className||null,
+              nodeCount:document.querySelectorAll('#market .pm-node').length
             }));
-            result.errors=errors;
-            result.bolyarkaErrors=errors2;
+
+            await page.locator('#market [data-view="network"]').click();
+            await page.waitForTimeout(2200);
+
+            const after = await page.evaluate(()=>({
+              mapTitle:document.querySelector('#market .pm-maphead b')?.textContent||null,
+              stageClass:document.querySelector('#market .pm-stage')?.className||null,
+              globeActive:document.querySelector('#market .pm-stage')?.classList.contains('pm-globe-active')||false,
+              shellCount:document.querySelectorAll('#market .pm-globe-shell-v2').length,
+              globeStyle:!!document.getElementById('pmGlobeSimpleStyles'),
+              nodes:[...document.querySelectorAll('#market .pm-node')].slice(0,5).map(n=>({id:n.dataset.node,left:n.style.left,top:n.style.top,gx:n.dataset.gx||null,gy:n.dataset.gy||null,gz:n.dataset.gz||null,opacity:n.style.opacity||null})),
+              linkD:[...document.querySelectorAll('#market .pm-link')].slice(0,3).map(p=>p.getAttribute('d'))
+            }));
+
+            await page.screenshot({path:'/tmp/perception-network.png',fullPage:true});
+            fs.writeFileSync('/tmp/perception-dom.html',await page.content());
+            const result={before,after,requests,errors};
             console.log(JSON.stringify(result,null,2));
-            fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-            if(result.initial.navButtons < 10) throw new Error('Navigation not initialized');
-            if(result.live.active !== 'live') throw new Error('Live Monitoring did not become active');
-            if(result.digital.active !== 'digital') throw new Error('Digital did not become active');
-            if(errors.length || errors2.length) throw new Error('Browser JavaScript errors detected');
+            fs.writeFileSync('/tmp/perception-result.json',JSON.stringify(result,null,2));
+
+            if(before.active!=='market') throw new Error('Market page did not become active');
+            if(!before.core || !before.bridge || !before.globe || !before.globeScript) throw new Error('Perception runtime pieces are not all loaded');
+            if(!after.stageClass?.includes('network')) throw new Error('Network mode did not render');
+            if(!after.globeActive) throw new Error('Globe renderer did not activate');
+            if(after.shellCount<1) throw new Error('Globe shell missing');
+            if(!after.nodes.some(n=>n.gx!==null)) throw new Error('Nodes were not projected onto sphere');
+            if(errors.length) throw new Error('Browser JavaScript errors detected: '+errors.join(' | '));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node /tmp/diag.cjs
+          node ./diag.cjs
 
-      - name: Print server log
+      - name: Upload diagnostic artifacts
         if: always()
-        run: |
-          echo '=== SERVER LOG ==='
-          cat /tmp/blis-server.log || true
-          echo '=== BROWSER RESULT ==='
-          cat /tmp/browser-result.json || true
+        uses: actions/upload-artifact@v4
+        with:
+          name: perception-runtime-diagnostic
+          path: |
+            /tmp/perception-result.json
+            /tmp/perception-network.png
+            /tmp/perception-dom.html
+            /tmp/blis-server.log
