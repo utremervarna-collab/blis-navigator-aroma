@@ -1,0 +1,89 @@
+name: Historical Navigator screenshots
+
+on:
+  push:
+    branches:
+      - archive/screenshot-20260821-1348
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout historical state
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Navigator
+        run: go build -tags netgo -ldflags '-s -w' -o app .
+
+      - name: Start historical Navigator
+        env:
+          BLIS_AUTH_PROXY_DISABLED: '1'
+          PORT: '10000'
+        run: |
+          ./app > /tmp/blis.log 2>&1 &
+          echo $! > /tmp/blis.pid
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:10000/dashboard.html >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/blis.log
+          exit 1
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Capture approved-page window
+        run: |
+          mkdir -p screenshots
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async()=>{
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
+            page.on('console', m => console.log('BROWSER', m.type(), m.text()));
+            page.on('pageerror', e => console.log('PAGEERROR', e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview', {waitUntil:'networkidle', timeout:60000});
+            await page.waitForTimeout(4500);
+            const screens = [
+              ['overview','01-overview'],
+              ['live','02-live-monitoring'],
+              ['social','03-signals'],
+              ['digital','04-digital-visibility'],
+              ['reputation','05-reputation'],
+              ['market','06-attitudes'],
+              ['competition','07-competition'],
+              ['reports','08-monthly-reports']
+            ];
+            for (const [id,name] of screens) {
+              const button = page.locator(`#nav button[data-page="${id}"]`);
+              await button.waitFor({state:'visible', timeout:15000});
+              await button.click({force:true});
+              await page.waitForTimeout(id === 'competition' ? 2500 : 1600);
+              await page.screenshot({path:`screenshots/${name}.png`, fullPage:true});
+            }
+            await browser.close();
+          })().catch(err=>{console.error(err);process.exit(1)});
+          NODE
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-2026-08-21-1348
+          path: screenshots/*.png
+          if-no-files-found: error
