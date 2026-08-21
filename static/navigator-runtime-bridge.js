@@ -6,6 +6,8 @@ let g=document.getElementById('blisPrepaintGuard');
 if(!g){g=document.createElement('style');g.id='blisPrepaintGuard';document.head.appendChild(g)}
 g.textContent='#nav,.page{visibility:hidden!important}.page.active{min-height:560px!important}';
 document.getElementById('blisCompetitionPaintGuard')?.remove();
+/* Block the early dashboard copy of final-v16. It is loaded before V15 exists. */
+window.__BLIS_FINAL_V16_STABLE_3=true;
 window.__BLIS_FINAL_V16='deferred';
 
 const clients=new Set(['aroma','bolyarka','astor-garden','varna-towers']);
@@ -17,7 +19,7 @@ window.renderAll=function(){try{try{window.D=D;window.S=S;window.Q=Q;window.A=A;
 
 function loadScript(id,src){return new Promise(resolve=>{const old=document.getElementById(id);if(old){resolve(old);return}const s=document.createElement('script');s.id=id;s.src=src;s.async=false;s.onload=()=>resolve(s);s.onerror=()=>{console.error('BLIS script failed',src);resolve(s)};document.head.appendChild(s)})}
 let started=false;
-async function startFinalStack(){if(started)return;started=true;const v='20260821-1518';const files=[
+async function startFinalStack(){if(started)return;started=true;const v='20260821-1548';const files=[
 ['blisGlobalLiveScript','/navigator-global-live.js?v='+v],
 ['blisUITerminologyScript','/navigator-ui-terminology.js?v='+v],
 ['blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v='+v],
@@ -28,6 +30,17 @@ async function startFinalStack(){if(started)return;started=true;const v='2026082
 ['blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v='+v],
 ['blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v='+v],
 ['blisArchitectureV15Script','/navigator-architecture-v15.js?v='+v]
-];for(const [id,src] of files)await loadScript(id,src);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));if(window.__BLIS_FINAL_V16==='deferred')delete window.__BLIS_FINAL_V16;await loadScript('blisFinalV16Runtime','/navigator-final-v16.js?v='+v);window.dispatchEvent(new CustomEvent('blis:finalstackready'))}
-if(document.readyState==='complete')setTimeout(startFinalStack,0);else window.addEventListener('load',()=>setTimeout(startFinalStack,0),{once:true});
+];
+for(const [id,src] of files)await loadScript(id,src);
+await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+/* V15 is now present. Allow ONE fresh final-v16 execution. */
+delete window.__BLIS_FINAL_V16_STABLE_3;
+delete window.__BLIS_FINAL_V16_STABLE_4;
+delete window.__BLIS_FINAL_V16;
+const old=document.getElementById('blisFinalV16Runtime');if(old)old.remove();
+await loadScript('blisFinalV16Runtime','/navigator-final-v16.js?v='+v);
+window.dispatchEvent(new CustomEvent('blis:finalstackready'));
+}
+/* Start immediately instead of waiting for window.load. The prepaint guard stays on until V15+V16 are ready. */
+if(document.readyState==='loading')startFinalStack();else setTimeout(startFinalStack,0);
 })();
