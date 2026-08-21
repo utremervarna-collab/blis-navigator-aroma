@@ -10,6 +10,15 @@
     guard.textContent='.page{visibility:hidden!important}.page.active{min-height:560px!important}';
     document.head.appendChild(guard);
   }
+  if(!document.getElementById('blisCompetitionPaintGuard')){
+    const guard=document.createElement('style');
+    guard.id='blisCompetitionPaintGuard';
+    guard.textContent='#competitionBody{visibility:hidden!important}body.blis-competition-ready #competitionBody{visibility:visible!important}';
+    document.head.appendChild(guard);
+  }
+  document.addEventListener('click',e=>{
+    if(e.target.closest?.('#nav [data-page="competition"]'))document.body.classList.remove('blis-competition-ready');
+  },true);
 
   const clients=new Set(['aroma','bolyarka','astor-garden','varna-towers']);
   const initialClient=()=>{
@@ -39,7 +48,7 @@
   };
 
   function loadScript(id,src){if(document.getElementById(id))return;const s=document.createElement('script');s.id=id;s.src=src;s.async=false;document.head.appendChild(s)}
-  const v='20260821-1114';
+  const v='20260821-1226';
   loadScript('blisGlobalLiveScript','/navigator-global-live.js?v='+v);
   loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v='+v);
   loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v='+v);
@@ -60,9 +69,9 @@
   function patchCSS(){
     if(document.getElementById('blisFinalRuntimeFixCSS'))return;
     const st=document.createElement('style');st.id='blisFinalRuntimeFixCSS';st.textContent=`
-      .n15-blis strong,.n15-mini strong,.n15-livekpi strong,.n15-lastactivity b,.n15-dir b,.n15-sigm b,.n15-digindex strong,.n15-digcard strong,
+      .n15-bliscore strong,.n15-summaryitem strong,.n15-livekpi strong,.n15-lastactivity b,.n15-dir b,.n15-sigm b,.n15-digindex strong,.n15-digcard strong,.n15-digfocus strong,.n15-atthistory .value,
       #competition .cmpv11-flowmetric b,#competition .cmpv10-current b,#competition .cmpv10-kpi b,#competition [class*="score"],
-      #market [class*="value"],#market [class*="score"],#market .pm-node b,#overview [class*="value"],#live [class*="value"],#digital [class*="value"]{
+      #market [class*="value"],#market [class*="score"],#overview [class*="value"],#live [class*="value"],#digital [class*="value"]{
         font-family:Georgia,serif!important;font-weight:600!important;font-variant-numeric:tabular-nums!important
       }
       #social .dv-sweep{animation:none!important;will-change:transform!important}
@@ -119,17 +128,6 @@
     return `<svg class="blis-runtime-curve" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="blisCurveFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><g class="grid"><line x1="${L}" y1="${T}" x2="${w-R}" y2="${T}"/><line x1="${L}" y1="${(T+h-B)/2}" x2="${w-R}" y2="${(T+h-B)/2}"/><line x1="${L}" y1="${h-B+4}" x2="${w-R}" y2="${h-B+4}"/></g><path class="area" d="${area}" fill="url(#blisCurveFill)"/><path class="line" d="${d}" stroke="${color}"/>${dots}${labels}</svg>`;
   }
 
-  function indexSeries(key){
-    const out=[];arr(window.H).forEach(s=>{const t=stamp(s),p=s?.payload||{},ix=arr(p.indices).find(i=>String(i.key||'')===key),v=num(ix?.value);if(t&&v!==null)out.push({t,v})});
-    const cur=arr(window.D?.indices).find(i=>String(i.key||'')===key),v=num(cur?.value);if(v!==null)out.push({t:Date.now(),v});
-    return out;
-  }
-
-  function patchDigital(){
-    const host=document.querySelector('#digital .n15-digchart');if(!host)return;
-    const svg=curveSVG(indexSeries('digital'),'#1766e8');if(svg)host.innerHTML=svg;
-  }
-
   function competitionSeries(){
     const out=[];
     const avg=p=>{const vals=arr(p?.competitors).map(c=>num(c.score)).filter(v=>v!==null);return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null};
@@ -149,13 +147,13 @@
 
   function cleanMarketHeader(){
     const head=document.querySelector('#market .pm-maphead');if(!head)return;
-    const b=head.querySelector('b');if(b)b.textContent='НАГЛАСИ';
+    const b=head.querySelector('b');if(b)b.textContent='';
     const small=head.querySelector('small');if(small)small.textContent='';
-    [...head.querySelectorAll('*')].forEach(el=>{const t=(el.textContent||'').trim();if(el!==b&&!el.classList.contains('blis-market-clean-live')&&/Интерактивна карта на възприятията|НАГЛАСИ В РЕАЛНО ВРЕМЕ|В РЕАЛНО ВРЕМЕ/i.test(t)&&!el.querySelector('b'))el.style.display='none'});
+    [...head.querySelectorAll('*')].forEach(el=>{const t=(el.textContent||'').trim();if(el!==b&&!el.classList.contains('blis-market-clean-live')&&/Интерактивна карта на възприятията|НАГЛАСИ В РЕАЛНО ВРЕМЕ|В РЕАЛНО ВРЕМЕ|3D мрежа на възприятията/i.test(t)&&!el.querySelector('b'))el.style.display='none'});
     let live=head.querySelector('.blis-market-clean-live');if(!live){live=document.createElement('span');live.className='blis-market-clean-live';live.innerHTML='<i></i> LIVE';head.appendChild(live)}
   }
 
-  function patchAll(){patchCSS();patchLive();patchDigital();patchCompetition();cleanMarketHeader()}
+  function patchAll(){patchCSS();patchLive();patchCompetition();cleanMarketHeader()}
   function startFinalFixes(){patchAll();setInterval(patchAll,700);requestAnimationFrame(driveRadar);window.addEventListener('blis:clientdata',()=>setTimeout(patchAll,60));window.addEventListener('blis:periodchange',()=>setTimeout(patchAll,60));document.addEventListener('click',()=>setTimeout(patchAll,80),true)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startFinalFixes,{once:true});else startFinalFixes();
 })();
