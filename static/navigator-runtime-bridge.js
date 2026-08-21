@@ -45,14 +45,14 @@
     s.async=false;
     document.head.appendChild(s);
   }
-  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260821-0631');
-  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260821-0631');
-  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260821-0631');
-  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260821-0631');
-  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260821-0631');
-  loadScript('blisCompetitionIntelligenceV9Script','/navigator-competition-intelligence-v9.js?v=20260821-0631');
-  loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v=20260821-0631');
-  loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v=20260821-0631');
-  loadScript('blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v=20260821-0631');
-  loadScript('blisArchitectureV14Script','/navigator-architecture-v14.js?v=20260821-0631');
+  loadScript('blisGlobalLiveScript','/navigator-global-live.js?v=20260821-0635');
+  loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v=20260821-0635');
+  loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v=20260821-0635');
+  loadScript('blisCompetitionMasterV5Script','/navigator-competition-master-v5.js?v=20260821-0635');
+  loadScript('blisCompetitionMotionV6Script','/navigator-competition-motion-fix-v6.js?v=20260821-0635');
+  loadScript('blisCompetitionIntelligenceV9Script','/navigator-competition-intelligence-v9.js?v=20260821-0635');
+  loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v=20260821-0635');
+  loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v=20260821-0635');
+  loadScript('blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v=20260821-0635');
+  loadScript('blisArchitectureV15Script','/navigator-architecture-v15.js?v=20260821-0635');
 })();
