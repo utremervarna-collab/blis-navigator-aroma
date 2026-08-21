@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Static 3D signal flow">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbfefd"/>
+      <stop offset=".55" stop-color="#f7fbfa"/>
+      <stop offset="1" stop-color="#f6f9ff"/>
+    </linearGradient>
+    <linearGradient id="r1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9f7ef"/>
+      <stop offset=".28" stop-color="#a7edd8"/>
+      <stop offset=".55" stop-color="#69d9c1"/>
+      <stop offset=".78" stop-color="#65c9e3"/>
+      <stop offset="1" stop-color="#6d9df6"/>
+    </linearGradient>
+    <linearGradient id="r2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c8f3e7"/>
+      <stop offset=".34" stop-color="#49d1aa"/>
+      <stop offset=".68" stop-color="#4fc1dd"/>
+      <stop offset="1" stop-color="#4d84ef"/>
+    </linearGradient>
+    <linearGradient id="r3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e2f8f1"/>
+      <stop offset=".36" stop-color="#96e7d5"/>
+      <stop offset=".7" stop-color="#82d0e7"/>
+      <stop offset="1" stop-color="#82a9f8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-30%" width="120%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12" result="blur"/>
+      <feOffset dy="13" result="off"/>
+      <feColorMatrix in="off" type="matrix" values="0 0 0 0 0.13 0 0 0 0 0.38 0 0 0 0 0.45 0 0 0 .18 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+    <filter id="soft" x="-10%" y="-20%" width="120%" height="150%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="1196" height="396" rx="34" fill="url(#bg)" stroke="#e5ece9"/>
+  <ellipse cx="640" cy="302" rx="430" ry="54" fill="#8fcfca" opacity=".08" filter="url(#soft)"/>
+  <g filter="url(#shadow)">
+    <path d="M-50 187 C85 194 129 136 232 143 C343 151 396 219 505 216 C630 212 679 145 812 153 C929 160 991 220 1105 214 C1160 211 1209 197 1250 192 L1250 303 C1177 309 1129 321 1061 323 C946 327 883 286 779 284 C652 281 601 325 474 326 C365 327 307 289 205 286 C115 283 62 309 -50 306 Z" fill="url(#r1)" opacity=".55"/>
+    <path d="M-60 147 C75 153 123 93 238 103 C356 113 401 184 514 181 C640 177 690 112 822 120 C940 127 1000 190 1113 186 C1169 184 1210 174 1260 166 L1260 263 C1188 270 1134 282 1061 283 C950 284 888 249 782 246 C656 243 598 281 482 282 C368 283 309 248 211 245 C118 242 66 269 -60 266 Z" fill="url(#r2)" opacity=".96"/>
+    <path d="M-40 102 C79 108 136 61 243 70 C356 79 411 147 530 144 C658 141 704 79 834 87 C948 94 1005 150 1120 147 C1174 145 1214 136 1260 128 L1260 214 C1187 222 1134 233 1067 233 C952 233 891 203 783 201 C661 198 602 230 487 232 C370 233 316 205 216 201 C119 198 69 222 -40 219 Z" fill="url(#r3)" opacity=".62"/>
+  </g>
+  <path d="M-35 163 C78 170 132 118 239 127 C347 136 402 199 513 196 C639 192 694 133 817 140 C937 147 997 204 1110 201 C1163 199 1211 187 1245 181" fill="none" stroke="#ffffff" stroke-opacity=".76" stroke-width="8" stroke-linecap="round"/>
+  <path d="M-35 214 C77 222 129 170 231 177 C342 184 393 245 504 241 C628 238 680 184 804 190 C926 197 985 251 1096 248 C1152 247 1204 234 1245 228" fill="none" stroke="#ffffff" stroke-opacity=".56" stroke-width="6" stroke-linecap="round"/>
+  <path d="M-35 121 C78 127 132 83 242 91 C354 100 407 159 529 156 C652 153 705 99 829 106 C945 112 1002 163 1115 160 C1169 158 1209 150 1245 144" fill="none" stroke="#ffffff" stroke-opacity=".43" stroke-width="5" stroke-linecap="round"/>
+</svg>
