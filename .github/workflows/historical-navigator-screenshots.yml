@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout exact 13:48 Navigator state
+      - name: Checkout exact 13:03 Navigator state
         uses: actions/checkout@v4
         with:
-          ref: c2e2985b63a60d1509008ea4f3f8ae8bfe3e7849
+          ref: 19db6d3936e7f87e4d50f51c4ca5240a98a32c41
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -80,6 +80,6 @@ jobs:
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: navigator-2026-08-21-1348
+          name: navigator-2026-08-21-1303
           path: screenshots/*.png
           if-no-files-found: error
