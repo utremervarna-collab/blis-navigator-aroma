@@ -98,3 +98,18 @@
     const timer=setInterval(()=>{tries++;if(install()||tries>20)clearInterval(timer)},100);
   }
 })();
+
+/* Client-value utility pages load after the established Navigator render chain. */
+(function(){
+  if(!document.getElementById('blisClientValuePagesCss')){
+    const l=document.createElement('link');
+    l.id='blisClientValuePagesCss';l.rel='stylesheet';
+    l.href='/navigator-client-value-pages-v1.css?v=20260822-1';
+    document.head.appendChild(l);
+  }
+  if(!document.getElementById('blisClientValuePagesScript')){
+    const s=document.createElement('script');
+    s.id='blisClientValuePagesScript';s.src='/navigator-client-value-pages-v1.js?v=20260822-1';s.async=false;
+    document.head.appendChild(s);
+  }
+})();
