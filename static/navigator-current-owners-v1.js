@@ -1,11 +1,11 @@
 /* BLIS Navigator — current visual ownership guard.
-   Keeps the stable router, but prevents legacy Live / Signals / Visibility bodies
+   Keeps the stable router, but prevents legacy Signals / Visibility bodies
    from covering their current V15 renderers. Event-driven only; no polling. */
 (function(){
 'use strict';
 if(window.__BLISCurrentOwnersV1)return;window.__BLISCurrentOwnersV1=true;
 
-const MODERN={live:'n15Live',social:'n15Signals',digital:'n15Digital'};
+const MODERN={social:'n15Signals',digital:'n15Digital'};
 const modernIds=new Set(Object.keys(MODERN));
 
 function suppressLegacy(id){
