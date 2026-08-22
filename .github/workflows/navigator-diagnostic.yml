@@ -72,7 +72,7 @@ jobs:
           CHROME_BIN: ${{ steps.chrome.outputs.bin }}
         run: |
           cat > /tmp/diag.cjs <<'NODE'
-          const { chromium } = require('playwright-core');
+          const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright-core');
           const fs = require('fs');
           const assert = (ok,msg)=>{ if(!ok) throw new Error(msg); };
           (async()=>{
