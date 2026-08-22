@@ -11,12 +11,18 @@ const pairs=[
 
 function installTypographySystem(){
   if(document.getElementById('blisTypographySystemV1'))return;
-  const l=document.createElement('link');l.id='blisTypographySystemV1';l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-1';document.head.appendChild(l);
+  const l=document.createElement('link');l.id='blisTypographySystemV1';l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual2';document.head.appendChild(l);
+}
+
+function installCurrentOwners(){
+  if(document.getElementById('blisCurrentOwnersV1Script'))return;
+  const s=document.createElement('script');s.id='blisCurrentOwnersV1Script';s.src='/navigator-current-owners-v1.js?v=20260822-visual2';s.async=false;document.head.appendChild(s);
 }
 
 function installDigitalIntelligenceUI(){
-  if(document.getElementById('blisDigitalIntelligenceUI'))return;
-  const s=document.createElement('style');s.id='blisDigitalIntelligenceUI';s.textContent=`
+  let s=document.getElementById('blisDigitalIntelligenceUI');
+  if(!s){s=document.createElement('style');s.id='blisDigitalIntelligenceUI';document.head.appendChild(s)}
+  s.textContent=`
     #social #n15Signals > .n15-title > .n15-k,#social #n15Signals > .n15-title > p{display:none!important}
     #social #n15Signals > .n15-title{margin:2px 0 24px!important}
     #social #n15Signals > .n15-title > h2{margin:0!important;font-size:0!important;line-height:1!important;letter-spacing:0!important;color:#0b1f3a!important}
@@ -29,7 +35,7 @@ function installDigitalIntelligenceUI(){
     #social #n15Signals .n15-dir b{margin-top:18px!important;font-family:Georgia,serif!important;font-weight:600!important;font-size:42px!important;letter-spacing:-.025em!important}
     @media(max-width:1100px){#social #n15Signals > .n15-title > h2:after{font-size:38px}#social #n15Signals .n15-dir strong:after{font-size:26px}}
     @media(max-width:720px){#social #n15Signals > .n15-title > h2:after{font-size:34px}#social #n15Signals .n15-dir strong:after{font-size:24px}}
-  `;document.head.appendChild(s);
+  `;
 }
 
 function setNav(){
@@ -43,7 +49,7 @@ function replaceText(root){
   nodes.forEach(n=>{let t=n.nodeValue||'';pairs.forEach(([a,b])=>t=t.split(a).join(b));if(t!==n.nodeValue)n.nodeValue=t});
 }
 function apply(){
-  installDigitalIntelligenceUI();installTypographySystem();setNav();
+  installDigitalIntelligenceUI();installTypographySystem();installCurrentOwners();setNav();
   replaceText(document.getElementById('market'));
   replaceText(document.getElementById('competition'));
 }
