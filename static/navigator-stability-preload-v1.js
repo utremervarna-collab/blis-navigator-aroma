@@ -1,7 +1,7 @@
-/* BLIS Navigator — stability preload v12. Stable routes, labels and single-pass page paint. */
+/* BLIS Navigator — stability preload v13. Stable routes, labels and single-pass page paint. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV12)return;window.__BLISStabilityPreloadV12=true;
+if(window.__BLISStabilityPreloadV13)return;window.__BLISStabilityPreloadV13=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
@@ -16,6 +16,7 @@ const fnText=fn=>{try{return typeof fn==='function'?Function.prototype.toString.
 function isLegacyRepaintInterval(fn,delay){
   const d=Number(delay)||0,name=typeof fn==='function'?(fn.name||''):'',src=fnText(fn);
   if(d===120&&(name==='tick'||/copy\(\);\s*rep\(\);\s*market\(\);\s*competition\(\)/.test(src)))return true;
+  if(d===180&&/wrapAll\(\)/.test(src)&&/ticks\+\+/.test(src)&&/bodyComplete\(\)/.test(src))return true;
   if(d===700&&(name==='patchAll'||/patchOverview\(\).*patchLive\(\).*patchCompetition\(\)/s.test(src)))return true;
   if(d===1000&&/marketInsights\(\)/.test(src)&&/installRouter\(\)/.test(src))return true;
   if(d===1000&&name==='tick'&&/mount\(\)/.test(src)&&/att-v2-clock/.test(src))return true;
@@ -32,6 +33,8 @@ window.setTimeout=function(fn,delay,...args){
   if(d===90&&name==='competitionTune'){stats.blockedTimeouts++;return 0}
   if(d===700&&name==='boot'&&/ensurePages\(\)/.test(src)&&/refGo\('overview'\)/.test(src)){stats.blockedTimeouts++;return 0}
   if(d===1000&&/getElementById\(['"]social['"]\)/.test(src)&&/classList\.contains\(['"]active['"]\)/.test(src)&&/render\(\)/.test(src)){stats.blockedTimeouts++;return 0}
+  if([120,650,3000,900,1800,4500].includes(d)&&name==='patch'&&/makeKpisInteractive\(root\)/.test(src)&&/restorePriorCurve\(root\)/.test(src)){stats.blockedTimeouts++;return 0}
+  if([0,80,240,650,1200,2200,3800].includes(d)&&/renderNow\(i===0\)/.test(src)){stats.blockedTimeouts++;return 0}
   return nativeSetTimeout(fn,delay,...args);
 };
 
@@ -73,6 +76,13 @@ function mountSocial(){
   if(typeof window.BLISSocialSignalsRender!=='function')return null;
   try{return window.BLISSocialSignalsRender()}catch(_){return null}
 }
+function finalizeSocial(){
+  ensureSocialVisible();
+  try{if(typeof window.BLISSocialInteractivePatch==='function')window.BLISSocialInteractivePatch()}catch(_){ }
+  ensureSocialVisible();
+  activatePage('social');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function canonicalAfterRoute(id){
   if(id==='live')nativeSetTimeout(mountLive,0);
 }
@@ -82,9 +92,9 @@ function canonicalNavHandler(e){
   if(id==='social'&&typeof window.BLISSocialSignalsRender==='function'){
     const result=mountSocial();
     if(result&&typeof result.then==='function'){
-      return result.then(()=>{ensureSocialVisible();activatePage('social');window.scrollTo({top:0,behavior:'smooth'});return result}).catch(()=>{ensureSocialVisible();activatePage('social')});
+      return result.then(()=>{finalizeSocial();return result}).catch(()=>{ensureSocialVisible();activatePage('social')});
     }
-    ensureSocialVisible();activatePage('social');window.scrollTo({top:0,behavior:'smooth'});return result;
+    finalizeSocial();return result;
   }
   if(id==='live')ensureLiveVisible();
   let result;
