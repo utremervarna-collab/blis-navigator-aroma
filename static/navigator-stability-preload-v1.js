@@ -1,11 +1,11 @@
-/* BLIS Navigator — stability preload v10 (QA live ownership probe + stable routing). */
+/* BLIS Navigator — stability preload v11. Stable routes, labels and single-pass page paint. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV10)return;window.__BLISStabilityPreloadV10=true;
+if(window.__BLISStabilityPreloadV11)return;window.__BLISStabilityPreloadV11=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
-  navRepairs:0,marketRepairs:0,overviewMutationTargets:{},liveProbe:[]
+  navRepairs:0,marketRepairs:0
 };
 const nativeSetInterval=window.setInterval.bind(window);
 const nativeSetTimeout=window.setTimeout.bind(window);
@@ -43,39 +43,24 @@ const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
 const finalLabel=new Map(FINAL_NAV);
 let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 
-function liveSnapshot(stage){
-  const root=document.getElementById('live'),host=document.getElementById('liveBody'),btn=document.querySelector('#nav [data-page="live"]');
-  const hrect=host?.getBoundingClientRect?.();
-  stats.liveProbe.push({
-    stage,
-    active:document.querySelector('.page.active')?.id||null,
-    mountType:typeof window.BLISLiveMount,
-    refGoType:typeof window.refGo,
-    goType:typeof window.go,
-    buttonCanonical:!!btn?.onclick?.__blisCanonicalNav,
-    buttonHandler:btn?.onclick?fnText(btn.onclick).slice(0,180):null,
-    hostHTML:host?.innerHTML?.length||0,
-    hostText:(host?.innerText||'').trim().length,
-    lmScreen:!!host?.querySelector?.('.lm-screen'),
-    n15Live:!!document.getElementById('n15Live'),
-    rootChildren:root?[...root.children].map(x=>({id:x.id||'',cls:x.className||'',html:x.innerHTML?.length||0,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,height:Math.round(x.getBoundingClientRect().height)})):[],
-    hostDisplay:host?getComputedStyle(host).display:null,
-    hostVisibility:host?getComputedStyle(host).visibility:null,
-    hostHeight:hrect?Math.round(hrect.height):null
-  });
+function ensureLiveVisible(){
+  const host=document.getElementById('liveBody');if(!host)return;
+  host.style.setProperty('display','block','important');
+  host.style.setProperty('width','100%','important');
+  host.style.setProperty('min-width','0','important');
 }
-function forceLiveMount(stage){
-  liveSnapshot(stage+'-before');
-  try{if(typeof window.BLISLiveMount==='function')window.BLISLiveMount()}catch(e){stats.liveProbe.push({stage:stage+'-error',error:String(e?.stack||e)})}
-  liveSnapshot(stage+'-after');
+function mountLive(){
+  ensureLiveVisible();
+  try{if(typeof window.BLISLiveMount==='function')window.BLISLiveMount()}catch(_){ }
+  ensureLiveVisible();
 }
 function canonicalAfterRoute(id){
-  if(id!=='live')return;
-  nativeSetTimeout(()=>forceLiveMount('onclick-0'),0);
+  if(id==='live')nativeSetTimeout(mountLive,0);
 }
 function canonicalNavHandler(e){
   e?.preventDefault?.();
   const id=this?.dataset?.page;if(!id)return;
+  if(id==='live')ensureLiveVisible();
   let result;
   if(typeof window.refGo==='function')result=window.refGo(id);
   else if(typeof window.go==='function')result=window.go(id);
@@ -100,7 +85,6 @@ function normalizeNavHTML(html){
   if(changed)stats.blockedNavRebuilds++;
   return nativeInnerHTML.get.call(box);
 }
-
 function protectNavLabelWrites(nav){
   if(!nav||!nativeTextContent)return;
   nav.querySelectorAll('button[data-page]').forEach(b=>{
@@ -120,7 +104,6 @@ function protectNavLabelWrites(nav){
     if(nativeTextContent.get.call(t)!==label)nativeTextContent.set.call(t,label);
   });
 }
-
 function protectNavWrites(){
   const nav=document.getElementById('nav');if(!nav)return;
   if(!nav.__blisWriteProtected){
@@ -133,7 +116,6 @@ function protectNavWrites(){
   }
   protectNavLabelWrites(nav);bindNavRoutes(nav);
 }
-
 function stabilizeNav(){
   const nav=document.getElementById('nav');if(!nav||navBusy)return;
   navBusy=true;let changed=false;
@@ -176,7 +158,6 @@ function watchMarket(){
   marketObserver=new MutationObserver(stabilizeMarketTerminology);
   marketObserver.observe(root,{childList:true,subtree:true});
 }
-
 function keepBodiesPainted(){
   ['reputationBody','marketBody','competitionBody'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
@@ -184,24 +165,15 @@ function keepBodiesPainted(){
     el.style.setProperty('opacity','1','important');
   });
 }
-function targetKey(n){let el=n?.nodeType===3?n.parentElement:n;if(!el||el.nodeType!==1)return String(n?.nodeName||'unknown');const id=el.id?`#${el.id}`:'';const cls=[...el.classList||[]].slice(0,3).map(x=>'.'+x).join('');return `${el.tagName.toLowerCase()}${id}${cls}`}
-function traceOverview(){const root=document.getElementById('overview');if(!root)return;new MutationObserver(ms=>{for(const m of ms){const k=`${m.type}:${targetKey(m.target)}`;stats.overviewMutationTargets[k]=(stats.overviewMutationTargets[k]||0)+1}}).observe(root,{childList:true,subtree:true,characterData:true,attributes:true})}
-
 function boot(){
   const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}';document.head.appendChild(st);
-  protectNavWrites();watchNav();watchMarket();keepBodiesPainted();traceOverview();
+  ensureLiveVisible();protectNavWrites();watchNav();watchMarket();keepBodiesPainted();
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('#nav [data-page]');if(!b)return;
-    if(b.dataset.page==='live'){
-      liveSnapshot('capture-click');
-      nativeSetTimeout(()=>forceLiveMount('capture-0'),0);
-      nativeSetTimeout(()=>liveSnapshot('capture-80'),80);
-      nativeSetTimeout(()=>liveSnapshot('capture-300'),300);
-      nativeSetTimeout(()=>liveSnapshot('capture-700'),700);
-    }
-    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()});
+    if(b.dataset.page==='live')ensureLiveVisible();
+    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible()});
   },true);
-  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()}));
+  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();ensureLiveVisible()}));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();keepBodiesPainted()}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
