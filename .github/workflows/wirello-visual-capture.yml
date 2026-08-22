@@ -1,0 +1,62 @@
+name: Wirello Visual Capture
+on:
+  pull_request:
+    branches: [feature/wirello-master-demo]
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.56.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium
+      - name: Capture deployed Wirello pages
+        run: |
+          cat > wirello-capture.js <<'NODE'
+          const {chromium}=require('playwright');
+          const fs=require('fs');
+          (async()=>{
+            fs.mkdirSync('wirello-capture',{recursive:true});
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:1600,height:1000}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
+            const base='https://blis-wirello-master-demo.onrender.com';
+            await page.goto(base+'/client-login?client=wirello',{waitUntil:'domcontentloaded',timeout:120000});
+            await page.fill('#password','BLISdemo2026!');
+            await Promise.all([page.waitForURL(/client=wirello/,{timeout:120000}),page.click('button[type="submit"]')]);
+            await page.waitForTimeout(5000);
+            const targets=[['overview','01-overview.png'],['live','02-live.png'],['social','03-signals.png'],['digital','04-visibility.png'],['reputation','05-reputation.png'],['market','06-attitudes.png'],['competition','07-competition.png'],['reports','08-reports.png']];
+            const states=[];
+            for(const [id,file] of targets){
+              const b=page.locator(`#nav button[data-page="${id}"]`).first();
+              await b.click();
+              await page.waitForTimeout(id==='competition'?2400:1400);
+              const state=await page.evaluate(id=>{
+                const e=document.getElementById(id),box=e?.getBoundingClientRect();
+                return {id,active:!!e?.classList.contains('active'),display:e?getComputedStyle(e).display:'missing',visibility:e?getComputedStyle(e).visibility:'missing',height:Math.round(box?.height||0),text:(e?.innerText||'').replace(/\s+/g,' ').trim().slice(0,1600),children:[...(e?.children||[])].map(x=>x.id||x.className||x.tagName).slice(0,15),windowData:{D:window.D?.name,S:Array.isArray(window.S)?window.S.length:null,A:Array.isArray(window.A)?window.A.length:null,H:Array.isArray(window.H)?window.H.length:null}};
+              },id);
+              states.push(state);
+              await page.screenshot({path:'wirello-capture/'+file,fullPage:true});
+            }
+            fs.writeFileSync('wirello-capture/state.json',JSON.stringify({states,errors},null,2));
+            console.log('WIRELLO_CAPTURE_OK',JSON.stringify(states.map(x=>({id:x.id,height:x.height,text:x.text.length,data:x.windowData}))));
+            await browser.close();
+          })().catch(e=>{console.error('WIRELLO_CAPTURE_FAIL',e);process.exit(1)});
+          NODE
+          node wirello-capture.js
+      - name: Upload capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wirello-visual-capture
+          path: wirello-capture
