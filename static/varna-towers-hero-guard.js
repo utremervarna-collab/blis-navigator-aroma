@@ -19,3 +19,18 @@
   window.addEventListener('load',run,{once:true});
   window.addEventListener('blis:clientdata',run);
 })();
+
+/* Global post-boot loader for the quiet client-value utility pages. */
+(function(){
+  'use strict';
+  if(window.__BLISClientValuePagesLoader)return;window.__BLISClientValuePagesLoader=true;
+  function load(){
+    if(!document.querySelector('link[data-cvp]')){
+      const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-client-value-pages-v1.css?v=20260822-cvp1';l.dataset.cvp='1';document.head.appendChild(l);
+    }
+    if(!document.querySelector('script[data-cvp]')){
+      const s=document.createElement('script');s.src='/navigator-client-value-pages-v1.js?v=20260822-cvp1';s.async=false;s.dataset.cvp='1';document.body.appendChild(s);
+    }
+  }
+  if(document.readyState==='complete')load();else window.addEventListener('load',load,{once:true});
+})();
