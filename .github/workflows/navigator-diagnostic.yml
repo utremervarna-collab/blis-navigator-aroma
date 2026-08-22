@@ -26,7 +26,7 @@ jobs:
       - name: Start application and test API/static routes
         run: |
           set -euxo pipefail
-          PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app > /tmp/blis-server.log 2>&1 &
           echo $! > /tmp/blis.pid
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
@@ -34,7 +34,7 @@ jobs:
           done
           curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
           curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
-          for c in aroma bolyarka astor-garden; do
+          for c in aroma bolyarka astor-garden varna-towers; do
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
@@ -42,10 +42,11 @@ jobs:
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/history" >/tmp/$c-history.json
           done
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma' >/tmp/dashboard.html
-          grep -q 'navigator-reference.js?v=20260818-stable1' /tmp/dashboard.html
-          for f in app.js navigator-reference.js navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js; do
-            curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/$f
-            test -s /tmp/$f
+          grep -q 'navigator-reference.js' /tmp/dashboard.html
+          grep -q 'navigator-runtime-bridge.js' /tmp/dashboard.html
+          for f in app.js navigator-reference.js navigator-runtime-bridge.js navigator-architecture-v15.js navigator-ui-terminology.js navigator-typography-system-v1.css navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js navigator-reputation-master.css navigator-perception-reference-v10.css navigator-competition-master-v5.js; do
+            curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/${f//\//_}
+            test -s /tmp/${f//\//_}
           done
 
       - name: Locate Chromium
@@ -66,75 +67,118 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Browser end-to-end diagnostic
+      - name: Browser typography and layout diagnostic
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.bin }}
         run: |
           cat > /tmp/diag.cjs <<'NODE'
           const { chromium } = require('playwright-core');
           const fs = require('fs');
+          const assert = (ok,msg)=>{ if(!ok) throw new Error(msg); };
           (async()=>{
             const executablePath = process.env.CHROME_BIN || undefined;
             const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox']});
-            const page = await browser.newPage();
-            page.setDefaultTimeout(12000);
-            const errors=[];
-            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
-            page.on('console',m=>{ if(m.type()==='error') errors.push('CONSOLE '+m.text()); });
-            const result={};
-            async function snap(label){
-              result[label]=await page.evaluate(()=>({
-                title:document.title,
-                active:document.querySelector('.page.active')?.id||null,
-                navActive:document.querySelector('#nav button.active')?.dataset.page||null,
-                liveChars:(document.getElementById('liveBody')?.innerHTML||'').length,
-                overviewChars:(document.getElementById('overviewPremium')?.innerHTML||'').length,
-                client:document.body.dataset.client||null,
-                navButtons:document.querySelectorAll('#nav button').length
-              }));
-            }
-            await page.goto('http://127.0.0.1:10000/dashboard.html?client=aroma',{waitUntil:'domcontentloaded',timeout:12000});
-            await page.waitForTimeout(2500);
-            await snap('initial');
-            await page.locator('#nav button[data-page="live"]').click();
-            await page.waitForTimeout(3500);
-            await snap('live');
-            await page.locator('#nav button[data-page="digital"]').click();
-            await page.waitForTimeout(1500);
-            await snap('digital');
-            await page.locator('#nav button[data-page="overview"]').click();
-            await page.waitForTimeout(1500);
-            await snap('overviewReturn');
+            const result={runs:[],errors:[]};
+            const pages=['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help'];
+            const critical=['overview','reputation','market','competition','profile'];
+            const clients=['aroma','bolyarka','astor-garden','varna-towers'];
 
-            const p2=await browser.newPage();
-            p2.setDefaultTimeout(12000);
-            const errors2=[];
-            p2.on('pageerror',e=>errors2.push('PAGEERROR '+e.message));
-            p2.on('console',m=>{if(m.type()==='error')errors2.push('CONSOLE '+m.text())});
-            await p2.goto('http://127.0.0.1:10000/dashboard.html?client=bolyarka',{waitUntil:'domcontentloaded',timeout:12000});
-            await p2.waitForTimeout(2500);
-            result.bolyarka=await p2.evaluate(()=>({
-              title:document.title,
-              client:document.body.dataset.client||null,
-              selected:document.getElementById('clientSel')?.value||null,
-              heading:document.querySelector('.topbar .title h1')?.textContent||null,
-              navButtons:document.querySelectorAll('#nav button').length,
-              active:document.querySelector('.page.active')?.id||null
-            }));
-            result.errors=errors;
-            result.bolyarkaErrors=errors2;
-            console.log(JSON.stringify(result,null,2));
+            async function openClient(client,viewport){
+              const p=await browser.newPage({viewport});
+              p.setDefaultTimeout(15000);
+              const errs=[];
+              p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
+              p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text())});
+              await p.goto(`http://127.0.0.1:10000/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:15000});
+              await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=10,{timeout:15000});
+              await p.waitForTimeout(1000);
+              return {p,errs};
+            }
+
+            async function inspect(p,id,expectedTitlePx){
+              await p.locator(`#nav button[data-page="${id}"]`).click();
+              await p.waitForFunction(pageId=>document.querySelector('.page.active')?.id===pageId,id,{timeout:10000});
+              await p.waitForTimeout(id==='competition'||id==='reputation'||id==='market'?700:350);
+              return p.evaluate(({id,expectedTitlePx})=>{
+                const root=document.getElementById(id);
+                const visible=el=>!!el&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
+                let title=root?.querySelector('.n15-title>h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2');
+                let pseudo=id==='social'&&title;
+                const ts=title?getComputedStyle(title,pseudo?'::after':undefined):null;
+                const titleInfo=title?{
+                  text:pseudo?(ts.content||'').replace(/^['"]|['"]$/g,''):title.textContent.trim(),
+                  font:ts.fontFamily,size:parseFloat(ts.fontSize),color:ts.color,line:ts.lineHeight,
+                  rect:{w:title.getBoundingClientRect().width,h:title.getBoundingClientRect().height}
+                }:null;
+
+                const valueSelector=[
+                  '.n15-bliscore strong','.n15-summaryitem strong','.n15-statpill b','.n15-livekpi strong','.n15-dir>b','.n15-sigm>b',
+                  '.n15-digindex>strong','.n15-digcard strong','.n15-digfocus>strong','.n15-onepoint>b','.ref-val','.ref-score-orb','.ref-donut strong',
+                  '.kpiValue','.moduleVal','.finalMetricValue','.profileScore strong','.coveragePremium strong','.compScore',
+                  '.rp-dimension>strong','.rp-kpi strong','.rp-panel header>b','.rp-emblem span','.rp-exact-label','.pm-kpi-value',
+                  '.cmpv5-score','.cmpv11-flowmetric b','.cmpv10-current b'
+                ].join(',');
+                const values=[...root.querySelectorAll(valueSelector)].filter(visible).map(el=>{
+                  const cs=getComputedStyle(el),r=el.getBoundingClientRect();
+                  const card=el.closest('.n15-card,.ref-card,.rp-kpi,.rp-dimension,.pm-kpi,.cmpv10-series,.cmpv5-lane,.card')||el.parentElement;
+                  const cr=card?.getBoundingClientRect();
+                  return {text:el.textContent.trim().slice(0,80),font:cs.fontFamily,size:parseFloat(cs.fontSize),right:r.right,cardRight:cr?.right||r.right,left:r.left,cardLeft:cr?.left||r.left};
+                });
+                const badValueFont=values.filter(v=>!v.font.toLowerCase().includes('georgia'));
+                const valueOverflow=values.filter(v=>v.right>v.cardRight+5||v.left<v.cardLeft-5);
+                const svgGeorgia=[...root.querySelectorAll('svg text')].filter(visible).filter(el=>getComputedStyle(el).fontFamily.toLowerCase().includes('georgia')).map(el=>el.textContent.trim()).slice(0,10);
+                const pageRect=root.getBoundingClientRect();
+                const docOverflow=document.documentElement.scrollWidth-window.innerWidth;
+                const charts=[...root.querySelectorAll('svg')].filter(visible).map(el=>el.getBoundingClientRect()).filter(r=>r.width>20&&r.height>20);
+                const brokenCharts=charts.filter(r=>r.width<40||r.height<25).length;
+                return {
+                  id,active:document.querySelector('.page.active')?.id||null,
+                  title:titleInfo,expectedTitlePx,
+                  pageHeight:pageRect.height,docOverflow,
+                  valueCount:values.length,badValueFont,valueOverflow,svgGeorgia,chartCount:charts.length,brokenCharts,
+                  typographyLoaded:!!document.getElementById('blisTypographySystemV1')
+                };
+              },{id,expectedTitlePx});
+            }
+
+            async function validateClient(client,viewport,ids){
+              const {p,errs}=await openClient(client,viewport);
+              const expectedTitlePx=viewport.width<=1250?34:38;
+              const run={client,viewport,checks:[]};
+              for(const id of ids){
+                const x=await inspect(p,id,expectedTitlePx);
+                run.checks.push(x);
+                assert(x.active===id,`${client}/${id}: wrong active page ${x.active}`);
+                assert(x.typographyLoaded,`${client}/${id}: typography stylesheet not loaded`);
+                assert(x.title,`${client}/${id}: page title not found`);
+                assert(x.title.font.toLowerCase().includes('georgia'),`${client}/${id}: title font is ${x.title.font}`);
+                assert(Math.abs(x.title.size-expectedTitlePx)<=0.6,`${client}/${id}: title size ${x.title.size}px, expected ${expectedTitlePx}px`);
+                assert(x.title.color==='rgb(9, 35, 70)',`${client}/${id}: title color ${x.title.color}`);
+                assert(x.pageHeight>80,`${client}/${id}: page collapsed to ${x.pageHeight}px`);
+                assert(x.docOverflow<=4,`${client}/${id}: document horizontal overflow ${x.docOverflow}px`);
+                assert(x.badValueFont.length===0,`${client}/${id}: non-Georgia analytical values ${JSON.stringify(x.badValueFont.slice(0,3))}`);
+                assert(x.valueOverflow.length===0,`${client}/${id}: analytical value overflow ${JSON.stringify(x.valueOverflow.slice(0,3))}`);
+                assert(x.svgGeorgia.length===0,`${client}/${id}: SVG/chart labels inherited Georgia ${JSON.stringify(x.svgGeorgia)}`);
+                assert(x.brokenCharts===0,`${client}/${id}: collapsed chart detected`);
+              }
+              assert(errs.length===0,`${client}: browser JS errors ${errs.join(' | ')}`);
+              run.errors=errs;
+              result.runs.push(run);
+              await p.close();
+            }
+
+            await validateClient('aroma',{width:1600,height:1000},pages);
+            await validateClient('aroma',{width:1200,height:850},pages);
+            for(const c of clients.filter(x=>x!=='aroma')) await validateClient(c,{width:1600,height:1000},critical);
+
             fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-            if(result.initial.navButtons < 10) throw new Error('Navigation not initialized');
-            if(result.live.active !== 'live') throw new Error('Live Monitoring did not become active');
-            if(result.digital.active !== 'digital') throw new Error('Digital did not become active');
-            if(errors.length || errors2.length) throw new Error('Browser JavaScript errors detected');
+            console.log(JSON.stringify(result,null,2));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/diag.cjs
 
-      - name: Print server log
+      - name: Print server log and browser result
         if: always()
         run: |
           echo '=== SERVER LOG ==='
