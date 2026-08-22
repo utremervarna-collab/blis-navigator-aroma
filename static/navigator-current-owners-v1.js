@@ -1,12 +1,12 @@
 /* BLIS Navigator — current visual ownership guard.
-   Keeps stable routing while making Signals / Visibility use their current V15 presentation.
+   Keeps stable routing while making Live / Signals / Visibility use their current V15 presentation.
    Legacy bodies remain available for compatibility, but are isolated from the visible page.
    Event-driven only; no polling. */
 (function(){
 'use strict';
 if(window.__BLISCurrentOwnersV1)return;window.__BLISCurrentOwnersV1=true;
 
-const MODERN={social:'n15Signals',digital:'n15Digital'};
+const MODERN={live:'n15Live',social:'n15Signals',digital:'n15Digital'};
 const modernIds=new Set(Object.keys(MODERN));
 const nativeText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
 
@@ -15,15 +15,11 @@ function parkLegacy(id){
   const page=document.getElementById(id);
   const host=document.getElementById(id+'Body');
   const root=document.getElementById(MODERN[id]);
-
-  /* Some older renderers may create/reparent the V15 root inside the legacy body.
-     Pull the current renderer back into the page before isolating the legacy body. */
   if(page&&host&&root&&host.contains(root)){
     try{page.insertBefore(root,host)}catch(_){try{page.appendChild(root)}catch(__){}}
   }else if(page&&host&&root&&root.parentElement===page&&root.nextSibling!==host){
     try{page.insertBefore(root,host)}catch(_){ }
   }
-
   if(host){
     host.style.setProperty('display','block','important');
     host.style.setProperty('visibility','visible','important');
@@ -39,7 +35,6 @@ function parkLegacy(id){
     host.setAttribute('aria-hidden','true');
     host.dataset.blisLegacyParked='1';
   }
-
   if(root){
     root.style.setProperty('display','block','important');
     root.style.setProperty('visibility','visible','important');
@@ -66,7 +61,7 @@ function lockText(el,value){
     Object.defineProperty(el,'textContent',{
       configurable:true,enumerable:false,
       get(){return nativeText.get.call(this)},
-      set(v){if(nativeText.get.call(this)!==wanted)nativeText.set.call(this,wanted)}
+      set(){if(nativeText.get.call(this)!==wanted)nativeText.set.call(this,wanted)}
     });
     el.__blisCurrentTextLock=wanted;
   }catch(_){ }
@@ -83,22 +78,22 @@ function lockCurrentCopy(id){
   lockText(dirs[1],'Сигнали за марката');
 }
 
-function settle(id){
-  parkLegacy(id);lockCurrentCopy(id);
-  requestAnimationFrame(()=>{parkLegacy(id);lockCurrentCopy(id)});
+function settle(id){parkLegacy(id);lockCurrentCopy(id)}
+function settleBurst(id){
+  settle(id);
+  requestAnimationFrame(()=>settle(id));
+  setTimeout(()=>settle(id),0);
+  setTimeout(()=>settle(id),80);
 }
 
 function installFreshPresentation(){
   if(!document.querySelector('link[data-blis-current-type]')){
-    const l=document.createElement('link');
-    l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual4';
-    l.dataset.blisCurrentType='1';document.head.appendChild(l);
+    const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual5';l.dataset.blisCurrentType='1';document.head.appendChild(l);
   }
-  let s=document.getElementById('blisCurrentOwnersVisualCSS');
-  if(!s){s=document.createElement('style');s.id='blisCurrentOwnersVisualCSS';document.head.appendChild(s)}
+  let s=document.getElementById('blisCurrentOwnersVisualCSS');if(!s){s=document.createElement('style');s.id='blisCurrentOwnersVisualCSS';document.head.appendChild(s)}
   s.textContent=`
-    #socialBody[data-blis-legacy-parked="1"] *,#digitalBody[data-blis-legacy-parked="1"] *{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-    #social #n15Signals,#digital #n15Digital{box-sizing:border-box!important;max-width:100%!important;transform:none!important}
+    #liveBody[data-blis-legacy-parked="1"] *,#socialBody[data-blis-legacy-parked="1"] *,#digitalBody[data-blis-legacy-parked="1"] *{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    #live #n15Live,#social #n15Signals,#digital #n15Digital{box-sizing:border-box!important;max-width:100%!important;transform:none!important}
     #social #n15Signals>.n15-title>.n15-k,#social #n15Signals>.n15-title>p{display:none!important}
     #social #n15Signals>.n15-title{margin:2px 0 24px!important}
     #social #n15Signals>.n15-title>h2{margin:0!important;font-size:0!important;line-height:1!important;letter-spacing:0!important;color:#092346!important}
@@ -116,50 +111,22 @@ function installFreshPresentation(){
 
 function renderModern(id){
   if(!modernIds.has(id))return;
-  parkLegacy(id);
   let result;
   try{if(typeof window.refGo==='function')result=window.refGo(id);else if(typeof window.go==='function')result=window.go(id)}catch(_){ }
-  requestAnimationFrame(()=>settle(id));
+  settleBurst(id);
   return result;
 }
-
-function modernClick(e){
-  e?.preventDefault?.();
-  const id=this?.dataset?.page;
-  if(!modernIds.has(id))return;
-  return renderModern(id);
-}
-modernClick.__blisCanonicalNav=true;
-modernClick.__blisCurrentOwner=true;
-
-function bind(){
-  const nav=document.getElementById('nav');if(!nav)return;
-  modernIds.forEach(id=>{
-    const b=nav.querySelector(`button[data-page="${id}"]`);if(b&&b.onclick!==modernClick)b.onclick=modernClick;
-  });
-}
-
-function settleActive(){
-  const id=document.querySelector('.page.active')?.id;
-  if(modernIds.has(id))settle(id);
-  bind();
-}
-
+function modernClick(e){e?.preventDefault?.();const id=this?.dataset?.page;if(!modernIds.has(id))return;return renderModern(id)}
+modernClick.__blisCanonicalNav=true;modernClick.__blisCurrentOwner=true;
+function bind(){const nav=document.getElementById('nav');if(!nav)return;modernIds.forEach(id=>{const b=nav.querySelector(`button[data-page="${id}"]`);if(b&&b.onclick!==modernClick)b.onclick=modernClick})}
+function settleActive(){const id=document.querySelector('.page.active')?.id;if(modernIds.has(id))settleBurst(id);bind()}
 function boot(){
-  installFreshPresentation();
-  modernIds.forEach(parkLegacy);
-  bind();
-  const nav=document.getElementById('nav');
-  if(nav)new MutationObserver(()=>requestAnimationFrame(bind)).observe(nav,{childList:true,subtree:true});
-  document.addEventListener('click',e=>{
-    const b=e.target?.closest?.('#nav button[data-page]');
-    if(!b||!modernIds.has(b.dataset.page))return;
-    requestAnimationFrame(()=>settle(b.dataset.page));
-  },true);
+  installFreshPresentation();bind();
+  const nav=document.getElementById('nav');if(nav)new MutationObserver(()=>requestAnimationFrame(bind)).observe(nav,{childList:true,subtree:true});
+  document.addEventListener('click',e=>{const b=e.target?.closest?.('#nav button[data-page]');if(!b||!modernIds.has(b.dataset.page))return;requestAnimationFrame(()=>settleBurst(b.dataset.page))},true);
   window.addEventListener('blis:clientdata',()=>requestAnimationFrame(settleActive));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(settleActive));
   requestAnimationFrame(()=>requestAnimationFrame(settleActive));
 }
-
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
