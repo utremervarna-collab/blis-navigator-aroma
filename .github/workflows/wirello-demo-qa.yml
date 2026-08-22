@@ -1,0 +1,140 @@
+name: Wirello Demo QA
+
+on:
+  push:
+    branches:
+      - tools/wirello-demo-qa-20260822
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wirello-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.56.1 >/dev/null 2>&1
+          npx playwright install --with-deps chromium
+      - name: Verify deployed Wirello Navigator
+        run: |
+          cat > /tmp/wirello-qa.js <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          const BASE = 'https://blis-wirello-master-demo.onrender.com';
+          const pages = [
+            ['overview','01-overview.png',350],
+            ['live','02-live-monitoring.png',300],
+            ['social','03-signals.png',350],
+            ['digital','04-visibility.png',300],
+            ['reputation','05-reputation.png',300],
+            ['market','06-attitudes.png',300],
+            ['competition','07-competition.png',450],
+            ['reports','08-monthly-reports.png',250]
+          ];
+
+          (async()=>{
+            fs.mkdirSync('wirello-qa',{recursive:true});
+            const browser = await chromium.launch({headless:true});
+            const page = await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
+            const jsErrors=[];
+            page.on('pageerror',e=>jsErrors.push('PAGEERROR: '+e.message));
+            page.on('console',m=>{ if(m.type()==='error') jsErrors.push('CONSOLE: '+m.text()); });
+
+            await page.goto(BASE+'/client-login?client=wirello',{waitUntil:'domcontentloaded',timeout:120000});
+            const user = await page.inputValue('#username');
+            if(user !== 'wirello.demo') throw new Error('Unexpected demo username: '+user);
+            await page.fill('#password','BLISdemo2026!');
+            await Promise.all([
+              page.waitForURL(/dashboard\.html\?client=wirello/, {timeout:120000}),
+              page.click('button[type="submit"]')
+            ]);
+            await page.waitForLoadState('domcontentloaded');
+            await page.waitForFunction(()=>document.body?.dataset?.client==='wirello',{timeout:60000});
+            await page.waitForTimeout(4500);
+
+            const api = await page.evaluate(async()=>{
+              const get=p=>fetch(p).then(r=>r.json());
+              const [d,h,s,q,r] = await Promise.all([
+                get('/api/clients/wirello/dashboard'),
+                get('/api/clients/wirello/history'),
+                get('/api/clients/wirello/sources'),
+                get('/api/clients/wirello/data-quality'),
+                get('/api/clients/wirello/reports')
+              ]);
+              return {dashboard:d,historyCount:h.length,sourceCount:s.length,quality:q,reportCount:r.length,reportTitles:r.map(x=>x.title)};
+            });
+
+            if(api.dashboard?.name!=='Wirello Market') throw new Error('Wirello dashboard data missing');
+            if(Number(api.dashboard?.blis_index)!==74.6) throw new Error('Unexpected BLIS demo index');
+            if(api.historyCount < 365) throw new Error('Daily history too short: '+api.historyCount);
+            if(api.sourceCount < 20) throw new Error('Source coverage too small: '+api.sourceCount);
+            if(api.reportCount < 7) throw new Error('Reports incomplete: '+api.reportCount);
+            if(!api.reportTitles.some(x=>/Месечен аналитичен обзор/.test(x))) throw new Error('Bulgarian monthly report title missing');
+
+            const results=[];
+            for(const [id,file,minHeight] of pages){
+              const nav=page.locator(`#nav button[data-page="${id}"]`);
+              if(await nav.count()===0) throw new Error(`Missing nav route: ${id}`);
+              await nav.first().click();
+              await page.waitForTimeout(id==='competition'?2200:1200);
+              const state=await page.evaluate((id)=>{
+                const sec=document.getElementById(id);
+                const nav=document.querySelector(`#nav button[data-page="${id}"] .navtxt`);
+                const box=sec?.getBoundingClientRect();
+                return {
+                  active:!!sec?.classList.contains('active'),
+                  display:sec?getComputedStyle(sec).display:'missing',
+                  visibility:sec?getComputedStyle(sec).visibility:'missing',
+                  height:box?.height||0,
+                  text:(sec?.innerText||'').replace(/\s+/g,' ').trim(),
+                  navLabel:(nav?.textContent||'').trim(),
+                  cmp3d:!!sec?.querySelector('.cmpv5'),
+                  whiteGuard:sec?getComputedStyle(sec).visibility==='hidden':true
+                };
+              },id);
+              if(!state.active) throw new Error(`${id}: route not active`);
+              if(state.display==='none' || state.visibility==='hidden' || state.whiteGuard) throw new Error(`${id}: page hidden`);
+              if(state.height < minHeight) throw new Error(`${id}: suspicious height ${state.height}`);
+              if(state.text.length < 90) throw new Error(`${id}: insufficient rendered content (${state.text.length})`);
+              if(id==='competition' && !state.cmp3d) throw new Error('Competition 3D master missing');
+              if(id==='competition' && !/VestaMart/.test(state.text)) throw new Error('Wirello competitors missing');
+              if(id==='reports' && !/Месечен аналитичен обзор/.test(state.text)) throw new Error('Localized monthly reports missing');
+              if(id==='social' && !/Facebook|Instagram|TikTok/.test(state.text)) throw new Error('Social demo signals missing');
+              if(id==='market' && !/Wirello Select|Цена и стойност|Брандово търсене/.test(state.text)) throw new Error('Attitudes/market demo signals missing');
+              await page.screenshot({path:path.join('wirello-qa',file),fullPage:true});
+              results.push({id,...state,textLength:state.text.length});
+            }
+
+            const labels=Object.fromEntries(results.map(x=>[x.id,x.navLabel]));
+            const expected={overview:'Общ преглед',live:'Live Monitoring',social:'Сигнали',digital:'Видимост',reputation:'Репутация',market:'Нагласи',competition:'Конкуренти',reports:'Месечни доклади'};
+            for(const [k,v] of Object.entries(expected)) if(labels[k]!==v) throw new Error(`Wrong nav label ${k}: ${labels[k]} != ${v}`);
+
+            const top=await page.locator('.topbar .title h1').textContent();
+            if((top||'').trim()!=='Wirello Market') throw new Error('Wirello title not applied');
+
+            fs.writeFileSync('wirello-qa/results.json',JSON.stringify({ok:true,api,results,jsErrors},null,2));
+            console.log('WIRELLO_QA_OK '+JSON.stringify({history:api.historyCount,sources:api.sourceCount,reports:api.reportCount,pages:results.map(x=>({id:x.id,height:Math.round(x.height),text:x.textLength,label:x.navLabel})),jsErrors}));
+            await browser.close();
+          })().catch(async err=>{
+            console.error('WIRELLO_QA_FAIL',err);
+            process.exit(1);
+          });
+          NODE
+          node /tmp/wirello-qa.js
+      - name: Upload screenshots and QA result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wirello-demo-qa-20260822
+          path: wirello-qa
+          if-no-files-found: warn
