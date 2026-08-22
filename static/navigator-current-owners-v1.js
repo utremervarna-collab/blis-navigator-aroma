@@ -52,17 +52,24 @@ function installFreshPresentation(){
   `;
 }
 
+function activate(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('#nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+}
+
 function renderModern(id){
   if(!modernIds.has(id))return;
+  activate(id);
   suppressLegacy(id);
-  let result;
-  try{if(typeof window.refGo==='function')result=window.refGo(id);else if(typeof window.go==='function')result=window.go(id)}catch(_){ }
-  suppressLegacy(id);
+  /* V15 listens to periodchange and renders only the active current page after 80 ms.
+     Using that path avoids the legacy refGo wrappers that repaint Social/Digital first. */
+  window.dispatchEvent(new CustomEvent('blis:periodchange',{detail:{source:'current-owner',page:id}}));
   requestAnimationFrame(()=>{
     suppressLegacy(id);
     requestAnimationFrame(()=>suppressLegacy(id));
   });
-  return result;
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function modernClick(e){
