@@ -1,10 +1,11 @@
-/* BLIS Navigator — stability preload v1.
-   Stops legacy repaint timers before they are registered, keeps final nav terminology stable,
+/* BLIS Navigator — stability preload v2.
+   Stops legacy repaint timers before they are registered, keeps final nav/page terminology stable,
    and prevents readiness guards from blanking whole modules while optional visuals settle. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV1)return;window.__BLISStabilityPreloadV1=true;
+if(window.__BLISStabilityPreloadV2)return;window.__BLISStabilityPreloadV2=true;
 
+const stats=window.BLISStabilityStats={blockedIntervals:0,blockedTimeouts:0,navRepairs:0,marketRepairs:0};
 const nativeSetInterval=window.setInterval.bind(window);
 const nativeSetTimeout=window.setTimeout.bind(window);
 const fnText=fn=>{try{return typeof fn==='function'?Function.prototype.toString.call(fn):String(fn||'')}catch(_){return''}};
@@ -18,18 +19,15 @@ function isLegacyRepaintInterval(fn,delay){
  return false;
 }
 window.setInterval=function(fn,delay,...args){
- if(isLegacyRepaintInterval(fn,delay))return 0;
+ if(isLegacyRepaintInterval(fn,delay)){stats.blockedIntervals++;return 0}
  return nativeSetInterval(fn,delay,...args);
 };
 
 window.setTimeout=function(fn,delay,...args){
  const d=Number(delay)||0,name=typeof fn==='function'?(fn.name||''):'',src=fnText(fn);
- /* Architecture V15 used two extra full rerenders after every route change. */
- if((d===90||d===240)&&name==='renderActive')return 0;
- /* Its Competition mutation observer scheduled another full enhancement pass. */
- if(d===90&&name==='competitionTune')return 0;
- /* navigator-reference also scheduled a second full boot 700 ms after load. */
- if(d===700&&name==='boot'&&/ensurePages\(\)/.test(src)&&/refGo\('overview'\)/.test(src))return 0;
+ if((d===90||d===240)&&name==='renderActive'){stats.blockedTimeouts++;return 0}
+ if(d===90&&name==='competitionTune'){stats.blockedTimeouts++;return 0}
+ if(d===700&&name==='boot'&&/ensurePages\(\)/.test(src)&&/refGo\('overview'\)/.test(src)){stats.blockedTimeouts++;return 0}
  return nativeSetTimeout(fn,delay,...args);
 };
 
@@ -39,21 +37,21 @@ const FINAL_NAV=[
  ['history','История'],['profile','Клиентски профил'],['settings','Настройки'],['help','Помощ']
 ];
 const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
-let navObserver=null,navBusy=false;
+let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 function stabilizeNav(){
  const nav=document.getElementById('nav');if(!nav||navBusy)return;
- navBusy=true;
+ navBusy=true;let changed=false;
  try{
-   nav.querySelectorAll('button[data-page]').forEach(b=>{if(!finalIds.has(b.dataset.page))b.remove()});
+   nav.querySelectorAll('button[data-page]').forEach(b=>{if(!finalIds.has(b.dataset.page)){b.remove();changed=true}});
    const byId=new Map([...nav.querySelectorAll('button[data-page]')].map(b=>[b.dataset.page,b]));
    FINAL_NAV.forEach(([id,label])=>{
      const b=byId.get(id);if(!b)return;
      const t=b.querySelector('.navtxt')||b.querySelector('span:last-child');
-     if(t&&t.textContent!==label)t.textContent=label;
+     if(t&&t.textContent!==label){t.textContent=label;changed=true}
    });
    const order=[...nav.querySelectorAll('button[data-page]')].map(b=>b.dataset.page);
    nav.dataset.blisStable=order.length===FINAL_NAV.length&&FINAL_NAV.every((x,i)=>order[i]===x[0])?'1':'0';
- }finally{navBusy=false}
+ }finally{navBusy=false;if(changed)stats.navRepairs++}
 }
 function watchNav(){
  const nav=document.getElementById('nav');if(!nav)return;
@@ -61,6 +59,25 @@ function watchNav(){
  if(navObserver)return;
  navObserver=new MutationObserver(stabilizeNav);
  navObserver.observe(nav,{childList:true,subtree:true,characterData:true});
+}
+
+function stabilizeMarketTerminology(){
+ const root=document.getElementById('marketBody');if(!root||marketBusy)return;
+ marketBusy=true;let changed=false;
+ try{
+   const h=root.querySelector('.pm-hero h2');if(h&&h.textContent!=='Нагласи'){h.textContent='Нагласи';changed=true}
+   const p=root.querySelector('.pm-hero p');if(p&&/възприяти/i.test(p.textContent||'')){p.textContent='Проверими теми, сигнали и връзки, които оформят нагласите към марката.';changed=true}
+   const mh=root.querySelector('.pm-maphead b');if(mh&&mh.textContent!=='НАГЛАСИ В РЕАЛНО ВРЕМЕ'){mh.textContent='НАГЛАСИ В РЕАЛНО ВРЕМЕ';changed=true}
+   const a=document.getElementById('blisActiveModule');if(document.getElementById('market')?.classList.contains('active')&&a&&a.textContent!=='Нагласи'){a.textContent='Нагласи';changed=true}
+   const d=document.getElementById('blisSystemDetail');if(document.getElementById('market')?.classList.contains('active')&&d&&/възприят/i.test(d.textContent||'')){d.textContent='Проверими теми, връзки, динамика и източници';changed=true}
+ }finally{marketBusy=false;if(changed)stats.marketRepairs++}
+}
+function watchMarket(){
+ const root=document.getElementById('marketBody');if(!root)return;
+ stabilizeMarketTerminology();
+ if(marketObserver)return;
+ marketObserver=new MutationObserver(()=>stabilizeMarketTerminology());
+ marketObserver.observe(root,{childList:true,subtree:true});
 }
 
 function keepBodiesPainted(){
@@ -76,10 +93,10 @@ function boot(){
    #nav[data-blis-stable="1"]{opacity:1!important}
    #nav{transition:none!important}
  `;document.head.appendChild(st);
- watchNav();keepBodiesPainted();
- document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page]'))requestAnimationFrame(()=>{stabilizeNav();keepBodiesPainted()})},true);
- window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{stabilizeNav();keepBodiesPainted()}));
- window.addEventListener('blis:periodchange',()=>requestAnimationFrame(keepBodiesPainted));
+ watchNav();watchMarket();keepBodiesPainted();
+ document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page]'))requestAnimationFrame(()=>{stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()})},true);
+ window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()}));
+ window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();keepBodiesPainted()}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
