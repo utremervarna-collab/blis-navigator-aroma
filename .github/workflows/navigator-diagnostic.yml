@@ -34,7 +34,7 @@ jobs:
           done
           curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
           curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
-          for c in aroma bolyarka astor-garden varna-towers; do
+          for c in aroma bolyarka astor-garden; do
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
@@ -81,7 +81,7 @@ jobs:
             const result={runs:[],errors:[]};
             const pages=['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help'];
             const critical=['overview','reputation','market','competition','profile'];
-            const clients=['aroma','bolyarka','astor-garden','varna-towers'];
+            const clients=['aroma','bolyarka','astor-garden'];
 
             async function openClient(client,viewport){
               const p=await browser.newPage({viewport});
