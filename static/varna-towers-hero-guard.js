@@ -20,7 +20,8 @@
   window.addEventListener('blis:clientdata',run);
 })();
 
-/* Global post-boot loader for the quiet client-value utility pages. */
+/* Global post-boot loader for the quiet client-value utility pages.
+   Event-driven only: no polling or recurring repaint loop. */
 (function(){
   'use strict';
   if(window.__BLISClientValuePagesLoader)return;window.__BLISClientValuePagesLoader=true;
