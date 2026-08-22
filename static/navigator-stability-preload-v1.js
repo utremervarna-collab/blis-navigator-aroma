@@ -1,9 +1,9 @@
-/* BLIS Navigator — stability preload v2.
+/* BLIS Navigator — stability preload v3.
    Stops legacy repaint timers before they are registered, keeps final nav/page terminology stable,
    and prevents readiness guards from blanking whole modules while optional visuals settle. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV2)return;window.__BLISStabilityPreloadV2=true;
+if(window.__BLISStabilityPreloadV3)return;window.__BLISStabilityPreloadV3=true;
 
 const stats=window.BLISStabilityStats={blockedIntervals:0,blockedTimeouts:0,navRepairs:0,marketRepairs:0};
 const nativeSetInterval=window.setInterval.bind(window);
@@ -16,6 +16,8 @@ function isLegacyRepaintInterval(fn,delay){
  if(d===700&&(name==='patchAll'||/patchOverview\(\).*patchLive\(\).*patchCompetition\(\)/s.test(src)))return true;
  if(d===1000&&/marketInsights\(\)/.test(src)&&/installRouter\(\)/.test(src))return true;
  if(d===1000&&name==='tick'&&/mount\(\)/.test(src)&&/att-v2-clock/.test(src))return true;
+ /* navigator-chart-points used to remove/recreate SVG points every 1.2s. */
+ if(d===1200&&/enhance\(\)/.test(src))return true;
  return false;
 }
 window.setInterval=function(fn,delay,...args){
