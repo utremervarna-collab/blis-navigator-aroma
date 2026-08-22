@@ -24,7 +24,16 @@
 (function(){
   'use strict';
   if(window.__BLISClientValuePagesLoader)return;window.__BLISClientValuePagesLoader=true;
+  function syncData(){
+    try{window.D=D}catch(_){ }
+    try{window.S=S}catch(_){ }
+    try{window.Q=Q}catch(_){ }
+    try{window.A=A}catch(_){ }
+    try{window.H=H}catch(_){ }
+    try{window.BLIS_CURRENT_SLUG=slug}catch(_){ }
+  }
   function load(){
+    syncData();
     if(!document.querySelector('link[data-cvp]')){
       const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-client-value-pages-v1.css?v=20260822-cvp1';l.dataset.cvp='1';document.head.appendChild(l);
     }
@@ -32,5 +41,6 @@
       const s=document.createElement('script');s.src='/navigator-client-value-pages-v1.js?v=20260822-cvp1';s.async=false;s.dataset.cvp='1';document.body.appendChild(s);
     }
   }
+  window.addEventListener('blis:clientdata',syncData);
   if(document.readyState==='complete')load();else window.addEventListener('load',load,{once:true});
 })();
