@@ -1,7 +1,7 @@
-/* BLIS Navigator — stability preload v14. Stable routes, labels and single-pass page paint. */
+/* BLIS Navigator — stability preload v15. Stable routes, labels and single-pass page paint. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV14)return;window.__BLISStabilityPreloadV14=true;
+if(window.__BLISStabilityPreloadV15)return;window.__BLISStabilityPreloadV15=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
@@ -41,6 +41,9 @@ window.setTimeout=function(fn,delay,...args){
   if([20,40,180,220].includes(d)&&name==='render'&&/digitalBody/.test(src)&&/dv-shell/.test(src)){stats.blockedTimeouts++;return 0}
   if([20,40,180,220].includes(d)&&/BLISDigitalRadar/.test(src)&&/BLISDigitalInteractionsPatch/.test(src)){stats.blockedTimeouts++;return 0}
   if(d===40&&/BLISDigitalInteractionsPatch/.test(src)){stats.blockedTimeouts++;return 0}
+  if(d===0&&name==='mount'&&/BLISPerceptionMap/.test(src)){stats.blockedTimeouts++;return 0}
+  if(d===50&&/schedule\(activeStage\(\),attempt\+1\)/.test(src)){stats.blockedTimeouts++;return 0}
+  if((d===120||d===420)&&/schedule\(activeStage\(\),0\)/.test(src)){stats.blockedTimeouts++;return 0}
   return nativeSetTimeout(fn,delay,...args);
 };
 
@@ -64,6 +67,7 @@ function ensureBodyVisible(id){
 const ensureLiveVisible=()=>ensureBodyVisible('live');
 const ensureSocialVisible=()=>ensureBodyVisible('social');
 const ensureDigitalVisible=()=>ensureBodyVisible('digital');
+const ensureMarketVisible=()=>ensureBodyVisible('market');
 function activatePage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
@@ -90,8 +94,28 @@ function mountDigital(){
   ensureDigitalVisible();
   try{window.BLISDigitalRadar?.render?.()}catch(_){ }
   try{window.BLISDigitalInteractionsPatch?.()}catch(_){ }
+  try{window.BLISDigitalTruthPatch?.()}catch(_){ }
   ensureDigitalVisible();
   activatePage('digital');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function stabilizeMarketTerminology(){
+  const root=document.getElementById('marketBody');if(!root||marketBusy)return;
+  marketBusy=true;let changed=false;
+  try{
+    const h=root.querySelector('.pm-hero h2');if(h&&h.textContent!=='Нагласи'){h.textContent='Нагласи';changed=true}
+    const p=root.querySelector('.pm-hero p');if(p&&/възприяти/i.test(p.textContent||'')){p.textContent='Проверими теми, сигнали и връзки, които оформят нагласите към марката.';changed=true}
+    const mh=root.querySelector('.pm-maphead b');if(mh&&mh.textContent!=='НАГЛАСИ В РЕАЛНО ВРЕМЕ'){mh.textContent='НАГЛАСИ В РЕАЛНО ВРЕМЕ';changed=true}
+    const a=document.getElementById('blisActiveModule');if(document.getElementById('market')?.classList.contains('active')&&a&&a.textContent!=='Нагласи'){a.textContent='Нагласи';changed=true}
+    const d=document.getElementById('blisSystemDetail');if(document.getElementById('market')?.classList.contains('active')&&d&&/възприят/i.test(d.textContent||'')){d.textContent='Проверими теми, връзки, динамика и източници';changed=true}
+  }finally{marketBusy=false;if(changed)stats.marketRepairs++}
+}
+function mountMarket(){
+  ensureMarketVisible();
+  activatePage('market');
+  try{window.BLISPerceptionMap?.mount?.()}catch(_){ }
+  stabilizeMarketTerminology();
+  ensureMarketVisible();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function canonicalAfterRoute(id){
@@ -108,6 +132,7 @@ function canonicalNavHandler(e){
     finalizeSocial();return result;
   }
   if(id==='digital'&&window.BLISDigitalRadar?.render){mountDigital();return}
+  if(id==='market'&&window.BLISPerceptionMap?.mount){mountMarket();return}
   if(id==='live')ensureLiveVisible();
   let result;
   if(typeof window.refGo==='function')result=window.refGo(id);
@@ -187,18 +212,6 @@ function watchNav(){
   navObserver=new MutationObserver(()=>{protectNavWrites();stabilizeNav()});
   navObserver.observe(nav,{childList:true,subtree:true,characterData:true});
 }
-
-function stabilizeMarketTerminology(){
-  const root=document.getElementById('marketBody');if(!root||marketBusy)return;
-  marketBusy=true;let changed=false;
-  try{
-    const h=root.querySelector('.pm-hero h2');if(h&&h.textContent!=='Нагласи'){h.textContent='Нагласи';changed=true}
-    const p=root.querySelector('.pm-hero p');if(p&&/възприяти/i.test(p.textContent||'')){p.textContent='Проверими теми, сигнали и връзки, които оформят нагласите към марката.';changed=true}
-    const mh=root.querySelector('.pm-maphead b');if(mh&&mh.textContent!=='НАГЛАСИ В РЕАЛНО ВРЕМЕ'){mh.textContent='НАГЛАСИ В РЕАЛНО ВРЕМЕ';changed=true}
-    const a=document.getElementById('blisActiveModule');if(document.getElementById('market')?.classList.contains('active')&&a&&a.textContent!=='Нагласи'){a.textContent='Нагласи';changed=true}
-    const d=document.getElementById('blisSystemDetail');if(document.getElementById('market')?.classList.contains('active')&&d&&/възприят/i.test(d.textContent||'')){d.textContent='Проверими теми, връзки, динамика и източници';changed=true}
-  }finally{marketBusy=false;if(changed)stats.marketRepairs++}
-}
 function watchMarket(){
   const root=document.getElementById('marketBody');if(!root)return;
   stabilizeMarketTerminology();
@@ -214,16 +227,17 @@ function keepBodiesPainted(){
   });
 }
 function boot(){
-  const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}#live.page.active #liveBody,#social.page.active #socialBody,#digital.page.active #digitalBody{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important}';document.head.appendChild(st);
-  ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();protectNavWrites();watchNav();watchMarket();keepBodiesPainted();
+  const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}#live.page.active #liveBody,#social.page.active #socialBody,#digital.page.active #digitalBody,#market.page.active #marketBody{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important}';document.head.appendChild(st);
+  ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible();protectNavWrites();watchNav();watchMarket();keepBodiesPainted();
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('#nav [data-page]');if(!b)return;
     if(b.dataset.page==='live')ensureLiveVisible();
     if(b.dataset.page==='social')ensureSocialVisible();
     if(b.dataset.page==='digital')ensureDigitalVisible();
-    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible()});
+    if(b.dataset.page==='market')ensureMarketVisible();
+    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible();if(b.dataset.page==='market')ensureMarketVisible()});
   },true);
-  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible()}));
+  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible()}));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();keepBodiesPainted()}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
