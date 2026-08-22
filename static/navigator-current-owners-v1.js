@@ -1,6 +1,6 @@
 /* BLIS Navigator — current visual ownership guard.
    Keeps stable routing while making Signals / Visibility use their current V15 presentation.
-   Legacy bodies remain off-canvas only for compatibility with older modules and diagnostics.
+   Legacy bodies remain available for compatibility, but are isolated from the visible page.
    Event-driven only; no polling. */
 (function(){
 'use strict';
@@ -12,7 +12,18 @@ const nativeText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
 
 function parkLegacy(id){
   if(!modernIds.has(id))return;
+  const page=document.getElementById(id);
   const host=document.getElementById(id+'Body');
+  const root=document.getElementById(MODERN[id]);
+
+  /* Some older renderers may create/reparent the V15 root inside the legacy body.
+     Pull the current renderer back into the page before isolating the legacy body. */
+  if(page&&host&&root&&host.contains(root)){
+    try{page.insertBefore(root,host)}catch(_){try{page.appendChild(root)}catch(__){}}
+  }else if(page&&host&&root&&root.parentElement===page&&root.nextSibling!==host){
+    try{page.insertBefore(root,host)}catch(_){ }
+  }
+
   if(host){
     host.style.setProperty('display','block','important');
     host.style.setProperty('visibility','visible','important');
@@ -28,12 +39,19 @@ function parkLegacy(id){
     host.setAttribute('aria-hidden','true');
     host.dataset.blisLegacyParked='1';
   }
-  const root=document.getElementById(MODERN[id]);
+
   if(root){
     root.style.setProperty('display','block','important');
     root.style.setProperty('visibility','visible','important');
     root.style.setProperty('opacity','1','important');
-    root.style.removeProperty('position');
+    root.style.setProperty('position','relative','important');
+    root.style.setProperty('left','auto','important');
+    root.style.setProperty('top','auto','important');
+    root.style.setProperty('width','100%','important');
+    root.style.setProperty('height','auto','important');
+    root.style.setProperty('min-height','0','important');
+    root.style.setProperty('overflow','visible','important');
+    root.style.setProperty('pointer-events','auto','important');
     root.removeAttribute('aria-hidden');
     root.dataset.blisCurrentVisual='1';
   }
@@ -73,12 +91,14 @@ function settle(id){
 function installFreshPresentation(){
   if(!document.querySelector('link[data-blis-current-type]')){
     const l=document.createElement('link');
-    l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual3';
+    l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual4';
     l.dataset.blisCurrentType='1';document.head.appendChild(l);
   }
   let s=document.getElementById('blisCurrentOwnersVisualCSS');
   if(!s){s=document.createElement('style');s.id='blisCurrentOwnersVisualCSS';document.head.appendChild(s)}
   s.textContent=`
+    #socialBody[data-blis-legacy-parked="1"] *,#digitalBody[data-blis-legacy-parked="1"] *{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    #social #n15Signals,#digital #n15Digital{box-sizing:border-box!important;max-width:100%!important;transform:none!important}
     #social #n15Signals>.n15-title>.n15-k,#social #n15Signals>.n15-title>p{display:none!important}
     #social #n15Signals>.n15-title{margin:2px 0 24px!important}
     #social #n15Signals>.n15-title>h2{margin:0!important;font-size:0!important;line-height:1!important;letter-spacing:0!important;color:#092346!important}
