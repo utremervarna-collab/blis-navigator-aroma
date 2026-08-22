@@ -119,8 +119,21 @@ jobs:
                 const t0=performance.now();
                 let rootMutations=0,navMutations=0,lateMutations=0,activeTransitions=0,lastActive=document.querySelector('.page.active')?.id||null;
                 let firstContent=null,lastBlankAt=0;
-                const titleVariants=new Set(),marketNavVariants=new Set();
-                const ro=new MutationObserver(ms=>{rootMutations+=ms.length;if(performance.now()-t0>650)lateMutations+=ms.length});
+                const titleVariants=new Set(),marketNavVariants=new Set(),lateTargetCounts=new Map();
+                const mutationKey=m=>{
+                  let el=m.target?.nodeType===1?m.target:m.target?.parentElement;
+                  if(!el)return `${m.type}:unknown`;
+                  const idPart=el.id?`#${el.id}`:'';
+                  const cls=[...(el.classList||[])].slice(0,4).map(x=>'.'+x).join('');
+                  return `${m.type}:${(el.tagName||'node').toLowerCase()}${idPart}${cls}`;
+                };
+                const ro=new MutationObserver(ms=>{
+                  rootMutations+=ms.length;
+                  if(performance.now()-t0>650){
+                    lateMutations+=ms.length;
+                    ms.forEach(m=>{const k=mutationKey(m);lateTargetCounts.set(k,(lateTargetCounts.get(k)||0)+1)});
+                  }
+                });
                 const no=new MutationObserver(ms=>{navMutations+=ms.length});
                 ro.observe(root,{childList:true,subtree:true,characterData:true});
                 no.observe(nav,{childList:true,subtree:true,characterData:true});
@@ -146,11 +159,12 @@ jobs:
                 ro.disconnect();no.disconnect();
                 const body=document.getElementById(id+'Body')||root;
                 const cs=getComputedStyle(body),rect=body.getBoundingClientRect();
+                const lateTargets=[...lateTargetCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([target,count])=>({target,count}));
                 return{
                   id,active:document.querySelector('.page.active')?.id||null,
                   firstContentMs:firstContent===null?null:Math.round(firstContent),
                   blankUntilMs:Math.round(lastBlankAt),rootMutations,lateMutations,navMutations,activeTransitions,
-                  titleVariants:[...titleVariants],marketNavVariants:[...marketNavVariants],
+                  titleVariants:[...titleVariants],marketNavVariants:[...marketNavVariants],lateTargets,
                   bodyVisible:cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,
                   bodyHeight:Math.round(rect.height),
                   stabilityStats:window.BLISStabilityStats||null
@@ -195,7 +209,7 @@ jobs:
                 assert(perf.bodyVisible,`${client}/${id}: body hidden after route`);
                 assert(perf.bodyHeight>80,`${client}/${id}: body collapsed to ${perf.bodyHeight}px`);
                 assert(perf.activeTransitions<=2,`${client}/${id}: ${perf.activeTransitions} active-page transitions`);
-                assert(perf.lateMutations<=6,`${client}/${id}: ${perf.lateMutations} DOM mutations after 650ms`);
+                assert(perf.lateMutations<=6,`${client}/${id}: ${perf.lateMutations} DOM mutations after 650ms; targets=${JSON.stringify(perf.lateTargets)}`);
                 assert(perf.navMutations<=12,`${client}/${id}: nav mutated ${perf.navMutations} times after click`);
                 if(id==='market'){
                   assert(perf.titleVariants.length===1&&perf.titleVariants[0]==='Нагласи',`${client}/market: visible title variants ${JSON.stringify(perf.titleVariants)}`);
