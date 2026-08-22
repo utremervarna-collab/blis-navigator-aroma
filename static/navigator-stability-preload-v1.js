@@ -1,11 +1,11 @@
-/* BLIS Navigator — stability preload v9 (stable routing + reliable Live mount, approved Overview preserved). */
+/* BLIS Navigator — stability preload v10 (QA live ownership probe + stable routing). */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV9)return;window.__BLISStabilityPreloadV9=true;
+if(window.__BLISStabilityPreloadV10)return;window.__BLISStabilityPreloadV10=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
-  navRepairs:0,marketRepairs:0,overviewMutationTargets:{}
+  navRepairs:0,marketRepairs:0,overviewMutationTargets:{},liveProbe:[]
 };
 const nativeSetInterval=window.setInterval.bind(window);
 const nativeSetTimeout=window.setTimeout.bind(window);
@@ -43,11 +43,35 @@ const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
 const finalLabel=new Map(FINAL_NAV);
 let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 
+function liveSnapshot(stage){
+  const root=document.getElementById('live'),host=document.getElementById('liveBody'),btn=document.querySelector('#nav [data-page="live"]');
+  const hrect=host?.getBoundingClientRect?.();
+  stats.liveProbe.push({
+    stage,
+    active:document.querySelector('.page.active')?.id||null,
+    mountType:typeof window.BLISLiveMount,
+    refGoType:typeof window.refGo,
+    goType:typeof window.go,
+    buttonCanonical:!!btn?.onclick?.__blisCanonicalNav,
+    buttonHandler:btn?.onclick?fnText(btn.onclick).slice(0,180):null,
+    hostHTML:host?.innerHTML?.length||0,
+    hostText:(host?.innerText||'').trim().length,
+    lmScreen:!!host?.querySelector?.('.lm-screen'),
+    n15Live:!!document.getElementById('n15Live'),
+    rootChildren:root?[...root.children].map(x=>({id:x.id||'',cls:x.className||'',html:x.innerHTML?.length||0,display:getComputedStyle(x).display,visibility:getComputedStyle(x).visibility,height:Math.round(x.getBoundingClientRect().height)})):[],
+    hostDisplay:host?getComputedStyle(host).display:null,
+    hostVisibility:host?getComputedStyle(host).visibility:null,
+    hostHeight:hrect?Math.round(hrect.height):null
+  });
+}
+function forceLiveMount(stage){
+  liveSnapshot(stage+'-before');
+  try{if(typeof window.BLISLiveMount==='function')window.BLISLiveMount()}catch(e){stats.liveProbe.push({stage:stage+'-error',error:String(e?.stack||e)})}
+  liveSnapshot(stage+'-after');
+}
 function canonicalAfterRoute(id){
   if(id!=='live')return;
-  nativeSetTimeout(()=>{
-    if(typeof window.BLISLiveMount==='function')window.BLISLiveMount();
-  },0);
+  nativeSetTimeout(()=>forceLiveMount('onclick-0'),0);
 }
 function canonicalNavHandler(e){
   e?.preventDefault?.();
@@ -166,7 +190,17 @@ function traceOverview(){const root=document.getElementById('overview');if(!root
 function boot(){
   const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}';document.head.appendChild(st);
   protectNavWrites();watchNav();watchMarket();keepBodiesPainted();traceOverview();
-  document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page]'))requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()})},true);
+  document.addEventListener('click',e=>{
+    const b=e.target.closest?.('#nav [data-page]');if(!b)return;
+    if(b.dataset.page==='live'){
+      liveSnapshot('capture-click');
+      nativeSetTimeout(()=>forceLiveMount('capture-0'),0);
+      nativeSetTimeout(()=>liveSnapshot('capture-80'),80);
+      nativeSetTimeout(()=>liveSnapshot('capture-300'),300);
+      nativeSetTimeout(()=>liveSnapshot('capture-700'),700);
+    }
+    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()});
+  },true);
   window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted()}));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();keepBodiesPainted()}));
 }
