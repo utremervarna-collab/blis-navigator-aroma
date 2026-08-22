@@ -1,7 +1,7 @@
-/* BLIS Navigator — stability preload v7 (canonical nav routing + pre-paint protection). */
+/* BLIS Navigator — stability preload v8 (canonical route/render ownership + pre-paint protection). */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV7)return;window.__BLISStabilityPreloadV7=true;
+if(window.__BLISStabilityPreloadV8)return;window.__BLISStabilityPreloadV8=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
@@ -43,11 +43,26 @@ const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
 const finalLabel=new Map(FINAL_NAV);
 let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 
+function canonicalAfterRoute(id){
+  nativeSetTimeout(()=>{
+    if(id==='overview'){
+      document.getElementById('n15Overview')?.remove();
+      return;
+    }
+    if(id==='live'){
+      document.getElementById('n15Live')?.remove();
+      if(typeof window.BLISLiveMount==='function')window.BLISLiveMount();
+    }
+  },0);
+}
 function canonicalNavHandler(e){
   e?.preventDefault?.();
   const id=this?.dataset?.page;if(!id)return;
-  if(typeof window.refGo==='function')return window.refGo(id);
-  if(typeof window.go==='function')return window.go(id);
+  let result;
+  if(typeof window.refGo==='function')result=window.refGo(id);
+  else if(typeof window.go==='function')result=window.go(id);
+  canonicalAfterRoute(id);
+  return result;
 }
 canonicalNavHandler.__blisCanonicalNav=true;
 function bindNavRoutes(nav){
