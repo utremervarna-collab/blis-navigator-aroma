@@ -8,8 +8,8 @@ import (
 )
 
 // Wirello stays a data-only adapter on top of the current canonical Navigator.
-// The response hook loads the synthetic client runtime and demo polish before the
-// normal dashboard scripts, so every current page renderer and visual fix remains the owner.
+// Visual polish loads first; the V3 data layer loads after it and is therefore the
+// authoritative synthetic dataset for every Navigator module.
 func init() {
 	if authProxy == nil {
 		return
@@ -20,7 +20,6 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
-		}
 		return injectWirelloDemoRuntime(resp)
 	}
 }
@@ -45,7 +44,7 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-data-v3.js?v=20260822-full1"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script><script src="/wirello-signals-ui.js?v=20260822-ui1"></script>`)
+			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-demo-data-v3.js?v=20260822-full2"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script><script src="/wirello-signals-ui.js?v=20260822-ui1"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
