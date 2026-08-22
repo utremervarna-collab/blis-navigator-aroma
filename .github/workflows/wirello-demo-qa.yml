@@ -133,7 +133,7 @@ jobs:
             process.exit(1);
           });
           NODE
-          node /tmp/wirello-qa.js
+          NODE_PATH="$PWD/node_modules" node /tmp/wirello-qa.js
       - name: Upload screenshots and QA result
         if: always()
         uses: actions/upload-artifact@v4
