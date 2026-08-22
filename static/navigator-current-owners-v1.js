@@ -82,13 +82,13 @@ function settle(id){parkLegacy(id);lockCurrentCopy(id)}
 function settleBurst(id){
   settle(id);
   requestAnimationFrame(()=>settle(id));
-  setTimeout(()=>settle(id),0);
-  setTimeout(()=>settle(id),80);
+  setTimeout(()=>settle(id),120);
+  setTimeout(()=>settle(id),180);
 }
 
 function installFreshPresentation(){
   if(!document.querySelector('link[data-blis-current-type]')){
-    const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual5';l.dataset.blisCurrentType='1';document.head.appendChild(l);
+    const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual6';l.dataset.blisCurrentType='1';document.head.appendChild(l);
   }
   let s=document.getElementById('blisCurrentOwnersVisualCSS');if(!s){s=document.createElement('style');s.id='blisCurrentOwnersVisualCSS';document.head.appendChild(s)}
   s.textContent=`
@@ -113,6 +113,9 @@ function renderModern(id){
   if(!modernIds.has(id))return;
   let result;
   try{if(typeof window.refGo==='function')result=window.refGo(id);else if(typeof window.go==='function')result=window.go(id)}catch(_){ }
+  if(id==='live'){
+    try{window.dispatchEvent(new Event('blis:periodchange'))}catch(_){ }
+  }
   settleBurst(id);
   return result;
 }
