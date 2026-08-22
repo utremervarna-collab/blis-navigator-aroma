@@ -1,7 +1,7 @@
-/* BLIS Navigator — stability preload v6 (QA render ownership + pre-paint nav protection). */
+/* BLIS Navigator — stability preload v7 (canonical nav routing + pre-paint protection). */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV6)return;window.__BLISStabilityPreloadV6=true;
+if(window.__BLISStabilityPreloadV7)return;window.__BLISStabilityPreloadV7=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
@@ -43,6 +43,20 @@ const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
 const finalLabel=new Map(FINAL_NAV);
 let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 
+function canonicalNavHandler(e){
+  e?.preventDefault?.();
+  const id=this?.dataset?.page;if(!id)return;
+  if(typeof window.refGo==='function')return window.refGo(id);
+  if(typeof window.go==='function')return window.go(id);
+}
+canonicalNavHandler.__blisCanonicalNav=true;
+function bindNavRoutes(nav){
+  nav?.querySelectorAll('button[data-page]').forEach(b=>{
+    if(b.onclick?.__blisCanonicalNav)return;
+    b.onclick=canonicalNavHandler;
+  });
+}
+
 function normalizeNavHTML(html){
   const box=document.createElement('div');nativeInnerHTML.set.call(box,String(html??''));
   const buttons=[...box.querySelectorAll('button[data-page]')];if(!buttons.length)return String(html??'');
@@ -81,10 +95,10 @@ function protectNavWrites(){
     Object.defineProperty(nav,'innerHTML',{
       configurable:true,enumerable:false,
       get(){return nativeInnerHTML.get.call(nav)},
-      set(v){nativeInnerHTML.set.call(nav,normalizeNavHTML(v));protectNavLabelWrites(nav)}
+      set(v){nativeInnerHTML.set.call(nav,normalizeNavHTML(v));protectNavLabelWrites(nav);bindNavRoutes(nav)}
     });
   }
-  protectNavLabelWrites(nav);
+  protectNavLabelWrites(nav);bindNavRoutes(nav);
 }
 
 function stabilizeNav(){
@@ -98,7 +112,7 @@ function stabilizeNav(){
       const t=b.querySelector('.navtxt')||b.querySelector('span:last-child');
       if(t&&nativeTextContent.get.call(t)!==label){nativeTextContent.set.call(t,label);changed=true}
     });
-    protectNavLabelWrites(nav);
+    protectNavLabelWrites(nav);bindNavRoutes(nav);
     const order=[...nav.querySelectorAll('button[data-page]')].map(b=>b.dataset.page);
     nav.dataset.blisStable=order.length===FINAL_NAV.length&&FINAL_NAV.every((x,i)=>order[i]===x[0])?'1':'0';
   }finally{navBusy=false;if(changed)stats.navRepairs++}
