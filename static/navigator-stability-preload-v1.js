@@ -1,11 +1,11 @@
-/* BLIS Navigator — stability preload v16. Stable routes, labels and single-pass page paint. */
+/* BLIS Navigator — stability preload v17. Stable routes, labels and single-pass page paint. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV16)return;window.__BLISStabilityPreloadV16=true;
+if(window.__BLISStabilityPreloadV17)return;window.__BLISStabilityPreloadV17=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
-  blockedMarketTextWrites:0,navRepairs:0,marketRepairs:0
+  blockedMarketTextWrites:0,blockedCompetitionTimeouts:0,navRepairs:0,marketRepairs:0
 };
 const nativeSetInterval=window.setInterval.bind(window);
 const nativeSetTimeout=window.setTimeout.bind(window);
@@ -30,8 +30,19 @@ window.setInterval=function(fn,delay,...args){
   if(isLegacyRepaintInterval(fn,delay)){stats.blockedIntervals++;return 0}
   return nativeSetInterval(fn,delay,...args);
 };
+function isCompetitionDuplicateTimeout(fn,delay){
+  const d=Number(delay)||0,name=typeof fn==='function'?(fn.name||''):'',src=fnText(fn);
+  if((d===25||d===35)&&name==='render'&&/competitionBody/.test(src)&&/startMotion\(\)/.test(src))return true;
+  if(d===80&&name==='enhance'&&/funcv9/.test(src))return true;
+  if(d===70&&name==='schedule'&&/renderBottom/.test(src))return true;
+  if(d===35&&name==='renderBottom'&&/cmpv10-layout/.test(src))return true;
+  if((d===45||d===90||d===100)&&name==='apply'&&/buildCategories/.test(src)&&/enhanceSignals/.test(src))return true;
+  if((d===55||d===100||d===120)&&name==='enhance'&&/ensureStaticFlow/.test(src))return true;
+  return false;
+}
 window.setTimeout=function(fn,delay,...args){
   const d=Number(delay)||0,name=typeof fn==='function'?(fn.name||''):'',src=fnText(fn);
+  if(isCompetitionDuplicateTimeout(fn,d)){stats.blockedTimeouts++;stats.blockedCompetitionTimeouts++;return 0}
   if((d===90||d===240)&&name==='renderActive'){stats.blockedTimeouts++;return 0}
   if(d===90&&name==='competitionTune'){stats.blockedTimeouts++;return 0}
   if(d===700&&name==='boot'&&/ensurePages\(\)/.test(src)&&/refGo\('overview'\)/.test(src)){stats.blockedTimeouts++;return 0}
@@ -54,7 +65,7 @@ const FINAL_NAV=[
 ];
 const finalIds=new Set(FINAL_NAV.map(x=>x[0]));
 const finalLabel=new Map(FINAL_NAV);
-let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
+let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false,competitionBusy=false;
 
 function ensureBodyVisible(id){
   const host=document.getElementById(id+'Body');if(!host)return;
@@ -68,6 +79,7 @@ const ensureLiveVisible=()=>ensureBodyVisible('live');
 const ensureSocialVisible=()=>ensureBodyVisible('social');
 const ensureDigitalVisible=()=>ensureBodyVisible('digital');
 const ensureMarketVisible=()=>ensureBodyVisible('market');
+function ensureCompetitionVisible(){ensureBodyVisible('competition');document.body.classList.add('blis-competition-ready')}
 function activatePage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
@@ -143,6 +155,56 @@ function mountMarket(){
   ensureMarketVisible();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function finalizeCompetition(){
+  const root=document.getElementById('competitionBody');if(!root)return;
+  const h=root.querySelector('.cmpv5-title h2');if(h&&h.textContent!=='Конкуренти')h.textContent='Конкуренти';
+  const labels=[...root.querySelectorAll('.cmpv11-flowmetric span')];
+  if(labels[0]&&labels[0].textContent!=='Промяна')labels[0].textContent='Промяна';
+  if(labels[1]&&labels[1].textContent!=='Потвърденост')labels[1].textContent='Потвърденост';
+  if(labels[2]&&labels[2].textContent!=='Покритие на конкурентния набор')labels[2].textContent='Покритие на конкурентния набор';
+  const section=root.querySelector('.cmpv10-layout>section.cmpv10-card');
+  if(section){
+    const dh=section.querySelector('.cmpv10-head h3');if(dh&&dh.textContent!=='Динамика на средата')dh.textContent='Динамика на средата';
+    let note=section.querySelector('.n15-cmpexplain');
+    if(!note){note=document.createElement('div');note.className='n15-cmpexplain';section.appendChild(note)}
+    const copy='<b>Текущо движение:</b> кривата показва посоката на реално измерената конкурентна среда за избрания период. Повишението означава засилване на конкурентната активност, а спадът — отслабване.';
+    if(note.innerHTML!==copy)note.innerHTML=copy;
+  }
+  const a=document.getElementById('blisActiveModule');if(a)a.textContent='Конкуренти';
+  const d=document.getElementById('blisSystemDetail');if(d)d.textContent='Позиция, конкурентни промени и ключови сигнали';
+  bindCompetitionInteractions();ensureCompetitionVisible();
+}
+function enhanceCompetitionStack(){
+  try{window.BLISCompetitionIntelligenceV9?.enhance?.()}catch(_){ }
+  try{window.BLISCompetitionEnvironmentV10?.render?.()}catch(_){ }
+  try{window.BLISCompetitionPageV11?.apply?.()}catch(_){ }
+  try{window.BLISCompetitionPageV12?.enhance?.()}catch(_){ }
+  finalizeCompetition();
+}
+function bindCompetitionInteractions(){
+  const root=document.getElementById('competitionBody');if(!root)return;
+  root.querySelectorAll('.cmpv5-seg button').forEach(b=>{
+    const original=b.onclick;if(typeof original!=='function'||original.__blisCompetitionPeriod)return;
+    const wrapped=function(e){
+      const result=original.call(this,e);
+      nativeSetTimeout(()=>{if(document.getElementById('competition')?.classList.contains('active'))enhanceCompetitionStack()},0);
+      return result;
+    };
+    wrapped.__blisCompetitionPeriod=true;b.onclick=wrapped;
+  });
+}
+function mountCompetition(){
+  if(competitionBusy)return;
+  competitionBusy=true;
+  try{
+    activatePage('competition');
+    document.body.classList.remove('blis-competition-ready');
+    try{window.BLISCompetitionMasterV5?.render?.()}catch(_){ }
+    enhanceCompetitionStack();
+    ensureCompetitionVisible();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }finally{competitionBusy=false}
+}
 function canonicalAfterRoute(id){
   if(id==='live')nativeSetTimeout(mountLive,0);
 }
@@ -158,6 +220,7 @@ function canonicalNavHandler(e){
   }
   if(id==='digital'&&window.BLISDigitalRadar?.render){mountDigital();return}
   if(id==='market'&&window.BLISPerceptionMap?.mount){mountMarket();return}
+  if(id==='competition'&&window.BLISCompetitionMasterV5?.render){mountCompetition();return}
   if(id==='live')ensureLiveVisible();
   let result;
   if(typeof window.refGo==='function')result=window.refGo(id);
@@ -250,9 +313,10 @@ function keepBodiesPainted(){
     el.style.setProperty('visibility','visible','important');
     el.style.setProperty('opacity','1','important');
   });
+  if(document.getElementById('competition')?.classList.contains('active'))document.body.classList.add('blis-competition-ready');
 }
 function boot(){
-  const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}#live.page.active #liveBody,#social.page.active #socialBody,#digital.page.active #digitalBody,#market.page.active #marketBody{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important}';document.head.appendChild(st);
+  const st=document.createElement('style');st.id='blisStabilityPreloadCSS';st.textContent='#nav[data-blis-stable="0"]{opacity:0!important}#nav[data-blis-stable="1"]{opacity:1!important}#nav{transition:none!important}#live.page.active #liveBody,#social.page.active #socialBody,#digital.page.active #digitalBody,#market.page.active #marketBody,#competition.page.active #competitionBody{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important}';document.head.appendChild(st);
   ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible();protectNavWrites();watchNav();watchMarket();keepBodiesPainted();
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('#nav [data-page]');if(!b)return;
@@ -260,9 +324,10 @@ function boot(){
     if(b.dataset.page==='social')ensureSocialVisible();
     if(b.dataset.page==='digital')ensureDigitalVisible();
     if(b.dataset.page==='market')ensureMarketVisible();
-    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible();if(b.dataset.page==='market')ensureMarketVisible()});
+    if(b.dataset.page==='competition')ensureCompetitionVisible();
+    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible();if(b.dataset.page==='market')ensureMarketVisible();if(b.dataset.page==='competition')ensureCompetitionVisible()});
   },true);
-  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible()}));
+  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible();if(document.getElementById('competition')?.classList.contains('active'))nativeSetTimeout(mountCompetition,0)}));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted()}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
