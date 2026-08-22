@@ -17,7 +17,7 @@ func molloxSeedClient(stamp string) *Client {
 			{Key: "contact", Label: "MOLLOX – Контакти и дистрибутори", URL: "https://mollox.bg/contact-us", Method: "дистрибуторска мрежа и публични контакти", Reliability: .99},
 			{Key: "news", Label: "MOLLOX – Новини", URL: "https://mollox.bg/aktualno/", Method: "публично съдържание и секторни теми", Reliability: .98},
 			{Key: "facebook", Label: "Facebook – MOLLOX България", URL: "https://www.facebook.com/molloxbg/", Method: "официален публичен социален профил", Reliability: .94},
-			{Key: "linkedin", Label: "LinkedIn – MOLLOX Professional Hygiene", URL: "https://bg.linkedin.com/company/mollox-professional-hygiene", Method: "официален корпоративен B2B профил", Reliability: .97},
+			{Key: "linkedin", Label: "LinkedIn – MOLLOX България", URL: "https://www.linkedin.com/company/mollox-bulgaria", Method: "официален корпоративен B2B профил", Reliability: .97},
 			{Key: "google_search", Label: "Google", URL: "https://www.google.com/", Method: "откриваемост и публична информационна среда", Reliability: .88},
 			{Key: "google_trends", Label: "Google Trends", URL: "https://trends.google.com/", Method: "относителен интерес при търсене", Reliability: .92},
 			{Key: "registry", Label: "Търговски регистър", URL: "https://portal.registryagency.bg/", Method: "официални фирмени данни", Reliability: 1.0},
