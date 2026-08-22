@@ -8,8 +8,8 @@ import (
 )
 
 // Wirello stays a data-only adapter on top of the current canonical Navigator.
-// The response hook loads the synthetic client runtime before the normal dashboard
-// scripts, so every current page renderer and visual fix remains the owner.
+// The response hook loads the synthetic client runtime and demo polish before the
+// normal dashboard scripts, so every current page renderer and visual fix remains the owner.
 func init() {
 	if authProxy == nil {
 		return
@@ -45,7 +45,7 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script>`)
+			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
