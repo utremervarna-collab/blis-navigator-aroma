@@ -1,37 +1,79 @@
 /* BLIS Navigator — current visual ownership guard.
-   Keeps the stable router, but prevents legacy Signals / Visibility bodies
-   from covering their current V15 renderers. Event-driven only; no polling. */
+   Keeps stable routing while making Signals / Visibility use their current V15 presentation.
+   Legacy bodies remain off-canvas only for compatibility with older modules and diagnostics.
+   Event-driven only; no polling. */
 (function(){
 'use strict';
 if(window.__BLISCurrentOwnersV1)return;window.__BLISCurrentOwnersV1=true;
 
 const MODERN={social:'n15Signals',digital:'n15Digital'};
 const modernIds=new Set(Object.keys(MODERN));
+const nativeText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
 
-function suppressLegacy(id){
+function parkLegacy(id){
   if(!modernIds.has(id))return;
   const host=document.getElementById(id+'Body');
   if(host){
-    host.style.setProperty('display','none','important');
-    host.style.setProperty('visibility','hidden','important');
-    host.style.setProperty('opacity','0','important');
+    host.style.setProperty('display','block','important');
+    host.style.setProperty('visibility','visible','important');
+    host.style.setProperty('opacity','1','important');
+    host.style.setProperty('position','absolute','important');
+    host.style.setProperty('left','-100000px','important');
+    host.style.setProperty('top','0','important');
+    host.style.setProperty('width','1px','important');
+    host.style.setProperty('height','100px','important');
+    host.style.setProperty('min-height','100px','important');
+    host.style.setProperty('overflow','hidden','important');
+    host.style.setProperty('pointer-events','none','important');
     host.setAttribute('aria-hidden','true');
-    host.dataset.blisLegacyHidden='1';
+    host.dataset.blisLegacyParked='1';
   }
   const root=document.getElementById(MODERN[id]);
   if(root){
     root.style.setProperty('display','block','important');
     root.style.setProperty('visibility','visible','important');
     root.style.setProperty('opacity','1','important');
+    root.style.removeProperty('position');
     root.removeAttribute('aria-hidden');
     root.dataset.blisCurrentVisual='1';
   }
 }
 
+function lockText(el,value){
+  if(!el||!nativeText)return;
+  const wanted=String(value);
+  if(el.__blisCurrentTextLock===wanted)return;
+  try{nativeText.set.call(el,wanted)}catch(_){el.textContent=wanted}
+  try{
+    Object.defineProperty(el,'textContent',{
+      configurable:true,enumerable:false,
+      get(){return nativeText.get.call(this)},
+      set(v){if(nativeText.get.call(this)!==wanted)nativeText.set.call(this,wanted)}
+    });
+    el.__blisCurrentTextLock=wanted;
+  }catch(_){ }
+}
+
+function lockCurrentCopy(id){
+  if(id!=='social')return;
+  const root=document.getElementById('n15Signals');if(!root)return;
+  lockText(root.querySelector('.n15-title .n15-k'),'DIGITAL INTELLIGENCE');
+  lockText(root.querySelector('.n15-title h2'),'Digital Intelligence');
+  lockText(root.querySelector('.n15-title p'),'Проверими сигнали от марката и за марката в наблюдаваната дигитална среда.');
+  const dirs=root.querySelectorAll('.n15-dir strong');
+  lockText(dirs[0],'Сигнали от марката');
+  lockText(dirs[1],'Сигнали за марката');
+}
+
+function settle(id){
+  parkLegacy(id);lockCurrentCopy(id);
+  requestAnimationFrame(()=>{parkLegacy(id);lockCurrentCopy(id)});
+}
+
 function installFreshPresentation(){
   if(!document.querySelector('link[data-blis-current-type]')){
     const l=document.createElement('link');
-    l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual2';
+    l.rel='stylesheet';l.href='/navigator-typography-system-v1.css?v=20260822-visual3';
     l.dataset.blisCurrentType='1';document.head.appendChild(l);
   }
   let s=document.getElementById('blisCurrentOwnersVisualCSS');
@@ -52,24 +94,13 @@ function installFreshPresentation(){
   `;
 }
 
-function activate(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id)?.classList.add('active');
-  document.querySelectorAll('#nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
-}
-
 function renderModern(id){
   if(!modernIds.has(id))return;
-  activate(id);
-  suppressLegacy(id);
-  /* V15 listens to periodchange and renders only the active current page after 80 ms.
-     Using that path avoids the legacy refGo wrappers that repaint Social/Digital first. */
-  window.dispatchEvent(new CustomEvent('blis:periodchange',{detail:{source:'current-owner',page:id}}));
-  requestAnimationFrame(()=>{
-    suppressLegacy(id);
-    requestAnimationFrame(()=>suppressLegacy(id));
-  });
-  window.scrollTo({top:0,behavior:'smooth'});
+  parkLegacy(id);
+  let result;
+  try{if(typeof window.refGo==='function')result=window.refGo(id);else if(typeof window.go==='function')result=window.go(id)}catch(_){ }
+  requestAnimationFrame(()=>settle(id));
+  return result;
 }
 
 function modernClick(e){
@@ -90,20 +121,20 @@ function bind(){
 
 function settleActive(){
   const id=document.querySelector('.page.active')?.id;
-  if(modernIds.has(id))suppressLegacy(id);
+  if(modernIds.has(id))settle(id);
   bind();
 }
 
 function boot(){
   installFreshPresentation();
-  modernIds.forEach(suppressLegacy);
+  modernIds.forEach(parkLegacy);
   bind();
   const nav=document.getElementById('nav');
   if(nav)new MutationObserver(()=>requestAnimationFrame(bind)).observe(nav,{childList:true,subtree:true});
   document.addEventListener('click',e=>{
     const b=e.target?.closest?.('#nav button[data-page]');
     if(!b||!modernIds.has(b.dataset.page))return;
-    requestAnimationFrame(()=>{suppressLegacy(b.dataset.page);bind()});
+    requestAnimationFrame(()=>settle(b.dataset.page));
   },true);
   window.addEventListener('blis:clientdata',()=>requestAnimationFrame(settleActive));
   window.addEventListener('blis:periodchange',()=>requestAnimationFrame(settleActive));
