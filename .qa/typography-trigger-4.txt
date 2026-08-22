@@ -1,0 +1,1 @@
+Fourth temporary PR-only trigger with same-origin resource diagnostics.
