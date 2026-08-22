@@ -1,13 +1,13 @@
 package main
 
 // Wirello Market — synthetic MASTER DEMO account.
-// Demo password: demo (stored only as the standard one-way BLIS client hash).
+// Uses the original demo credentials so existing presentations keep working.
 func init() {
-	clientAccounts["demo@wirello.market"] = clientAccount{
-		Username:     "demo@wirello.market",
-		PasswordHash: "540409858af733c7bbcfd8073753833fdbc6bf0ec8b8408a22b4b1b4cb312a7d",
+	clientAccounts["wirello.demo"] = clientAccount{
+		Username:     "wirello.demo",
+		PasswordHash: "46041343ae35090d6ced5bb27661220505d430e0c0f9868fef4ac708f9102f27",
 		ClientSlug:   "wirello",
 		ClientName:   "Wirello Market",
-		Sector:       "Omnichannel retail / FMCG",
+		Sector:       "Омниканален ритейл / FMCG",
 	}
 }
