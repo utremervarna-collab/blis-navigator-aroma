@@ -26,11 +26,11 @@
       font-size:44px;
       line-height:1.05;
       font-weight:850;
-      letter-spacing:-.045em;
+      letter-spacing:-.04em;
       color:#0b1f3a;
     }
 
-    /* Larger, balanced side labels */
+    /* Larger, balanced side labels without stretched lettering */
     #social #n15Signals .n15-dir strong{
       display:block!important;
       width:100%!important;
@@ -46,10 +46,9 @@
       font-size:29px;
       line-height:1.12;
       font-weight:850;
-      letter-spacing:-.035em;
+      letter-spacing:-.012em;
       color:#0f223e;
-      text-align:justify;
-      text-align-last:justify;
+      text-align:left;
     }
     #social #n15Signals .n15-dir.from strong:after{content:'Сигнали от марката'}
     #social #n15Signals .n15-dir.about strong:after{content:'Сигнали за марката'}
@@ -65,7 +64,7 @@
       font-family:Georgia,serif!important;
       font-weight:600!important;
       font-size:42px!important;
-      letter-spacing:-.035em!important;
+      letter-spacing:-.025em!important;
     }
 
     @media(max-width:1100px){
@@ -74,7 +73,7 @@
     }
     @media(max-width:720px){
       #social #n15Signals > .n15-title > h2:after{font-size:34px}
-      #social #n15Signals .n15-dir strong:after{font-size:24px;text-align:left;text-align-last:left}
+      #social #n15Signals .n15-dir strong:after{font-size:24px}
     }
   `;
   document.head.appendChild(s);
