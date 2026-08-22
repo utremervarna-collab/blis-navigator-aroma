@@ -17,6 +17,7 @@
 html body .page .n15-title>h2,
 html body .page .ref-title>h2,
 html body .page .genericHead h2,
+html body #live.page .lm-title h2,
 html body #reputation.page .rp-head h2,
 html body #market.page .pm-hero h2,
 html body #competition.page .cmpv5-title h2,
@@ -141,6 +142,16 @@ html body #social.page #n15Signals .n15-dir strong:after{
   text-align:left!important;
   text-align-last:auto!important;
 }
+
+/* History has two legacy owners. Keep the dedicated History renderer visible and suppress the V15 sibling duplicate. */
+html body #history.page.active #historyBody{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body #history.page.active #n15History{display:none!important}
 
 @media(max-width:1250px){
   :root{--blis-title-size:34px}

@@ -42,9 +42,10 @@ jobs:
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/history" >/tmp/$c-history.json
           done
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=aroma' >/tmp/dashboard.html
+          grep -q 'navigator-stability-preload-v1.js' /tmp/dashboard.html
           grep -q 'navigator-reference.js' /tmp/dashboard.html
           grep -q 'navigator-runtime-bridge.js' /tmp/dashboard.html
-          for f in app.js navigator-reference.js navigator-runtime-bridge.js navigator-architecture-v15.js navigator-ui-terminology.js navigator-typography-system-v1.css navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js navigator-reputation-master.css navigator-perception-reference-v10.css navigator-competition-master-v5.js; do
+          for f in app.js navigator-stability-preload-v1.js navigator-reference.js navigator-runtime-bridge.js navigator-architecture-v15.js navigator-ui-terminology.js navigator-typography-system-v1.css navigator-overview-master.js navigator-live-master.js navigator-geo-v2.js navigator-digital-master.js navigator-client-ui.js navigator-client-hero.js navigator-methods-global.js navigator-reputation-exact-art-v41.js navigator-reputation-master.css navigator-perception-reference-v10.css navigator-competition-master-v5.js; do
             curl -fsS "http://127.0.0.1:10000/$f?v=diag" >/tmp/${f//\//_}
             test -s /tmp/${f//\//_}
           done
@@ -67,7 +68,7 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Browser typography and layout diagnostic
+      - name: Browser render speed, stability and typography diagnostic
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.bin }}
         run: |
@@ -83,6 +84,7 @@ jobs:
             const critical=['overview','reputation','market','competition','profile'];
             const clients=['aroma','bolyarka','astor-garden'];
             const localOrigin='http://127.0.0.1:10000';
+            const titleSelector='.n15-title>h2,.lm-title h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2';
 
             async function openClient(client,viewport){
               const p=await browser.newPage({viewport});
@@ -96,104 +98,147 @@ jobs:
                 errs.push('CONSOLE '+text);
               });
               p.on('response',r=>{
-                try{
-                  const u=new URL(r.url());
-                  if(u.origin===localOrigin && r.status()>=400 && u.pathname!=='/favicon.ico') errs.push(`HTTP ${r.status()} ${u.pathname}`);
-                }catch(_){}
+                try{const u=new URL(r.url());if(u.origin===localOrigin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}
               });
               p.on('requestfailed',r=>{
-                try{
-                  const u=new URL(r.url());
-                  if(u.origin===localOrigin && u.pathname!=='/favicon.ico') errs.push(`REQUESTFAILED ${u.pathname} ${r.failure()?.errorText||''}`);
-                }catch(_){}
+                try{const u=new URL(r.url());if(u.origin===localOrigin&&u.pathname!=='/favicon.ico')errs.push(`REQUESTFAILED ${u.pathname} ${r.failure()?.errorText||''}`)}catch(_){}
               });
+              const t0=Date.now();
               await p.goto(`${localOrigin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:15000});
-              await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=10,{timeout:15000});
-              await p.waitForTimeout(1000);
-              return {p,errs};
+              await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12&&document.getElementById('nav')?.dataset.blisStable==='1',{timeout:15000});
+              await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,{timeout:15000});
+              const bootMs=Date.now()-t0;
+              await p.waitForTimeout(250);
+              return {p,errs,bootMs};
             }
 
-            async function inspect(p,id,expectedTitlePx){
-              await p.locator(`#nav button[data-page="${id}"]`).click();
-              await p.waitForFunction(pageId=>document.querySelector('.page.active')?.id===pageId,id,{timeout:10000});
-              await p.waitForTimeout(id==='competition'||id==='reputation'||id==='market'?700:350);
-              return p.evaluate(({id,expectedTitlePx})=>{
+            async function measureRoute(p,id){
+              return p.evaluate(async ({id,titleSelector})=>{
+                const root=document.getElementById(id),nav=document.getElementById('nav'),btn=nav?.querySelector(`button[data-page="${id}"]`);
+                if(!root||!btn)return{error:'missing route'};
+                const t0=performance.now();
+                let rootMutations=0,navMutations=0,lateMutations=0,activeTransitions=0,lastActive=document.querySelector('.page.active')?.id||null;
+                let firstContent=null,lastBlankAt=0;
+                const titleVariants=new Set(),marketNavVariants=new Set(),lateTargetCounts=new Map();
+                const mutationKey=m=>{
+                  let el=m.target?.nodeType===1?m.target:m.target?.parentElement;
+                  if(!el)return `${m.type}:unknown`;
+                  const idPart=el.id?`#${el.id}`:'';
+                  const cls=[...(el.classList||[])].slice(0,4).map(x=>'.'+x).join('');
+                  return `${m.type}:${(el.tagName||'node').toLowerCase()}${idPart}${cls}`;
+                };
+                const ro=new MutationObserver(ms=>{
+                  rootMutations+=ms.length;
+                  if(performance.now()-t0>650){
+                    lateMutations+=ms.length;
+                    ms.forEach(m=>{const k=mutationKey(m);lateTargetCounts.set(k,(lateTargetCounts.get(k)||0)+1)});
+                  }
+                });
+                const no=new MutationObserver(ms=>{navMutations+=ms.length});
+                ro.observe(root,{childList:true,subtree:true,characterData:true});
+                no.observe(nav,{childList:true,subtree:true,characterData:true});
+                btn.click();
+                await new Promise(resolve=>{
+                  function sample(){
+                    const elapsed=performance.now()-t0;
+                    const active=document.querySelector('.page.active')?.id||null;
+                    if(active!==lastActive){activeTransitions++;lastActive=active}
+                    if(active===id){
+                      const cs=getComputedStyle(root),r=root.getBoundingClientRect(),text=(root.innerText||'').trim();
+                      const visible=cs.visibility!=='hidden'&&cs.display!=='none'&&Number(cs.opacity||1)>.01&&r.height>80&&text.length>20;
+                      if(visible&&firstContent===null)firstContent=elapsed;
+                      if(!visible)lastBlankAt=elapsed;
+                      const h=root.querySelector(titleSelector);
+                      const ht=(h?.textContent||'').trim();if(ht)titleVariants.add(ht);
+                      const mt=(nav.querySelector('[data-page="market"] .navtxt')||nav.querySelector('[data-page="market"] span:last-child'))?.textContent?.trim();if(mt)marketNavVariants.add(mt);
+                    }
+                    if(elapsed<1500)requestAnimationFrame(sample);else resolve();
+                  }
+                  requestAnimationFrame(sample);
+                });
+                ro.disconnect();no.disconnect();
+                const body=document.getElementById(id+'Body')||root;
+                const cs=getComputedStyle(body),rect=body.getBoundingClientRect();
+                const lateTargets=[...lateTargetCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([target,count])=>({target,count}));
+                return{
+                  id,active:document.querySelector('.page.active')?.id||null,
+                  firstContentMs:firstContent===null?null:Math.round(firstContent),
+                  blankUntilMs:Math.round(lastBlankAt),rootMutations,lateMutations,navMutations,activeTransitions,
+                  titleVariants:[...titleVariants],marketNavVariants:[...marketNavVariants],lateTargets,
+                  bodyVisible:cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,
+                  bodyHeight:Math.round(rect.height),
+                  stabilityStats:window.BLISStabilityStats||null
+                };
+              },{id,titleSelector});
+            }
+
+            async function inspectLayout(p,id,expectedTitlePx){
+              return p.evaluate(({id,expectedTitlePx,titleSelector})=>{
                 const root=document.getElementById(id);
                 const visible=el=>!!el&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
-                let title=root?.querySelector('.n15-title>h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2');
+                let title=root?.querySelector(titleSelector);
                 let pseudo=id==='social'&&title;
                 const ts=title?getComputedStyle(title,pseudo?'::after':undefined):null;
-                const titleInfo=title?{
-                  text:pseudo?(ts.content||'').replace(/^['"]|['"]$/g,''):title.textContent.trim(),
-                  font:ts.fontFamily,size:parseFloat(ts.fontSize),color:ts.color,line:ts.lineHeight,
-                  rect:{w:title.getBoundingClientRect().width,h:title.getBoundingClientRect().height}
-                }:null;
-
-                const valueSelector=[
-                  '.n15-bliscore strong','.n15-summaryitem strong','.n15-statpill b','.n15-livekpi strong','.n15-dir>b','.n15-sigm>b',
-                  '.n15-digindex>strong','.n15-digcard strong','.n15-digfocus>strong','.n15-onepoint>b','.ref-val','.ref-score-orb','.ref-donut strong',
-                  '.kpiValue','.moduleVal','.finalMetricValue','.profileScore strong','.coveragePremium strong','.compScore',
-                  '.rp-dimension>strong','.rp-kpi strong','.rp-panel header>b','.rp-emblem span','.rp-exact-label','.pm-kpi-value',
-                  '.cmpv5-score','.cmpv11-flowmetric b','.cmpv10-current b'
-                ].join(',');
-                const values=[...root.querySelectorAll(valueSelector)].filter(visible).map(el=>{
-                  const cs=getComputedStyle(el),r=el.getBoundingClientRect();
-                  const card=el.closest('.n15-card,.ref-card,.rp-kpi,.rp-dimension,.pm-kpi,.cmpv10-series,.cmpv5-lane,.card')||el.parentElement;
-                  const cr=card?.getBoundingClientRect();
-                  return {text:el.textContent.trim().slice(0,80),font:cs.fontFamily,size:parseFloat(cs.fontSize),right:r.right,cardRight:cr?.right||r.right,left:r.left,cardLeft:cr?.left||r.left};
-                });
+                const titleInfo=title?{font:ts.fontFamily,size:parseFloat(ts.fontSize),color:ts.color}:null;
+                const valueSelector=['.n15-bliscore strong','.n15-summaryitem strong','.n15-statpill b','.n15-livekpi strong','.n15-dir>b','.n15-sigm>b','.n15-digindex>strong','.n15-digcard strong','.n15-digfocus>strong','.n15-onepoint>b','.ref-val','.ref-score-orb','.ref-donut strong','.kpiValue','.moduleVal','.finalMetricValue','.profileScore strong','.coveragePremium strong','.compScore','.rp-dimension>strong','.rp-kpi strong','.rp-panel header>b','.rp-emblem span','.rp-exact-label','.pm-kpi-value','.cmpv5-score','.cmpv11-flowmetric b','.cmpv10-current b'].join(',');
+                const values=[...root.querySelectorAll(valueSelector)].filter(visible).map(el=>{const cs=getComputedStyle(el),r=el.getBoundingClientRect(),card=el.closest('.n15-card,.ref-card,.rp-kpi,.rp-dimension,.pm-kpi,.cmpv10-series,.cmpv5-lane,.card')||el.parentElement,cr=card?.getBoundingClientRect();return{text:el.textContent.trim().slice(0,80),font:cs.fontFamily,right:r.right,cardRight:cr?.right||r.right,left:r.left,cardLeft:cr?.left||r.left}});
                 const badValueFont=values.filter(v=>!v.font.toLowerCase().includes('georgia'));
                 const valueOverflow=values.filter(v=>v.right>v.cardRight+5||v.left<v.cardLeft-5);
                 const svgGeorgia=[...root.querySelectorAll('svg text')].filter(visible).filter(el=>getComputedStyle(el).fontFamily.toLowerCase().includes('georgia')).map(el=>el.textContent.trim()).slice(0,10);
-                const pageRect=root.getBoundingClientRect();
-                const docOverflow=document.documentElement.scrollWidth-window.innerWidth;
                 const charts=[...root.querySelectorAll('svg')].filter(visible).map(el=>el.getBoundingClientRect()).filter(r=>r.width>20&&r.height>20);
-                const brokenCharts=charts.filter(r=>r.width<40||r.height<25).length;
-                return {
-                  id,active:document.querySelector('.page.active')?.id||null,
-                  title:titleInfo,expectedTitlePx,
-                  pageHeight:pageRect.height,docOverflow,
-                  valueCount:values.length,badValueFont,valueOverflow,svgGeorgia,chartCount:charts.length,brokenCharts,
-                  typographyLoaded:!!document.getElementById('blisTypographySystemV1')
-                };
-              },{id,expectedTitlePx});
+                return{id,title:titleInfo,expectedTitlePx,docOverflow:document.documentElement.scrollWidth-window.innerWidth,badValueFont,valueOverflow,svgGeorgia,brokenCharts:charts.filter(r=>r.width<40||r.height<25).length,typographyLoaded:!!document.getElementById('blisTypographySystemV1')};
+              },{id,expectedTitlePx,titleSelector});
             }
 
             async function validateClient(client,viewport,ids){
-              const {p,errs}=await openClient(client,viewport);
+              const {p,errs,bootMs}=await openClient(client,viewport);
               const expectedTitlePx=viewport.width<=1250?34:38;
-              const run={client,viewport,checks:[],errors:errs};
-              result.runs.push(run);
+              const run={client,viewport,bootMs,checks:[],errors:errs};result.runs.push(run);
+              assert(bootMs<2500,`${client}: slow initial boot ${bootMs}ms`);
               for(const id of ids){
-                const x=await inspect(p,id,expectedTitlePx);
-                run.checks.push(x);
-                console.log('CHECK',client,viewport.width,id,JSON.stringify(x));
+                const perf=await measureRoute(p,id);
+                const layout=await inspectLayout(p,id,expectedTitlePx);
+                const x={...perf,layout};run.checks.push(x);
+                console.log('PERF',client,viewport.width,id,JSON.stringify(x));
                 fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-                assert(x.active===id,`${client}/${id}: wrong active page ${x.active}`);
-                assert(x.typographyLoaded,`${client}/${id}: typography stylesheet not loaded`);
-                assert(x.title,`${client}/${id}: page title not found`);
-                assert(x.title.font.toLowerCase().includes('georgia'),`${client}/${id}: title font is ${x.title.font}`);
-                assert(Math.abs(x.title.size-expectedTitlePx)<=0.6,`${client}/${id}: title size ${x.title.size}px, expected ${expectedTitlePx}px`);
-                assert(x.title.color==='rgb(9, 35, 70)',`${client}/${id}: title color ${x.title.color}`);
-                assert(x.pageHeight>80,`${client}/${id}: page collapsed to ${x.pageHeight}px`);
-                assert(x.docOverflow<=4,`${client}/${id}: document horizontal overflow ${x.docOverflow}px`);
-                assert(x.badValueFont.length===0,`${client}/${id}: non-Georgia analytical values ${JSON.stringify(x.badValueFont.slice(0,3))}`);
-                assert(x.valueOverflow.length===0,`${client}/${id}: analytical value overflow ${JSON.stringify(x.valueOverflow.slice(0,3))}`);
-                assert(x.svgGeorgia.length===0,`${client}/${id}: SVG/chart labels inherited Georgia ${JSON.stringify(x.svgGeorgia)}`);
-                assert(x.brokenCharts===0,`${client}/${id}: collapsed chart detected`);
+                assert(!perf.error,`${client}/${id}: ${perf.error}`);
+                assert(perf.active===id,`${client}/${id}: wrong active page ${perf.active}`);
+                assert(perf.firstContentMs!==null,`${client}/${id}: no visible content`);
+                assert(perf.firstContentMs<=800,`${client}/${id}: first visible content ${perf.firstContentMs}ms`);
+                assert(perf.blankUntilMs<=250,`${client}/${id}: blank active page lasted ${perf.blankUntilMs}ms`);
+                assert(perf.bodyVisible,`${client}/${id}: body hidden after route`);
+                assert(perf.bodyHeight>80,`${client}/${id}: body collapsed to ${perf.bodyHeight}px`);
+                assert(perf.activeTransitions<=2,`${client}/${id}: ${perf.activeTransitions} active-page transitions`);
+                assert(perf.lateMutations<=6,`${client}/${id}: ${perf.lateMutations} DOM mutations after 650ms; targets=${JSON.stringify(perf.lateTargets)}`);
+                assert(perf.navMutations<=12,`${client}/${id}: nav mutated ${perf.navMutations} times after click`);
+                if(id==='market'){
+                  assert(perf.titleVariants.length===1&&perf.titleVariants[0]==='Нагласи',`${client}/market: visible title variants ${JSON.stringify(perf.titleVariants)}`);
+                  assert(perf.marketNavVariants.length===1&&perf.marketNavVariants[0]==='Нагласи',`${client}/market: nav variants ${JSON.stringify(perf.marketNavVariants)}`);
+                }
+                assert(layout.typographyLoaded,`${client}/${id}: typography stylesheet not loaded`);
+                assert(layout.title,`${client}/${id}: title not found`);
+                assert(layout.title.font.toLowerCase().includes('georgia'),`${client}/${id}: title font ${layout.title.font}`);
+                assert(Math.abs(layout.title.size-expectedTitlePx)<=0.6,`${client}/${id}: title size ${layout.title.size}px expected ${expectedTitlePx}px`);
+                assert(layout.title.color==='rgb(9, 35, 70)',`${client}/${id}: title color ${layout.title.color}`);
+                assert(layout.docOverflow<=4,`${client}/${id}: horizontal overflow ${layout.docOverflow}px`);
+                assert(layout.badValueFont.length===0,`${client}/${id}: non-Georgia values ${JSON.stringify(layout.badValueFont.slice(0,3))}`);
+                assert(layout.valueOverflow.length===0,`${client}/${id}: value overflow ${JSON.stringify(layout.valueOverflow.slice(0,3))}`);
+                assert(layout.svgGeorgia.length===0,`${client}/${id}: SVG inherited Georgia ${JSON.stringify(layout.svgGeorgia)}`);
+                assert(layout.brokenCharts===0,`${client}/${id}: collapsed chart detected`);
               }
-              run.errors=[...errs];
-              fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-              assert(errs.length===0,`${client}: browser/internal resource errors ${errs.join(' | ')}`);
+              const stats=await p.evaluate(()=>window.BLISStabilityStats||null);
+              run.stabilityStats=stats;
+              assert(stats&&stats.blockedIntervals>=3,`${client}: expected repaint intervals were not intercepted ${JSON.stringify(stats)}`);
+              run.errors=[...errs];assert(errs.length===0,`${client}: browser/internal resource errors ${errs.join(' | ')}`);
               await p.close();
             }
 
             await validateClient('aroma',{width:1600,height:1000},pages);
             await validateClient('aroma',{width:1200,height:850},pages);
-            for(const c of clients.filter(x=>x!=='aroma')) await validateClient(c,{width:1600,height:1000},critical);
+            for(const c of clients.filter(x=>x!=='aroma'))await validateClient(c,{width:1600,height:1000},critical);
 
             fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
-            console.log(JSON.stringify(result,null,2));
+            console.log('FINAL_RESULT '+JSON.stringify(result));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
