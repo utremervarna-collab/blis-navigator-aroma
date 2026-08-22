@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - tools/wirello-demo-qa-20260822
+  pull_request:
+    branches:
+      - feature/wirello-master-demo
   workflow_dispatch:
 
 permissions:
