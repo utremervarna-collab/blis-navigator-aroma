@@ -143,6 +143,16 @@ html body #social.page #n15Signals .n15-dir strong:after{
   text-align-last:auto!important;
 }
 
+/* History has two legacy owners. Keep the dedicated History renderer visible and suppress the V15 sibling duplicate. */
+html body #history.page.active #historyBody{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  width:100%!important;
+  min-width:0!important;
+}
+html body #history.page.active #n15History{display:none!important}
+
 @media(max-width:1250px){
   :root{--blis-title-size:34px}
 }
