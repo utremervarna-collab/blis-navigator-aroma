@@ -311,7 +311,8 @@ func seedStore() Store {
 		add(bolyarka, x.s, x.m, x.v, stamp)
 	}
 
-	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka}}
+	mollox := molloxSeedClient(stamp)
+	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox}}
 	for _, c := range s.Clients {
 		d := dashboard(c)
 		c.Snapshots = []Snapshot{{CreatedAt: stamp, Payload: d}}
@@ -712,6 +713,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return astorDashboard(c)
 	case "bolyarka":
 		return bolyarkaDashboard(c)
+	case "mollox":
+		return molloxDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1478,6 +1481,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return runBolyarkaEngine(c, snapshot)
 	case "astor-garden":
 		return runAstorEngine(c, snapshot)
+	case "mollox":
+		return runMolloxEngine(c, snapshot)
 	default:
 		return runAromaEngine(c, snapshot)
 	}
@@ -1486,13 +1491,13 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 func startEngineScheduler() {
 	go func() {
 		time.Sleep(30 * time.Second)
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden"} {
+		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
 			runClientEngine(store.Clients[slug], true)
 		}
 		t := time.NewTicker(24 * time.Hour)
 		defer t.Stop()
 		for range t.C {
-			for _, slug := range []string{"aroma", "bolyarka", "astor-garden"} {
+			for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
 				runClientEngine(store.Clients[slug], true)
 			}
 		}
@@ -1843,7 +1848,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "api/clients" {
 		out := []map[string]string{}
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden"} {
+		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
 			if c := store.Clients[slug]; c != nil {
 				out = append(out, map[string]string{"slug": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note})
 			}
