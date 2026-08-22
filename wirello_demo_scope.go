@@ -8,8 +8,8 @@ import (
 )
 
 // Wirello stays a data-only adapter on top of the current canonical Navigator.
-// Visual polish loads first; the V3 data layer loads after it and is therefore the
-// authoritative synthetic dataset for every Navigator module.
+// Visual/data adapters load before app.js; the state hydrator loads at the end of
+// the document and binds the demo dataset to the canonical D/S/Q/A/H state.
 func init() {
 	if authProxy == nil {
 		return
@@ -40,18 +40,30 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	}
 	resp.Body.Close()
 
+	// Early adapters: identity, API dataset, route and Signal-screen polish.
 	marker := []byte("<body")
 	start := bytes.Index(body, marker)
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-demo-data-v3.js?v=20260822-full2"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script><script src="/wirello-signals-ui.js?v=20260822-ui1"></script>`)
+			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-demo-data-v3.js?v=20260822-full3"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script><script src="/wirello-signals-ui.js?v=20260822-ui1"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
 			out = append(out, body[end:]...)
 			body = out
 		}
+	}
+
+	// Late hydrator: runs after app.js/runtime bridge and writes the Wirello data
+	// into the real Navigator global state instead of relying only on fetch mocks.
+	if closeAt := bytes.LastIndex(body, []byte("</body>")); closeAt >= 0 {
+		tail := []byte(`<script src="/wirello-state-force.js?v=20260822-state2"></script>`)
+		out := make([]byte, 0, len(body)+len(tail))
+		out = append(out, body[:closeAt]...)
+		out = append(out, tail...)
+		out = append(out, body[closeAt:]...)
+		body = out
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
