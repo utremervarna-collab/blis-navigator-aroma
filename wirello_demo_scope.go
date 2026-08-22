@@ -45,7 +45,7 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script>`)
+			boot := []byte(`<script src="/wirello-navigator-runtime.js?v=20260822-current"></script><script src="/wirello-demo-polish-v2.js?v=20260822-qa1"></script><script src="/wirello-route-stability.js?v=20260822-qa2"></script><script src="/wirello-signals-ui.js?v=20260822-ui1"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
