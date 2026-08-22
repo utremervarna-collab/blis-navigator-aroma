@@ -3,6 +3,15 @@
 'use strict';
 const pairs=[['Потребителски интерес','Мрежа на нагласите'],['Пазарни сигнали','Мрежа на нагласите'],['Карта на възприятията','Мрежа на нагласите'],['Карта на потребителското възприятие','Мрежа на нагласите'],['3D мрежа на възприятията','3D мрежа на нагласите'],['Индекс на възприятието','Индекс на нагласите'],['Общо възприятие','Общи нагласи'],['Движение на възприятието','Динамика на нагласите'],['Конкурентна позиция','Конкуренти']];
 
+function installTypographySystem(){
+  if(document.getElementById('blisTypographySystemV1'))return;
+  const l=document.createElement('link');
+  l.id='blisTypographySystemV1';
+  l.rel='stylesheet';
+  l.href='/navigator-typography-system-v1.css?v=20260822-1';
+  document.head.appendChild(l);
+}
+
 function installDigitalIntelligenceUI(){
   if(document.getElementById('blisDigitalIntelligenceUI'))return;
   const s=document.createElement('style');
@@ -81,6 +90,7 @@ function installDigitalIntelligenceUI(){
 function apply(root=document.body){
   if(!root)return;
   installDigitalIntelligenceUI();
+  installTypographySystem();
   const market=document.querySelector('#nav [data-page="market"] .navtxt');if(market)market.textContent='Мрежа на нагласите';
   const comp=document.querySelector('#nav [data-page="competition"] .navtxt');if(comp)comp.textContent='Конкуренти';
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||/SCRIPT|STYLE|TEXTAREA|INPUT|OPTION/.test(p.tagName))return NodeFilter.FILTER_REJECT;return pairs.some(([a])=>(n.nodeValue||'').includes(a))?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}}),nodes=[];
