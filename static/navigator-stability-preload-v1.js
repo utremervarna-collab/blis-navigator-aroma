@@ -1,7 +1,7 @@
-/* BLIS Navigator — stability preload v8 (canonical route/render ownership + pre-paint protection). */
+/* BLIS Navigator — stability preload v9 (stable routing + reliable Live mount, approved Overview preserved). */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV8)return;window.__BLISStabilityPreloadV8=true;
+if(window.__BLISStabilityPreloadV9)return;window.__BLISStabilityPreloadV9=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
@@ -44,15 +44,9 @@ const finalLabel=new Map(FINAL_NAV);
 let navObserver=null,navBusy=false,marketObserver=null,marketBusy=false;
 
 function canonicalAfterRoute(id){
+  if(id!=='live')return;
   nativeSetTimeout(()=>{
-    if(id==='overview'){
-      document.getElementById('n15Overview')?.remove();
-      return;
-    }
-    if(id==='live'){
-      document.getElementById('n15Live')?.remove();
-      if(typeof window.BLISLiveMount==='function')window.BLISLiveMount();
-    }
+    if(typeof window.BLISLiveMount==='function')window.BLISLiveMount();
   },0);
 }
 function canonicalNavHandler(e){
