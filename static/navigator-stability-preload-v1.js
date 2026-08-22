@@ -1,11 +1,11 @@
-/* BLIS Navigator — stability preload v15. Stable routes, labels and single-pass page paint. */
+/* BLIS Navigator — stability preload v16. Stable routes, labels and single-pass page paint. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV15)return;window.__BLISStabilityPreloadV15=true;
+if(window.__BLISStabilityPreloadV16)return;window.__BLISStabilityPreloadV16=true;
 
 const stats=window.BLISStabilityStats={
   blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,
-  navRepairs:0,marketRepairs:0
+  blockedMarketTextWrites:0,navRepairs:0,marketRepairs:0
 };
 const nativeSetInterval=window.setInterval.bind(window);
 const nativeSetTimeout=window.setTimeout.bind(window);
@@ -99,22 +99,47 @@ function mountDigital(){
   activatePage('digital');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function protectMarketText(el,canonical){
+  if(!el||!nativeTextContent||el.__blisMarketTextProtected)return;
+  const locked=canonical==null?nativeTextContent.get.call(el):String(canonical);
+  if(canonical!=null&&nativeTextContent.get.call(el)!==locked)nativeTextContent.set.call(el,locked);
+  Object.defineProperty(el,'textContent',{
+    configurable:true,enumerable:false,
+    get(){return nativeTextContent.get.call(this)},
+    set(v){
+      const requested=String(v??'');
+      const current=nativeTextContent.get.call(this);
+      if(requested!==locked)stats.blockedMarketTextWrites++;
+      if(current===locked)return;
+      nativeTextContent.set.call(this,locked);
+    }
+  });
+  el.__blisMarketTextProtected=true;
+}
+function protectMarketTextWrites(){
+  const root=document.getElementById('marketBody');if(!root)return;
+  protectMarketText(root.querySelector('.pm-hero h2'),'Нагласи');
+  protectMarketText(root.querySelector('.pm-hero p'),'Проверими теми, сигнали и връзки, които оформят нагласите към марката.');
+  protectMarketText(root.querySelector('.pm-maphead b'),'НАГЛАСИ В РЕАЛНО ВРЕМЕ');
+  protectMarketText(root.querySelector('.pm-maphead small'),null);
+}
 function stabilizeMarketTerminology(){
   const root=document.getElementById('marketBody');if(!root||marketBusy)return;
   marketBusy=true;let changed=false;
   try{
-    const h=root.querySelector('.pm-hero h2');if(h&&h.textContent!=='Нагласи'){h.textContent='Нагласи';changed=true}
-    const p=root.querySelector('.pm-hero p');if(p&&/възприяти/i.test(p.textContent||'')){p.textContent='Проверими теми, сигнали и връзки, които оформят нагласите към марката.';changed=true}
-    const mh=root.querySelector('.pm-maphead b');if(mh&&mh.textContent!=='НАГЛАСИ В РЕАЛНО ВРЕМЕ'){mh.textContent='НАГЛАСИ В РЕАЛНО ВРЕМЕ';changed=true}
+    const h=root.querySelector('.pm-hero h2');if(h&&nativeTextContent.get.call(h)!=='Нагласи'){nativeTextContent.set.call(h,'Нагласи');changed=true}
+    const p=root.querySelector('.pm-hero p');if(p&&nativeTextContent.get.call(p)!=='Проверими теми, сигнали и връзки, които оформят нагласите към марката.'){nativeTextContent.set.call(p,'Проверими теми, сигнали и връзки, които оформят нагласите към марката.');changed=true}
+    const mh=root.querySelector('.pm-maphead b');if(mh&&nativeTextContent.get.call(mh)!=='НАГЛАСИ В РЕАЛНО ВРЕМЕ'){nativeTextContent.set.call(mh,'НАГЛАСИ В РЕАЛНО ВРЕМЕ');changed=true}
     const a=document.getElementById('blisActiveModule');if(document.getElementById('market')?.classList.contains('active')&&a&&a.textContent!=='Нагласи'){a.textContent='Нагласи';changed=true}
     const d=document.getElementById('blisSystemDetail');if(document.getElementById('market')?.classList.contains('active')&&d&&/възприят/i.test(d.textContent||'')){d.textContent='Проверими теми, връзки, динамика и източници';changed=true}
+    protectMarketTextWrites();
   }finally{marketBusy=false;if(changed)stats.marketRepairs++}
 }
 function mountMarket(){
   ensureMarketVisible();
   activatePage('market');
   try{window.BLISPerceptionMap?.mount?.()}catch(_){ }
-  stabilizeMarketTerminology();
+  stabilizeMarketTerminology();protectMarketTextWrites();
   ensureMarketVisible();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -214,9 +239,9 @@ function watchNav(){
 }
 function watchMarket(){
   const root=document.getElementById('marketBody');if(!root)return;
-  stabilizeMarketTerminology();
+  stabilizeMarketTerminology();protectMarketTextWrites();
   if(marketObserver)return;
-  marketObserver=new MutationObserver(stabilizeMarketTerminology);
+  marketObserver=new MutationObserver(()=>{stabilizeMarketTerminology();protectMarketTextWrites()});
   marketObserver.observe(root,{childList:true,subtree:true});
 }
 function keepBodiesPainted(){
@@ -235,10 +260,10 @@ function boot(){
     if(b.dataset.page==='social')ensureSocialVisible();
     if(b.dataset.page==='digital')ensureDigitalVisible();
     if(b.dataset.page==='market')ensureMarketVisible();
-    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible();if(b.dataset.page==='market')ensureMarketVisible()});
+    requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();if(b.dataset.page==='live')ensureLiveVisible();if(b.dataset.page==='social')ensureSocialVisible();if(b.dataset.page==='digital')ensureDigitalVisible();if(b.dataset.page==='market')ensureMarketVisible()});
   },true);
-  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible()}));
-  window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();keepBodiesPainted()}));
+  window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{protectNavWrites();stabilizeNav();stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted();ensureLiveVisible();ensureSocialVisible();ensureDigitalVisible();ensureMarketVisible()}));
+  window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>{stabilizeMarketTerminology();protectMarketTextWrites();keepBodiesPainted()}));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
