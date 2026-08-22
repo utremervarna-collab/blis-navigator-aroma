@@ -82,14 +82,32 @@ jobs:
             const pages=['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help'];
             const critical=['overview','reputation','market','competition','profile'];
             const clients=['aroma','bolyarka','astor-garden'];
+            const localOrigin='http://127.0.0.1:10000';
 
             async function openClient(client,viewport){
               const p=await browser.newPage({viewport});
               p.setDefaultTimeout(15000);
               const errs=[];
               p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
-              p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text())});
-              await p.goto(`http://127.0.0.1:10000/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:15000});
+              p.on('console',m=>{
+                if(m.type()!=='error')return;
+                const text=m.text();
+                if(/Failed to load resource/i.test(text))return;
+                errs.push('CONSOLE '+text);
+              });
+              p.on('response',r=>{
+                try{
+                  const u=new URL(r.url());
+                  if(u.origin===localOrigin && r.status()>=400 && u.pathname!=='/favicon.ico') errs.push(`HTTP ${r.status()} ${u.pathname}`);
+                }catch(_){}
+              });
+              p.on('requestfailed',r=>{
+                try{
+                  const u=new URL(r.url());
+                  if(u.origin===localOrigin && u.pathname!=='/favicon.ico') errs.push(`REQUESTFAILED ${u.pathname} ${r.failure()?.errorText||''}`);
+                }catch(_){}
+              });
+              await p.goto(`${localOrigin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:15000});
               await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=10,{timeout:15000});
               await p.waitForTimeout(1000);
               return {p,errs};
@@ -144,10 +162,13 @@ jobs:
             async function validateClient(client,viewport,ids){
               const {p,errs}=await openClient(client,viewport);
               const expectedTitlePx=viewport.width<=1250?34:38;
-              const run={client,viewport,checks:[]};
+              const run={client,viewport,checks:[],errors:errs};
+              result.runs.push(run);
               for(const id of ids){
                 const x=await inspect(p,id,expectedTitlePx);
                 run.checks.push(x);
+                console.log('CHECK',client,viewport.width,id,JSON.stringify(x));
+                fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
                 assert(x.active===id,`${client}/${id}: wrong active page ${x.active}`);
                 assert(x.typographyLoaded,`${client}/${id}: typography stylesheet not loaded`);
                 assert(x.title,`${client}/${id}: page title not found`);
@@ -161,9 +182,9 @@ jobs:
                 assert(x.svgGeorgia.length===0,`${client}/${id}: SVG/chart labels inherited Georgia ${JSON.stringify(x.svgGeorgia)}`);
                 assert(x.brokenCharts===0,`${client}/${id}: collapsed chart detected`);
               }
-              assert(errs.length===0,`${client}: browser JS errors ${errs.join(' | ')}`);
-              run.errors=errs;
-              result.runs.push(run);
+              run.errors=[...errs];
+              fs.writeFileSync('/tmp/browser-result.json',JSON.stringify(result,null,2));
+              assert(errs.length===0,`${client}: browser/internal resource errors ${errs.join(' | ')}`);
               await p.close();
             }
 
