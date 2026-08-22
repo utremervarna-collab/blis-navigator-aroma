@@ -1,0 +1,151 @@
+/* BLIS Navigator — universal typography system v1.
+   Reference: Reputation page. Georgia is reserved for page titles and analytical values.
+   UI copy, labels, tables and chart/SVG text remain Inter/system sans to preserve geometry. */
+:root{
+  --blis-display-font:Georgia,'Times New Roman',serif;
+  --blis-ui-font:Inter,'Segoe UI',Arial,sans-serif;
+  --blis-title-color:#092346;
+  --blis-title-size:38px;
+  --blis-title-weight:700;
+  --blis-title-leading:1.05;
+  --blis-title-tracking:-.025em;
+  --blis-value-weight:600;
+  --blis-value-tracking:-.025em;
+}
+
+/* PAGE TITLES — one visual rule for every Navigator page, including Overview. */
+html body .page .n15-title>h2,
+html body .page .ref-title>h2,
+html body .page .genericHead h2,
+html body #reputation.page .rp-head h2,
+html body #market.page .pm-hero h2,
+html body #competition.page .cmpv5-title h2,
+html body #reports.page .ref-title h2,
+html body #history.page .ref-title h2,
+html body #profile.page .ref-title h2,
+html body #settings.page .ref-title h2,
+html body #help.page .ref-title h2{
+  font-family:var(--blis-display-font)!important;
+  font-size:var(--blis-title-size)!important;
+  font-weight:var(--blis-title-weight)!important;
+  line-height:var(--blis-title-leading)!important;
+  letter-spacing:var(--blis-title-tracking)!important;
+  color:var(--blis-title-color)!important;
+  text-transform:none!important;
+  text-wrap:balance;
+  max-width:100%;
+}
+
+/* Digital Intelligence is rendered through a pseudo title; keep it on exactly the same scale. */
+html body #social.page #n15Signals>.n15-title>h2:after{
+  font-family:var(--blis-display-font)!important;
+  font-size:var(--blis-title-size)!important;
+  font-weight:var(--blis-title-weight)!important;
+  line-height:var(--blis-title-leading)!important;
+  letter-spacing:var(--blis-title-tracking)!important;
+  color:var(--blis-title-color)!important;
+}
+
+/* PRIMARY ANALYTICAL VALUES — font only; component-specific size is preserved. */
+html body .page .n15-bliscore strong,
+html body .page .n15-summaryitem strong,
+html body .page .n15-statpill b,
+html body .page .n15-livekpi strong,
+html body .page .n15-dir>b,
+html body .page .n15-sigm>b,
+html body .page .n15-digindex>strong,
+html body .page .n15-digcard strong,
+html body .page .n15-digfocus>strong,
+html body .page .n15-onepoint>b,
+html body .page .ref-val,
+html body .page .ref-score-orb,
+html body .page .ref-donut strong,
+html body .page .kpiValue,
+html body .page .moduleVal,
+html body .page .finalMetricValue,
+html body .page .profileScore strong,
+html body .page .coveragePremium strong,
+html body .page .compScore,
+html body #reputation.page .rp-dimension>strong,
+html body #reputation.page .rp-kpi strong,
+html body #reputation.page .rp-panel header>b,
+html body #reputation.page .rp-emblem span,
+html body #reputation.page .rp-exact-label,
+html body #market.page .pm-kpi-value,
+html body #competition.page .cmpv5-score,
+html body #competition.page .cmpv11-flowmetric b,
+html body #competition.page .cmpv10-current b{
+  font-family:var(--blis-display-font)!important;
+  font-weight:var(--blis-value-weight)!important;
+  letter-spacing:var(--blis-value-tracking)!important;
+  font-variant-numeric:lining-nums tabular-nums!important;
+  font-feature-settings:'lnum' 1,'tnum' 1!important;
+}
+
+/* Units and explanatory fragments remain sans — avoids widening /100, %, days, etc. */
+html body .page .n15-bliscore strong small,
+html body .page .n15-digindex>strong small,
+html body .page .ref-val small,
+html body #reputation.page .rp-dimension>strong small,
+html body #reputation.page .rp-kpi strong small,
+html body #market.page .pm-kpi-value small,
+html body #competition.page .cmpv5-score small,
+html body #competition.page .cmpv10-current small{
+  font-family:var(--blis-ui-font)!important;
+  letter-spacing:normal!important;
+  font-variant-numeric:tabular-nums!important;
+}
+
+/* Preserve functional geometry: no display-font inheritance inside charts or controls. */
+html body .page svg text,
+html body .page canvas,
+html body .page table,
+html body .page input,
+html body .page select,
+html body .page textarea,
+html body .page button:not(.n15-statpill):not(.n15-dir){
+  font-family:var(--blis-ui-font);
+}
+
+/* Layout guards for the wider serif numerals. We do not change card dimensions. */
+html body .page .n15-summaryitem,
+html body .page .n15-livekpi,
+html body .page .n15-sigm,
+html body .page .n15-digcard,
+html body .page .rp-kpi,
+html body .page .pm-kpi,
+html body .page .cmpv10-current{
+  min-width:0!important;
+}
+html body .page .n15-summaryitem strong,
+html body .page .n15-livekpi strong,
+html body .page .n15-digindex>strong,
+html body .page .rp-kpi strong,
+html body .page .pm-kpi-value,
+html body .page .cmpv10-current b{
+  max-width:100%;
+}
+
+/* Compact KPI values get a safe responsive ceiling, without enlarging existing components. */
+html body #market.page .pm-kpi-value{font-size:clamp(20px,1.75vw,24px)!important}
+html body #reputation.page .rp-kpi strong{font-size:clamp(21px,1.8vw,24px)!important}
+html body #competition.page .cmpv5-score{font-size:clamp(11px,1vw,14px)!important}
+html body #competition.page .cmpv10-current b{font-size:clamp(23px,2vw,27px)!important}
+
+/* Side signal labels: large but compact; no forced justification / stretched characters. */
+html body #social.page #n15Signals .n15-dir strong:after{
+  font-family:var(--blis-display-font)!important;
+  font-weight:700!important;
+  letter-spacing:-.012em!important;
+  color:var(--blis-title-color)!important;
+  text-align:left!important;
+  text-align-last:auto!important;
+}
+
+@media(max-width:1250px){
+  :root{--blis-title-size:34px}
+}
+@media(max-width:800px){
+  :root{--blis-title-size:30px;--blis-title-tracking:-.02em}
+  html body #social.page #n15Signals .n15-dir strong:after{font-size:24px!important}
+}
