@@ -16,17 +16,18 @@ func molloxSeedClient(stamp string) *Client {
 			{Key: "private_label", Label: "MOLLOX – Private Label", URL: "https://mollox.bg/private-label", Method: "индивидуални формули, опаковки, дизайн и логистика", Reliability: .99},
 			{Key: "contact", Label: "MOLLOX – Контакти и дистрибутори", URL: "https://mollox.bg/contact-us", Method: "дистрибуторска мрежа и публични контакти", Reliability: .99},
 			{Key: "news", Label: "MOLLOX – Новини", URL: "https://mollox.bg/aktualno/", Method: "публично съдържание и секторни теми", Reliability: .98},
-			{Key: "facebook", Label: "Facebook – MOLLOX България", URL: "https://www.facebook.com/", Method: "публично социално присъствие", Reliability: .78},
+			{Key: "facebook", Label: "Facebook – MOLLOX България", URL: "https://www.facebook.com/molloxbg/", Method: "официален публичен социален профил", Reliability: .94},
+			{Key: "linkedin", Label: "LinkedIn – MOLLOX Professional Hygiene", URL: "https://bg.linkedin.com/company/mollox-professional-hygiene", Method: "официален корпоративен B2B профил", Reliability: .97},
 			{Key: "google_search", Label: "Google", URL: "https://www.google.com/", Method: "откриваемост и публична информационна среда", Reliability: .88},
 			{Key: "google_trends", Label: "Google Trends", URL: "https://trends.google.com/", Method: "относителен интерес при търсене", Reliability: .92},
 			{Key: "registry", Label: "Търговски регистър", URL: "https://portal.registryagency.bg/", Method: "официални фирмени данни", Reliability: 1.0},
 			{Key: "nsi", Label: "НСИ", URL: "https://www.nsi.bg/", Method: "секторни и икономически показатели", Reliability: .98},
 			{Key: "ec_echa", Label: "ECHA", URL: "https://echa.europa.eu/", Method: "европейска регулаторна среда за химични продукти", Reliability: 1.0},
 			{Key: "ec_biocides", Label: "European Commission – Biocides", URL: "https://health.ec.europa.eu/biocides/overview_en", Method: "официална регулаторна среда за биоциди", Reliability: 1.0},
-			{Key: "cmp_ecolab", Label: "Ecolab", URL: "https://www.ecolab.com/", Method: "международен конкурентен ориентир", Reliability: .94},
-			{Key: "cmp_diversey", Label: "Diversey", URL: "https://www.diversey.com/", Method: "международен конкурентен ориентир", Reliability: .94},
-			{Key: "cmp_kiehl", Label: "Johannes Kiehl KG", URL: "https://www.kiehl-group.com/", Method: "европейски конкурентен ориентир", Reliability: .92},
-			{Key: "cmp_dr_schnell", Label: "Dr. Schnell", URL: "https://www.dr-schnell.com/", Method: "европейски конкурентен ориентир", Reliability: .92},
+			{Key: "cmp_hagleitner", Label: "Hagleitner България", URL: "https://www.hagleitner.com/bg/", Method: "директен конкурент в професионалната хигиена на българския пазар", Reliability: .97},
+			{Key: "cmp_katrinmax", Label: "Katrin Max / BePure", URL: "https://katrin-max.com/", Method: "директен конкурент и доставчик на професионални хигиенни решения в България", Reliability: .96},
+			{Key: "cmp_hygimarket", Label: "Hygimarket", URL: "https://hygimarket.bg/", Method: "професионална хигиена, консумативи и решения за бизнес клиенти в България", Reliability: .94},
+			{Key: "cmp_euroshine", Label: "Euroshine", URL: "https://euroshinebg.com/", Method: "професионална хигиена, дезинфекция и дозиращи решения в България", Reliability: .94},
 		},
 	}
 	for _, x := range []struct {
@@ -37,7 +38,7 @@ func molloxSeedClient(stamp string) *Client {
 		{"products", "category_count", 15.0}, {"products", "industry_count", 4.0}, {"products", "product_details", 1.0},
 		{"private_label", "service_active", 1.0}, {"private_label", "product_types", 8.0}, {"private_label", "full_service", 1.0},
 		{"contact", "regional_distributors", 5.0}, {"contact", "varna_office", 1.0}, {"contact", "association_member", 1.0},
-		{"news", "news_section", 1.0}, {"news", "recent_articles", 3.0}, {"facebook", "profile_active", 1.0},
+		{"news", "news_section", 1.0}, {"news", "recent_articles", 3.0}, {"facebook", "profile_active", 1.0}, {"linkedin", "profile_active", 1.0},
 	} {
 		add(c, x.s, x.m, x.v, stamp)
 	}
@@ -65,15 +66,15 @@ func molloxDashboard(c *Client) map[string]interface{} {
 	return map[string]interface{}{
 		"client": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note, "blis_index": blis, "benchmark": benchmark, "relative": relative, "confidence": 90.0, "trend": 2.4, "data_updated": latestObservedAt(c),
 		"indices": []interface{}{
-			idx("social", "Индекс на социалното присъствие", socialIndex, "Оценява видимата публична активност и съдържателния ритъм.", []interface{}{comp("Публичен социален профил", social, "55%"), comp("Актуално съдържание", news, "45%")}, "", []string{"Facebook", "MOLLOX – Новини"}),
+			idx("social", "Индекс на социалното присъствие", socialIndex, "Оценява видимата публична активност и съдържателния ритъм.", []interface{}{comp("Публичен социален профил", social, "55%"), comp("Актуално съдържание", news, "45%")}, "", []string{"Facebook", "LinkedIn", "MOLLOX – Новини"}),
 			idx("digital", "Индекс на дигиталната видимост", digital, "Оценява сайта, продуктовото покритие, индустриалните решения и достъпа до техническа информация.", []interface{}{comp("Официален сайт", web, "24%"), comp("Продуктови категории", cats, "20%"), comp("Индустрии", industries, "12%"), comp("Private Label", privateLabel, "14%"), comp("Техническа документация", docs, "10%")}, "", []string{"MOLLOX България", "MOLLOX – Продукти", "MOLLOX – Private Label"}),
 			idx("reputation", "Индекс на репутацията", reputation, "Публична оценка на доверителните и качествените сигнали около компанията.", []interface{}{comp("ISO стандарти", iso, "35%"), comp("Техническа документация", docs, "25%"), comp("Лабораторен подход", 100.0, "20%"), comp("Браншово присъствие", 100.0, "20%")}, "", []string{"MOLLOX България", "ECHA"}),
 			idx("interest", "Индекс на пазарния интерес", market, "Комбинира ширината на портфолиото, секторното покритие, дистрибуцията и индивидуалните решения.", []interface{}{comp("Продуктово покритие", cats, "24%"), comp("Индустриално покритие", industries, "20%"), comp("Private Label", privateLabel, "22%"), comp("Регионална дистрибуция", distributors, "22%")}, "", []string{"MOLLOX – Продукти", "MOLLOX – Контакти и дистрибутори"}),
-			idx("competitive", "Индекс на конкурентната позиция", competitive, "Съпоставя публично наблюдаемата сила на MOLLOX спрямо професионалната категория.", []interface{}{comp("Дигитална видимост", digital, "35%"), comp("Репутационни сигнали", reputation, "30%"), comp("Пазарно покритие", market, "35%")}, "", []string{"MOLLOX България", "Ecolab", "Diversey", "Johannes Kiehl KG", "Dr. Schnell"}),
+			idx("competitive", "Индекс на конкурентната позиция", competitive, "Съпоставя публично наблюдаемата сила на MOLLOX спрямо професионалната категория в България.", []interface{}{comp("Дигитална видимост", digital, "35%"), comp("Репутационни сигнали", reputation, "30%"), comp("Пазарно покритие", market, "35%")}, "", []string{"MOLLOX България", "Hagleitner България", "Katrin Max / BePure", "Hygimarket", "Euroshine"}),
 		},
 		"metrics":     []interface{}{met("Продуктови категории", fmt.Sprintf("%.0f", f(latest(c, "products", "category_count")))), met("Индустрии", "HoReCa · ХВП · Ферми · Обществени обекти"), met("Регионални дистрибутори", fmt.Sprintf("%.0f", f(latest(c, "contact", "regional_distributors"))))},
 		"signals":     []interface{}{sig("positive", "Широко професионално продуктово покритие", "Наблюдават се решения за няколко B2B индустрии и специализирани хигиенни процеси."), sig("positive", "Private Label е отличим пазарен актив", "Компанията предлага формула, опаковка, дизайн и логистика в един процес."), sig("watch", "Социалното присъствие е по-тясно от продуктовия обхват", "Следи се дали публичната комуникация отразява пълния капацитет на портфолиото.")},
-		"competitors": []interface{}{map[string]interface{}{"name": "MOLLOX България", "score": competitive, "source": "BLIS публични сигнали"}, map[string]interface{}{"name": "Ecolab", "score": 82.0, "source": "публична сравнителна среда"}, map[string]interface{}{"name": "Diversey", "score": 80.0, "source": "публична сравнителна среда"}, map[string]interface{}{"name": "Johannes Kiehl KG", "score": 76.0, "source": "публична сравнителна среда"}, map[string]interface{}{"name": "Dr. Schnell", "score": 74.0, "source": "публична сравнителна среда"}},
+		"competitors": []interface{}{map[string]interface{}{"name": "MOLLOX България", "score": competitive, "source": "BLIS публични сигнали"}, map[string]interface{}{"name": "Hagleitner България", "score": 82.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Katrin Max / BePure", "score": 80.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Hygimarket", "score": 76.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Euroshine", "score": 74.0, "source": "публична сравнителна среда · България"}},
 	}
 }
 
@@ -82,7 +83,7 @@ func runMolloxEngine(c *Client, createSnapshot bool) EngineStatus {
 	specs := []struct {
 		key   string
 		terms []string
-	}{{"official_site", []string{"mollox", "professional", "професионал", "iso", "хигиен"}}, {"products", []string{"продукт", "хигиен", "horeca", "дезинф"}}, {"private_label", []string{"private label", "собствена марка", "формул", "опаков"}}, {"contact", []string{"варна", "дистрибутор", "контакт"}}, {"news", []string{"mollox", "хигиен", "eurotier"}}, {"cmp_ecolab", []string{"cleaning", "hygiene"}}, {"cmp_diversey", []string{"cleaning", "hygiene"}}, {"cmp_kiehl", []string{"cleaning", "hygiene"}}, {"cmp_dr_schnell", []string{"cleaning", "hygiene"}}}
+	}{{"official_site", []string{"mollox", "professional", "професионал", "iso", "хигиен"}}, {"products", []string{"продукт", "хигиен", "horeca", "дезинф"}}, {"private_label", []string{"private label", "собствена марка", "формул", "опаков"}}, {"contact", []string{"варна", "дистрибутор", "контакт"}}, {"news", []string{"mollox", "хигиен", "eurotier"}}, {"cmp_hagleitner", []string{"hygiene", "хигиен", "professional"}}, {"cmp_katrinmax", []string{"хигиен", "професионал", "horeca"}}, {"cmp_hygimarket", []string{"хигиен", "почиств", "професионал"}}, {"cmp_euroshine", []string{"хигиен", "дезинф", "дозира"}}}
 	for _, sp := range specs {
 		results = append(results, probeGenericSource(c, sp.key, sp.terms))
 	}
