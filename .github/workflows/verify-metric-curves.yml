@@ -1,0 +1,72 @@
+name: Verify Metric Curves Production
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify curves for all clients and modules
+        run: |
+          cat > check.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          const clients=['aroma','bolyarka','astor-garden','varna-towers'];
+          const modules=['overview','social','digital','reputation','market','competition','history'];
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const all={};
+            for(const client of clients){
+              const page=await browser.newPage({viewport:{width:1680,height:1050},deviceScaleFactor:1});
+              const errors=[];page.on('pageerror',e=>errors.push(e.message));
+              let ready=false,last='';
+              for(let i=1;i<=24&&!ready;i++){
+                try{
+                  await page.goto(`https://blis-navigator-aroma.onrender.com/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:30000});
+                  await page.waitForTimeout(2600);
+                  ready=await page.evaluate(()=>!![...document.scripts].find(s=>s.src.includes('navigator-curves.js?v=20260819-curves1')));
+                  if(!ready){last='curve engine not deployed';await new Promise(r=>setTimeout(r,10000));}
+                }catch(e){last=e.message;if(i<24)await new Promise(r=>setTimeout(r,10000));}
+              }
+              if(!ready)throw new Error(client+': '+last);
+              all[client]={};
+              for(const mod of modules){
+                const b=page.locator(`#nav button[data-page="${mod}"]`);
+                if(await b.count())await b.click();
+                await page.waitForTimeout(450);
+                const st=await page.evaluate((mod)=>{
+                  const root=document.getElementById(mod);
+                  const svgs=[...root.querySelectorAll('svg[data-curve-key]')];
+                  return {
+                    keys:svgs.map(x=>x.dataset.curveKey),
+                    clients:svgs.map(x=>x.dataset.curveClient),
+                    paths:svgs.map(x=>x.querySelector('path[stroke]')?.getAttribute('d')||'').filter(Boolean),
+                    noData:[...root.querySelectorAll('.scan,.ov-no-data')].map(x=>x.textContent.trim()).filter(Boolean).slice(0,8),
+                    text:(root.innerText||'').slice(0,400)
+                  };
+                },mod);
+                all[client][mod]=st;
+              }
+              if(errors.length)all[client].errors=errors;
+              await page.close();
+            }
+            console.log(JSON.stringify(all,null,2));
+            for(const c of clients){
+              const flat=[];
+              for(const m of modules)for(const p of all[c][m].paths)flat.push(p);
+              const uniq=new Set(flat);
+              if(flat.length>=2 && uniq.size<2)throw new Error(`${c}: all rendered curve paths are identical`);
+              for(const m of modules){
+                if(all[c][m].clients.some(x=>x!==c))throw new Error(`${c}/${m}: wrong curve client tag`);
+              }
+            }
+            const aromaKeys=new Set(modules.flatMap(m=>all.aroma[m].keys));
+            for(const k of ['blis','presence','digital','reputation','market','competitive']){
+              if(!aromaKeys.has(k))console.log('NOTE missing rendered key (may lack history):',k);
+            }
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node check.cjs
