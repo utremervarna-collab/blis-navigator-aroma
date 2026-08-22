@@ -84,6 +84,7 @@ jobs:
             const critical=['overview','reputation','market','competition','profile'];
             const clients=['aroma','bolyarka','astor-garden'];
             const localOrigin='http://127.0.0.1:10000';
+            const titleSelector='.n15-title>h2,.lm-title h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2';
 
             async function openClient(client,viewport){
               const p=await browser.newPage({viewport});
@@ -112,7 +113,7 @@ jobs:
             }
 
             async function measureRoute(p,id){
-              return p.evaluate(async id=>{
+              return p.evaluate(async ({id,titleSelector})=>{
                 const root=document.getElementById(id),nav=document.getElementById('nav'),btn=nav?.querySelector(`button[data-page="${id}"]`);
                 if(!root||!btn)return{error:'missing route'};
                 const t0=performance.now();
@@ -134,7 +135,7 @@ jobs:
                       const visible=cs.visibility!=='hidden'&&cs.display!=='none'&&Number(cs.opacity||1)>.01&&r.height>80&&text.length>20;
                       if(visible&&firstContent===null)firstContent=elapsed;
                       if(!visible)lastBlankAt=elapsed;
-                      const h=root.querySelector('.n15-title>h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2');
+                      const h=root.querySelector(titleSelector);
                       const ht=(h?.textContent||'').trim();if(ht)titleVariants.add(ht);
                       const mt=(nav.querySelector('[data-page="market"] .navtxt')||nav.querySelector('[data-page="market"] span:last-child'))?.textContent?.trim();if(mt)marketNavVariants.add(mt);
                     }
@@ -154,14 +155,14 @@ jobs:
                   bodyHeight:Math.round(rect.height),
                   stabilityStats:window.BLISStabilityStats||null
                 };
-              },id);
+              },{id,titleSelector});
             }
 
             async function inspectLayout(p,id,expectedTitlePx){
-              return p.evaluate(({id,expectedTitlePx})=>{
+              return p.evaluate(({id,expectedTitlePx,titleSelector})=>{
                 const root=document.getElementById(id);
                 const visible=el=>!!el&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
-                let title=root?.querySelector('.n15-title>h2,.rp-head h2,.pm-hero h2,.cmpv5-title h2,.ref-title h2,.genericHead h2');
+                let title=root?.querySelector(titleSelector);
                 let pseudo=id==='social'&&title;
                 const ts=title?getComputedStyle(title,pseudo?'::after':undefined):null;
                 const titleInfo=title?{font:ts.fontFamily,size:parseFloat(ts.fontSize),color:ts.color}:null;
@@ -172,7 +173,7 @@ jobs:
                 const svgGeorgia=[...root.querySelectorAll('svg text')].filter(visible).filter(el=>getComputedStyle(el).fontFamily.toLowerCase().includes('georgia')).map(el=>el.textContent.trim()).slice(0,10);
                 const charts=[...root.querySelectorAll('svg')].filter(visible).map(el=>el.getBoundingClientRect()).filter(r=>r.width>20&&r.height>20);
                 return{id,title:titleInfo,expectedTitlePx,docOverflow:document.documentElement.scrollWidth-window.innerWidth,badValueFont,valueOverflow,svgGeorgia,brokenCharts:charts.filter(r=>r.width<40||r.height<25).length,typographyLoaded:!!document.getElementById('blisTypographySystemV1')};
-              },{id,expectedTitlePx});
+              },{id,expectedTitlePx,titleSelector});
             }
 
             async function validateClient(client,viewport,ids){
