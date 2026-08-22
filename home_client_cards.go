@@ -44,6 +44,8 @@ func init() {
 #clients .c1 .clientCardImage{object-position:center center}
 #clients .c2 .clientCardImage{object-position:center center}
 #clients .c3 .clientCardImage{object-position:center center}
+#clients .c4 .clientCardImage{object-position:center center}
+#clients .c4:before{background:linear-gradient(180deg,rgba(68,5,24,.02) 8%,rgba(68,5,24,.12) 45%,rgba(68,5,24,.94) 100%)!important}
 @media(max-width:1100px){#clients .clientCard{min-height:330px}}
 @media(max-width:720px){#clients .clientCard{min-height:305px}#clients .clientCardContent{padding:21px}#clients .clientCard h3{font-size:25px}}
 </style>`
@@ -52,11 +54,13 @@ func init() {
 	aroma := embeddedBase64Data("static/hero-aroma-micro.txt", "image/webp")
 	bolyarka := embeddedBase64Data("static/home-bolyarka.b64", "image/webp")
 	astor := embeddedBase64Data("static/hero-astor-micro.txt", "image/webp")
+	mollox := "https://mollox.bg/assets/img/home/mollox_start_2.jpg.png"
 
-	grid := `<!-- home-client-profile-hero-images-v7 --><div class="clientGrid">` +
+	grid := `<!-- home-client-profile-hero-images-v8 --><div class="clientGrid">` +
 		`<article class="clientCard c1"><img class="clientCardImage" src="` + bolyarka + `" alt="Профилна визия Болярка"><div class="clientCardContent"><h3>Болярка</h3><div class="sector">Потребителски бранд и дистрибуция</div><p>Наблюдение на публично присъствие, потребителски теми, репутационни сигнали, конкурентна активност, съдържание и промени в категорията.</p></div></article>` +
 		`<article class="clientCard c2"><img class="clientCardImage" src="` + aroma + `" alt="Профилна визия Aroma"><div class="clientCardContent"><h3>Aroma</h3><div class="sector">Козметика и потребителски продукти</div><p>Анализ на продуктова и дигитална среда, публична видимост, съдържание, репутационни сигнали и конкурентни движения.</p></div></article>` +
 		`<article class="clientCard c3"><img class="clientCardImage" src="` + astor + `" alt="Профилна визия Astor Garden"><div class="clientCardContent"><h3>Astor Garden</h3><div class="sector">Хотелиерство и туризъм</div><p>Проследяване на онлайн репутация, оценки, потребителско преживяване, международни платформи, сезонност и конкурентен контекст.</p></div></article>` +
+		`<article class="clientCard c4"><img class="clientCardImage" src="` + mollox + `" alt="Профилна визия MOLLOX"><div class="clientCardContent"><h3>MOLLOX</h3><div class="sector">Професионална хигиена и B2B решения</div><p>Наблюдение на продуктово и секторно присъствие, дигитална видимост, репутационни сигнали, дистрибуция и конкурентна среда в България.</p></div></article>` +
 		`</div>`
 
 	indexHTML = replaceHomeClientGrid(indexHTML, grid)
