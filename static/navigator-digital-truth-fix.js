@@ -14,19 +14,40 @@
     }
     return false;
   }
+  function dashText(el){
+    if(!el)return false;
+    if((el.textContent||'').trim()==='—')return false;
+    el.textContent='—';return true;
+  }
+  function dashHTML(el){
+    if(!el)return false;
+    if((el.textContent||'').trim()==='—'&&el.children.length===0)return false;
+    el.textContent='—';return true;
+  }
   function patch(){
-    if(hasMetric())return;
-    const root=document.getElementById('digitalBody');if(!root)return;
-    const radar=root.querySelector('.dv-radar-sector.external b');if(radar)radar.textContent='—';
-    const kpi=root.querySelector('.dv-kpi.external .dv-kpi-body strong');if(kpi)kpi.innerHTML='—';
+    if(hasMetric())return false;
+    const root=document.getElementById('digitalBody');if(!root)return false;
+    let changed=false;
+    changed=dashText(root.querySelector('.dv-radar-sector.external b'))||changed;
+    changed=dashHTML(root.querySelector('.dv-kpi.external .dv-kpi-body strong'))||changed;
     const detailTitle=root.querySelector('#dvDetail h3');
     if(detailTitle&&/Външна видимост/.test(detailTitle.textContent||'')){
-      const score=root.querySelector('#dvDetail .dv-detail-title strong');if(score)score.textContent='—';
+      changed=dashText(root.querySelector('#dvDetail .dv-detail-title strong'))||changed;
       const rows=[...root.querySelectorAll('#dvDetail .dv-detail-metrics>div')];
-      const main=rows.find(x=>(x.textContent||'').includes('Основна стойност'))?.querySelector('b');if(main)main.textContent='—';
+      const main=rows.find(x=>(x.textContent||'').includes('Основна стойност'))?.querySelector('b');
+      changed=dashText(main)||changed;
     }
+    return changed;
   }
   document.addEventListener('click',e=>{if(e.target?.closest?.('#digitalBody [data-sector="external"]'))setTimeout(patch,0)},true);
-  const target=document.getElementById('digitalBody');if(target)new MutationObserver(()=>requestAnimationFrame(patch)).observe(target,{childList:true,subtree:true});
-  let n=0;const t=setInterval(()=>{n++;patch();if(n>35)clearInterval(t)},140);
+  const target=document.getElementById('digitalBody');
+  if(target){
+    let scheduled=false;
+    new MutationObserver(()=>{
+      if(scheduled)return;scheduled=true;
+      requestAnimationFrame(()=>{scheduled=false;patch()});
+    }).observe(target,{childList:true,subtree:true});
+  }
+  patch();
+  window.BLISDigitalTruthPatch=patch;
 })();
