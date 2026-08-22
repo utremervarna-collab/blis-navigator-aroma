@@ -1,0 +1,56 @@
+name: Install Mollox client
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/install-mollox-client.yml']
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Navigator
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('main.go'); s=p.read_text()
+          s=s.replace('s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka}}','mollox := molloxSeedClient(stamp)\n\ts := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox}}')
+          s=s.replace('case "bolyarka":\n\t\treturn bolyarkaDashboard(c)','case "bolyarka":\n\t\treturn bolyarkaDashboard(c)\n\tcase "mollox":\n\t\treturn molloxDashboard(c)',1)
+          s=s.replace('case "astor-garden":\n\t\treturn runAstorEngine(c, snapshot)','case "astor-garden":\n\t\treturn runAstorEngine(c, snapshot)\n\tcase "mollox":\n\t\treturn runMolloxEngine(c, snapshot)',1)
+          s=s.replace('[]string{"aroma", "bolyarka", "astor-garden"}', '[]string{"aroma", "bolyarka", "astor-garden", "mollox"}')
+          p.write_text(s)
+
+          p=Path('static/dashboard.html'); s=p.read_text()
+          s=s.replace('<option value="varna-towers">Varna Towers</option>','<option value="varna-towers">Varna Towers</option><option value="mollox">MOLLOX България</option>')
+          marker='<button type="button" class="client-option" data-client-key="varna-towers" role="option" aria-selected="false"><span class="client-option-mark" style="background:#315b78">VT</span><span><b>Varna Towers</b><small>Бизнес център / недвижими имоти</small></span><span class="client-option-check"></span></button>'
+          s=s.replace(marker,marker+'<button type="button" class="client-option" data-client-key="mollox" role="option" aria-selected="false"><span class="client-option-mark" style="background:#17735f">MX</span><span><b>MOLLOX България</b><small>Професионална хигиена</small></span><span class="client-option-check"></span></button>')
+          s=s.replace("['aroma','bolyarka','astor-garden','varna-towers'].includes(q)","['aroma','bolyarka','astor-garden','varna-towers','mollox'].includes(q)")
+          p.write_text(s)
+
+          p=Path('static/navigator-client-ui.js'); s=p.read_text()
+          s=s.replace("'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers'}","'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers'},\n    mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX',theme:'mollox'}")
+          p.write_text(s)
+
+          p=Path('static/navigator-runtime-bridge.js'); s=p.read_text().replace("['aroma','bolyarka','astor-garden','varna-towers']","['aroma','bolyarka','astor-garden','varna-towers','mollox']")
+          p.write_text(s)
+
+          p=Path('static/client-themes.css'); s=p.read_text(); s += '''\n/* MOLLOX — technical hygiene / laboratory character */\nbody[data-client="mollox"]{--client:#17735f;--clientSoft:#eaf7f2;--client-bg:#f5faf8;--client-bg2:#e4f1ec;--client-panel:#ffffff;--client-panel2:#f0f8f5;--client-glow:rgba(23,115,95,.16);--client-ink:#173f38;--client-line:#d8e9e3;--client-hero:linear-gradient(110deg,rgba(23,115,95,.10),rgba(94,158,143,.06) 48%,rgba(255,255,255,0) 78%);--client-pattern:linear-gradient(rgba(23,115,95,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(23,115,95,.025) 1px,transparent 1px)}\nbody[data-client="mollox"]{background-size:38px 38px}body[data-client="mollox"] .brandname{color:#176b59}body[data-client="mollox"] .btn.blue{background:linear-gradient(135deg,#176b59,#2a9a7e);border-color:#176b59}\n'''
+          p.write_text(s)
+
+          p=Path('static/app.js'); s=p.read_text()
+          needle="'astor-garden':{accent:'#0f766e'"
+          # Insert Mollox dossier immediately before Astor entry.
+          insert="mollox:{accent:'#17735f',soft:'#eaf7f2',mono:'MX',descriptor:'Професионални решения за чистота и хигиена за бизнес среда.',summary:'MOLLOX България предлага професионални почистващи и перилни препарати, дезинфектанти, дозиращи системи, оборудване и индивидуални хигиенни решения за HoReCa, хранително-вкусова промишленост, ферми и обществени обекти.',facts:[['10+ години','Присъствие в България'],['15+','Продуктови категории'],['4','Основни индустрии'],['ISO 9001 / 14001','Публично заявени стандарти']],portfolio:['Кухненска хигиена','Професионално пране','Дезинфекция','Дозиращи системи','Хотелска козметика','Професионално оборудване','Private Label'],assets:['Официален сайт и продуктов каталог','Техническа документация SDS / TDS','Регионална дистрибуторска мрежа','Private Label услуга','Новини и професионално съдържание'],history:['10+ години представителство в България','Развитие на решения за HoReCa и ХВП','Разширяване към ферми и биосигурност','Private Label и индивидуални формули'],links:[['Официален сайт','https://mollox.bg/'],['Продукти','https://mollox.bg/products'],['Private Label','https://mollox.bg/private-label'],['Контакти','https://mollox.bg/contact-us']],notes:['Официален представител за България и Румъния на Mollox Group','Формули и лабораторен подход, свързани с Германия','Регионални дистрибутори в София, Велико Търново, Бургас, Смолян/Пампорово и Сандански/Банско']},"
+          s=s.replace(needle,insert+needle,1)
+          p.write_text(s)
+          PY
+          gofmt -w main.go mollox_client.go
+          go test ./...
+      - name: Commit
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add main.go mollox_client.go static/dashboard.html static/navigator-client-ui.js static/navigator-runtime-bridge.js static/client-themes.css static/app.js
+          git commit -m 'Activate MOLLOX client across Navigator' || exit 0
+          git push
