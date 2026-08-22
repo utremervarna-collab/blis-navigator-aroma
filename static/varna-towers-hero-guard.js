@@ -24,6 +24,7 @@
 (function(){
   'use strict';
   if(window.__BLISClientValuePagesLoader)return;window.__BLISClientValuePagesLoader=true;
+  const utilityPages=new Set(['reports','history','profile','settings','help']);
   function syncData(){
     try{window.D=D}catch(_){ }
     try{window.S=S}catch(_){ }
@@ -41,6 +42,10 @@
       const s=document.createElement('script');s.src='/navigator-client-value-pages-v1.js?v=20260822-cvp1';s.async=false;s.dataset.cvp='1';document.body.appendChild(s);
     }
   }
+  document.addEventListener('click',e=>{
+    const b=e.target?.closest?.('#nav button[data-page]');
+    if(b&&utilityPages.has(b.dataset.page))syncData();
+  },true);
   window.addEventListener('blis:clientdata',syncData);
   if(document.readyState==='complete')load();else window.addEventListener('load',load,{once:true});
 })();
