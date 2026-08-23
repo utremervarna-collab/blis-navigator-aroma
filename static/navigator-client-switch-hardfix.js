@@ -15,10 +15,9 @@
     e.stopImmediatePropagation();
     try{localStorage.setItem('blis-client-ui',key)}catch(_){ }
     window.BLIS_INITIAL_CLIENT=key;
-    const u=new URL(location.href);
+    window.__BLIS_EXPECTED_CLIENT=key;
+    const u=new URL('/dashboard.html',location.origin);
     u.searchParams.set('client',key);
-    u.searchParams.delete('page');
-    u.hash='';
     location.assign(u.toString());
   },true);
 })();
