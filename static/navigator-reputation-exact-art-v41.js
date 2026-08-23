@@ -1,34 +1,48 @@
-/* BLIS Navigator — Aroma-only reputation artwork. Never leaks Aroma visuals into other clients. */
+/* BLIS Navigator — Aroma reputation artwork, strictly scoped to Aroma only. */
 (function(){
 'use strict';
-if(window.__BLISReputationExactArtV49)return;window.__BLISReputationExactArtV49=true;
+if(window.__BLISReputationExactArtV50)return;
+window.__BLISReputationExactArtV50=true;
+
 const PARTS=[1,2,3,4].map(n=>`/reputation-aroma-exact-v2-0${n}.js?v=20260819-exact47`);
 let srcPromise=null,observer=null,applyPromise=null;
-function client(){
-  try{const q=new URLSearchParams(location.search).get('client');if(q)return q}catch(_){ }
-  return String(document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma');
+
+function activeClient(){
+  try{const q=new URLSearchParams(location.search).get('client');if(q)return String(q)}catch(_){}
+  try{if(window.BLIS_CLIENT_SCOPE)return String(window.BLIS_CLIENT_SCOPE)}catch(_){}
+  try{if(window.BLIS_INITIAL_CLIENT)return String(window.BLIS_INITIAL_CLIENT)}catch(_){}
+  return String(document.body?.dataset?.client||'');
+}
+function isAromaContext(){
+  const path=String(location.pathname||'').toLowerCase();
+  if(path.includes('mollox'))return false;
+  return activeClient()==='aroma';
 }
 function cleanup(t){
   if(!t)return;
   t.classList.remove('rp-exact-aroma');
   t.removeAttribute('data-exact-client');
-  t.querySelector('.rp-exact-art')?.remove();
-  t.querySelector('.rp-exact-label')?.remove();
+  t.querySelectorAll('.rp-exact-art,.rp-exact-label').forEach(x=>x.remove());
+}
+function cleanupAll(){
+  document.querySelectorAll('#reputationBody .rp-totem').forEach(cleanup);
+  document.querySelectorAll('#reputationBody .rp-exact-art,#reputationBody .rp-exact-label').forEach(x=>x.remove());
 }
 function source(){
   if(srcPromise)return srcPromise;
-  srcPromise=Promise.all(PARTS.map(u=>fetch(u,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error(`art ${r.status} ${u}`);return r.text()})))
-    .then(a=>'data:image/webp;base64,'+a.join('').replace(/\s+/g,''));
+  srcPromise=Promise.all(PARTS.map(u=>fetch(u,{cache:'force-cache'}).then(r=>{
+    if(!r.ok)throw new Error(`art ${r.status} ${u}`);
+    return r.text();
+  }))).then(a=>'data:image/webp;base64,'+a.join('').replace(/\s+/g,''));
   return srcPromise;
 }
 async function doApply(){
-  const t=document.querySelector('#reputationBody .rp-totem');
-  if(!t)return false;
-  const c=client();
-  if(c!=='aroma'){
-    cleanup(t);
+  if(!isAromaContext()){
+    cleanupAll();
     return false;
   }
+  const t=document.querySelector('#reputationBody .rp-totem');
+  if(!t)return false;
   t.classList.add('rp-exact-aroma');
   t.dataset.exactClient='aroma';
   let label=t.querySelector('.rp-exact-label');
@@ -39,28 +53,51 @@ async function doApply(){
   img.alt='Aroma Cosmetics';
   if(img.dataset.loaded==='1')return true;
   try{
-    const src=await source();if(img.src!==src)img.src=src;
-    if(typeof img.decode==='function'){try{await img.decode()}catch(e){if(!img.complete)throw e}}
-    else if(!img.complete){await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',()=>reject(new Error('image decode failed')),{once:true})})}
-    img.dataset.loaded='1';window.dispatchEvent(new CustomEvent('blis:reputationartready'));return true;
-  }catch(e){console.error('BLIS exact reputation artwork:',e);img.dataset.loaded='0';return false}
+    const src=await source();
+    if(img.src!==src)img.src=src;
+    if(typeof img.decode==='function'){
+      try{await img.decode()}catch(e){if(!img.complete)throw e}
+    }else if(!img.complete){
+      await new Promise((resolve,reject)=>{
+        img.addEventListener('load',resolve,{once:true});
+        img.addEventListener('error',()=>reject(new Error('image decode failed')),{once:true});
+      });
+    }
+    img.dataset.loaded='1';
+    window.dispatchEvent(new CustomEvent('blis:reputationartready'));
+    return true;
+  }catch(e){
+    console.error('BLIS exact reputation artwork:',e);
+    img.dataset.loaded='0';
+    return false;
+  }
 }
-function apply(){if(applyPromise)return applyPromise;applyPromise=doApply().finally(()=>{applyPromise=null});return applyPromise}
+function apply(){
+  if(applyPromise)return applyPromise;
+  applyPromise=doApply().finally(()=>{applyPromise=null});
+  return applyPromise;
+}
 function schedule(){requestAnimationFrame(()=>apply())}
+function refresh(){if(isAromaContext())schedule();else cleanupAll()}
 function init(){
-  schedule();
+  refresh();
   const root=document.getElementById('reputationBody');
-  if(root&&!observer){observer=new MutationObserver(()=>schedule());observer.observe(root,{childList:true,subtree:true})}
-  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav button[data-page="reputation"]'))schedule()},true);
-  document.getElementById('clientSel')?.addEventListener('change',schedule);
-  window.addEventListener('blis:clientdata',schedule);
+  if(root&&!observer){
+    observer=new MutationObserver(()=>refresh());
+    observer.observe(root,{childList:true,subtree:true});
+  }
+  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav button[data-page="reputation"]'))refresh()},true);
+  document.getElementById('clientSel')?.addEventListener('change',refresh);
+  window.addEventListener('blis:clientdata',refresh);
 }
-window.BLISReputationExactArtV49={apply};
-window.BLISReputationExactArtV48={apply};
-window.BLISReputationExactArtV47={apply};
-window.BLISReputationExactArtV46={apply};
-window.BLISReputationExactArtV44={apply};
-window.BLISReputationExactArtV42={apply};
-window.BLISReputationExactArtV41={apply};
+const api={apply,cleanup:cleanupAll};
+window.BLISReputationExactArtV50=api;
+window.BLISReputationExactArtV49=api;
+window.BLISReputationExactArtV48=api;
+window.BLISReputationExactArtV47=api;
+window.BLISReputationExactArtV46=api;
+window.BLISReputationExactArtV44=api;
+window.BLISReputationExactArtV42=api;
+window.BLISReputationExactArtV41=api;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
