@@ -75,9 +75,25 @@
 <script src="/navigator-stability-preload-v1.js?v=20260822-stability1"></script>
 <script src="/app.js?v=20260823-mollox-current2"></script>
 <script>
-(function(){'use strict';try{slug='mollox';const sel=document.getElementById('clientSel');if(sel)sel.value='mollox'}catch(_){ }})();
+(function(){
+  'use strict';
+  try{slug='mollox';const sel=document.getElementById('clientSel');if(sel)sel.value='mollox'}catch(_){ }
+  const valid=new Set(['overview','live','social','digital','reputation','market','competition','signals','reports','sources','history','timeline','profile','settings','help']);
+  const hashPage=()=>{const x=(location.hash||'').replace(/^#/,'').trim().toLowerCase();return valid.has(x)?x:''};
+  let wanted=hashPage();
+  if(!wanted){try{const s=sessionStorage.getItem('blis-mollox-page');if(valid.has(s))wanted=s}catch(_){}}
+  if(!wanted)wanted='overview';
+  window.__BLIS_MOLLOX_ROUTE=wanted;
+  function save(id){if(!valid.has(id))return;window.__BLIS_MOLLOX_ROUTE=id;try{sessionStorage.setItem('blis-mollox-page',id)}catch(_){}if(location.hash!=='#'+id)history.replaceState(null,'',location.pathname+location.search+'#'+id)}
+  function apply(){const id=window.__BLIS_MOLLOX_ROUTE;if(!valid.has(id))return;const page=document.getElementById(id),btn=document.querySelector('#nav [data-page="'+id+'"]');if(!page||!btn)return;try{if(typeof go==='function')go(id);else{document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));page.classList.add('active');document.querySelectorAll('#nav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id))}}catch(_){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));page.classList.add('active');document.querySelectorAll('#nav [data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===id))}save(id)}
+  document.addEventListener('click',e=>{const b=e.target.closest?.('#nav [data-page]');if(b&&valid.has(b.dataset.page))save(b.dataset.page)},true);
+  window.addEventListener('hashchange',()=>{const h=hashPage();if(h){window.__BLIS_MOLLOX_ROUTE=h;apply()}});
+  window.addEventListener('blis:clientdata',()=>[0,80,250].forEach(ms=>setTimeout(apply,ms)));
+  window.addEventListener('load',()=>[0,80,250,700].forEach(ms=>setTimeout(apply,ms)));
+  [0,80,250,700].forEach(ms=>setTimeout(apply,ms));
+})();
 </script>
-<script src="/mollox-qa-v1.js?v=20260823-qa1"></script>
+<script src="/mollox-qa-v1.js?v=20260823-qa3"></script>
 <script id="blisGlobalLiveScript" src="/navigator-global-live.js?v=20260821-1242"></script>
 <script id="blisUITerminologyScript" src="/navigator-ui-terminology.js?v=20260821-1242"></script>
 <script id="blisAttitudesMasterV2Script" src="/navigator-attitudes-master-v2.js?v=20260823-molloxqa1"></script>
