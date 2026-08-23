@@ -1,8 +1,8 @@
 /* BLIS Navigator — canonical Reputation artwork for every client. */
 (function(){
 'use strict';
-if(window.__BLISReputationExactArtV60)return;
-window.__BLISReputationExactArtV60=true;
+if(window.__BLISReputationExactArtV61)return;
+window.__BLISReputationExactArtV61=true;
 
 const PARTS=[1,2,3,4].map(n=>`/reputation-aroma-exact-v2-0${n}.js?v=20260819-exact47`);
 const CLIENTS={
@@ -14,13 +14,18 @@ const CLIENTS={
 };
 let srcPromise=null,observer=null,applyPromise=null;
 
+function valid(v){v=String(v||'').trim();return CLIENTS[v]?v:''}
 function activeClient(){
-  try{const q=new URLSearchParams(location.search).get('client');if(q&&CLIENTS[q])return q}catch(_){}
-  try{if(typeof slug!=='undefined'&&CLIENTS[slug])return String(slug)}catch(_){}
-  try{if(window.BLIS_CLIENT_SCOPE&&CLIENTS[window.BLIS_CLIENT_SCOPE])return String(window.BLIS_CLIENT_SCOPE)}catch(_){}
-  try{if(window.BLIS_INITIAL_CLIENT&&CLIENTS[window.BLIS_INITIAL_CLIENT])return String(window.BLIS_INITIAL_CLIENT)}catch(_){}
-  const body=String(document.body?.dataset?.client||'');
-  return CLIENTS[body]?body:'aroma';
+  // The live UI state is authoritative. URL query is only a fallback because
+  // the Navigator can switch clients without rewriting the current URL.
+  try{const v=valid(typeof slug!=='undefined'?slug:'');if(v)return v}catch(_){}
+  try{const s=document.getElementById('clientSel');const v=valid(s?.value);if(v)return v}catch(_){}
+  try{const current=document.querySelector('.client-option.active,[data-client-key].active');const v=valid(current?.dataset?.clientKey||current?.dataset?.client);if(v)return v}catch(_){}
+  try{const v=valid(window.BLIS_CLIENT_SCOPE);if(v)return v}catch(_){}
+  try{const v=valid(window.BLIS_INITIAL_CLIENT);if(v)return v}catch(_){}
+  try{const v=valid(document.body?.dataset?.client);if(v)return v}catch(_){}
+  try{const v=valid(new URLSearchParams(location.search).get('client'));if(v)return v}catch(_){}
+  return 'aroma';
 }
 function cleanup(t){
   if(!t)return;
@@ -98,11 +103,12 @@ function init(){
   schedule();
   const root=document.getElementById('reputationBody');
   if(root&&!observer){observer=new MutationObserver(()=>schedule());observer.observe(root,{childList:true,subtree:true})}
-  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav [data-page="reputation"]'))schedule()},true);
-  document.getElementById('clientSel')?.addEventListener('change',schedule);
+  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav [data-page="reputation"],.client-option,[data-client-key]'))setTimeout(schedule,0)},true);
+  document.getElementById('clientSel')?.addEventListener('change',()=>setTimeout(schedule,0));
   window.addEventListener('blis:clientdata',schedule);
 }
 const api={apply,activeClient};
+window.BLISReputationExactArtV61=api;
 window.BLISReputationExactArtV60=api;
 window.BLISReputationExactArtV50=api;
 window.BLISReputationExactArtV49=api;
