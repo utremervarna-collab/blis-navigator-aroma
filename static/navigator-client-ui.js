@@ -144,6 +144,10 @@
     closeMenu();
     try{localStorage.setItem('blis-client-ui',key)}catch(_){ }
     try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(_){ }
+    if(key==='mollox'){
+      location.assign('/mollox.html?client=mollox');
+      return;
+    }
     window.BLIS_INITIAL_CLIENT=key;
     const u=new URL(location.href);
     u.pathname='/dashboard.html';
@@ -169,8 +173,12 @@
   }
 
   function init(){
-    installRoutes();
     const key=currentKey();
+    if(key==='mollox'&&location.pathname!='/mollox.html'){
+      location.replace('/mollox.html?client=mollox');
+      return;
+    }
+    installRoutes();
     paint(key);
     const sel=document.getElementById('clientSel');
     if(sel&&valid(key))sel.value=key;
