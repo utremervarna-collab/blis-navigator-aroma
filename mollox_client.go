@@ -6,10 +6,12 @@ import (
 )
 
 // molloxSeedClient configures the public-data profile for MOLLOX Bulgaria.
+// Seeded observations are limited to facts that are explicitly visible in
+// MOLLOX's public pages. Dynamic web scores are added only by the live probes.
 func molloxSeedClient(stamp string) *Client {
 	c := &Client{
 		Slug: "mollox", Name: "MOLLOX България", Sector: "Професионална хигиена / B2B решения",
-		Note: "Публичен профил • професионални препарати, дезинфекция и хигиенни системи",
+		Note: "Публичен профил • данните са от проверими публични източници",
 		Sources: []Source{
 			{Key: "official_site", Label: "MOLLOX България", URL: "https://mollox.bg/", Method: "официален сайт, продуктова и корпоративна среда", Reliability: .99},
 			{Key: "products", Label: "MOLLOX – Продукти", URL: "https://mollox.bg/products", Method: "продуктово портфолио, категории и индустрии", Reliability: .99},
@@ -30,60 +32,175 @@ func molloxSeedClient(stamp string) *Client {
 			{Key: "cmp_euroshine", Label: "Euroshine", URL: "https://euroshinebg.com/", Method: "професионална хигиена, дезинфекция и дозиращи решения в България", Reliability: .94},
 		},
 	}
+
+	// Publicly verified facts from mollox.bg as of the current profile build.
 	for _, x := range []struct {
 		s, m string
 		v    interface{}
 	}{
-		{"official_site", "website_active", 1.0}, {"official_site", "professional_focus", 1.0}, {"official_site", "iso_9001", 1.0}, {"official_site", "iso_14001", 1.0}, {"official_site", "technical_docs", 1.0}, {"official_site", "german_lab", 1.0},
-		{"products", "category_count", 15.0}, {"products", "industry_count", 4.0}, {"products", "product_details", 1.0},
-		{"private_label", "service_active", 1.0}, {"private_label", "product_types", 8.0}, {"private_label", "full_service", 1.0},
-		{"contact", "regional_distributors", 5.0}, {"contact", "varna_office", 1.0}, {"contact", "association_member", 1.0},
-		{"news", "news_section", 1.0}, {"news", "recent_articles", 3.0}, {"facebook", "profile_active", 1.0}, {"linkedin", "profile_active", 1.0},
+		{"official_site", "website_active", 1.0},
+		{"official_site", "iso_9001", 1.0},
+		{"official_site", "iso_14001", 1.0},
+		{"official_site", "technical_docs", 1.0},
+		{"official_site", "sds_tds", 1.0},
+		{"official_site", "health_ministry_authorized_disinfectants", 1.0},
+		{"official_site", "german_lab", 1.0},
+		{"official_site", "association_member", 1.0},
+		{"products", "industry_count", 4.0},
+		{"private_label", "service_active", 1.0},
+		{"private_label", "product_types", 8.0},
+		{"private_label", "full_service", 1.0},
+		{"contact", "regional_distributors", 5.0},
 	} {
 		add(c, x.s, x.m, x.v, stamp)
 	}
 	return c
 }
 
+func molloxObservedScore(c *Client, key string) float64 {
+	return f(latest(c, key, "score"))
+}
+
+func molloxMeanObserved(c *Client, keys ...string) float64 {
+	vals := []float64{}
+	for _, key := range keys {
+		if v := molloxObservedScore(c, key); v > 0 {
+			vals = append(vals, v)
+		}
+	}
+	if len(vals) == 0 {
+		return 0
+	}
+	return r1(mean(vals))
+}
+
+func molloxCoverage(c *Client, keys ...string) float64 {
+	if len(keys) == 0 {
+		return 0
+	}
+	seen := 0
+	for _, key := range keys {
+		if molloxObservedScore(c, key) > 0 {
+			seen++
+		}
+	}
+	return r1(float64(seen) / float64(len(keys)) * 100)
+}
+
+func molloxSnapshotTrend(c *Client, current float64) float64 {
+	for i := len(c.Snapshots) - 1; i >= 0; i-- {
+		if c.Snapshots[i].Payload == nil {
+			continue
+		}
+		if v, ok := c.Snapshots[i].Payload["blis_index"]; ok {
+			prev := f(v)
+			if prev > 0 {
+				return r1(current - prev)
+			}
+		}
+	}
+	return 0
+}
+
 func molloxDashboard(c *Client) map[string]interface{} {
-	web := boolScore(latest(c, "official_site", "website_active"))
-	docs := boolScore(latest(c, "official_site", "technical_docs"))
-	iso := mean([]float64{boolScore(latest(c, "official_site", "iso_9001")), boolScore(latest(c, "official_site", "iso_14001"))})
-	cats := norm(f(latest(c, "products", "category_count")), 15)
+	// Every dynamic input below is an observed probe result. Verified binary facts
+	// are used only where the official MOLLOX site explicitly states them.
+	web := molloxObservedScore(c, "official_site")
+	products := molloxObservedScore(c, "products")
+	privateLabelWeb := molloxObservedScore(c, "private_label")
+	contactWeb := molloxObservedScore(c, "contact")
+	newsWeb := molloxObservedScore(c, "news")
+	facebookWeb := molloxObservedScore(c, "facebook")
+	linkedinWeb := molloxObservedScore(c, "linkedin")
+
+	iso := mean([]float64{
+		boolScore(latest(c, "official_site", "iso_9001")),
+		boolScore(latest(c, "official_site", "iso_14001")),
+	})
+	docs := mean([]float64{
+		boolScore(latest(c, "official_site", "technical_docs")),
+		boolScore(latest(c, "official_site", "sds_tds")),
+	})
+	regulatory := boolScore(latest(c, "official_site", "health_ministry_authorized_disinfectants"))
+	lab := boolScore(latest(c, "official_site", "german_lab"))
+	association := boolScore(latest(c, "official_site", "association_member"))
 	industries := norm(f(latest(c, "products", "industry_count")), 4)
-	privateLabel := boolScore(latest(c, "private_label", "service_active"))
+	productTypes := norm(f(latest(c, "private_label", "product_types")), 8)
 	distributors := norm(f(latest(c, "contact", "regional_distributors")), 5)
-	social := boolScore(latest(c, "facebook", "profile_active"))
-	news := norm(f(latest(c, "news", "recent_articles")), 4)
-	digital := r1(web*.24 + cats*.20 + industries*.12 + privateLabel*.14 + social*.10 + news*.10 + docs*.10)
-	reputation := r1(iso*.35 + docs*.25 + boolScore(latest(c, "official_site", "german_lab"))*.20 + boolScore(latest(c, "contact", "association_member"))*.20)
-	market := r1(cats*.24 + industries*.20 + privateLabel*.22 + distributors*.22 + news*.12)
-	socialIndex := r1(social*.55 + news*.45)
-	competitive := r1(digital*.35 + reputation*.30 + market*.35)
-	benchmark := 72.0
-	relative := r1(competitive / benchmark * 100)
-	blis := r1(digital*.27 + reputation*.24 + market*.23 + socialIndex*.10 + competitive*.16)
+	privateLabel := boolScore(latest(c, "private_label", "service_active"))
+
+	// BLIS indices are derived only from observed/verified public inputs.
+	// Missing dynamic observations contribute 0 and are visible through coverage.
+	digital := r1(meanPositive([]float64{web, products, privateLabelWeb, contactWeb, newsWeb}))
+	reputation := r1(meanPositive([]float64{iso, docs, regulatory, lab, association}))
+	market := r1(meanPositive([]float64{products, privateLabelWeb, contactWeb, industries, productTypes, distributors, privateLabel}))
+	socialIndex := r1(meanPositive([]float64{facebookWeb, linkedinWeb, newsWeb}))
+	competitive := r1(meanPositive([]float64{digital, reputation, market}))
+	blis := r1(meanPositive([]float64{digital, reputation, market, socialIndex, competitive}))
+
+	competitorKeys := []string{"cmp_hagleitner", "cmp_katrinmax", "cmp_hygimarket", "cmp_euroshine"}
+	benchmark := molloxMeanObserved(c, competitorKeys...)
+	relative := 0.0
+	if benchmark > 0 && web > 0 {
+		relative = r1(web / benchmark * 100)
+	}
+	coverageKeys := []string{"official_site", "products", "private_label", "contact", "news", "facebook", "linkedin", "cmp_hagleitner", "cmp_katrinmax", "cmp_hygimarket", "cmp_euroshine"}
+	coverage := molloxCoverage(c, coverageKeys...)
+	trend := molloxSnapshotTrend(c, blis)
+
+	competitors := []interface{}{
+		map[string]interface{}{"name": "MOLLOX България", "score": web, "source": "измерен публичен web профил"},
+		map[string]interface{}{"name": "Hagleitner България", "score": molloxObservedScore(c, "cmp_hagleitner"), "source": "измерен публичен web профил"},
+		map[string]interface{}{"name": "Katrin Max / BePure", "score": molloxObservedScore(c, "cmp_katrinmax"), "source": "измерен публичен web профил"},
+		map[string]interface{}{"name": "Hygimarket", "score": molloxObservedScore(c, "cmp_hygimarket"), "source": "измерен публичен web профил"},
+		map[string]interface{}{"name": "Euroshine", "score": molloxObservedScore(c, "cmp_euroshine"), "source": "измерен публичен web профил"},
+	}
+
 	return map[string]interface{}{
-		"client": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note, "blis_index": blis, "benchmark": benchmark, "relative": relative, "confidence": 90.0, "trend": 2.4, "data_updated": latestObservedAt(c),
+		"client": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note,
+		"blis_index": blis, "benchmark": benchmark, "relative": relative,
+		"confidence": coverage, "trend": trend, "data_updated": latestObservedAt(c),
 		"indices": []interface{}{
-			idx("social", "Индекс на социалното присъствие", socialIndex, "Оценява видимата публична активност и съдържателния ритъм.", []interface{}{comp("Публичен социален профил", social, "55%"), comp("Актуално съдържание", news, "45%")}, "", []string{"Facebook", "LinkedIn", "MOLLOX – Новини"}),
-			idx("digital", "Индекс на дигиталната видимост", digital, "Оценява сайта, продуктовото покритие, индустриалните решения и достъпа до техническа информация.", []interface{}{comp("Официален сайт", web, "24%"), comp("Продуктови категории", cats, "20%"), comp("Индустрии", industries, "12%"), comp("Private Label", privateLabel, "14%"), comp("Техническа документация", docs, "10%")}, "", []string{"MOLLOX България", "MOLLOX – Продукти", "MOLLOX – Private Label"}),
-			idx("reputation", "Индекс на репутацията", reputation, "Публична оценка на доверителните и качествените сигнали около компанията.", []interface{}{comp("ISO стандарти", iso, "35%"), comp("Техническа документация", docs, "25%"), comp("Лабораторен подход", 100.0, "20%"), comp("Браншово присъствие", 100.0, "20%")}, "", []string{"MOLLOX България", "ECHA"}),
-			idx("interest", "Индекс на пазарния интерес", market, "Комбинира ширината на портфолиото, секторното покритие, дистрибуцията и индивидуалните решения.", []interface{}{comp("Продуктово покритие", cats, "24%"), comp("Индустриално покритие", industries, "20%"), comp("Private Label", privateLabel, "22%"), comp("Регионална дистрибуция", distributors, "22%")}, "", []string{"MOLLOX – Продукти", "MOLLOX – Контакти и дистрибутори"}),
-			idx("competitive", "Индекс на конкурентната позиция", competitive, "Съпоставя публично наблюдаемата сила на MOLLOX спрямо професионалната категория в България.", []interface{}{comp("Дигитална видимост", digital, "35%"), comp("Репутационни сигнали", reputation, "30%"), comp("Пазарно покритие", market, "35%")}, "", []string{"MOLLOX България", "Hagleitner България", "Katrin Max / BePure", "Hygimarket", "Euroshine"}),
+			idx("social", "Индекс на социалното присъствие", socialIndex, "Изчислява се само от текущо измерени публични Facebook, LinkedIn и новинарски сигнали.", []interface{}{comp("Facebook", facebookWeb, "измерено"), comp("LinkedIn", linkedinWeb, "измерено"), comp("Публично съдържание", newsWeb, "измерено")}, "", []string{"Facebook", "LinkedIn", "MOLLOX – Новини"}),
+			idx("digital", "Индекс на дигиталната видимост", digital, "Средна стойност от текущо измерените публични web профили на сайта, продуктите, Private Label, контактите и новините.", []interface{}{comp("Официален сайт", web, "измерено"), comp("Продукти", products, "измерено"), comp("Private Label", privateLabelWeb, "измерено"), comp("Контакти", contactWeb, "измерено"), comp("Новини", newsWeb, "измерено")}, "", []string{"MOLLOX България", "MOLLOX – Продукти", "MOLLOX – Private Label", "MOLLOX – Контакти и дистрибутори", "MOLLOX – Новини"}),
+			idx("reputation", "Индекс на репутацията", reputation, "Използва единствено публично потвърдени доверителни сигнали от официалния профил: ISO, SDS/TDS, разрешителни, лабораторен подход и браншово членство.", []interface{}{comp("ISO 9001 и ISO 14001", iso, "потвърдено"), comp("SDS / TDS документация", docs, "потвърдено"), comp("Разрешителни за дезинфектанти", regulatory, "потвърдено"), comp("Специализирана лаборатория", lab, "потвърдено"), comp("Браншово членство", association, "потвърдено")}, "", []string{"MOLLOX България"}),
+			idx("interest", "Индекс на пазарния профил", market, "Изчислява се от измеримото продуктово, индустриално, Private Label и дистрибуторско покритие.", []interface{}{comp("Продуктова страница", products, "измерено"), comp("Private Label", privateLabelWeb, "измерено"), comp("Контактна и дистрибуторска среда", contactWeb, "измерено"), comp("4 индустриални направления", industries, "потвърдено"), comp("8 Private Label типа", productTypes, "потвърдено"), comp("5 регионални дистрибутора", distributors, "потвърдено")}, "", []string{"MOLLOX – Продукти", "MOLLOX – Private Label", "MOLLOX – Контакти и дистрибутори"}),
+			idx("competitive", "Индекс на конкурентната позиция", competitive, "BLIS производна от реално наблюдаваните дигитални, репутационни и пазарни входни данни. Сравнителните web оценки на конкурентите се измерват по една и съща процедура.", []interface{}{comp("Дигитална видимост", digital, "реални входни данни"), comp("Репутационни сигнали", reputation, "реални входни данни"), comp("Пазарен профил", market, "реални входни данни")}, "", []string{"MOLLOX България", "Hagleitner България", "Katrin Max / BePure", "Hygimarket", "Euroshine"}),
 		},
-		"metrics":     []interface{}{met("Продуктови категории", fmt.Sprintf("%.0f", f(latest(c, "products", "category_count")))), met("Индустрии", "HoReCa · ХВП · Ферми · Обществени обекти"), met("Регионални дистрибутори", fmt.Sprintf("%.0f", f(latest(c, "contact", "regional_distributors"))))},
-		"signals":     []interface{}{sig("positive", "Широко професионално продуктово покритие", "Наблюдават се решения за няколко B2B индустрии и специализирани хигиенни процеси."), sig("positive", "Private Label е отличим пазарен актив", "Компанията предлага формула, опаковка, дизайн и логистика в един процес."), sig("watch", "Социалното присъствие е по-тясно от продуктовия обхват", "Следи се дали публичната комуникация отразява пълния капацитет на портфолиото.")},
-		"competitors": []interface{}{map[string]interface{}{"name": "MOLLOX България", "score": competitive, "source": "BLIS публични сигнали"}, map[string]interface{}{"name": "Hagleitner България", "score": 82.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Katrin Max / BePure", "score": 80.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Hygimarket", "score": 76.0, "source": "публична сравнителна среда · България"}, map[string]interface{}{"name": "Euroshine", "score": 74.0, "source": "публична сравнителна среда · България"}},
+		"metrics": []interface{}{
+			met("Индустриални направления", "4"),
+			met("Private Label продуктови типа", "8"),
+			met("Регионални дистрибутори", "5"),
+			met("ISO стандарти", "ISO 9001:2015 · ISO 14001:2015"),
+		},
+		"signals": []interface{}{
+			sig("positive", "Пълна техническа документация", "Официалният сайт посочва SDS и TDS документация за продуктите и решенията."),
+			sig("positive", "Private Label е публично потвърдена услуга", "Публичната страница описва формулиране, опаковки, дизайн на етикет и логистика."),
+			sig("positive", "Регионална дистрибуция", "Публично са посочени пет регионални дистрибутора: София, Велико Търново, Бургас, Смолян/Пампорово и Сандански/Банско/Благоевград."),
+		},
+		"competitors": competitors,
 	}
 }
 
 func runMolloxEngine(c *Client, createSnapshot bool) EngineStatus {
+	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", Running: true, LastRun: engineSnapshot().LastRun})
 	results := []ConnectorResult{}
 	specs := []struct {
 		key   string
 		terms []string
-	}{{"official_site", []string{"mollox", "professional", "професионал", "iso", "хигиен"}}, {"products", []string{"продукт", "хигиен", "horeca", "дезинф"}}, {"private_label", []string{"private label", "собствена марка", "формул", "опаков"}}, {"contact", []string{"варна", "дистрибутор", "контакт"}}, {"news", []string{"mollox", "хигиен", "eurotier"}}, {"cmp_hagleitner", []string{"hygiene", "хигиен", "professional"}}, {"cmp_katrinmax", []string{"хигиен", "професионал", "horeca"}}, {"cmp_hygimarket", []string{"хигиен", "почиств", "професионал"}}, {"cmp_euroshine", []string{"хигиен", "дезинф", "дозира"}}}
+	}{
+		{"official_site", []string{"mollox", "професионал", "хигиен", "iso", "sds", "tds"}},
+		{"products", []string{"продукт", "хигиен", "horeca", "дезинф"}},
+		{"private_label", []string{"private label", "собствена марка", "формул", "опаков", "логист"}},
+		{"contact", []string{"дистрибутор", "софия", "велико търново", "бургас", "смолян", "сандански"}},
+		{"news", []string{"mollox", "хигиен", "eurotier"}},
+		{"facebook", []string{"mollox"}},
+		{"linkedin", []string{"mollox", "bulgaria"}},
+		{"cmp_hagleitner", []string{"hygiene", "хигиен", "professional", "дезинф"}},
+		{"cmp_katrinmax", []string{"хигиен", "професионал", "horeca"}},
+		{"cmp_hygimarket", []string{"хигиен", "почиств", "професионал"}},
+		{"cmp_euroshine", []string{"хигиен", "дезинф", "дозира"}},
+	}
 	for _, sp := range specs {
 		results = append(results, probeGenericSource(c, sp.key, sp.terms))
 	}
@@ -103,7 +220,7 @@ func runMolloxEngine(c *Client, createSnapshot bool) EngineStatus {
 		}
 		saveStore()
 	}
-	st := EngineStatus{Version: "2.9-portal-finalqa", Running: false, LastRun: nowISO(), NextRun: nowISO(), Successful: suc, Failed: fail, Results: results}
+	st := EngineStatus{Version: "2.9-portal-finalqa", Running: false, LastRun: nowISO(), NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339), Successful: suc, Failed: fail, Results: results}
 	setEngineStatus(st)
 	return st
 }
