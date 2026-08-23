@@ -1,32 +1,32 @@
-/* BLIS Navigator — Aroma reputation artwork, strictly scoped to Aroma only. */
+/* BLIS Navigator — canonical Reputation artwork for every client. */
 (function(){
 'use strict';
-if(window.__BLISReputationExactArtV50)return;
-window.__BLISReputationExactArtV50=true;
+if(window.__BLISReputationExactArtV60)return;
+window.__BLISReputationExactArtV60=true;
 
 const PARTS=[1,2,3,4].map(n=>`/reputation-aroma-exact-v2-0${n}.js?v=20260819-exact47`);
+const CLIENTS={
+  'aroma':'Aroma Cosmetics',
+  'mollox':'MOLLOX България',
+  'bolyarka':'Болярка',
+  'astor-garden':'Astor Garden',
+  'varna-towers':'Varna Towers'
+};
 let srcPromise=null,observer=null,applyPromise=null;
 
 function activeClient(){
-  try{const q=new URLSearchParams(location.search).get('client');if(q)return String(q)}catch(_){}
-  try{if(window.BLIS_CLIENT_SCOPE)return String(window.BLIS_CLIENT_SCOPE)}catch(_){}
-  try{if(window.BLIS_INITIAL_CLIENT)return String(window.BLIS_INITIAL_CLIENT)}catch(_){}
-  return String(document.body?.dataset?.client||'');
-}
-function isAromaContext(){
-  const path=String(location.pathname||'').toLowerCase();
-  if(path.includes('mollox'))return false;
-  return activeClient()==='aroma';
+  try{const q=new URLSearchParams(location.search).get('client');if(q&&CLIENTS[q])return q}catch(_){}
+  try{if(typeof slug!=='undefined'&&CLIENTS[slug])return String(slug)}catch(_){}
+  try{if(window.BLIS_CLIENT_SCOPE&&CLIENTS[window.BLIS_CLIENT_SCOPE])return String(window.BLIS_CLIENT_SCOPE)}catch(_){}
+  try{if(window.BLIS_INITIAL_CLIENT&&CLIENTS[window.BLIS_INITIAL_CLIENT])return String(window.BLIS_INITIAL_CLIENT)}catch(_){}
+  const body=String(document.body?.dataset?.client||'');
+  return CLIENTS[body]?body:'aroma';
 }
 function cleanup(t){
   if(!t)return;
-  t.classList.remove('rp-exact-aroma');
+  t.classList.remove('rp-exact-aroma','rp-exact-template');
   t.removeAttribute('data-exact-client');
   t.querySelectorAll('.rp-exact-art,.rp-exact-label').forEach(x=>x.remove());
-}
-function cleanupAll(){
-  document.querySelectorAll('#reputationBody .rp-totem').forEach(cleanup);
-  document.querySelectorAll('#reputationBody .rp-exact-art,#reputationBody .rp-exact-label').forEach(x=>x.remove());
 }
 function source(){
   if(srcPromise)return srcPromise;
@@ -37,40 +37,56 @@ function source(){
   return srcPromise;
 }
 async function doApply(){
-  if(!isAromaContext()){
-    cleanupAll();
-    return false;
-  }
   const t=document.querySelector('#reputationBody .rp-totem');
   if(!t)return false;
-  t.classList.add('rp-exact-aroma');
-  t.dataset.exactClient='aroma';
-  let label=t.querySelector('.rp-exact-label');
-  if(!label){label=document.createElement('div');label.className='rp-exact-label';t.appendChild(label)}
-  label.textContent='Aroma Cosmetics';label.dataset.client='aroma';
+  const c=activeClient();
+  const labelText=CLIENTS[c]||c;
+  t.classList.remove('rp-exact-aroma');
+  t.classList.add('rp-exact-template');
+  t.dataset.exactClient=c;
+
   let img=t.querySelector('.rp-exact-art');
-  if(!img){img=document.createElement('img');img.className='rp-exact-art';img.decoding='async';img.loading='eager';img.draggable=false;t.appendChild(img)}
-  img.alt='Aroma Cosmetics';
-  if(img.dataset.loaded==='1')return true;
-  try{
-    const src=await source();
-    if(img.src!==src)img.src=src;
-    if(typeof img.decode==='function'){
-      try{await img.decode()}catch(e){if(!img.complete)throw e}
-    }else if(!img.complete){
-      await new Promise((resolve,reject)=>{
-        img.addEventListener('load',resolve,{once:true});
-        img.addEventListener('error',()=>reject(new Error('image decode failed')),{once:true});
-      });
-    }
-    img.dataset.loaded='1';
-    window.dispatchEvent(new CustomEvent('blis:reputationartready'));
-    return true;
-  }catch(e){
-    console.error('BLIS exact reputation artwork:',e);
-    img.dataset.loaded='0';
-    return false;
+  if(!img){
+    img=document.createElement('img');
+    img.className='rp-exact-art';
+    img.decoding='async';
+    img.loading='eager';
+    img.draggable=false;
+    t.appendChild(img);
   }
+  img.alt=labelText;
+  img.dataset.client=c;
+
+  let label=t.querySelector('.rp-exact-label');
+  if(!label){
+    label=document.createElement('div');
+    label.className='rp-exact-label';
+    t.appendChild(label);
+  }
+  label.dataset.client=c;
+  label.textContent=labelText;
+
+  if(img.dataset.loaded!=='1'){
+    try{
+      const src=await source();
+      if(img.src!==src)img.src=src;
+      if(typeof img.decode==='function'){
+        try{await img.decode()}catch(e){if(!img.complete)throw e}
+      }else if(!img.complete){
+        await new Promise((resolve,reject)=>{
+          img.addEventListener('load',resolve,{once:true});
+          img.addEventListener('error',()=>reject(new Error('image decode failed')),{once:true});
+        });
+      }
+      img.dataset.loaded='1';
+    }catch(e){
+      console.error('BLIS reputation artwork:',e);
+      img.dataset.loaded='0';
+      return false;
+    }
+  }
+  window.dispatchEvent(new CustomEvent('blis:reputationartready',{detail:{client:c}}));
+  return true;
 }
 function apply(){
   if(applyPromise)return applyPromise;
@@ -78,19 +94,16 @@ function apply(){
   return applyPromise;
 }
 function schedule(){requestAnimationFrame(()=>apply())}
-function refresh(){if(isAromaContext())schedule();else cleanupAll()}
 function init(){
-  refresh();
+  schedule();
   const root=document.getElementById('reputationBody');
-  if(root&&!observer){
-    observer=new MutationObserver(()=>refresh());
-    observer.observe(root,{childList:true,subtree:true});
-  }
-  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav button[data-page="reputation"]'))refresh()},true);
-  document.getElementById('clientSel')?.addEventListener('change',refresh);
-  window.addEventListener('blis:clientdata',refresh);
+  if(root&&!observer){observer=new MutationObserver(()=>schedule());observer.observe(root,{childList:true,subtree:true})}
+  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav [data-page="reputation"]'))schedule()},true);
+  document.getElementById('clientSel')?.addEventListener('change',schedule);
+  window.addEventListener('blis:clientdata',schedule);
 }
-const api={apply,cleanup:cleanupAll};
+const api={apply,activeClient};
+window.BLISReputationExactArtV60=api;
 window.BLISReputationExactArtV50=api;
 window.BLISReputationExactArtV49=api;
 window.BLISReputationExactArtV48=api;
