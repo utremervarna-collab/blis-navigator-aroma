@@ -17,7 +17,6 @@ const clientSector=()=>{try{return D?.sector||document.querySelector('.client-br
 const sources=()=>{try{return arr(S)}catch(_){return[]}};
 const activity=()=>{try{return arr(A)}catch(_){return[]}};
 const signals=()=>{try{return arr(D?.signals)}catch(_){return[]}};
-const escVal=v=>v===null||v===undefined||v===''?'—':E(v);
 
 function ensurePages(){
   const shell=document.querySelector('.shell');if(!shell)return;
@@ -36,7 +35,10 @@ function activate(id){
   document.querySelectorAll('#nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
   try{const u=new URL(location.href);u.searchParams.set('client',new URLSearchParams(location.search).get('client')||window.BLIS_INITIAL_CLIENT||'aroma');u.searchParams.delete('page');u.hash='';history.replaceState(null,'',u.pathname+u.search)}catch(_){ }
 }
-function host(id){return document.getElementById(id+'Body')||document.getElementById(id)};
+function host(id){
+  if(id==='overview')return document.getElementById('overviewPremium');
+  return document.getElementById(id+'Body')||document.getElementById(id);
+}
 function head(title,sub){return `<div class="ref-title"><h2>${E(title)}</h2><p>${E(sub)}</p></div>`}
 function row(icon,title,text,badge=''){return `<div class="ref-row"><span class="ref-miniicon">${E(icon)}</span><div><b>${E(title)}</b><p>${E(text)}</p></div>${badge?`<span class="ref-badge">${E(badge)}</span>`:''}</div>`}
 function empty(text){return `<div class="scan">${E(text)}</div>`}
@@ -74,8 +76,7 @@ function renderRoute(id){
     switch(id){
       case 'overview':
         if(window.BLISOverviewMaster?.render)return window.BLISOverviewMaster.render();
-        if(typeof renderOverview==='function')return renderOverview();
-        break;
+        return;
       case 'live':
         if(typeof window.BLISLiveMount==='function')return window.BLISLiveMount();
         break;
