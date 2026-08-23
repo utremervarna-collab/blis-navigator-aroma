@@ -8,7 +8,12 @@ const VERIFIED={
   facts:[['5','Регионални дистрибутора'],['8','Private Label продуктови типа'],['4','Основни индустрии'],['ISO 9001 / 14001','Публично заявени стандарти']],
   descriptor:'Професионални решения за чистота и хигиена за бизнес среда.'
 };
+function loadLayout(){
+  let l=document.getElementById('molloxLayoutFixV2');
+  if(!l){l=document.createElement('link');l.id='molloxLayoutFixV2';l.rel='stylesheet';l.href='/mollox-layout-fix-v2.css?v=20260823-layout2';document.head.appendChild(l)}
+}
 function context(){
+  loadLayout();
   window.BLIS_INITIAL_CLIENT='mollox';window.BLIS_CLIENT_SCOPE='mollox';document.body.dataset.client='mollox';
   try{if(typeof slug!=='undefined')slug='mollox'}catch(_){}
   const s=document.getElementById('clientSel');if(s)s.value='mollox';
@@ -36,7 +41,6 @@ function fixReputation(){
 function fixProfile(){
   const p=document.getElementById('profile');if(!p)return;
   exactText(p,'Aroma Cosmetics','MOLLOX България');exactText(p,'AROMA','MOLLOX');
-  // Remove two legacy demo facts if the old dossier renderer produced them.
   p.querySelectorAll('*').forEach(el=>{const t=(el.textContent||'').trim();if(t==='10+ години' || t==='15+')el.textContent=t==='10+ години'?'5':'8'});
   const labels=[...p.querySelectorAll('*')];
   labels.forEach(el=>{const t=(el.textContent||'').trim();if(t==='Присъствие в България')el.textContent='Регионални дистрибутора';if(t==='Продуктови категории')el.textContent='Private Label продуктови типа'});
@@ -47,6 +51,7 @@ function fixGeneric(){
 }
 function audit(){context();fixGeneric();fixMarket();fixReputation();fixProfile();const jump=document.getElementById('clientJump');if(jump)jump.style.display='none';}
 function schedule(){[0,80,260,700].forEach(ms=>setTimeout(audit,ms))}
+loadLayout();
 const root=document.querySelector('.shell')||document.body;const ob=new MutationObserver(()=>schedule());ob.observe(root,{subtree:true,childList:true,characterData:true});
 document.addEventListener('click',e=>{if(e.target.closest?.('#nav button,[data-page]'))schedule()},true);
 window.addEventListener('blis:clientdata',schedule);window.addEventListener('blis:periodchange',schedule);
