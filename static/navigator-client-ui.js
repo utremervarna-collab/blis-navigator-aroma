@@ -2,11 +2,11 @@
 (function(){
   'use strict';
   const clients={
-    aroma:{name:'Aroma Cosmetics',full:'Aroma Cosmetics',type:'Козметика',mark:'A',theme:'aroma'},
-    bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ',theme:'bolyarka'},
-    'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG',theme:'astor-garden'},
-    'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers'},
-    mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX',theme:'mollox'}
+    aroma:{name:'Aroma Cosmetics',full:'Aroma Cosmetics',type:'Козметика',mark:'A',theme:'aroma',short:'AROMA'},
+    bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ',theme:'bolyarka',short:'БОЛЯРКА'},
+    'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG',theme:'astor-garden',short:'ASTOR GARDEN'},
+    'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers',short:'VARNA TOWERS'},
+    mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX',theme:'mollox',short:'MOLLOX'}
   };
   let correctionInFlight=false;
   const greeting=()=>{const h=new Date().getHours();return h>=5&&h<12?'Добро утро':h>=12&&h<18?'Добър ден':'Добър вечер'};
@@ -35,6 +35,23 @@
     }catch(e){}
     return false;
   }
+  function patchReferenceBrandCopy(key){
+    const c=clients[key]||clients.aroma;
+    const active=document.querySelector('.page.active');
+    if(!active)return;
+    try{
+      const walker=document.createTreeWalker(active,NodeFilter.SHOW_TEXT);
+      const nodes=[];let n;
+      while((n=walker.nextNode()))nodes.push(n);
+      nodes.forEach(t=>{if(String(t.nodeValue||'').trim()==='AROMA')t.nodeValue=t.nodeValue.replace('AROMA',c.short)});
+      if(key!=='aroma'){
+        active.querySelectorAll('input').forEach(i=>{
+          if(i.value==='AROMA')i.value=c.short;
+          if(/@aroma\.bg$/i.test(i.value))i.value='';
+        });
+      }
+    }catch(e){}
+  }
   function paintClient(key){
     const c=clients[key]||clients.aroma;
     document.body.dataset.client=c.theme;
@@ -53,6 +70,16 @@
     const title=document.querySelector('.topbar .title h1');if(title)title.textContent=`${greeting()}, ${c.name}!`;
     document.body.classList.add('greeting-ready');
     document.title=`BLIS Navigator 2.0 — ${c.name}`;
+    patchReferenceBrandCopy(key);
+  }
+  function rerenderActive(){
+    const active=document.querySelector('.page.active')?.id;
+    if(!active)return;
+    if(active==='profile'&&typeof renderProfile==='function'){
+      try{renderProfile();patchReferenceBrandCopy(currentKey())}catch(e){}
+      return;
+    }
+    try{if(typeof window.refGo==='function')window.refGo(active)}catch(e){}
   }
   function syncLegacyAppClient(key){
     if(!clients[key])return;
@@ -69,10 +96,7 @@
         Promise.resolve(load()).catch(()=>{}).finally(()=>{
           correctionInFlight=false;
           paintClient(key);
-          const active=document.querySelector('.page.active')?.id;
-          if(active==='profile'&&typeof renderProfile==='function'){
-            try{renderProfile()}catch(e){}
-          }
+          rerenderActive();
         });
       }
     }catch(e){}
@@ -96,6 +120,7 @@
     },250);
     window.addEventListener('pageshow',()=>setTimeout(enforce,0));
     window.addEventListener('focus',()=>setTimeout(enforce,0));
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(enforce,0)});
   }
   function apply(key){
     const scoped=scopedKey();
@@ -124,6 +149,7 @@
     if(scoped)key=scoped;
     if(!clients[key])return;
     try{localStorage.setItem('blis-client-ui',key)}catch(e){}
+    window.BLIS_INITIAL_CLIENT=key;
     apply(key);
     const u=new URL(location.href);
     u.searchParams.set('client',key);
@@ -149,6 +175,8 @@
     const old=window.refGo;
     if(typeof old!=='function'||old.__blisCurrentRoutes)return;
     const wrapped=function(id){
+      const key=currentKey();
+      if(!dataMatches(key))syncLegacyAppClient(key);
       if(id==='live'){
         document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
         const live=document.getElementById('live');
@@ -156,18 +184,18 @@
         document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='live'));
         const u=new URL(location.href);
         u.searchParams.delete('page');
-        if(scopedKey())u.searchParams.set('client',scopedKey());
+        u.searchParams.set('client',key);
         u.hash='';
         history.replaceState(null,'',u.pathname+u.search);
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           if(typeof window.BLISLiveMount==='function')window.BLISLiveMount();
           else old(id);
+          patchReferenceBrandCopy(key);
         }));
         window.scrollTo({top:0,behavior:'smooth'});
         return;
       }
       if(id==='profile'){
-        const key=currentKey();
         syncLegacyAppClient(key);
         document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
         const profile=document.getElementById('profile');
@@ -178,19 +206,20 @@
             if(typeof renderProfile==='function')renderProfile();
             else old(id);
           }catch(e){old(id)}
+          patchReferenceBrandCopy(key);
         }));
         window.scrollTo({top:0,behavior:'smooth'});
         return;
       }
-      return old(id);
+      const out=old(id);
+      requestAnimationFrame(()=>patchReferenceBrandCopy(key));
+      return out;
     };
     wrapped.__blisCurrentRoutes=true;
     wrapped.__previous=old;
     window.refGo=wrapped;
   }
 
-  /* Old emailed/bookmarked URLs may contain ?page=live. Protected client entry
-     always starts on the current Overview screen and removes that legacy route. */
   function normalizeScopedEntry(){
     const scoped=scopedKey();
     if(!scoped)return;
@@ -212,7 +241,9 @@
   function init(){
     installCurrentRoutes();
     normalizeScopedEntry();
-    apply(currentKey());
+    const key=currentKey();
+    window.BLIS_INITIAL_CLIENT=key;
+    apply(key);
     installClientSelectionGuard();
     document.addEventListener('click',handleClick,true);
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
@@ -222,6 +253,7 @@
     if(wrap){wrap.style.position='relative';wrap.style.zIndex='200';}
     const menu=document.querySelector('.client-switch-menu');if(menu)menu.style.zIndex='1000';
     setTimeout(installCurrentRoutes,950);
+    window.addEventListener('load',()=>{syncLegacyAppClient(currentKey());setTimeout(rerenderActive,120)});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
