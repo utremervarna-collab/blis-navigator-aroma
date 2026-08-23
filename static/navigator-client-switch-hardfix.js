@@ -14,6 +14,7 @@
     e.preventDefault();
     e.stopImmediatePropagation();
     try{localStorage.setItem('blis-client-ui',key)}catch(_){ }
+    try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(_){ }
     window.BLIS_INITIAL_CLIENT=key;
     window.__BLIS_EXPECTED_CLIENT=key;
     const u=new URL('/dashboard.html',location.origin);
