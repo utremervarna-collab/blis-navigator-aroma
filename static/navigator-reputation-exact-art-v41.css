@@ -1,4 +1,8 @@
-/* BLIS Navigator — exact reputation artwork placement v47. */
+/* BLIS Navigator — exact reputation artwork placement v48. Aroma-only. */
+body[data-client="mollox"] #reputationBody .rp-exact-art,
+body[data-client="mollox"] #reputationBody .rp-exact-label{display:none!important;visibility:hidden!important;opacity:0!important}
+body[data-client="mollox"] #reputationBody .rp-totem.rp-exact-aroma{min-height:0!important;padding:initial!important;perspective:initial!important;overflow:visible!important}
+
 #reputationBody .rp-totem.rp-exact-aroma{
   min-height:390px!important;
   display:flex!important;
