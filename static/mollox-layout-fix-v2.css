@@ -1,0 +1,26 @@
+/* MOLLOX-only shell/layout correction. Keep this client isolated from legacy global layout drift. */
+body[data-client="mollox"]{overflow-x:hidden!important;background:#f6f8fc!important}
+body[data-client="mollox"] .app{grid-template-columns:224px minmax(0,1fr)!important;width:100%!important;max-width:100vw!important;overflow-x:hidden!important}
+body[data-client="mollox"] .main{min-width:0!important;width:auto!important;max-width:calc(100vw - 224px)!important;overflow-x:hidden!important}
+body[data-client="mollox"] .shell{width:100%!important;max-width:100%!important;min-width:0!important;padding:0 28px 44px!important;overflow-x:hidden!important}
+body[data-client="mollox"] .topbar{height:72px!important;min-height:72px!important;max-height:72px!important;margin:0 -28px 10px!important;padding:0 28px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;overflow:hidden!important;position:sticky!important;top:0!important}
+body[data-client="mollox"] .topbar .title,body[data-client="mollox"] .topbar .toptools{min-width:0!important;position:static!important;transform:none!important;margin:0!important}
+body[data-client="mollox"] .topbar .title h1{margin:0!important;line-height:1.1!important}
+body[data-client="mollox"] .blis-system-bar{width:100%!important;max-width:100%!important;min-width:0!important;height:64px!important;min-height:64px!important;max-height:64px!important;margin:0 0 8px!important;padding:7px 10px!important;display:flex!important;align-items:center!important;gap:10px!important;overflow:hidden!important;flex-wrap:nowrap!important}
+body[data-client="mollox"] .blis-system-bar>.blis-visual{flex:0 0 48px!important;width:48px!important;max-width:48px!important;height:48px!important}
+body[data-client="mollox"] .blis-system-copy{flex:1 1 auto!important;min-width:0!important;max-width:none!important;overflow:hidden!important}
+body[data-client="mollox"] .blis-system-primary,body[data-client="mollox"] .blis-system-secondary{max-width:100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+body[data-client="mollox"] .blis-stream{display:none!important}
+body[data-client="mollox"] .blis-global-live{flex:0 0 auto!important;width:300px!important;min-width:300px!important;max-width:300px!important;min-height:48px!important;height:48px!important;padding:4px 10px 4px 7px!important;grid-template-columns:38px minmax(80px,1fr) auto!important;gap:8px!important;border-radius:12px!important;overflow:hidden!important}
+body[data-client="mollox"] .blis-stopwatch{width:36px!important;height:36px!important}
+body[data-client="mollox"] .blis-global-clock{font-size:16px!important;letter-spacing:-.03em!important}
+body[data-client="mollox"] .blis-global-meta b{font-size:7.5px!important}body[data-client="mollox"] .blis-global-meta span{font-size:6.8px!important}
+body[data-client="mollox"] .sync{width:100%!important;max-width:100%!important;min-height:18px!important;margin:2px 0 10px!important;padding:0!important;line-height:1.25!important;position:static!important;overflow:hidden!important}
+body[data-client="mollox"] .page,body[data-client="mollox"] .page.active,body[data-client="mollox"] .page>div{width:100%!important;max-width:100%!important;min-width:0!important}
+body[data-client="mollox"] #reputation,body[data-client="mollox"] #reputationBody{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:hidden!important}
+body[data-client="mollox"] #reputationBody>*{max-width:100%!important;min-width:0!important}
+body[data-client="mollox"] #reputationBody .rp-wrap,body[data-client="mollox"] #reputationBody .rp-page,body[data-client="mollox"] #reputationBody .rp-shell,body[data-client="mollox"] #reputationBody .rp-grid,body[data-client="mollox"] #reputationBody .rp-main,body[data-client="mollox"] #reputationBody .rp-content{width:100%!important;max-width:100%!important;min-width:0!important}
+body[data-client="mollox"] #reputationBody .rp-grid{grid-template-columns:minmax(0,1fr)!important}
+body[data-client="mollox"] #reputationBody .rp-card,body[data-client="mollox"] #reputationBody section,body[data-client="mollox"] #reputationBody article{max-width:100%!important;min-width:0!important}
+@media(max-width:1180px){body[data-client="mollox"] .blis-global-live{width:250px!important;min-width:250px!important;max-width:250px!important;grid-template-columns:36px 1fr auto!important}body[data-client="mollox"] .blis-global-clock{font-size:14px!important}}
+@media(max-width:900px){body[data-client="mollox"] .main{max-width:100vw!important}body[data-client="mollox"] .blis-global-meta{display:none!important}body[data-client="mollox"] .blis-global-live{width:170px!important;min-width:170px!important;max-width:170px!important;grid-template-columns:34px auto!important}}
