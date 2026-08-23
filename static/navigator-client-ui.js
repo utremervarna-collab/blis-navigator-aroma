@@ -106,11 +106,10 @@
     if(wrap&&!wrap.contains(e.target))closeMenu();
   }
 
-  /* Retire the legacy Live renderer in navigator-reference.js.
-     Live must always mount the current navigator-live-master screen. */
-  function installCurrentLiveRoute(){
+  /* Retire legacy reference renderers for routes that have a current client-aware screen. */
+  function installCurrentRoutes(){
     const old=window.refGo;
-    if(typeof old!=='function'||old.__blisCurrentLiveRoute)return;
+    if(typeof old!=='function'||old.__blisCurrentRoutes)return;
     const wrapped=function(id){
       if(id==='live'){
         document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -129,9 +128,25 @@
         window.scrollTo({top:0,behavior:'smooth'});
         return;
       }
+      if(id==='profile'){
+        const key=currentKey();
+        syncLegacyAppClient(key);
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        const profile=document.getElementById('profile');
+        if(profile)profile.classList.add('active');
+        document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='profile'));
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          try{
+            if(typeof renderProfile==='function')renderProfile();
+            else old(id);
+          }catch(e){old(id)}
+        }));
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
       return old(id);
     };
-    wrapped.__blisCurrentLiveRoute=true;
+    wrapped.__blisCurrentRoutes=true;
     wrapped.__previous=old;
     window.refGo=wrapped;
   }
@@ -157,7 +172,7 @@
   }
 
   function init(){
-    installCurrentLiveRoute();
+    installCurrentRoutes();
     normalizeScopedEntry();
     apply(currentKey());
     installClientSelectionGuard();
@@ -168,7 +183,7 @@
     const wrap=document.querySelector('.client-switch');
     if(wrap){wrap.style.position='relative';wrap.style.zIndex='200';}
     const menu=document.querySelector('.client-switch-menu');if(menu)menu.style.zIndex='1000';
-    setTimeout(installCurrentLiveRoute,950);
+    setTimeout(installCurrentRoutes,950);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
