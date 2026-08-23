@@ -8,6 +8,8 @@ const VERIFIED={
   facts:[['5','Регионални дистрибутора'],['8','Private Label продуктови типа'],['4','Основни индустрии'],['ISO 9001 / 14001','Публично заявени стандарти']],
   descriptor:'Професионални решения за чистота и хигиена за бизнес среда.'
 };
+const PAGE_IDS=['overview','live','social','digital','reputation','market','competition','signals','reports','sources','history','timeline','profile','settings','help'];
+let restoringPage=false;
 function loadLayout(){
   let l=document.getElementById('molloxLayoutFixV2');
   if(!l){l=document.createElement('link');l.id='molloxLayoutFixV2';l.rel='stylesheet';l.href='/mollox-layout-fix-v2.css?v=20260823-layout2';document.head.appendChild(l)}
@@ -23,6 +25,30 @@ function context(){
 function exactText(root,from,to){
   if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const a=[];while(w.nextNode())a.push(w.currentNode);
   a.forEach(n=>{const t=String(n.nodeValue||'');if(t.trim()===from)n.nodeValue=t.replace(from,to)});
+}
+function pageFromHash(){
+  const raw=String(location.hash||'').replace(/^#/,'').trim().toLowerCase();
+  return PAGE_IDS.includes(raw)?raw:'';
+}
+function currentPage(){
+  const active=document.querySelector('.page.active');
+  return active&&PAGE_IDS.includes(active.id)?active.id:'overview';
+}
+function persistPage(id){
+  if(restoringPage||!PAGE_IDS.includes(id))return;
+  try{sessionStorage.setItem('blis-mollox-page',id)}catch(_){}
+  if(location.hash!=='#'+id){history.replaceState(null,'',location.pathname+location.search+'#'+id)}
+}
+function restorePage(attempt=0){
+  let wanted=pageFromHash();
+  if(!wanted){try{const saved=sessionStorage.getItem('blis-mollox-page');if(PAGE_IDS.includes(saved))wanted=saved}catch(_){}}
+  if(!wanted||wanted==='overview')return;
+  const btn=document.querySelector(`#nav [data-page="${wanted}"]`);
+  if(!btn){if(attempt<30)setTimeout(()=>restorePage(attempt+1),80);return}
+  if(currentPage()===wanted){persistPage(wanted);return}
+  restoringPage=true;
+  try{if(typeof window.refGo==='function')window.refGo(wanted);else btn.click()}catch(_){try{btn.click()}catch(__){}}
+  setTimeout(()=>{restoringPage=false;persistPage(currentPage())},80);
 }
 function fixMarket(){
   const m=document.getElementById('market');if(!m)return;
@@ -120,12 +146,13 @@ function fixGeneric(){
   const active=document.querySelector('.page.active');if(!active)return;
   exactText(active,'Aroma Cosmetics','MOLLOX България');exactText(active,'AROMA','MOLLOX');
 }
-function audit(){context();fixGeneric();fixMarket();fixReputation();fixProfile();fixCompetition();const jump=document.getElementById('clientJump');if(jump)jump.style.display='none';}
+function audit(){context();fixGeneric();fixMarket();fixReputation();fixProfile();fixCompetition();persistPage(currentPage());const jump=document.getElementById('clientJump');if(jump)jump.style.display='none';}
 function schedule(){[0,80,260,700].forEach(ms=>setTimeout(audit,ms))}
 loadLayout();
 const root=document.querySelector('.shell')||document.body;const ob=new MutationObserver(()=>schedule());ob.observe(root,{subtree:true,childList:true,characterData:true});
-document.addEventListener('click',e=>{if(e.target.closest?.('#nav button,[data-page]'))schedule()},true);
-window.addEventListener('blis:clientdata',schedule);window.addEventListener('blis:periodchange',schedule);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.BLISMolloxQA={audit,schedule,verified:VERIFIED,fixCompetition};
+document.addEventListener('click',e=>{const btn=e.target.closest?.('#nav [data-page]');if(btn){const id=btn.dataset.page;if(PAGE_IDS.includes(id))setTimeout(()=>persistPage(id),0);schedule()}},true);
+window.addEventListener('hashchange',()=>restorePage());
+window.addEventListener('blis:clientdata',()=>{schedule();setTimeout(()=>restorePage(),120)});window.addEventListener('blis:periodchange',schedule);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{schedule();setTimeout(()=>restorePage(),120)},{once:true});else{schedule();setTimeout(()=>restorePage(),120)}
+window.BLISMolloxQA={audit,schedule,verified:VERIFIED,fixCompetition,restorePage};
 })();
