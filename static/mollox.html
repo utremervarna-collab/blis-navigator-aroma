@@ -27,7 +27,7 @@
 <link rel="stylesheet" href="/navigator-trend-fix.css?v=20260817-real3">
 <link rel="stylesheet" href="/navigator-methods-global.css?v=20260817-2">
 <link rel="stylesheet" href="/navigator-social-master.css?v=20260819-font2">
-<link rel="stylesheet" href="/navigator-reputation-exact-art-v41.css?v=20260819-exact43">
+<link rel="stylesheet" href="/navigator-reputation-exact-art-v41.css?v=20260823-reputation62">
 <link rel="stylesheet" href="/navigator-perception-map.css?v=20260820-pm8">
 <style>
   .mollox-client-card{display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid rgba(123,16,40,.16);border-radius:14px;background:rgba(255,255,255,.78)}
@@ -104,8 +104,23 @@
 <script src="/navigator-history-fix.js?v=20260819-history1"></script>
 <script src="/navigator-temporal-ui.js?v=20260819-temporal3"></script>
 <script src="/navigator-chart-points.js?v=20260819-points43"></script>
-<script src="/navigator-reputation-exact-art-v41.js?v=20260822-stability1"></script>
+<script src="/navigator-reputation-exact-art-v41.js?v=20260823-reputation62"></script>
 <script src="/navigator-perception-core-v8.js?v=20260820-globeclean1"></script>
 <script src="/navigator-perception-map.js?v=20260820-pm10"></script>
+<script>
+(function(){
+  function enforceMolloxReputation(){
+    if(document.body.dataset.client!=='mollox')return;
+    const label=document.querySelector('#reputationBody .rp-exact-label');
+    if(label){label.dataset.client='mollox';label.textContent='MOLLOX България'}
+    const totem=document.querySelector('#reputationBody .rp-totem');
+    if(totem)totem.dataset.exactClient='mollox';
+  }
+  document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page="reputation"]'))setTimeout(enforceMolloxReputation,120)},true);
+  window.addEventListener('blis:reputationartready',enforceMolloxReputation);
+  window.addEventListener('blis:clientdata',()=>setTimeout(enforceMolloxReputation,80));
+  setInterval(enforceMolloxReputation,800);
+})();
+</script>
 </body>
 </html>
