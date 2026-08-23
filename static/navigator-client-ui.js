@@ -8,6 +8,7 @@
     'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',theme:'varna-towers'},
     mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX',theme:'mollox'}
   };
+  let correctionInFlight=false;
   const greeting=()=>{const h=new Date().getHours();return h>=5&&h<12?'Добро утро':h>=12&&h<18?'Добър ден':'Добър вечер'};
   function scopedKey(){
     try{const s=window.BLIS_CLIENT_SCOPE;if(s&&clients[s])return s}catch(e){}
@@ -18,36 +19,23 @@
     if(scoped)return scoped;
     const q=new URLSearchParams(location.search).get('client');
     if(q&&clients[q])return q;
+    try{const i=window.BLIS_INITIAL_CLIENT;if(i&&clients[i])return i}catch(e){}
     try{const s=localStorage.getItem('blis-client-ui');if(s&&clients[s])return s}catch(e){}
     return 'aroma';
   }
-  function syncLegacyAppClient(key){
-    if(!clients[key])return;
-    const sel=document.getElementById('clientSel');
-    if(sel&&sel.value!==key)sel.value=key;
+  function dataMatches(key){
     try{
-      let needsReload=false;
-      if(typeof slug!=='undefined'&&slug!==key){slug=key;needsReload=true}
-      if(typeof D!=='undefined'&&D&&D.slug&&D.slug!==key)needsReload=true;
-      if(needsReload&&typeof load==='function')load();
+      const name=String(D?.name||'').toLowerCase();
+      if(!name)return false;
+      if(key==='mollox')return name.includes('mollox');
+      if(key==='aroma')return name.includes('aroma');
+      if(key==='bolyarka')return name.includes('боляр')||name.includes('bolyar')||name.includes('boliar');
+      if(key==='astor-garden')return name.includes('astor');
+      if(key==='varna-towers')return name.includes('varna towers');
     }catch(e){}
+    return false;
   }
-  function installClientSelectionGuard(){
-    const sel=document.getElementById('clientSel');
-    if(!sel)return;
-    const enforce=()=>{
-      const key=currentKey();
-      if(sel.value!==key)sel.value=key;
-      syncLegacyAppClient(key);
-    };
-    const observer=new MutationObserver(enforce);
-    observer.observe(sel,{childList:true});
-    enforce();
-    [80,300,800,1600].forEach(ms=>setTimeout(enforce,ms));
-  }
-  function apply(key){
-    const scoped=scopedKey();
-    if(scoped)key=scoped;
+  function paintClient(key){
     const c=clients[key]||clients.aroma;
     document.body.dataset.client=c.theme;
     document.querySelectorAll('.client-brand-name').forEach(x=>x.textContent=c.full);
@@ -62,11 +50,60 @@
       x.setAttribute('aria-selected',on?'true':'false');
       const ck=x.querySelector('.client-option-check');if(ck)ck.textContent=on?'✓':'';
     });
-    const sel=document.getElementById('clientSel');if(sel)sel.value=key;
-    syncLegacyAppClient(key);
     const title=document.querySelector('.topbar .title h1');if(title)title.textContent=`${greeting()}, ${c.name}!`;
     document.body.classList.add('greeting-ready');
     document.title=`BLIS Navigator 2.0 — ${c.name}`;
+  }
+  function syncLegacyAppClient(key){
+    if(!clients[key])return;
+    const sel=document.getElementById('clientSel');
+    if(sel&&sel.value!==key)sel.value=key;
+    paintClient(key);
+    try{
+      let needsReload=false;
+      if(typeof slug!=='undefined'&&slug!==key){slug=key;needsReload=true}
+      else if(typeof slug!=='undefined')slug=key;
+      if(typeof D!=='undefined'&&!dataMatches(key))needsReload=true;
+      if(needsReload&&!correctionInFlight&&typeof load==='function'){
+        correctionInFlight=true;
+        Promise.resolve(load()).catch(()=>{}).finally(()=>{
+          correctionInFlight=false;
+          paintClient(key);
+          const active=document.querySelector('.page.active')?.id;
+          if(active==='profile'&&typeof renderProfile==='function'){
+            try{renderProfile()}catch(e){}
+          }
+        });
+      }
+    }catch(e){}
+  }
+  function installClientSelectionGuard(){
+    const sel=document.getElementById('clientSel');
+    if(!sel)return;
+    const enforce=()=>{
+      const key=currentKey();
+      if(sel.value!==key)sel.value=key;
+      syncLegacyAppClient(key);
+    };
+    const observer=new MutationObserver(enforce);
+    observer.observe(sel,{childList:true});
+    enforce();
+    [80,300,800,1600,2600,4200,6500].forEach(ms=>setTimeout(enforce,ms));
+    const started=Date.now();
+    const timer=setInterval(()=>{
+      enforce();
+      if(Date.now()-started>8000)clearInterval(timer);
+    },250);
+    window.addEventListener('pageshow',()=>setTimeout(enforce,0));
+    window.addEventListener('focus',()=>setTimeout(enforce,0));
+  }
+  function apply(key){
+    const scoped=scopedKey();
+    if(scoped)key=scoped;
+    if(!clients[key])key='aroma';
+    paintClient(key);
+    const sel=document.getElementById('clientSel');if(sel)sel.value=key;
+    syncLegacyAppClient(key);
     try{localStorage.setItem('blis-client-ui',key)}catch(e){}
   }
   function closeMenu(){
@@ -86,6 +123,7 @@
     const scoped=scopedKey();
     if(scoped)key=scoped;
     if(!clients[key])return;
+    try{localStorage.setItem('blis-client-ui',key)}catch(e){}
     apply(key);
     const u=new URL(location.href);
     u.searchParams.set('client',key);
