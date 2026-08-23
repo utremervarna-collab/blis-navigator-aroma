@@ -21,6 +21,30 @@
     try{const s=localStorage.getItem('blis-client-ui');if(s&&clients[s])return s}catch(e){}
     return 'aroma';
   }
+  function syncLegacyAppClient(key){
+    if(!clients[key])return;
+    const sel=document.getElementById('clientSel');
+    if(sel&&sel.value!==key)sel.value=key;
+    try{
+      let needsReload=false;
+      if(typeof slug!=='undefined'&&slug!==key){slug=key;needsReload=true}
+      if(typeof D!=='undefined'&&D&&D.slug&&D.slug!==key)needsReload=true;
+      if(needsReload&&typeof load==='function')load();
+    }catch(e){}
+  }
+  function installClientSelectionGuard(){
+    const sel=document.getElementById('clientSel');
+    if(!sel)return;
+    const enforce=()=>{
+      const key=currentKey();
+      if(sel.value!==key)sel.value=key;
+      syncLegacyAppClient(key);
+    };
+    const observer=new MutationObserver(enforce);
+    observer.observe(sel,{childList:true});
+    enforce();
+    [80,300,800,1600].forEach(ms=>setTimeout(enforce,ms));
+  }
   function apply(key){
     const scoped=scopedKey();
     if(scoped)key=scoped;
@@ -39,6 +63,7 @@
       const ck=x.querySelector('.client-option-check');if(ck)ck.textContent=on?'✓':'';
     });
     const sel=document.getElementById('clientSel');if(sel)sel.value=key;
+    syncLegacyAppClient(key);
     const title=document.querySelector('.topbar .title h1');if(title)title.textContent=`${greeting()}, ${c.name}!`;
     document.body.classList.add('greeting-ready');
     document.title=`BLIS Navigator 2.0 — ${c.name}`;
@@ -135,6 +160,7 @@
     installCurrentLiveRoute();
     normalizeScopedEntry();
     apply(currentKey());
+    installClientSelectionGuard();
     document.addEventListener('click',handleClick,true);
     document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
     const sel=document.getElementById('clientSel');
