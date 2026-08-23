@@ -15,7 +15,30 @@ import (
 )
 
 const legacyClientRememberCookieName = "blis_client_remember"
+const adminClientCookieName = "blis_admin_client"
 const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bbca5d5ced1705"
+
+func validNavigatorClient(slug string) bool {
+	switch strings.TrimSpace(slug) {
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox":
+		return true
+	default:
+		return false
+	}
+}
+
+func navigatorDashboardTarget(r *http.Request) string {
+	slug := strings.TrimSpace(r.URL.Query().Get("client"))
+	if !validNavigatorClient(slug) {
+		if c, err := r.Cookie(adminClientCookieName); err == nil && validNavigatorClient(c.Value) {
+			slug = c.Value
+		}
+	}
+	if !validNavigatorClient(slug) {
+		slug = "aroma"
+	}
+	return "/dashboard.html?client=" + url.QueryEscape(slug) + "&page=overview"
+}
 
 // Bootstrap exactly one public gateway in front of the internal Navigator engine.
 // The gateway keeps the existing client access rules, but the main Navigator has
@@ -87,7 +110,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		clearLegacyClientRememberCookie(w, r)
 
 		if s, ok := sessionFromRequest(r); ok && s.Admin {
-			http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
+			http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
 			return
 		}
 
@@ -107,7 +130,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		setSessionCookie(w, r, s)
-		http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
+		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
 		return
 	}
 
