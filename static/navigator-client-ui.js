@@ -10,15 +10,19 @@
   };
   let correctionInFlight=false;
   const greeting=()=>{const h=new Date().getHours();return h>=5&&h<12?'Добро утро':h>=12&&h<18?'Добър ден':'Добър вечер'};
+  function urlKey(){
+    try{const q=new URLSearchParams(location.search).get('client');if(q&&clients[q])return q}catch(e){}
+    return null;
+  }
   function scopedKey(){
     try{const s=window.BLIS_CLIENT_SCOPE;if(s&&clients[s])return s}catch(e){}
     return null;
   }
   function currentKey(){
+    const q=urlKey();
+    if(q)return q;
     const scoped=scopedKey();
     if(scoped)return scoped;
-    const q=new URLSearchParams(location.search).get('client');
-    if(q&&clients[q])return q;
     try{const i=window.BLIS_INITIAL_CLIENT;if(i&&clients[i])return i}catch(e){}
     try{const s=localStorage.getItem('blis-client-ui');if(s&&clients[s])return s}catch(e){}
     return 'aroma';
@@ -43,10 +47,14 @@
       const walker=document.createTreeWalker(active,NodeFilter.SHOW_TEXT);
       const nodes=[];let n;
       while((n=walker.nextNode()))nodes.push(n);
-      nodes.forEach(t=>{if(String(t.nodeValue||'').trim()==='AROMA')t.nodeValue=t.nodeValue.replace('AROMA',c.short)});
+      nodes.forEach(t=>{
+        const txt=String(t.nodeValue||'').trim();
+        if(txt==='AROMA')t.nodeValue=t.nodeValue.replace('AROMA',c.short);
+        if(key!=='aroma'&&txt==='Aroma Cosmetics')t.nodeValue=t.nodeValue.replace('Aroma Cosmetics',c.full);
+      });
       if(key!=='aroma'){
         active.querySelectorAll('input').forEach(i=>{
-          if(i.value==='AROMA')i.value=c.short;
+          if(i.value==='AROMA'||i.value==='Aroma Cosmetics')i.value=c.short;
           if(/@aroma\.bg$/i.test(i.value))i.value='';
         });
       }
@@ -72,9 +80,26 @@
     document.title=`BLIS Navigator 2.0 — ${c.name}`;
     patchReferenceBrandCopy(key);
   }
+  function activatePage(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    const page=document.getElementById(id);if(page)page.classList.add('active');
+    document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  }
+  function renderCanonicalOverview(key){
+    activatePage('overview');
+    try{
+      if(window.BLISOverviewMaster&&typeof window.BLISOverviewMaster.render==='function')window.BLISOverviewMaster.render();
+      else if(window.BLISOverviewMaster&&typeof window.BLISOverviewMaster.refresh==='function')window.BLISOverviewMaster.refresh();
+    }catch(e){}
+    patchReferenceBrandCopy(key);
+  }
   function rerenderActive(){
     const active=document.querySelector('.page.active')?.id;
     if(!active)return;
+    if(active==='overview'){
+      renderCanonicalOverview(currentKey());
+      return;
+    }
     if(active==='profile'&&typeof renderProfile==='function'){
       try{renderProfile();patchReferenceBrandCopy(currentKey())}catch(e){}
       return;
@@ -85,7 +110,9 @@
     if(!clients[key])return;
     const sel=document.getElementById('clientSel');
     if(sel&&sel.value!==key)sel.value=key;
+    window.BLIS_INITIAL_CLIENT=key;
     paintClient(key);
+    try{localStorage.setItem('blis-client-ui',key)}catch(e){}
     try{
       let needsReload=false;
       if(typeof slug!=='undefined'&&slug!==key){slug=key;needsReload=true}
@@ -123,8 +150,9 @@
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(enforce,0)});
   }
   function apply(key){
-    const scoped=scopedKey();
-    if(scoped)key=scoped;
+    const requested=urlKey();
+    if(requested)key=requested;
+    else {const scoped=scopedKey();if(scoped)key=scoped;}
     if(!clients[key])key='aroma';
     paintClient(key);
     const sel=document.getElementById('clientSel');if(sel)sel.value=key;
@@ -137,7 +165,7 @@
     if(btn)btn.setAttribute('aria-expanded','false');
   }
   function toggleMenu(){
-    if(scopedKey())return;
+    if(scopedKey()&&!urlKey())return;
     const wrap=document.querySelector('.client-switch'),btn=document.querySelector('.client-switch-button');
     if(!wrap||!btn)return;
     const open=!wrap.classList.contains('open');
@@ -145,23 +173,19 @@
     btn.setAttribute('aria-expanded',open?'true':'false');
   }
   function navigate(key){
-    const scoped=scopedKey();
-    if(scoped)key=scoped;
     if(!clients[key])return;
     try{localStorage.setItem('blis-client-ui',key)}catch(e){}
+    try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(e){}
     window.BLIS_INITIAL_CLIENT=key;
-    apply(key);
-    const u=new URL(location.href);
+    const u=new URL('/dashboard.html',location.origin);
     u.searchParams.set('client',key);
-    u.searchParams.delete('page');
-    u.hash='overview';
     location.assign(u.toString());
   }
   function handleClick(e){
     const option=e.target.closest('.client-option[data-client-key]');
     if(option){
       e.preventDefault();e.stopPropagation();
-      if(!scopedKey())navigate(option.dataset.clientKey);
+      if(!scopedKey()||urlKey())navigate(option.dataset.clientKey);
       return;
     }
     const button=e.target.closest('.client-switch-button');
@@ -177,11 +201,21 @@
     const wrapped=function(id){
       const key=currentKey();
       if(!dataMatches(key))syncLegacyAppClient(key);
+      if(id==='overview'){
+        const u=new URL(location.href);
+        u.searchParams.set('client',key);
+        u.searchParams.delete('page');
+        u.hash='';
+        history.replaceState(null,'',u.pathname+u.search);
+        renderCanonicalOverview(key);
+        requestAnimationFrame(()=>renderCanonicalOverview(key));
+        setTimeout(()=>renderCanonicalOverview(key),60);
+        setTimeout(()=>renderCanonicalOverview(key),760);
+        window.scrollTo({top:0,behavior:'smooth'});
+        return;
+      }
       if(id==='live'){
-        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-        const live=document.getElementById('live');
-        if(live)live.classList.add('active');
-        document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='live'));
+        activatePage('live');
         const u=new URL(location.href);
         u.searchParams.delete('page');
         u.searchParams.set('client',key);
@@ -197,10 +231,7 @@
       }
       if(id==='profile'){
         syncLegacyAppClient(key);
-        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-        const profile=document.getElementById('profile');
-        if(profile)profile.classList.add('active');
-        document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='profile'));
+        activatePage('profile');
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
           try{
             if(typeof renderProfile==='function')renderProfile();
@@ -221,7 +252,9 @@
   }
 
   function normalizeScopedEntry(){
+    const requested=urlKey();
     const scoped=scopedKey();
+    if(requested)return;
     if(!scoped)return;
     const u=new URL(location.href);
     const hadLegacyPage=u.searchParams.has('page');
