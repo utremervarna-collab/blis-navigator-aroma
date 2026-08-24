@@ -30,12 +30,12 @@ func injectNavigatorCommerce(resp *http.Response) error {
 		return err
 	}
 	resp.Body.Close()
-	if bytes.Contains(body, []byte("/navigator-commerce-v1.js")) {
+	if bytes.Contains(body, []byte("/navigator-commerce-v2.js")) {
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
 		return nil
 	}
-	tag := []byte(`<script src="/navigator-commerce-v1.js?v=20260824-commerce1"></script>`)
+	tag := []byte(`<script src="/navigator-commerce-v2.js?v=20260824-commerce2"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tag))
 		out = append(out, body[:pos]...)
