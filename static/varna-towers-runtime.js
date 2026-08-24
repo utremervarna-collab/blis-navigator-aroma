@@ -24,20 +24,21 @@
   s.async=true;
   document.head.appendChild(s);
 
-  /* Public Navigator home: Services & Payment is a public sales entry and must never resolve to a client profile. */
+  /* Public Navigator home: Services & Payment is the dominant public sales CTA. */
   const isHome=location.pathname==='/'||location.pathname==='/index.html';
   if(isHome){
     const style=document.createElement('style');
-    style.id='blis-home-commerce-cta-v2';
+    style.id='blis-home-commerce-cta-v3';
     style.textContent=`
-      .btn.services-cta{position:relative;overflow:hidden;min-height:54px;padding:0 25px;border:1px solid rgba(11,39,66,.14)!important;border-radius:13px!important;background:radial-gradient(circle at 82% 20%,rgba(57,218,181,.25),transparent 28%),linear-gradient(135deg,#0b2239,#123b60)!important;color:#fff!important;box-shadow:0 14px 32px rgba(10,37,62,.20),inset 0 1px 0 rgba(255,255,255,.12)!important;font-size:13px!important;font-weight:850!important;letter-spacing:.01em;transition:.22s ease!important}
-      .btn.services-cta:before{content:"";position:absolute;left:-28%;top:-160%;width:42%;height:420%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent);transition:.45s ease}
-      .btn.services-cta:after{content:"€";display:grid;place-items:center;width:25px;height:25px;border-radius:50%;margin-left:10px;background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px rgba(255,255,255,.13);font-size:12px}
-      .btn.services-cta:hover{transform:translateY(-2px)!important;box-shadow:0 18px 40px rgba(10,37,62,.27),0 0 28px rgba(57,218,181,.10)!important}
-      .btn.services-cta:hover:before{left:112%}
-      .heroBtns .services-cta{min-height:60px;padding:0 29px;font-size:14px!important}
-      .actions .services-cta{min-width:190px}
-      @media(max-width:720px){.actions .services-cta{display:none}.heroBtns .services-cta{display:inline-flex;width:100%;max-width:310px}.heroBtns{align-items:flex-start}.heroBtns .services-cta:after{margin-left:auto}}
+      .btn.services-cta{position:relative;overflow:hidden;min-height:56px;padding:0 27px;border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;background:radial-gradient(circle at 82% 18%,rgba(255,118,118,.38),transparent 27%),linear-gradient(135deg,#7a0d18 0%,#b9152d 44%,#e32636 72%,#8b0d1e 100%)!important;color:#fff!important;box-shadow:0 16px 34px rgba(150,11,29,.30),0 0 0 1px rgba(143,8,26,.12),inset 0 1px 0 rgba(255,255,255,.24),inset 0 -10px 24px rgba(87,0,13,.18)!important;font-size:13px!important;font-weight:900!important;letter-spacing:.012em;text-shadow:0 1px 0 rgba(84,0,10,.28);transition:.22s ease!important;isolation:isolate}
+      .btn.services-cta:before{content:"";position:absolute;z-index:-1;left:-34%;top:-165%;width:44%;height:430%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);transition:.52s cubic-bezier(.2,.75,.2,1)}
+      .btn.services-cta:after{content:"€";display:grid;place-items:center;width:27px;height:27px;border-radius:50%;margin-left:11px;background:linear-gradient(145deg,rgba(255,255,255,.26),rgba(255,255,255,.10));box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 4px 12px rgba(68,0,8,.20);font-size:12px;font-weight:900}
+      .btn.services-cta:hover{transform:translateY(-3px) scale(1.015)!important;background:radial-gradient(circle at 82% 18%,rgba(255,148,148,.48),transparent 28%),linear-gradient(135deg,#8b0e1c 0%,#ca1731 45%,#f02b40 74%,#981023 100%)!important;box-shadow:0 22px 46px rgba(157,10,30,.38),0 0 30px rgba(234,40,58,.24),inset 0 1px 0 rgba(255,255,255,.28)!important}
+      .btn.services-cta:hover:before{left:116%}
+      .btn.services-cta:active{transform:translateY(-1px) scale(.995)!important}
+      .heroBtns .services-cta{min-height:64px;padding:0 31px;font-size:15px!important;box-shadow:0 20px 46px rgba(157,10,30,.36),0 0 34px rgba(234,40,58,.18),inset 0 1px 0 rgba(255,255,255,.24)!important}
+      .actions .services-cta{min-width:200px}
+      @media(max-width:720px){.actions .services-cta{display:none}.heroBtns .services-cta{display:inline-flex;width:100%;max-width:330px;min-height:62px}.heroBtns{align-items:flex-start}.heroBtns .services-cta:after{margin-left:auto}}
     `;
     document.head.appendChild(style);
     const href='/services.html';
