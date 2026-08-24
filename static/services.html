@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Услуги и плащане — BLIS Navigator</title>
+<meta name="description" content="BLIS Navigator — абонаментни пакети, еднократни анализи, допълнителни услуги, заявка и плащане.">
+<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce4">
+<style>
+:root{--navy:#081727;--navy2:#0d2035;--ink:#12263d;--muted:#65778a;--line:#e2e8ef;--gold:#d8a13d}
+*{box-sizing:border-box}html{background:#f5f7fa}body{margin:0;background:linear-gradient(180deg,#f7f9fc 0,#f3f6f9 100%);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
+.public-top{height:84px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100;backdrop-filter:blur(14px)}
+.public-topin{width:min(1480px,calc(100% - 48px));height:100%;margin:auto;display:flex;align-items:center;gap:22px}.public-logo{text-decoration:none}.public-logo strong{display:block;font:700 31px/.92 Georgia,serif;color:#c98d26}.public-logo span{display:block;margin-top:5px;font-size:9px;letter-spacing:.1em;color:#65778a}.public-spacer{flex:1}.public-link{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:0 16px;border:1px solid #d9e1e9;border-radius:10px;color:#26415d;text-decoration:none;font-size:12px;font-weight:750;background:#fff}.public-link.primary{background:#12395d;color:#fff;border-color:#12395d}.public-link:hover{transform:translateY(-1px)}
+.public-strip{background:linear-gradient(90deg,#071725,#0d2942 55%,#102f4c);color:#b7c8d8;border-bottom:1px solid rgba(255,255,255,.06)}.public-stripin{width:min(1480px,calc(100% - 48px));margin:auto;min-height:38px;display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.04em}.public-strip b{color:#fff}.public-dot{width:7px;height:7px;border-radius:50%;background:#34d0ad;box-shadow:0 0 12px rgba(52,208,173,.5)}
+.public-main{width:min(1540px,calc(100% - 44px));margin:0 auto;padding:28px 0 60px}.shell{width:100%}.page{display:none}.page.active{display:block!important;visibility:visible!important}.client-brand-name{display:none}
+.public-foot{border-top:1px solid var(--line);background:#fff;color:#6e7d8d}.public-footin{width:min(1480px,calc(100% - 48px));margin:auto;min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:10px}.public-foot a{color:#3c536b;text-decoration:none}
+@media(max-width:720px){.public-top{height:70px}.public-topin,.public-stripin,.public-footin{width:min(100% - 28px,1480px)}.public-main{width:min(100% - 22px,1540px);padding-top:17px}.public-logo strong{font-size:27px}.public-logo span{display:none}.public-link:first-of-type{display:none}.public-link{padding:0 12px}.public-footin{align-items:flex-start;flex-direction:column;justify-content:center;padding:18px 0}}
+</style>
+</head>
+<body data-client="public">
+<header class="public-top"><div class="public-topin"><a class="public-logo" href="/"><strong>BLIS™</strong><span>BRAND LAB INTELLIGENCE SYSTEM</span></a><div class="public-spacer"></div><a class="public-link" href="/">← Начален екран</a><a class="public-link primary" href="/dashboard.html">Вход за клиенти</a></div></header>
+<div class="public-strip"><div class="public-stripin"><i class="public-dot"></i><b>BLIS NAVIGATOR</b><span>Услуги · Анализи · Абонаменти · Заявки · Плащане</span></div></div>
+<main class="public-main"><div class="shell"><section id="commerce" class="page active"><div id="commerceBody"></div></section></div><span class="client-brand-name">Нов клиент</span></main>
+<footer class="public-foot"><div class="public-footin"><span>© 2026 Brand Lab · BLIS™ — Brand Lab Intelligence System</span><div><a href="/privacy.html">Поверителност</a> &nbsp;·&nbsp; <a href="/terms.html">Условия за ползване</a></div></div></footer>
+<script src="/navigator-commerce-safe-v3.js?v=20260824-commerce4"></script>
+<script>
+(function(){
+  function start(){
+    try{window.BLISCommerceSafe?.open?.()}catch(e){console.error('BLIS public commerce start',e)}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,0),{once:true});else setTimeout(start,0);
+})();
+</script>
+</body>
+</html>
