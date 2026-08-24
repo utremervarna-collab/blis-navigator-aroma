@@ -1,0 +1,6 @@
+/* Light catalog final override */
+#commerceBody .bc9-card>.bc8-poster{display:none!important}
+#commerceBody .bc9-card.bc9-live>.bc8-poster{display:none!important}
+#commerceBody .bc9-card.bc9-exact>.bc8-poster{display:none!important}
+#commerceBody .bc9-card{background:transparent!important}
+#commerceBody .bc9-live-poster,#commerceBody .bc9-addon-poster,#commerceBody .bc9-image-poster{background-color:#fffdf7!important}
