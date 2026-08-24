@@ -42,7 +42,7 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260824-stable2"></script><script src="/wirello-curves-stable-v1.js?v=20260824-stable2"></script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
+			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260824-stable2"></script><script src="/wirello-curves-stable-v1.js?v=20260824-curves2"></script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
@@ -51,10 +51,10 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 		}
 	}
 
-	// Wirello-only completion and final geometry guards. These are intentionally
-	// injected after all canonical Navigator scripts so legacy CSS/JS cannot
-	// clip the sidebar or restore dense chart markers on later repaints.
-	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-overview-polish-v1.js?v=20260824-overview2b"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script>`)
+	// Wirello-only completion layers loaded after the canonical Navigator.
+	// final-ui-v3 owns the overview DOM and desktop geometry so V15 cannot
+	// restore the broken wide layout or dense chart markers on repaint.
+	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script><script src="/wirello-final-ui-v3.js?v=20260824-final3"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tail))
 		out = append(out, body[:pos]...)
