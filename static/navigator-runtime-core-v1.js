@@ -1,9 +1,9 @@
-/* BLIS Navigator — event-driven runtime core v3.
+/* BLIS Navigator — event-driven runtime core v4.
    Owns only client/data synchronization and one-time module loading.
    No polling, no recurring repaint loop, no chart mutation. */
 (function(){
 'use strict';
-if(window.__BLIS_RUNTIME_CORE_V3)return;window.__BLIS_RUNTIME_CORE_V3=true;
+if(window.__BLIS_RUNTIME_CORE_V4)return;window.__BLIS_RUNTIME_CORE_V4=true;
 
 const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
 function initialClient(){
@@ -54,7 +54,7 @@ function loadStyle(id,href){
   const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l);
 }
 function loadOwners(){
-  const v='20260824-core3';
+  const v='20260824-core4';
   loadScript('blisGlobalLiveScript','/navigator-global-live.js?v='+v);
   loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v='+v);
   loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v='+v);
