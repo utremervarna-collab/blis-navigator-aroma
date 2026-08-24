@@ -52,9 +52,9 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	}
 
 	// Wirello-only completion layers loaded after the canonical Navigator.
-	// Reputation and commerce are independent Wirello modules so the client demo
-	// can remain stable without changing the Aroma production interface.
-	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script><script src="/wirello-final-ui-v3.js?v=20260824-final3"></script><script src="/wirello-reputation-v3.js?v=20260824-rep3"></script><script src="/wirello-commerce-v1.js?v=20260824-commerce1"></script>`)
+	// Reputation is owned by an independent Wirello renderer and does not use
+	// legacy app.js globals or the shared Reputation lifecycle.
+	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script><script src="/wirello-final-ui-v3.js?v=20260824-final3"></script><script src="/wirello-reputation-v3.js?v=20260824-rep3"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tail))
 		out = append(out, body[:pos]...)
