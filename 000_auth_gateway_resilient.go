@@ -18,8 +18,6 @@ const legacyClientRememberCookieName = "blis_client_remember"
 const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bbca5d5ced1705"
 
 // Bootstrap exactly one public gateway in front of the internal Navigator engine.
-// The gateway keeps the existing client access rules, but the main Navigator has
-// its own explicit admin entry and never restores a remembered client profile.
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" || os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") == "1" {
 		return
@@ -77,12 +75,35 @@ func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func openWirelloDemo(w http.ResponseWriter, r *http.Request) bool {
+	a, ok := clientAccounts["wirello.demo"]
+	if !ok {
+		return false
+	}
+	clearLegacyClientRememberCookie(w, r)
+	clearSession(w, r)
+	s, err := newClientSession(a)
+	if err != nil {
+		http.Error(w, "Неуспешно зареждане на Wirello Market", http.StatusInternalServerError)
+		return true
+	}
+	setSessionCookie(w, r, s)
+	http.Redirect(w, r, "/dashboard.html?client=wirello&page=overview", http.StatusFound)
+	return true
+}
+
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// The main Navigator is intentionally separate from every client profile.
-	// A valid existing admin session opens it directly. Otherwise the protected
-	// Navigator magic link creates a fresh owner session.
+	// This branch is the dedicated public Wirello MASTER DEMO. Opening the service
+	// root must always enter the synthetic Wirello client directly, without asking
+	// presenters or clients for credentials.
+	if path == "/" || path == "/wirello" || path == "/wirello/" || path == "/demo" || path == "/demo/" {
+		if openWirelloDemo(w, r) {
+			return
+		}
+	}
+
 	if path == "/navigator" || path == "/navigator/" {
 		clearLegacyClientRememberCookie(w, r)
 
@@ -99,7 +120,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// A client session must never leak into the main Navigator.
 		clearSession(w, r)
 		s, err := newOwnerSession()
 		if err != nil {
@@ -111,13 +131,9 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Explicit client logout also removes the obsolete remember cookie created by
-	// the previous gateway implementation.
 	if path == "/api/client-logout" {
 		clearLegacyClientRememberCookie(w, r)
 	}
 
-	// All normal client behaviour remains handled by the original gateway logic.
-	// There is deliberately no automatic client-session restoration here.
 	clientGateway(w, r)
 }
