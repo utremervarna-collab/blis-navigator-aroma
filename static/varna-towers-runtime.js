@@ -1,4 +1,4 @@
-/* BLIS Navigator — Varna Towers bootstrap + BLIS LIVE v21 loader. */
+/* BLIS Navigator — Varna Towers bootstrap + BLIS LIVE v22 loader. */
 (function(){
   'use strict';
 
@@ -24,11 +24,11 @@
   s.async=true;
   document.head.appendChild(s);
 
-  /* Public Navigator home: Services & Payment is the primary commercial CTA. */
+  /* Public Navigator home: Services & Payment is a public sales entry and must never resolve to a client profile. */
   const isHome=location.pathname==='/'||location.pathname==='/index.html';
   if(isHome){
     const style=document.createElement('style');
-    style.id='blis-home-commerce-cta-v1';
+    style.id='blis-home-commerce-cta-v2';
     style.textContent=`
       .btn.services-cta{position:relative;overflow:hidden;min-height:54px;padding:0 25px;border:1px solid rgba(11,39,66,.14)!important;border-radius:13px!important;background:radial-gradient(circle at 82% 20%,rgba(57,218,181,.25),transparent 28%),linear-gradient(135deg,#0b2239,#123b60)!important;color:#fff!important;box-shadow:0 14px 32px rgba(10,37,62,.20),inset 0 1px 0 rgba(255,255,255,.12)!important;font-size:13px!important;font-weight:850!important;letter-spacing:.01em;transition:.22s ease!important}
       .btn.services-cta:before{content:"";position:absolute;left:-28%;top:-160%;width:42%;height:420%;transform:rotate(22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent);transition:.45s ease}
@@ -40,8 +40,8 @@
       @media(max-width:720px){.actions .services-cta{display:none}.heroBtns .services-cta{display:inline-flex;width:100%;max-width:310px}.heroBtns{align-items:flex-start}.heroBtns .services-cta:after{margin-left:auto}}
     `;
     document.head.appendChild(style);
-    const href='/dashboard.html?page=commerce';
-    document.querySelectorAll('a[href="/demo.html"],a.btn.demo').forEach(a=>{
+    const href='/services.html';
+    document.querySelectorAll('a[href="/demo.html"],a.btn.demo,a.services-cta').forEach(a=>{
       a.href=href;
       a.classList.remove('demo');
       a.classList.add('services-cta');
