@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 )
 
 func init() {
@@ -35,7 +38,16 @@ func injectNavigatorCommerce(resp *http.Response) error {
 		resp.ContentLength = int64(len(body))
 		return nil
 	}
-	tag := []byte(`<script src="/navigator-commerce-v2.js?v=20260824-commerce2"></script>`)
+
+	cfg := map[string]any{
+		"provider":         strings.TrimSpace(os.Getenv("BLIS_COMMERCE_PROVIDER")),
+		"checkoutEndpoint": strings.TrimSpace(os.Getenv("BLIS_COMMERCE_CHECKOUT_ENDPOINT")),
+	}
+	if u := strings.TrimSpace(os.Getenv("BLIS_COMMERCE_PAYMENT_URL")); u != "" {
+		cfg["paymentUrls"] = map[string]string{"default": u}
+	}
+	cfgJSON, _ := json.Marshal(cfg)
+	tag := []byte(`<script>window.BLIS_COMMERCE_CONFIG=` + string(cfgJSON) + `;</script><script src="/navigator-commerce-v2.js?v=20260824-commerce2"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tag))
 		out = append(out, body[:pos]...)
