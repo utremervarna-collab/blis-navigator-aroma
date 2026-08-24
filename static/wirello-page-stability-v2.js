@@ -6,7 +6,7 @@
 if(window.__WIRELLO_PAGE_STABILITY_V2)return;window.__WIRELLO_PAGE_STABILITY_V2=true;
 
 const isWirello=()=>document.body?.dataset?.client==='wirello'||window.BLIS_INITIAL_CLIENT==='wirello'||new URLSearchParams(location.search).get('client')==='wirello';
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const activeId=()=>document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';
 const data=()=>window.__WIRELLO_DATA||{};
 
@@ -53,9 +53,19 @@ function fallbackReputation(){
 
 function renderReputationPage(){
  const host=document.getElementById('reputationBody');if(!host)return;
- try{window.BLISReputationMaster?.render?.()}catch(e){console.warn('Wirello reputation master',e)}
- if(host.textContent.trim().length<80)call('renderReputation');
- setTimeout(fallbackReputation,40);
+ let rendered=false;
+ try{
+  if(typeof window.BLISReputation?.render==='function'){
+   window.BLISReputation.render();rendered=true;
+  }else if(typeof window.BLISReputationMaster?.render==='function'){
+   window.BLISReputationMaster.render();rendered=true;
+  }
+ }catch(e){console.warn('Wirello reputation current renderer',e)}
+ if(!rendered&&host.textContent.trim().length<80)call('renderReputation');
+ setTimeout(()=>{
+  try{window.BLISReputationExactArtV47?.apply?.()}catch(e){console.warn('Wirello reputation artwork',e)}
+  fallbackReputation();
+ },60);
 }
 
 async function renderReportsPage(){
@@ -85,7 +95,7 @@ function renderSettings(){
 
 function renderHelp(){
  const host=document.getElementById('helpBody');if(!host||host.dataset.wfix==='1')return;host.dataset.wfix='1';
- host.innerHTML=`<div class="wfix-page"><div class="wfix-head"><small>NAVIGATOR HELP</small><h2>Помощ</h2><p>Кратко ръководство за демонстрационния Navigator.</p></div><div class="wfix-grid"><div class="wfix-card"><h3>Как да четеш индексите</h3><p>Стойностите са на скала 0–100 и се разглеждат заедно с тенденцията и историческата база. В Wirello всички стойности са демонстрационни.</p></div><div class="wfix-card"><h3>Как да четеш сигналите</h3><p>Сигналите показват промяна, посока, източник и увереност. Те не са автоматично препоръка, а вход за аналитична интерпретация.</p></div><div class="wfix-card"><h3>Конкуренти</h3><p>Съпоставката използва еднаква демонстрационна логика за всички наблюдавани компании.</p></div><div class="wfix-card"><h3>История</h3><p>Историческата база показва устойчивостта на тенденциите и различава еднократните колебания от трайни движения.</p></div></div></div>`;
+ host.innerHTML=`<div class="wfix-page"><div class="wfix-head"><small>NAVIGATOR HELP</small><h2>Помощ</h2><p>Кратки насоки за демонстрационния Navigator.</p></div><div class="wfix-grid"><div class="wfix-card"><h3>Как да четеш индексите</h3><p>Стойностите са на скала 0–100 и се разглеждат заедно с тенденцията и историческата база. В Wirello всички стойности са демонстрационни.</p></div><div class="wfix-card"><h3>Как да четеш сигналите</h3><p>Сигналите показват промяна, посока, източник и увереност. Те не са автоматично препоръка, а вход за аналитична интерпретация.</p></div><div class="wfix-card"><h3>Конкуренти</h3><p>Съпоставката използва еднаква демонстрационна логика за всички наблюдавани компании.</p></div><div class="wfix-card"><h3>История</h3><p>Историческата база показва устойчивостта на тенденциите и различава еднократните колебания от трайни движения.</p></div></div></div>`;
 }
 
 function normalizeCharts(){
