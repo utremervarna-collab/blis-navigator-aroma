@@ -1,5 +1,9 @@
-/* BLIS Navigator production cleanup v1 */
+/* BLIS Navigator production cleanup v2 */
 .n15-chartdot,.blis-added-point,.blis-curve-point{display:none!important;pointer-events:none!important}
 .page{max-width:100%!important;box-sizing:border-box!important}
 .page svg{max-width:100%!important}
+.page.active{visibility:visible!important;opacity:1!important}
+.page.active>div,.page.active>[id$="Body"]{visibility:visible!important;opacity:1!important;min-width:0!important;max-width:100%!important}
+#market.page.active #marketBody,#market.page.active .pm-wrap{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important}
+#reputation.page.active #reputationBody,#competition.page.active #competitionBody,#digital.page.active #digitalBody,#social.page.active #socialBody{visibility:visible!important;opacity:1!important}
 html,body{max-width:100%;overflow-x:hidden}
