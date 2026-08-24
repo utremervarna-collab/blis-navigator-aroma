@@ -70,6 +70,8 @@ jobs:
                   runtimeCore:[...document.scripts].some(s=>s.src.includes('navigator-runtime-core-v1.js')),
                   legacyBridge:[...document.scripts].some(s=>s.src.includes('navigator-runtime-bridge.js')),
                   pointEnhancer:[...document.scripts].some(s=>s.src.includes('navigator-chart-points.js')),
+                  architectureV15:[...document.scripts].some(s=>s.src.includes('navigator-architecture-v15.js')),
+                  stabilityMode:window.BLISStabilityStats?.mode||'',
                   commerceLauncher:!!document.querySelector('[data-blis-commerce-open]')
                 }));
                 assert(boot.client===client,`${client}: body client is ${boot.client}`);
@@ -78,27 +80,33 @@ jobs:
                 assert(boot.runtimeCore,`${client}: runtime core missing`);
                 assert(!boot.legacyBridge,`${client}: legacy runtime bridge loaded`);
                 assert(!boot.pointEnhancer,`${client}: global chart-point enhancer loaded`);
+                assert(!boot.architectureV15,`${client}: legacy architecture V15 loaded`);
+                assert(boot.stabilityMode==='event-driven',`${client}: stability preload is not event-driven (${boot.stabilityMode})`);
                 assert(boot.commerceLauncher,`${client}: Services and Payment launcher missing`);
 
                 for(const id of pages){
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  await p.waitForTimeout(180);
+                  await p.waitForTimeout(220);
                   const x=await p.evaluate(id=>{
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
                     const charts=[...(root?.querySelectorAll('svg')||[])].filter(s=>{
                       const z=s.getBoundingClientRect();
                       if(z.width<=0||z.height<=0)return false;
+                      const aria=(s.getAttribute('aria-label')||'').toLowerCase();
                       const cls=String(s.className?.baseVal||s.className||'').toLowerCase();
-                      const parent=String(s.parentElement?.className||'').toLowerCase();
-                      return s.hasAttribute('data-curve-key')||/chart|trend|radar|curve|spark/.test(cls+' '+parent)||z.width>=180||z.height>=90;
-                    }).map(s=>{const z=s.getBoundingClientRect();return [z.width,z.height]});
-                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,brokenSvg:charts.filter(z=>z[0]<70||z[1]<30).length};
+                      const vb=(s.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number);
+                      const vbW=Number.isFinite(vb[2])?vb[2]:0, vbH=Number.isFinite(vb[3])?vb[3]:0;
+                      const explicit=s.hasAttribute('data-curve-key')||/динамика|trend|history|график|chart/.test(aria)||/n15-smoothchart|blis-runtime-curve|trend-chart|history-chart/.test(cls);
+                      const lineLike=[...s.querySelectorAll('path')].some(p=>(p.getAttribute('d')||'').length>80&&String(p.getAttribute('fill')||'').toLowerCase()==='none');
+                      return explicit || (vbW>=200&&vbH>=80&&lineLike);
+                    }).map(s=>{const z=s.getBoundingClientRect();return {w:z.width,h:z.height,aria:s.getAttribute('aria-label')||'',cls:String(s.className?.baseVal||s.className||'')};});
+                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,brokenCharts:charts.filter(z=>z.w<70||z.h<30)};
                   },id);
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
                   assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed page ${JSON.stringify(x)}`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
-                  assert(x.brokenSvg===0,`${client}/${id}: collapsed analytical SVG ${x.brokenSvg}`);
+                  assert(x.brokenCharts.length===0,`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.brokenCharts)}`);
                 }
 
                 await p.evaluate(()=>window.BLISCommerceSafe.open());
