@@ -1,68 +1,15 @@
-/* BLIS Navigator — global clickable chart points. Idempotent/event-driven v2. */
+/* BLIS Navigator — production bootstrap for page state, social and reputation.
+   Global chart point mutation has been removed. Chart renderers own their own SVG. */
 (function(){
-  'use strict';
-  const NS='http://www.w3.org/2000/svg';
-  const labels={blis:'BLIS общ индекс',presence:'Социален индекс',social:'Социален индекс',digital:'Дигитална видимост',reputation:'Репутационен индекс',content:'Съдържание / интерес',interest:'Потребителски интерес',experience:'Потребителско изживяване',competitive:'Конкурентна позиция',competition:'Конкурентна позиция',market:'Нагласи',signals:'Нагласи'};
-  const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
-  const fmt=v=>v==null?'—':Number(v).toLocaleString('bg-BG',{maximumFractionDigits:1});
-  const esc=s=>String(s??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
-  function dateBG(s){const p=String(s||'').slice(0,10).split('-');return p.length===3?`${p[2]}.${p[1]}.${p[0]}`:String(s||'')}
-  function series(key){try{return window.BLISCurves?.series(key)||[]}catch(e){return[]}}
-  function chartTitle(svg,key){const box=svg.closest('.ov-card,.sm-card,.dm-card,.ref-card,.page');const h=box?.querySelector('h3,h2');return labels[key]||h?.textContent?.trim()||'Показател'}
-  function tooltip(){let t=document.getElementById('blisGlobalPointTip');if(t)return t;t=document.createElement('div');t.id='blisGlobalPointTip';t.style.cssText='position:fixed;z-index:99999;display:none;min-width:170px;max-width:260px;padding:10px 12px;border:1px solid #dfe6ef;border-radius:10px;background:#fff;box-shadow:0 10px 30px rgba(23,49,92,.18);color:#17315c;font:12px/1.35 Arial,sans-serif;pointer-events:none';document.body.appendChild(t);return t}
-  function show(point,e){const svg=point.ownerSVGElement,key=point.dataset.chartKey||svg?.dataset?.curveKey||'',title=point.dataset.chartLabel||chartTitle(svg,key),date=point.dataset.chartDate||'',value=point.dataset.chartValue||'';const t=tooltip();t.innerHTML=`<b style="display:block;margin-bottom:3px">${esc(title)}</b><span>${esc(dateBG(date))}</span>${value!==''?`<strong style="display:block;margin-top:3px;font-size:15px">${esc(fmt(value))}/100</strong>`:''}`;const x=e?.clientX??Math.min(window.innerWidth-220,point.getBoundingClientRect().left+8),y=e?.clientY??point.getBoundingClientRect().top;t.style.left=Math.min(window.innerWidth-280,Math.max(8,x+12))+'px';t.style.top=Math.min(window.innerHeight-100,Math.max(8,y-18))+'px';t.style.display='block';svg?.querySelectorAll('.blis-click-point,.blis-curve-point').forEach(p=>{p.classList.toggle('is-selected',p===point);p.setAttribute('opacity',p===point?'1':'.82')});clearTimeout(t._hide);t._hide=setTimeout(()=>{t.style.display='none'},4200)}
-  function pointify(c,key,row,label){if(!c||c.dataset.blisPointReady==='1')return;c.dataset.blisPointReady='1';c.classList.add('blis-click-point');c.dataset.chartKey=key||'';c.dataset.chartLabel=label||labels[key]||'';if(row){c.dataset.chartDate=row.date||'';c.dataset.chartValue=row.value??''}else{const title=c.querySelector('title')?.textContent||'';const m=title.match(/(\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4}).*?(-?\d+(?:[.,]\d+)?)/);if(m){c.dataset.chartDate=m[1];c.dataset.chartValue=String(m[2]).replace(',','.')}}c.setAttribute('tabindex','0');c.setAttribute('role','button');c.style.cursor='pointer';c.style.pointerEvents='all';if(!c.getAttribute('stroke'))c.setAttribute('stroke','#fff');if(!c.getAttribute('stroke-width'))c.setAttribute('stroke-width','1.3')}
-  function sampleRows(rows,n){if(rows.length<=n)return rows;const out=[];for(let i=0;i<n;i++)out.push(rows[Math.round(i*(rows.length-1)/(n-1))]);return out}
-  function compactSignature(key,rr,w,h){return `${key}|${w}|${h}|${rr.map(x=>`${x.date||''}:${num(x.value)??''}`).join('|')}`}
-  function enhanceCurve(svg){
-    const key=String(svg.dataset.curveKey||'').toLowerCase();if(!key)return;
-    const rows=series(key);if(rows.length<2)return;
-    const vb=(svg.getAttribute('viewBox')||'0 0 720 220').trim().split(/\s+/).map(Number),w=vb[2]||720,h=vb[3]||220;
-    const compact=h<=70||!!svg.closest('.ov-spark,.dm-spark');
-    const circles=[...svg.querySelectorAll('circle')].filter(c=>!c.closest('defs'));
-    const label=chartTitle(svg,key);
-    if(!compact&&circles.length){circles.slice(0,rows.length).forEach((c,i)=>pointify(c,key,rows[i],label));return}
-    if(compact){
-      const rr=sampleRows(rows,8),sig=compactSignature(key,rr,w,h);
-      const existing=[...svg.querySelectorAll(':scope > .blis-added-point')];
-      if(svg.dataset.blisCompactPointSig===sig&&existing.length===rr.length){existing.forEach((c,i)=>pointify(c,key,rr[i],label));return}
-      const vals=rr.map(x=>num(x.value)).filter(v=>v!=null);if(vals.length<2)return;
-      const min0=Math.min(...vals),max0=Math.max(...vals),spread=Math.max(.8,max0-min0),pad=Math.max(.8,spread*.18),min=Math.max(0,min0-pad),max=Math.min(100,max0+pad),span=Math.max(1,max-min),l=3,r=3,t=4,b=4;
-      const X=i=>l+(w-l-r)*i/(rr.length-1),Y=v=>t+(h-t-b)*(1-(v-min)/span),pts=rr.map((x,i)=>[X(i),Y(num(x.value)||0)]);
-      const main=[...svg.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='none'&&p.getAttribute('stroke'));
-      const d=pts.map((p,i)=>`${i?'L':'M'} ${p[0]} ${p[1]}`).join(' ');
-      if(main){if(main.getAttribute('d')!==d)main.setAttribute('d',d);if(main.getAttribute('stroke-linecap')!=='square')main.setAttribute('stroke-linecap','square');if(main.getAttribute('stroke-linejoin')!=='miter')main.setAttribute('stroke-linejoin','miter')}
-      existing.forEach(x=>x.remove());
-      const color=main?.getAttribute('stroke')||'#1766e8';
-      pts.forEach((p,i)=>{const c=document.createElementNS(NS,'circle');c.classList.add('blis-added-point');c.setAttribute('cx',p[0]);c.setAttribute('cy',p[1]);c.setAttribute('r','3.1');c.setAttribute('fill',color);c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','1.2');svg.appendChild(c);pointify(c,key,rr[i],label)});
-      svg.dataset.blisCompactPointSig=sig;
-      return;
-    }
-    circles.forEach((c,i)=>pointify(c,key,rows[i]||null,label));
-  }
-  function enhanceLegacy(svg){if(svg.dataset.curveKey)return;const host=svg.closest('.ov-trend,.ov-spark,.sm-chart,.dm-trend,.dm-spark,.ref-trend,[class*="chart"],[class*="trend"],[class*="spark"]');if(!host)return;const circles=[...svg.querySelectorAll('circle')].filter(c=>!c.closest('defs'));if(circles.length<2)return;const label=host.closest('.ov-card,.sm-card,.dm-card,.ref-card,.page')?.querySelector('h3,h2')?.textContent?.trim()||'Показател';circles.forEach(c=>pointify(c,'',null,label))}
-  function enhance(root=document){
-    const svgs=[];
-    if(root?.nodeType===1&&root.matches?.('svg')&&root.closest('.page'))svgs.push(root);
-    root.querySelectorAll?.('.page svg, svg').forEach(svg=>{if(svg.closest('.page')&&!svgs.includes(svg))svgs.push(svg)});
-    svgs.forEach(svg=>{enhanceCurve(svg);enhanceLegacy(svg)});
-  }
-  document.addEventListener('click',e=>{const p=e.target?.closest?.('.blis-click-point,.blis-curve-point');if(p)show(p,e)});
-  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target?.matches?.('.blis-click-point,.blis-curve-point')){e.preventDefault();show(e.target,e)}});
-  function init(){
-    enhance();
-    let scheduled=false;
-    const schedule=()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;enhance()})};
-    new MutationObserver(ms=>{if(ms.some(m=>[...m.addedNodes].some(n=>n.nodeType===1)))schedule()}).observe(document.querySelector('.main')||document.body,{subtree:true,childList:true});
-    window.addEventListener('blis:clientdata',schedule);
-    window.addEventListener('blis:periodchange',schedule);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-(function(){if(document.querySelector('script[data-blis-page-state]'))return;const s=document.createElement('script');s.src='/navigator-page-state.js?v=20260819-page2';s.dataset.blisPageState='1';document.head.appendChild(s)})();
-(function(){if(document.querySelector('script[data-blis-social-interactive]'))return;const s=document.createElement('script');s.src='/navigator-social-interactive.js?v=20260819-socialinteractive7';s.dataset.blisSocialInteractive='1';document.head.appendChild(s)})();
-(function(){if(document.querySelector('script[data-blis-social-bootstrap]'))return;const s=document.createElement('script');s.src='/navigator-social-bootstrap.js?v=20260819-socialboot1';s.dataset.blisSocialBootstrap='1';document.head.appendChild(s)})();
-(function(){
-  if(!document.querySelector('link[data-blis-reputation-master]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-reputation-master.css?v=20260819-reputation2';l.dataset.blisReputationMaster='1';document.head.appendChild(l)}
-  if(!document.querySelector('script[data-blis-reputation-master]')){const s=document.createElement('script');s.src='/navigator-reputation-master.js?v=20260819-reputation2';s.dataset.blisReputationMaster='1';s.onload=()=>{if(!document.querySelector('script[data-blis-reputation-bootstrap]')){const b=document.createElement('script');b.src='/navigator-reputation-bootstrap.js?v=20260819-reputationboot42';b.dataset.blisReputationBootstrap='1';document.head.appendChild(b)}};document.head.appendChild(s)}else if(!document.querySelector('script[data-blis-reputation-bootstrap]')){const b=document.createElement('script');b.src='/navigator-reputation-bootstrap.js?v=20260819-reputationboot42';b.dataset.blisReputationBootstrap='1';document.head.appendChild(b)}
+'use strict';
+if(window.__BLIS_PRODUCTION_BOOTSTRAP_V2)return;window.__BLIS_PRODUCTION_BOOTSTRAP_V2=true;
+function script(attr,src,onload){if(document.querySelector(`script[${attr}]`)){onload?.();return}const s=document.createElement('script');s.src=src;s.setAttribute(attr,'1');s.async=false;if(onload)s.onload=onload;document.head.appendChild(s)}
+function style(attr,href){if(document.querySelector(`link[${attr}]`))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.setAttribute(attr,'1');document.head.appendChild(l)}
+script('data-blis-page-state','/navigator-page-state.js?v=20260824-state3');
+script('data-blis-social-interactive','/navigator-social-interactive.js?v=20260819-socialinteractive7');
+script('data-blis-social-bootstrap','/navigator-social-bootstrap.js?v=20260819-socialboot1');
+style('data-blis-reputation-master','/navigator-reputation-master.css?v=20260819-reputation2');
+script('data-blis-reputation-master','/navigator-reputation-master.js?v=20260824-reputation-master1',()=>{
+  script('data-blis-reputation-bootstrap','/navigator-reputation-bootstrap.js?v=20260819-reputationboot42');
+});
 })();
