@@ -1,0 +1,15 @@
+/* BLIS Navigator — exact approved service card artwork v8 */
+#commerceBody .bc8-exact-card{position:relative!important;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;overflow:visible!important;min-width:0!important}
+#commerceBody .bc8-exact-card>.bc8-poster{display:block!important}
+#commerceBody .bc8-exact-card>.bc7-illustration,#commerceBody .bc8-exact-card>h3,#commerceBody .bc8-exact-card>.bc3-kicker,#commerceBody .bc8-exact-card>.bc3-price,#commerceBody .bc8-exact-card>.bc3-summary,#commerceBody .bc8-exact-card>.bc7-benefits,#commerceBody .bc8-exact-card>.bc7-setup,#commerceBody .bc8-exact-card>.bc3-actions{display:none!important}
+#commerceBody .bc8-poster{position:relative;width:100%;aspect-ratio:4/5;border-radius:24px;overflow:hidden;background:#fff;box-shadow:0 22px 50px rgba(18,38,61,.16);transform:translateZ(0)}
+#commerceBody .bc8-poster img{display:block;width:100%;height:100%;object-fit:cover;background:#fff}
+#commerceBody .bc8-hit{position:absolute;z-index:4;bottom:2.0%;height:7.5%;border:2px solid transparent;border-radius:999px;background:transparent;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease;outline:none}
+#commerceBody .bc8-hit-order{left:8.3%;width:42.5%}
+#commerceBody .bc8-hit-more{right:8.1%;width:40.7%}
+#commerceBody .bc8-hit:hover,#commerceBody .bc8-hit:focus-visible{transform:translateY(-2px);background:rgba(255,255,255,.09);border-color:rgba(255,201,73,.72);box-shadow:0 0 0 4px rgba(255,197,64,.10),0 10px 26px rgba(20,65,112,.18)}
+#commerceBody .bc8-exact-card>.bc3-detail{margin-top:14px!important;border-radius:18px!important;background:#fff!important;border:1px solid #e8e0cf!important;box-shadow:0 12px 30px rgba(18,38,61,.08)!important}
+#commerceBody .bc3-grid{align-items:start}
+@media(min-width:980px){#commerceBody .bc3-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:28px!important}}
+@media(max-width:979px){#commerceBody .bc3-grid{grid-template-columns:1fr!important;gap:20px!important}#commerceBody .bc8-poster{border-radius:19px}}
+@media(max-width:560px){#commerceBody .bc8-poster{border-radius:16px;box-shadow:0 14px 32px rgba(18,38,61,.14)}#commerceBody .bc8-hit{height:8%;bottom:1.7%}}
