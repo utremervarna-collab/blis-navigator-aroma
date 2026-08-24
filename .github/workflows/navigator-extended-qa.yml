@@ -41,41 +41,24 @@ jobs:
           const clients=['aroma','bolyarka','astor-garden','mollox','varna-towers'];
           const pages=['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help'];
           const expected={aroma:'Aroma',bolyarka:'Болярка','astor-garden':'Astor Garden',mollox:'MOLLOX','varna-towers':'Varna Towers'};
-          async function ready(p,client){
-            await p.goto(`${origin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:20000});
-            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,{timeout:15000});
-            await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,{timeout:15000});
-          }
+          let phase='startup';
+          async function ready(p,client){phase=`ready:${client}:goto`;await p.goto(`${origin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:20000});phase=`ready:${client}:nav`;await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,{timeout:15000});phase=`ready:${client}:content`;await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,{timeout:15000})}
           async function inspect(p,id){return p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;return{id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth}},id)}
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
-              // Route aliases and same-session client switching.
-              const p=await browser.newPage({viewport:{width:1440,height:1000}});await ready(p,'aroma');
-              for(const [legacy,canonical] of [['signals','social'],['sources','profile'],['timeline','history']]){await p.evaluate(x=>window.refGo(x),legacy);await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000})}
-              await p.evaluate(()=>window.refGo('overview'));
-              await p.evaluate(()=>document.querySelector('.client-option[data-client-key="bolyarka"]')?.click());
-              await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&(document.querySelector('.client-brand-name')?.textContent||'').includes('Болярка'),{timeout:12000});
-              const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.client-brand-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length}));
-              assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);
-              assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);
-              assert(switched.nav===12,'client switch changed nav count');
-              await p.close();
-
-              // Mobile: every client, every canonical page + commerce.
-              for(const client of clients){
-                const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-                const errs=[];m.on('pageerror',e=>errs.push(e.message));m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource/i.test(x.text()))errs.push(x.text())});
-                await ready(m,client);
-                const id=await m.evaluate(()=>document.body.dataset.client),name=await m.evaluate(()=>document.querySelector('.client-brand-name')?.textContent||'');
-                assert(id===client,`${client}/mobile wrong body client ${id}`);assert(name.includes(expected[client]),`${client}/mobile wrong name ${name}`);
-                for(const page of pages){await m.evaluate(x=>window.refGo(x),page);await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:6000});await m.waitForTimeout(120);const x=await inspect(m,page);assert(x.visible&&x.height>70&&x.text>20,`${client}/mobile/${page} blank ${JSON.stringify(x)}`);assert(x.overflow<=8,`${client}/mobile/${page} overflow ${x.overflow}`)}
-                await m.evaluate(()=>window.BLISCommerceSafe.open());await m.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce',{timeout:6000});await m.waitForTimeout(120);const c=await inspect(m,'commerce');assert(c.visible&&c.text>100,`${client}/mobile/commerce blank`);assert(c.overflow<=8,`${client}/mobile/commerce overflow ${c.overflow}`);
-                assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);await m.close();
-              }
-              console.log('NAVIGATOR_EXTENDED_QA_OK');
+              phase='desktop:open';const p=await browser.newPage({viewport:{width:1440,height:1000}});await ready(p,'aroma');
+              for(const [legacy,canonical] of [['signals','social'],['sources','profile'],['timeline','history']]){phase=`alias:${legacy}->${canonical}:invoke`;await p.evaluate(x=>window.refGo(x),legacy);phase=`alias:${legacy}->${canonical}:wait`;await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000})}
+              phase='client-switch:overview';await p.evaluate(()=>window.refGo('overview'));
+              phase='client-switch:click-bolyarka';await p.evaluate(()=>document.querySelector('.client-option[data-client-key="bolyarka"]')?.click());
+              phase='client-switch:wait-bolyarka';await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&(document.querySelector('.client-brand-name')?.textContent||'').includes('Болярка'),{timeout:12000});
+              phase='client-switch:validate';const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.client-brand-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length}));assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);assert(switched.nav===12,'client switch changed nav count');await p.close();
+              for(const client of clients){phase=`mobile:${client}:open`;const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errs=[];m.on('pageerror',e=>errs.push(e.message));m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource/i.test(x.text()))errs.push(x.text())});await ready(m,client);phase=`mobile:${client}:identity`;const id=await m.evaluate(()=>document.body.dataset.client),name=await m.evaluate(()=>document.querySelector('.client-brand-name')?.textContent||'');assert(id===client,`${client}/mobile wrong body client ${id}`);assert(name.includes(expected[client]),`${client}/mobile wrong name ${name}`);
+                for(const page of pages){phase=`mobile:${client}:${page}:invoke`;await m.evaluate(x=>window.refGo(x),page);phase=`mobile:${client}:${page}:wait`;await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:6000});await m.waitForTimeout(120);phase=`mobile:${client}:${page}:inspect`;const x=await inspect(m,page);assert(x.visible&&x.height>70&&x.text>20,`${client}/mobile/${page} blank ${JSON.stringify(x)}`);assert(x.overflow<=8,`${client}/mobile/${page} overflow ${x.overflow}`)}
+                phase=`mobile:${client}:commerce:open`;await m.evaluate(()=>window.BLISCommerceSafe.open());phase=`mobile:${client}:commerce:wait`;await m.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce',{timeout:6000});await m.waitForTimeout(120);const c=await inspect(m,'commerce');phase=`mobile:${client}:commerce:inspect`;assert(c.visible&&c.text>100,`${client}/mobile/commerce blank`);assert(c.overflow<=8,`${client}/mobile/commerce overflow ${c.overflow}`);assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);await m.close()}
+              phase='done';console.log('NAVIGATOR_EXTENDED_QA_OK');
             } finally {await browser.close()}
-          })().catch(e=>{fs.writeFileSync('/tmp/extended-error.txt',String(e.message||e));console.error(e);process.exit(1)});
+          })().catch(e=>{fs.writeFileSync('/tmp/extended-error.txt',`${phase}: ${String(e.message||e)}`);console.error(phase,e);process.exit(1)});
           NODE
           node /tmp/extended.cjs
       - name: Publish QA status
@@ -83,6 +66,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,75)}catch(_){}
+            const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
             await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and commerce passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
