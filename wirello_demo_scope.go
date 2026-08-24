@@ -58,7 +58,7 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	// branch for several utility pages. Load the Wirello-only completion layer
 	// after all canonical scripts, so those routes cannot remain blank.
 	// The overview polish is loaded last and only changes Wirello presentation.
-	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-overview-polish-v1.js?v=20260824-overview1"></script>`)
+	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-overview-polish-v1.js?v=20260824-overview2"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tail))
 		out = append(out, body[:pos]...)
