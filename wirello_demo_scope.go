@@ -7,9 +7,6 @@ import (
 	"strings"
 )
 
-// Wirello is a first-class synthetic demo client on top of the canonical Navigator.
-// One client data/theme runtime owns Wirello data; canonical Navigator code owns routes
-// and page rendering. The tiny performance guard only retires known duplicate legacy work.
 func init() {
 	if authProxy == nil {
 		return
@@ -45,26 +42,13 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260822-arch4"></script><script src="/wirello-curves-stable-v1.js?v=20260824-fix1"></script><script>(function(){const st=window.setTimeout.bind(window),si=window.setInterval.bind(window);window.setTimeout=function(fn,ms,...a){const s=typeof fn==='function'?Function.prototype.toString.call(fn):'';if((ms===90||ms===240)&&s.includes('function renderActive')&&s.includes('competitionTune'))return 0;return st(fn,ms,...a)};window.setInterval=function(fn,ms,...a){const s=typeof fn==='function'?Function.prototype.toString.call(fn):'';if(ms===1000&&s.includes('installRouter')&&s.includes('marketInsights'))return 0;if(ms===120&&s.includes('copy()')&&s.includes('rep()')&&s.includes('market()')&&s.includes('competition()'))ms=300;return si(fn,ms,...a)}})();</script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
+			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260824-stable1"></script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
 			out = append(out, body[end:]...)
 			body = out
 		}
-	}
-
-	// Module visual replacements are loaded after the canonical Navigator scripts,
-	// so they can take ownership of the Wirello-only analytical page bodies.
-	tail := []byte(`<script src="/wirello-module-visuals-v1.js?v=20260824-mod1"></script>`)
-	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
-		out := make([]byte, 0, len(body)+len(tail))
-		out = append(out, body[:pos]...)
-		out = append(out, tail...)
-		out = append(out, body[pos:]...)
-		body = out
-	} else {
-		body = append(body, tail...)
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
