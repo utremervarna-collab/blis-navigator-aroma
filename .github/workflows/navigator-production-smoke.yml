@@ -45,6 +45,7 @@ jobs:
         run: |
           cat > /tmp/navigator-smoke.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
+          const fs=require('fs');
           const assert = (ok,msg)=>{ if(!ok) throw new Error(msg); };
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','astor-garden','mollox','varna-towers'];
@@ -96,47 +97,52 @@ jobs:
 
                 await p.evaluate(()=>window.BLISCommerceSafe.open());
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce'&&document.getElementById('commerceBody')?.innerText.includes('Пакет Анализ'),{timeout:8000});
-                const commerce=await p.evaluate(()=>({
+                const subscriptions=await p.evaluate(()=>({
                   text:document.getElementById('commerceBody')?.innerText||'',
                   tabs:document.querySelectorAll('[data-bc3-tab]').length,
-                  services:document.querySelectorAll('[data-bc3-request]').length,
+                  requests:document.querySelectorAll('[data-bc3-request]').length,
                   overflow:document.documentElement.scrollWidth-window.innerWidth
                 }));
-                assert(commerce.text.includes('390')&&commerce.text.includes('750')&&commerce.text.includes('1 500')||commerce.text.includes('1500'),`${client}: commerce prices missing`);
-                assert(commerce.tabs>=6,`${client}: commerce tabs missing`);
-                assert(commerce.services>=8,`${client}: commerce services missing`);
-                assert(commerce.overflow<=8,`${client}/commerce: overflow ${commerce.overflow}`);
+                assert(subscriptions.text.includes('390')&&subscriptions.text.includes('750'),`${client}: subscription prices missing`);
+                assert(subscriptions.tabs>=6,`${client}: commerce tabs missing`);
+                assert(subscriptions.requests>=4,`${client}: subscription cards missing`);
+                assert(subscriptions.overflow<=8,`${client}/commerce: overflow ${subscriptions.overflow}`);
+                await p.click('[data-bc3-tab="oneoff"]');
+                await p.waitForFunction(()=>document.getElementById('commerceBody')?.innerText.includes('Репутационен анализ'));
+                const oneoff=await p.evaluate(()=>({requests:document.querySelectorAll('[data-bc3-request]').length,text:document.getElementById('commerceBody')?.innerText||''}));
+                assert(oneoff.requests>=8,`${client}: one-off services missing`);
+                assert(oneoff.text.includes('350')&&oneoff.text.includes('550')&&oneoff.text.includes('650'),`${client}: one-off prices missing`);
+                await p.click('[data-bc3-tab="addons"]');
+                await p.waitForFunction(()=>document.querySelectorAll('[data-bc3-addon-request]').length>=8);
 
                 await p.evaluate(()=>window.refGo('reputation'));
-                let late=0;
                 await p.evaluate(()=>{window.__smokeMutations=0;const root=document.getElementById('reputation');window.__smokeObserver=new MutationObserver(ms=>window.__smokeMutations+=ms.length);window.__smokeObserver.observe(root,{childList:true,subtree:true,characterData:true})});
                 await p.waitForTimeout(1400);
-                late=await p.evaluate(()=>{window.__smokeObserver?.disconnect();return window.__smokeMutations||0});
+                const late=await p.evaluate(()=>{window.__smokeObserver?.disconnect();return window.__smokeMutations||0});
                 assert(late<40,`${client}/reputation: repaint storm ${late} mutations/1.4s`);
                 assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
                 await p.close();
               }
               console.log('NAVIGATOR_PRODUCTION_SMOKE_OK');
             } finally { await browser.close(); }
-          })().catch(e=>{console.error(e);process.exit(1)});
+          })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',String(e.message||e))}catch(_){};console.error(e);process.exit(1)});
           NODE
           node /tmp/navigator-smoke.cjs
 
       - name: Show server log on failure
         if: failure()
-        run: cat /tmp/blis-smoke-server.log || true
+        run: |
+          cat /tmp/navigator-smoke-error.txt || true
+          cat /tmp/blis-smoke-server.log || true
 
       - name: Publish smoke status
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
+            const fs=require('fs');
             const state='${{ job.status }}'==='success'?'success':'failure';
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state,
-              context: 'navigator-production-smoke',
-              description: state==='success'?'5 clients, 12 pages and commerce passed':'Navigator production smoke failed'
-            });
+            let detail='';
+            try{detail=fs.readFileSync('/tmp/navigator-smoke-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'5 clients, 12 pages and commerce passed':'Navigator production smoke failed'});
+            if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`navigator-smoke:${detail}`,description:'First browser smoke failure'});}
