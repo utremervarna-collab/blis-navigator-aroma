@@ -52,9 +52,9 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	}
 
 	// Wirello-only completion layers loaded after the canonical Navigator.
-	// final-ui-v3 owns the overview DOM and desktop geometry so V15 cannot
-	// restore the broken wide layout or dense chart markers on repaint.
-	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script><script src="/wirello-final-ui-v3.js?v=20260824-final3"></script>`)
+	// Reputation master is intentionally loaded before the stability layer so
+	// Wirello uses the current Reputation screen instead of the legacy app.js fallback.
+	tail := []byte(`<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260824-wirello1"><script src="/navigator-reputation-master.js?v=20260824-wirello1"></script><script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script><script src="/wirello-shell-repair-v1.js?v=20260824-shell1"></script><script src="/wirello-final-ui-v3.js?v=20260824-final3"></script>`)
 	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
 		out := make([]byte, 0, len(body)+len(tail))
 		out = append(out, body[:pos]...)
