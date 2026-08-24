@@ -45,6 +45,8 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
         {"/navigator-production-cleanup-v1.css?v=20260824-clean2", "/navigator-production-cleanup-v1.css?v=20260824-clean3"},
         {"/navigator-production-cleanup-v1.js?v=20260824-clean1", "/navigator-production-cleanup-v1.js?v=20260824-clean3"},
         {"/navigator-production-cleanup-v1.js?v=20260824-clean2", "/navigator-production-cleanup-v1.js?v=20260824-clean3"},
+        {"/navigator-commerce-visual-cards-v7.js?v=20260824-v7", "/navigator-commerce-visual-cards-v7.js?v=20260824-light9"},
+        {"/navigator-commerce-visual-cards-v7.js?v=20260824-v7-light3", "/navigator-commerce-visual-cards-v7.js?v=20260824-light9"},
     }
     for _, pair := range replacements {
         body = bytes.ReplaceAll(body, []byte(pair[0]), []byte(pair[1]))
@@ -56,6 +58,9 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
     }
     if !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce3"><script src="/navigator-commerce-safe-v3.js?v=20260824-commerce3"></script>`)...)
+    }
+    if !bytes.Contains(body, []byte("/navigator-commerce-light-cards-v9.js")) {
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-cards-v9.css?v=20260824-light9"><script src="/navigator-commerce-light-cards-v9.js?v=20260824-light9"></script>`)...)
     }
 
     if len(tags) > 0 {
