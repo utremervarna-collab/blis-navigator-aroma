@@ -31,9 +31,9 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
     }
     resp.Body.Close()
 
-    // Production cache hardening for the canonical event-driven lifecycle.
     replacements := [][2]string{
-        {"/navigator-runtime-core-v1.js?v=20260824-core3", "/navigator-runtime-core-v1.js?v=20260824-core4"},
+        {"/navigator-runtime-core-v1.js?v=20260824-core3", "/navigator-runtime-core-v1.js?v=20260824-core5"},
+        {"/navigator-runtime-core-v1.js?v=20260824-core4", "/navigator-runtime-core-v1.js?v=20260824-core5"},
         {"/navigator-stability-preload-v1.js?v=20260822-stability1", "/navigator-stability-preload-v1.js?v=20260824-stability3"},
         {"/navigator-stability-preload-v1.js?v=20260824-stability2", "/navigator-stability-preload-v1.js?v=20260824-stability3"},
         {"/navigator-production-cleanup-v1.css?v=20260824-clean1", "/navigator-production-cleanup-v1.css?v=20260824-clean3"},
