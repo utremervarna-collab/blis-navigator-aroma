@@ -1,32 +1,15 @@
-/* BLIS Navigator — robust Digital Visibility radar boot controller */
+/* BLIS Navigator — Digital Visibility event-driven boot controller v2 */
 (function(){
-  'use strict';
-  if(window.__BLISDigitalRadarBoot)return;
-  window.__BLISDigitalRadarBoot=true;
+'use strict';
+if(window.__BLISDigitalRadarBootV2)return;window.__BLISDigitalRadarBootV2=true;
 
-  function loadTruthGuard(){
-    if(document.querySelector('script[data-blis-digital-truth]'))return;
-    const s=document.createElement('script');s.src='/navigator-digital-truth-fix.js?v=20260819-truth1';s.dataset.blisDigitalTruth='1';document.head.appendChild(s);
-  }
-  function loadInteractions(){
-    if(document.querySelector('script[data-blis-digital-interactions]'))return;
-    const s=document.createElement('script');s.src='/navigator-digital-interactions.js?v=20260819-interactions2';s.dataset.blisDigitalInteractions='1';document.head.appendChild(s);
-  }
-  function loadReputation(){
-    if(!document.querySelector('link[data-blis-reputation-css]')){const l=document.createElement('link');l.rel='stylesheet';l.href='/navigator-reputation-master.css?v=20260819-reputation2';l.dataset.blisReputationCss='1';document.head.appendChild(l)}
-    if(!document.querySelector('script[data-blis-reputation-master]')){const s=document.createElement('script');s.src='/navigator-reputation-master.js?v=20260819-reputation2';s.dataset.blisReputationMaster='1';s.onload=()=>{if(!document.querySelector('script[data-blis-reputation-boot]')){const b=document.createElement('script');b.src='/navigator-reputation-bootstrap.js?v=20260819-reputation2';b.dataset.blisReputationBoot='1';document.head.appendChild(b)}};document.head.appendChild(s)}else if(window.BLISReputation&&!document.querySelector('script[data-blis-reputation-boot]')){const b=document.createElement('script');b.src='/navigator-reputation-bootstrap.js?v=20260819-reputation2';b.dataset.blisReputationBoot='1';document.head.appendChild(b)}
-  }
-  function renderSoon(delay=60){setTimeout(()=>{try{if(document.getElementById('digital')?.classList.contains('active')){window.BLISDigitalRadar?.render?.();setTimeout(()=>window.BLISDigitalInteractionsPatch?.(),40)}}catch(e){}},delay)}
-  function wrapRefGo(){
-    const old=window.refGo;if(typeof old!=='function'||old.__digitalRadarBoot)return false;
-    const wrapped=function(id){const r=old.apply(this,arguments);if(id==='digital'){renderSoon(40);renderSoon(220)}return r};
-    wrapped.__digitalRadarBoot=true;wrapped.__previous=old;window.refGo=wrapped;return true;
-  }
-  document.addEventListener('click',e=>{if(e.target?.closest?.('#nav button[data-page="digital"]')){renderSoon(40);renderSoon(220)}},true);
-  document.getElementById('clientSel')?.addEventListener('change',()=>renderSoon(180));
-  function init(){
-    loadTruthGuard();loadInteractions();loadReputation();wrapRefGo();if(document.getElementById('digital')?.classList.contains('active'))renderSoon(20);
-    let n=0;const t=setInterval(()=>{n++;wrapRefGo();const page=document.getElementById('digital');if(page?.classList.contains('active')&&!document.getElementById('dvRadar'))renderSoon(20);if(page?.classList.contains('active'))window.BLISDigitalInteractionsPatch?.();if(n>30)clearInterval(t)},120);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+function loadOnce(attr,src){if(document.querySelector(`script[${attr}]`)||[...document.scripts].some(s=>s.src&&s.src.includes(src)))return;const s=document.createElement('script');s.src=src;s.setAttribute(attr,'1');s.async=false;document.head.appendChild(s)}
+function loadDependencies(){loadOnce('data-blis-digital-truth','/navigator-digital-truth-fix.js?v=20260824-digital2');loadOnce('data-blis-digital-interactions','/navigator-digital-interactions.js?v=20260824-digital2')}
+function render(){if(!document.getElementById('digital')?.classList.contains('active'))return;try{window.BLISDigitalRadar?.render?.()}catch(e){console.error('BLIS Digital render failed',e)}requestAnimationFrame(()=>{try{window.BLISDigitalInteractionsPatch?.()}catch(_){}})}
+function schedule(){requestAnimationFrame(render)}
+function init(){loadDependencies();if(document.getElementById('digital')?.classList.contains('active'))schedule()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page="digital"]'))setTimeout(schedule,0)},true);
+window.addEventListener('blis:clientdata',schedule);
+window.addEventListener('blis:periodchange',schedule);
 })();
