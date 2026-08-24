@@ -1,0 +1,48 @@
+/* BLIS Navigator — visual sales cards v7. Bright premium system based on approved package visuals. */
+#commerce .bc3{--bc7-navy:#08295f;--bc7-gold:#dca936;--bc7-paper:#fffdf9;--bc7-ink:#08245a}
+#commerce .bc3-grid{gap:24px}
+#commerce .bc3-card.bc7-card{grid-column:span 6;min-height:690px;padding:31px 31px 27px;border:1px solid rgba(218,169,54,.76);border-radius:30px;background:radial-gradient(circle at 86% 12%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 27%),radial-gradient(circle at 8% 96%,rgba(220,169,54,.08),transparent 26%),linear-gradient(145deg,#fff 0%,#fffdfa 68%,#fff9ef 100%);box-shadow:0 24px 58px rgba(19,42,74,.13),inset 0 1px 0 #fff;overflow:hidden;position:relative;isolation:isolate}
+#commerce .bc3-card.bc7-card:before,#commerce .bc3-card.bc7-card:after{display:none!important}
+#commerce .bc3-card.bc7-card:hover{transform:translateY(-5px);box-shadow:0 30px 68px rgba(19,42,74,.17),0 0 0 1px rgba(220,169,54,.25)}
+#commerce .bc7-card .bc3-eyebrow{font-size:11px;letter-spacing:.07em;text-transform:none;color:#b6811f;min-height:auto;margin-bottom:12px;max-width:56%}
+#commerce .bc7-card h3{font:900 clamp(35px,3.05vw,51px)/.96 Inter,Segoe UI,Arial,sans-serif;color:#08245a;letter-spacing:-.055em;max-width:56%;margin:0 0 16px;text-shadow:0 1px 0 #fff}
+#commerce .bc7-card .bc3-summary{font:500 14px/1.56 Inter,Segoe UI,Arial,sans-serif;color:#324a6b;max-width:55%;min-height:67px;margin:0;border-left:3px solid var(--accent);padding-left:15px}
+#commerce .bc7-card .bc3-price{max-width:58%;margin:22px 0 14px;padding:16px 24px 16px 61px;border:1px solid #e3b247;border-radius:18px;background:linear-gradient(108deg,#0750bd 0%,color-mix(in srgb,var(--accent) 90%,#1463d1) 58%,color-mix(in srgb,var(--accent) 78%,#fff) 100%);font-size:clamp(42px,3.1vw,57px);box-shadow:0 16px 34px color-mix(in srgb,var(--accent) 18%,transparent),inset 0 1px 0 rgba(255,255,255,.42)}
+#commerce .bc7-card .bc3-price:before{width:50px;height:50px;left:-14px;border-radius:13px;background:linear-gradient(145deg,#fff6c9,#e4ad34);color:#08306d;box-shadow:0 10px 22px rgba(166,112,18,.25);border-color:#f2d06f}
+#commerce .bc7-card .bc3-price small{font-size:13px}
+#commerce .bc7-card .bc3-meta{max-width:56%;margin-top:10px;gap:8px}
+#commerce .bc7-card .bc3-chip{border:1px solid rgba(218,169,54,.48);background:#fffdf7;color:#314969;font-size:9px;padding:7px 10px;box-shadow:0 5px 12px rgba(30,52,78,.05)}
+#commerce .bc7-illustration{position:absolute;right:22px;top:58px;width:41%;height:285px;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:-1}
+#commerce .bc7-illustration:after{content:"";position:absolute;width:82%;height:42%;bottom:13px;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--accent) 26%,transparent),transparent 68%);filter:blur(8px)}
+#commerce .bc7-illustration svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 18px 17px rgba(16,42,74,.16))}
+#commerce .bc7-benefits{margin-top:28px;border:1px solid rgba(218,169,54,.45);border-radius:21px;padding:19px 21px 17px;background:rgba(255,255,255,.83);box-shadow:0 12px 26px rgba(26,48,74,.08),inset 0 1px 0 #fff;backdrop-filter:blur(5px)}
+#commerce .bc7-benefits h4{margin:0 0 10px;padding:0 0 9px;border-bottom:1px solid rgba(218,169,54,.5);font:900 24px/1 Inter,Segoe UI,Arial,sans-serif;color:color-mix(in srgb,var(--accent) 70%,#9e6716);letter-spacing:-.025em}
+#commerce .bc7-benefit{display:grid;grid-template-columns:36px 1fr;gap:11px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(20,45,75,.08);font:650 12px/1.35 Inter,Segoe UI,Arial,sans-serif;color:#17345f}
+#commerce .bc7-benefit:last-child{border-bottom:0;padding-bottom:2px}
+#commerce .bc7-benefit i{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:15px;color:#fff;background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 84%,#0a4c92),#082d6d);border:1px solid #e9bd56;box-shadow:0 5px 12px color-mix(in srgb,var(--accent) 16%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
+#commerce .bc7-setup{margin:15px 0 0;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 14px;border:1px solid rgba(218,169,54,.66);border-radius:14px;background:linear-gradient(90deg,#fff,#fff7dc);box-shadow:0 8px 18px rgba(28,49,73,.06);font:900 12px/1.2 Inter,Segoe UI,Arial,sans-serif;color:#17365f}
+#commerce .bc7-setup b{font-size:18px;color:color-mix(in srgb,var(--accent) 78%,#133f78)}
+#commerce .bc7-card .bc3-actions{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:16px}
+#commerce .bc7-card .bc3-btn{min-height:54px;border-radius:15px;font-size:14px;letter-spacing:-.01em;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(17,47,83,.13)}
+#commerce .bc7-card .bc3-btn.primary{border:1px solid #e0aa36;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 72%,#0a4cb3),color-mix(in srgb,var(--accent) 92%,#073d90));color:#fff;box-shadow:0 14px 28px color-mix(in srgb,var(--accent) 22%,rgba(15,48,86,.16)),inset 0 1px 0 rgba(255,255,255,.35)}
+#commerce .bc7-card .bc3-btn.primary:before{content:"➤";display:inline-grid;place-items:center;width:26px;height:26px;margin-right:9px;border-radius:50%;background:linear-gradient(145deg,#fff3bc,#dca936);color:#0c376f;box-shadow:0 3px 8px rgba(0,0,0,.12)}
+#commerce .bc7-card .bc3-btn.ghost{border:1px solid #dca936;background:linear-gradient(135deg,#fff,#fff8e8);color:#0b2f68;box-shadow:0 12px 22px rgba(21,46,76,.08),inset 0 1px 0 #fff}
+#commerce .bc7-card .bc3-btn.ghost:before{content:"◉";margin-right:8px;color:var(--accent);font-size:16px}
+#commerce .bc7-card .bc3-btn:hover{transform:translateY(-2px) scale(1.01);filter:saturate(1.07)}
+#commerce .bc7-card .bc3-btn[data-bc3-detail]{font-size:14px;min-width:0}
+#commerce .bc7-card .bc3-btn[data-bc3-detail]:after{content:none!important}
+#commerce .bc7-card .bc3-detail{margin-top:17px;border-color:rgba(218,169,54,.46);background:#fffdf9}
+#commerce .bc7-card.package:nth-child(2){box-shadow:0 28px 70px rgba(29,65,112,.17),0 0 0 2px rgba(238,179,51,.42)}
+#commerce .bc7-card.package:nth-child(2) .bc3-eyebrow:after{content:"НАЙ-ПРЕДПОЧИТАН";display:inline-flex;margin-left:8px;padding:5px 8px;border-radius:999px;background:linear-gradient(135deg,#ffe7a0,#eab23c);color:#17345d;font-size:8px;letter-spacing:.06em;box-shadow:0 5px 13px rgba(181,126,23,.18)}
+#commerce .bc7-card.bc7-addon{min-height:455px;padding:25px}
+#commerce .bc7-card.bc7-addon h3{font-size:27px;max-width:66%}
+#commerce .bc7-card.bc7-addon .bc3-summary{max-width:68%;min-height:80px;font-size:12px}
+#commerce .bc7-card.bc7-addon .bc3-price{font-size:36px;max-width:72%}
+#commerce .bc7-card.bc7-addon .bc7-illustration{width:35%;height:175px;right:18px;top:52px}
+#commerce .bc7-card.bc7-addon .bc7-benefits{padding:14px 16px;margin-top:19px}
+#commerce .bc7-card.bc7-addon .bc7-benefits h4{font-size:18px}
+#commerce .bc7-card.bc7-addon .bc7-benefit{font-size:11px;padding:6px 0}
+#commerce .bc7-card.bc7-addon .bc3-actions{margin-top:14px}
+#commerce .bc7-card.bc7-addon .bc3-btn{min-height:48px;font-size:12px}
+@media(max-width:1100px){#commerce .bc3-card.bc7-card{grid-column:span 12}#commerce .bc7-illustration{width:38%}#commerce .bc7-card h3{max-width:59%}#commerce .bc7-card .bc3-summary,#commerce .bc7-card .bc3-price,#commerce .bc7-card .bc3-meta{max-width:59%}}
+@media(max-width:720px){#commerce .bc3-card.bc7-card{min-height:0;padding:23px 18px 20px;border-radius:23px}#commerce .bc7-card .bc3-eyebrow,#commerce .bc7-card h3,#commerce .bc7-card .bc3-summary,#commerce .bc7-card .bc3-price,#commerce .bc7-card .bc3-meta{max-width:100%}#commerce .bc7-card h3{font-size:34px}#commerce .bc7-illustration{position:relative;top:auto;right:auto;width:100%;height:220px;margin:7px 0 10px}#commerce .bc7-card .bc3-summary{min-height:0}#commerce .bc7-card .bc3-price{font-size:43px;width:100%;max-width:100%}#commerce .bc7-benefits{margin-top:17px;padding:16px}#commerce .bc7-benefits h4{font-size:21px}#commerce .bc7-card .bc3-actions{grid-template-columns:1fr}#commerce .bc7-card .bc3-btn{width:100%}}
