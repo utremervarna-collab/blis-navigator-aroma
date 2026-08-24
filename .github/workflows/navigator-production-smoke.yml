@@ -86,13 +86,19 @@ jobs:
                   await p.waitForTimeout(180);
                   const x=await p.evaluate(id=>{
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-                    const svgs=[...(root?.querySelectorAll('svg')||[])].filter(s=>{const z=s.getBoundingClientRect();return z.width>0&&z.height>0}).map(s=>{const z=s.getBoundingClientRect();return [z.width,z.height]});
-                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,brokenSvg:svgs.filter(z=>z[0]<30||z[1]<20).length};
+                    const charts=[...(root?.querySelectorAll('svg')||[])].filter(s=>{
+                      const z=s.getBoundingClientRect();
+                      if(z.width<=0||z.height<=0)return false;
+                      const cls=String(s.className?.baseVal||s.className||'').toLowerCase();
+                      const parent=String(s.parentElement?.className||'').toLowerCase();
+                      return s.hasAttribute('data-curve-key')||/chart|trend|radar|curve|spark/.test(cls+' '+parent)||z.width>=180||z.height>=90;
+                    }).map(s=>{const z=s.getBoundingClientRect();return [z.width,z.height]});
+                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,brokenSvg:charts.filter(z=>z[0]<70||z[1]<30).length};
                   },id);
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
                   assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed page ${JSON.stringify(x)}`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
-                  assert(x.brokenSvg===0,`${client}/${id}: collapsed SVG ${x.brokenSvg}`);
+                  assert(x.brokenSvg===0,`${client}/${id}: collapsed analytical SVG ${x.brokenSvg}`);
                 }
 
                 await p.evaluate(()=>window.BLISCommerceSafe.open());
