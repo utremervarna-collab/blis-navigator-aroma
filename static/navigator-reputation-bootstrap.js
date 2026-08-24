@@ -1,33 +1,30 @@
-/* BLIS Navigator — Reputation bootstrap v42. Exact Aroma artwork + stable data layers. */
+/* BLIS Navigator — Reputation bootstrap v43. Event driven only. */
 (function(){
 'use strict';
-if(window.__BLISReputationBoot)return;window.__BLISReputationBoot=true;
+if(window.__BLISReputationBootV43)return;window.__BLISReputationBootV43=true;
 function style(attr,href){let l=document.querySelector(`link[${attr}]`);if(!l){l=document.createElement('link');l.rel='stylesheet';l.setAttribute(attr,'1');document.head.appendChild(l)}l.href=href}
-function script(attr,src,onload){if(document.querySelector(`script[${attr}]`)){onload?.();return}const s=document.createElement('script');s.src=src;s.setAttribute(attr,'1');if(onload)s.onload=onload;document.head.appendChild(s)}
-function active(){return document.getElementById('reputation')?.classList.contains('active')}
-function afterRun(){try{window.BLISReputationOpinionV34?.apply?.()}catch(e){}try{window.BLISReputationSectionsV36?.apply?.(true)}catch(e){}try{window.BLISReputationExactArtV42?.apply?.()}catch(e){}}
-function run(delay=80,force=false){setTimeout(()=>{if(!active())return;const p=window.BLISReputationStableV33?.run?.(force);Promise.resolve(p).then(afterRun)},delay)}
-function wrapRefGo(){const old=window.refGo;if(typeof old!=='function'||old.__repStable42)return false;const wrapped=function(id){const r=old.apply(this,arguments);if(id==='reputation')run(90,false);return r};wrapped.__repStable42=true;window.refGo=wrapped;return true}
+function script(attr,src,onload){if(document.querySelector(`script[${attr}]`)||[...document.scripts].some(s=>s.src&&s.src.includes(src.split('?')[0]))){onload?.();return}const s=document.createElement('script');s.src=src;s.async=false;s.setAttribute(attr,'1');if(onload)s.onload=onload;document.head.appendChild(s)}
+const active=()=>document.getElementById('reputation')?.classList.contains('active');
+function afterRun(){try{window.BLISReputationOpinionV34?.apply?.()}catch(_){}try{window.BLISReputationSectionsV36?.apply?.(true)}catch(_){}try{window.BLISReputationExactArtV42?.apply?.()}catch(_){}}
+function run(force=false){if(!active())return;try{const p=window.BLISReputationStableV33?.run?.(force);Promise.resolve(p).then(afterRun).catch(e=>console.error('BLIS Reputation render failed',e))}catch(e){console.error('BLIS Reputation render failed',e)}}
+function schedule(force=false){requestAnimationFrame(()=>run(force))}
 function init(){
- style('data-blis-metric-inspector','/navigator-metric-inspector-v1.css?v=20260819-metric1');
- script('data-blis-metric-inspector','/navigator-metric-inspector-v1.js?v=20260819-metric1',()=>script('data-blis-metric-social','/navigator-metric-social-v2.js?v=20260819-metric2'));
- style('data-blis-reputation-polish','/navigator-reputation-polish.css?v=20260819-reputation29');
- style('data-blis-reputation-refine30','/navigator-reputation-refine-v30.css?v=20260819-reputation34');
- style('data-blis-reputation-sections36','/navigator-reputation-sections-v36.css?v=20260819-reputation36');
- style('data-blis-reputation-totem39','/navigator-reputation-totem-3d-v39.css?v=20260819-reputation39');
- style('data-blis-reputation-totem40','/navigator-reputation-totem-3d-v40.css?v=20260819-reputation40');
- style('data-blis-reputation-exact41','/navigator-reputation-exact-art-v41.css?v=20260819-exact42');
- script('data-blis-reputation-sections36','/navigator-reputation-sections-v36.js?v=20260819-reputation36');
- script('data-blis-reputation-totem39','/navigator-reputation-totem-3d-v39.js?v=20260819-reputation39');
- script('data-blis-reputation-exact41','/navigator-reputation-exact-art-v41.js?v=20260819-exact42',()=>{if(active())setTimeout(()=>window.BLISReputationExactArtV42?.apply?.(),80)});
- script('data-blis-reputation-stable33','/navigator-reputation-stable-v33.js?v=20260819-reputation33',()=>{
-   script('data-blis-reputation-opinion34','/navigator-reputation-opinion-v34.js?v=20260819-reputation34',()=>run(70,false));
- });
- wrapRefGo();
- let tries=0;const t=setInterval(()=>{tries++;if(wrapRefGo()||tries>20)clearInterval(t)},150);
- document.addEventListener('click',e=>{if(e.target?.closest?.('#nav button[data-page="reputation"]'))run(90,false);if(e.target?.closest?.('#rpRefresh'))setTimeout(()=>{window.BLISReputationSectionsV36?.apply?.(true);window.BLISReputationExactArtV42?.apply?.()},420)},true);
- document.getElementById('clientSel')?.addEventListener('change',()=>run(180,true));
- if(active())run(80,false);
+ const v='20260824-reputation43';
+ style('data-blis-metric-inspector','/navigator-metric-inspector-v1.css?v='+v);
+ script('data-blis-metric-inspector','/navigator-metric-inspector-v1.js?v='+v,()=>script('data-blis-metric-social','/navigator-metric-social-v2.js?v='+v));
+ style('data-blis-reputation-polish','/navigator-reputation-polish.css?v='+v);
+ style('data-blis-reputation-refine30','/navigator-reputation-refine-v30.css?v='+v);
+ style('data-blis-reputation-sections36','/navigator-reputation-sections-v36.css?v='+v);
+ style('data-blis-reputation-totem39','/navigator-reputation-totem-3d-v39.css?v='+v);
+ style('data-blis-reputation-totem40','/navigator-reputation-totem-3d-v40.css?v='+v);
+ style('data-blis-reputation-exact41','/navigator-reputation-exact-art-v41.css?v='+v);
+ script('data-blis-reputation-sections36','/navigator-reputation-sections-v36.js?v='+v);
+ script('data-blis-reputation-totem39','/navigator-reputation-totem-3d-v39.js?v='+v);
+ script('data-blis-reputation-stable33','/navigator-reputation-stable-v33.js?v='+v,()=>script('data-blis-reputation-opinion34','/navigator-reputation-opinion-v34.js?v='+v,()=>schedule(false)));
+ if(active())schedule(false);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page="reputation"]'))setTimeout(()=>schedule(false),0);if(e.target.closest?.('#rpRefresh'))setTimeout(()=>schedule(true),0)},true);
+window.addEventListener('blis:clientdata',()=>schedule(true));
+window.addEventListener('blis:periodchange',()=>schedule(true));
 })();
