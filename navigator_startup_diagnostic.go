@@ -52,7 +52,7 @@ func runNavigatorStartupDiagnostic() {
             log.Printf("NAV_DIAG client=%s status=FAIL reason=nil", slug)
             continue
         }
-        d := dashboardFor(c)
+        d := dashboard(c)
         blis := f(d["blis_index"])
         indices, _ := d["indices"].([]interface{})
         ok := len(c.Sources) > 0 && len(c.Observations) > 0 && len(c.Snapshots) > 0 && len(indices) > 0 && !math.IsNaN(blis) && !math.IsInf(blis, 0)
