@@ -22,7 +22,11 @@ func init() {
 }
 
 func injectNavigatorProductionCleanup(resp *http.Response) error {
-    if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
+    if resp == nil || resp.Request == nil {
+        return nil
+    }
+    path := resp.Request.URL.Path
+    if path != "/dashboard.html" && path != "/services.html" {
         return nil
     }
     body, err := io.ReadAll(resp.Body)
@@ -53,14 +57,16 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
     }
 
     var tags []byte
-    if !bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
+    if path == "/dashboard.html" && !bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean3"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean3"></script>`)...)
     }
     if !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce3"><script src="/navigator-commerce-safe-v3.js?v=20260824-commerce3"></script>`)...)
     }
     if !bytes.Contains(body, []byte("/navigator-commerce-light-cards-v9.js")) {
-        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-cards-v9.css?v=20260824-light9"><script src="/navigator-commerce-light-cards-v9.js?v=20260824-light9"></script>`)...)
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-cards-v9.css?v=20260824-light9"><link rel="stylesheet" href="/navigator-commerce-light-fix-v9.css?v=20260824-light9"><script src="/navigator-commerce-light-cards-v9.js?v=20260824-light9"></script>`)...)
+    } else if !bytes.Contains(body, []byte("/navigator-commerce-light-fix-v9.css")) {
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-fix-v9.css?v=20260824-light9">`)...)
     }
 
     if len(tags) > 0 {
