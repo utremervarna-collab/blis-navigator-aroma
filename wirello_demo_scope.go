@@ -37,18 +37,35 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 	}
 	resp.Body.Close()
 
+	// Wirello data must exist before app.js starts loading the canonical client.
+	// The curve wrapper is also installed before Navigator modules so every
+	// BLISCurves assignment is wrapped once, without changing arbitrary SVGs.
 	marker := []byte("<body")
 	start := bytes.Index(body, marker)
 	if start >= 0 {
 		if relEnd := bytes.IndexByte(body[start:], '>'); relEnd >= 0 {
 			end := start + relEnd + 1
-			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260824-stable1"></script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
+			boot := []byte(`<script src="/wirello-client-runtime-v1.js?v=20260824-stable2"></script><script src="/wirello-curves-stable-v1.js?v=20260824-stable2"></script><script src="/wirello-hero-loader-v1.js?v=20260822-hero2"></script>`)
 			out := make([]byte, 0, len(body)+len(boot))
 			out = append(out, body[:end]...)
 			out = append(out, boot...)
 			out = append(out, body[end:]...)
 			body = out
 		}
+	}
+
+	// V15 owns the final navigation but intentionally has no active renderer
+	// branch for several utility pages. Load the Wirello-only completion layer
+	// after all canonical scripts, so those routes cannot remain blank.
+	tail := []byte(`<script src="/wirello-page-stability-v2.js?v=20260824-pages2"></script>`)
+	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
+		out := make([]byte, 0, len(body)+len(tail))
+		out = append(out, body[:pos]...)
+		out = append(out, tail...)
+		out = append(out, body[pos:]...)
+		body = out
+	} else {
+		body = append(body, tail...)
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
