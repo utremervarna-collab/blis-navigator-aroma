@@ -9,6 +9,7 @@
 <title>Услуги и плащане — BLIS Navigator</title>
 <meta name="description" content="BLIS Navigator — абонаментни пакети, еднократни анализи, допълнителни услуги, заявка и плащане.">
 <link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-white5">
+<link rel="stylesheet" href="/navigator-commerce-visual-cards-v7.css?v=20260824-v7">
 <style>
 :root{--ink:#12263d;--muted:#65778a;--line:#ebe6da;--gold:#d8a13d}
 *{box-sizing:border-box}html{background:#fff}body{margin:0;background:#fff;color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif;min-height:100vh}
@@ -27,11 +28,11 @@
 <main class="public-main"><div class="shell"><section id="commerce" class="page active"><div id="commerceBody"></div></section></div><span class="client-brand-name">Нов клиент</span></main>
 <footer class="public-foot"><div class="public-footin"><span>© 2026 Brand Lab · BLIS™ — Brand Lab Intelligence System</span><div><a href="/privacy.html">Поверителност</a> &nbsp;·&nbsp; <a href="/terms.html">Условия за ползване</a></div></div></footer>
 <script src="/navigator-commerce-safe-v3.js?v=20260824-commerce4"></script>
-<script src="/navigator-commerce-sales-v5.js?v=20260824-white5"></script>
+<script src="/navigator-commerce-visual-cards-v7.js?v=20260824-v7"></script>
 <script>
 (function(){
   function start(){
-    try{window.BLISCommerceSafe?.open?.()}catch(e){console.error('BLIS public commerce start',e)}
+    try{window.BLISCommerceSafe?.open?.();setTimeout(()=>window.BLISCommerceVisualCardsV7?.enhance?.(),40)}catch(e){console.error('BLIS public commerce start',e)}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,0),{once:true});else setTimeout(start,0);
 })();
