@@ -1,9 +1,9 @@
-/* BLIS Navigator — event-driven runtime core v2.
+/* BLIS Navigator — event-driven runtime core v3.
    Owns only client/data synchronization and one-time module loading.
    No polling, no recurring repaint loop, no chart mutation. */
 (function(){
 'use strict';
-if(window.__BLIS_RUNTIME_CORE_V2)return;window.__BLIS_RUNTIME_CORE_V2=true;
+if(window.__BLIS_RUNTIME_CORE_V3)return;window.__BLIS_RUNTIME_CORE_V3=true;
 
 const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
 function initialClient(){
@@ -54,7 +54,7 @@ function loadStyle(id,href){
   const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l);
 }
 function loadOwners(){
-  const v='20260824-core2';
+  const v='20260824-core3';
   loadScript('blisGlobalLiveScript','/navigator-global-live.js?v='+v);
   loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v='+v);
   loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v='+v);
@@ -73,8 +73,15 @@ function loadOwners(){
   loadStyle('blisClientValueStyle','/navigator-client-value-pages-v1.css?v='+v);
   loadScript('blisClientValueScript','/navigator-client-value-pages-v1.js?v='+v);
 }
+function releasePrepaint(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.getElementById('blisPrepaintGuard')?.remove();
+    const active=document.querySelector('.page.active');
+    if(active){active.style.setProperty('visibility','visible','important');active.style.setProperty('opacity','1','important')}
+  }));
+}
 function boot(){
-  loadOwners();syncChrome();
+  loadOwners();syncChrome();releasePrepaint();
   window.addEventListener('blis:clientdata',()=>syncChrome());
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
