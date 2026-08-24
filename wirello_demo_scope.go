@@ -54,6 +54,19 @@ func injectWirelloDemoRuntime(resp *http.Response) error {
 		}
 	}
 
+	// Module visual replacements are loaded after the canonical Navigator scripts,
+	// so they can take ownership of the Wirello-only analytical page bodies.
+	tail := []byte(`<script src="/wirello-module-visuals-v1.js?v=20260824-mod1"></script>`)
+	if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
+		out := make([]byte, 0, len(body)+len(tail))
+		out = append(out, body[:pos]...)
+		out = append(out, tail...)
+		out = append(out, body[pos:]...)
+		body = out
+	} else {
+		body = append(body, tail...)
+	}
+
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	resp.ContentLength = int64(len(body))
 	resp.Header.Del("Content-Length")
