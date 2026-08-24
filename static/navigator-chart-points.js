@@ -1,6 +1,8 @@
 /* BLIS Navigator — global clickable chart points */
 (function(){
   'use strict';
+  const isWirello=document.body?.dataset?.client==='wirello'||window.BLIS_INITIAL_CLIENT==='wirello'||new URLSearchParams(location.search).get('client')==='wirello';
+  if(isWirello)return;
   const NS='http://www.w3.org/2000/svg';
   const labels={blis:'BLIS общ индекс',presence:'Социален индекс',social:'Социален индекс',digital:'Дигитална видимост',reputation:'Репутационен индекс',content:'Съдържание / интерес',interest:'Потребителски интерес',experience:'Потребителско изживяване',competitive:'Конкурентна позиция',competition:'Конкурентна позиция',market:'Пазарни сигнали',signals:'Пазарни сигнали'};
   const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
