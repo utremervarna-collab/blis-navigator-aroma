@@ -30,21 +30,27 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
         return err
     }
     resp.Body.Close()
-    if bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
-        resp.Body = io.NopCloser(bytes.NewReader(body))
-        resp.ContentLength = int64(len(body))
-        return nil
+
+    var tags []byte
+    if !bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean1"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean1"></script>`)...)
     }
-    tag := []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean1"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean1"></script>`)
-    if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
-        out := make([]byte, 0, len(body)+len(tag))
-        out = append(out, body[:pos]...)
-        out = append(out, tag...)
-        out = append(out, body[pos:]...)
-        body = out
-    } else {
-        body = append(body, tag...)
+    if !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce3"><script src="/navigator-commerce-safe-v3.js?v=20260824-commerce3"></script>`)...)
     }
+
+    if len(tags) > 0 {
+        if pos := bytes.LastIndex(body, []byte("</body>")); pos >= 0 {
+            out := make([]byte, 0, len(body)+len(tags))
+            out = append(out, body[:pos]...)
+            out = append(out, tags...)
+            out = append(out, body[pos:]...)
+            body = out
+        } else {
+            body = append(body, tags...)
+        }
+    }
+
     resp.Body = io.NopCloser(bytes.NewReader(body))
     resp.ContentLength = int64(len(body))
     resp.Header.Del("Content-Length")
