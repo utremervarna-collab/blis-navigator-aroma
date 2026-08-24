@@ -1,0 +1,5 @@
+/* BLIS Navigator production cleanup v1 */
+.n15-chartdot,.blis-added-point,.blis-curve-point{display:none!important;pointer-events:none!important}
+.page{max-width:100%!important;box-sizing:border-box!important}
+.page svg{max-width:100%!important}
+html,body{max-width:100%;overflow-x:hidden}
