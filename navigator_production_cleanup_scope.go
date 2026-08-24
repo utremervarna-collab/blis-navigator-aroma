@@ -31,9 +31,23 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
     }
     resp.Body.Close()
 
+    // Production cache hardening for the canonical event-driven lifecycle.
+    replacements := [][2]string{
+        {"/navigator-runtime-core-v1.js?v=20260824-core3", "/navigator-runtime-core-v1.js?v=20260824-core4"},
+        {"/navigator-stability-preload-v1.js?v=20260822-stability1", "/navigator-stability-preload-v1.js?v=20260824-stability3"},
+        {"/navigator-stability-preload-v1.js?v=20260824-stability2", "/navigator-stability-preload-v1.js?v=20260824-stability3"},
+        {"/navigator-production-cleanup-v1.css?v=20260824-clean1", "/navigator-production-cleanup-v1.css?v=20260824-clean3"},
+        {"/navigator-production-cleanup-v1.css?v=20260824-clean2", "/navigator-production-cleanup-v1.css?v=20260824-clean3"},
+        {"/navigator-production-cleanup-v1.js?v=20260824-clean1", "/navigator-production-cleanup-v1.js?v=20260824-clean3"},
+        {"/navigator-production-cleanup-v1.js?v=20260824-clean2", "/navigator-production-cleanup-v1.js?v=20260824-clean3"},
+    }
+    for _, pair := range replacements {
+        body = bytes.ReplaceAll(body, []byte(pair[0]), []byte(pair[1]))
+    }
+
     var tags []byte
     if !bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
-        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean1"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean1"></script>`)...)
+        tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean3"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean3"></script>`)...)
     }
     if !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce3"><script src="/navigator-commerce-safe-v3.js?v=20260824-commerce3"></script>`)...)
