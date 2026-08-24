@@ -33,6 +33,7 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
+		}
 		if resp == nil || resp.Request == nil {
 			return nil
 		}
@@ -47,8 +48,6 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		// Remove all superseded card renderers and any earlier v11 copy. The
-		// approved v11 assets are reinserted once, last in the document.
 		for _, asset := range []string{
 			"navigator-commerce-visual-cards-v7.css",
 			"navigator-commerce-visual-cards-v7.js",
