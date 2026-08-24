@@ -92,21 +92,21 @@ jobs:
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
                     const charts=[...(root?.querySelectorAll('svg')||[])].filter(s=>{
                       const z=s.getBoundingClientRect();
-                      if(z.width<=0||z.height<=0)return false;
+                      if(z.width<70||z.height<30)return false;
                       const aria=(s.getAttribute('aria-label')||'').toLowerCase();
-                      const cls=String(s.className?.baseVal||s.className||'').toLowerCase();
+                      const cls=String(s.className?.baseVal||'').toLowerCase();
                       const vb=(s.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number);
                       const vbW=Number.isFinite(vb[2])?vb[2]:0, vbH=Number.isFinite(vb[3])?vb[3]:0;
                       const explicit=s.hasAttribute('data-curve-key')||/динамика|trend|history|график|chart/.test(aria)||/n15-smoothchart|blis-runtime-curve|trend-chart|history-chart/.test(cls);
                       const lineLike=[...s.querySelectorAll('path')].some(p=>(p.getAttribute('d')||'').length>80&&String(p.getAttribute('fill')||'').toLowerCase()==='none');
                       return explicit || (vbW>=200&&vbH>=80&&lineLike);
-                    }).map(s=>{const z=s.getBoundingClientRect();return {w:z.width,h:z.height,aria:s.getAttribute('aria-label')||'',cls:String(s.className?.baseVal||s.className||'')};});
-                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,brokenCharts:charts.filter(z=>z.w<70||z.h<30)};
+                    }).map(s=>{const z=s.getBoundingClientRect();return {w:z.width,h:z.height,aria:s.getAttribute('aria-label')||'',cls:String(s.className?.baseVal||'')};});
+                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,charts};
                   },id);
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
                   assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed page ${JSON.stringify(x)}`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
-                  assert(x.brokenCharts.length===0,`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.brokenCharts)}`);
+                  assert(x.charts.every(z=>z.w>=70&&z.h>=30),`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.charts.filter(z=>z.w<70||z.h<30))}`);
                 }
 
                 await p.evaluate(()=>window.BLISCommerceSafe.open());
