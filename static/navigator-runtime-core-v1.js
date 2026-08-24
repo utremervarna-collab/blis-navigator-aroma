@@ -1,9 +1,9 @@
-/* BLIS Navigator — event-driven runtime core v1.
+/* BLIS Navigator — event-driven runtime core v2.
    Owns only client/data synchronization and one-time module loading.
    No polling, no recurring repaint loop, no chart mutation. */
 (function(){
 'use strict';
-if(window.__BLIS_RUNTIME_CORE_V1)return;window.__BLIS_RUNTIME_CORE_V1=true;
+if(window.__BLIS_RUNTIME_CORE_V2)return;window.__BLIS_RUNTIME_CORE_V2=true;
 
 const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
 function initialClient(){
@@ -30,7 +30,6 @@ function syncChrome(){
     const sync=document.getElementById('lastSync');if(sync)sync.textContent=window.D?.data_updated?new Date(window.D.data_updated).toLocaleString('bg-BG'):'активна синхронизация';
   }catch(e){console.error('BLIS runtime chrome sync failed',e)}
 }
-
 const legacyLoad=window.load;
 if(typeof legacyLoad==='function'&&!legacyLoad.__blisRuntimeCore){
   const wrapped=async function(){
@@ -41,14 +40,11 @@ if(typeof legacyLoad==='function'&&!legacyLoad.__blisRuntimeCore){
   };
   wrapped.__blisRuntimeCore=true;window.load=wrapped;
 }
-
-/* app.js still owns API loading. Rendering is delegated to the canonical owners. */
 window.renderAll=function(){
   syncChrome();
   let c='';try{c=typeof slug!=='undefined'?slug:initialClient()}catch(_){c=initialClient()}
   window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:c,slug:c}}));
 };
-
 function loadScript(id,src){
   if(document.getElementById(id)||[...document.scripts].some(s=>s.src&&s.src.includes(src.split('?')[0])))return;
   const s=document.createElement('script');s.id=id;s.src=src;s.async=false;document.head.appendChild(s);
@@ -58,7 +54,7 @@ function loadStyle(id,href){
   const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l);
 }
 function loadOwners(){
-  const v='20260824-core1';
+  const v='20260824-core2';
   loadScript('blisGlobalLiveScript','/navigator-global-live.js?v='+v);
   loadScript('blisUITerminologyScript','/navigator-ui-terminology.js?v='+v);
   loadScript('blisAttitudesMasterV2Script','/navigator-attitudes-master-v2.js?v='+v);
@@ -68,7 +64,6 @@ function loadOwners(){
   loadScript('blisCompetitionEnvironmentV10Script','/navigator-competition-environment-v10.js?v='+v);
   loadScript('blisCompetitionPageV11Script','/navigator-competition-page-v11.js?v='+v);
   loadScript('blisCompetitionPageV12Script','/navigator-competition-page-v12.js?v='+v);
-  loadScript('blisArchitectureV15Script','/navigator-architecture-v15.js?v='+v);
   loadStyle('blisReputationMasterStyle','/navigator-reputation-master.css?v='+v);
   loadScript('blisPageStateScript','/navigator-page-state.js?v='+v);
   loadScript('blisSocialInteractiveScript','/navigator-social-interactive.js?v='+v);
