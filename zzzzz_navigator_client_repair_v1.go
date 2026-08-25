@@ -33,14 +33,6 @@ func init() {
 
 		body = stripCommerceAsset(body, "app.js")
 		body = stripCommerceAsset(body, "navigator-digital-bootstrap.js")
-		body = stripCommerceAsset(body, "navigator-digital-master.js")
-		body = stripCommerceAsset(body, "navigator-digital-master.css")
-		body = stripCommerceAsset(body, "navigator-live-master.js")
-		body = stripCommerceAsset(body, "navigator-live-master.css")
-		body = stripCommerceAsset(body, "navigator-geo-v2.js")
-		body = stripCommerceAsset(body, "navigator-geo-v2.css")
-		body = stripCommerceAsset(body, "navigator-social-master.js")
-		body = stripCommerceAsset(body, "navigator-social-master.css")
 		body = stripCommerceAsset(body, "navigator-social-bootstrap.js")
 		body = stripCommerceAsset(body, "navigator-social-interactive.js")
 		body = stripCommerceAsset(body, "navigator-reputation-bootstrap.js")
@@ -51,16 +43,10 @@ func init() {
 		// from retaining the previous dead-button navigation implementation.
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.js?v=20260824-router3`),
-			[]byte(`/navigator-reference.js?v=20260825-router10-routeonly1`), -1)
+			[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`), -1)
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.js?v=20260825-router6`),
-			[]byte(`/navigator-reference.js?v=20260825-router10-routeonly1`), -1)
-		body = bytes.Replace(body,
-			[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`),
-			[]byte(`/navigator-reference.js?v=20260825-router10-routeonly1`), -1)
-		body = bytes.Replace(body,
-			[]byte(`/navigator-reference.js?v=20260825-router9-v15owners1`),
-			[]byte(`/navigator-reference.js?v=20260825-router10-routeonly1`), -1)
+			[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`), -1)
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.css?v=20260816-1`),
 			[]byte(`/navigator-reference.css?v=20260825-native1`), -1)
@@ -110,9 +96,8 @@ func init() {
 			body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 		}
 
-		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-routeonly1")) {
-			bodyAssets := `<script src="/navigator-architecture-v15.js?v=20260825-routeonly1"></script>
-<script src="/navigator-client-value-pages-v1.js?v=20260825-freeze7"></script>
+		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-freeze7")) {
+			bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-freeze7"></script>
 <script src="/navigator-reputation-master.js?v=20260825-freeze7"></script>
 <script src="/navigator-reputation-totem-3d-v39.js?v=20260825-freeze7"></script>
 <script src="/navigator-competition-master-v5.js?v=20260825-freeze7"></script>
@@ -120,7 +105,7 @@ func init() {
 <script src="/navigator-competition-environment-v10.js?v=20260825-freeze7"></script>
 <script src="/navigator-competition-page-v11.js?v=20260825-freeze7"></script>
 <script src="/navigator-competition-page-v12.js?v=20260825-freeze7"></script>
-<script src="/navigator-module-lock-v1.js?v=20260825-routeonly1"></script>
+<script src="/navigator-module-lock-v1.js?v=20260825-freeze7"></script>
 <script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
