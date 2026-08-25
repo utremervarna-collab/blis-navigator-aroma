@@ -1825,7 +1825,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			// Browser smoke runs the embedded server without the external auth gateway.
 			// Apply the exact production dashboard assembly in that mode as well.
 			if path == "dashboard.html" && os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") != "1" {
-				b = assembleNavigatorDashboard(b)
+				b = assembleNavigatorDashboard(b, true)
 			}
 			ct := http.DetectContentType(b)
 			switch {

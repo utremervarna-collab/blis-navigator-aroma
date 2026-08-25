@@ -45,7 +45,6 @@ function lockGlobal(name,value){
 }
 function seal(){
   lockGlobal('BLISArchitectureV15',window.BLISArchitectureV15);
-  lockGlobal('BLISDigitalRadar',window.BLISDigitalRadar);
   lockGlobal('BLISReputation',window.BLISReputation);
   if(window.__BLIS_CANONICAL_REFGO)lockGlobal('refGo',window.__BLIS_CANONICAL_REFGO);
 }

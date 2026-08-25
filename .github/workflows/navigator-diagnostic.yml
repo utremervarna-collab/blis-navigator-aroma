@@ -90,7 +90,7 @@ jobs:
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=varna-towers' >/tmp/varna-towers.html
           grep -q 'varna-towers-runtime.js' /tmp/varna-towers.html
           grep -q 'navigator-data-core-v2.js?v=20260825-stablev15' /tmp/varna-towers.html
-          grep -q 'navigator-reference.js?v=20260825-router11-stablev15' /tmp/varna-towers.html
+          grep -q 'navigator-reference.js?v=20260825-router12-singleowner1' /tmp/varna-towers.html
           grep -q 'navigator-architecture-v15.js?v=20260825-stablev15' /tmp/varna-towers.html
           grep -q 'navigator-module-lock-v1.js?v=20260825-stablev15' /tmp/varna-towers.html
           ! grep -q 'src="/app.js' /tmp/varna-towers.html

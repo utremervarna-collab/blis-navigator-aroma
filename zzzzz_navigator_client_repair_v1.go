@@ -10,7 +10,7 @@ import (
 // Canonical client-dashboard assembly.
 // Approved modules have one renderer only; legacy page renderers are removed
 // from the served dashboard so later changes cannot overlay locked pages.
-func assembleNavigatorDashboard(body []byte) []byte {
+func assembleNavigatorDashboard(body []byte, hideCommerce bool) []byte {
 	// Final production normalization: remove every competing bootstrap/owner
 	// before injecting one deterministic runtime for each route.
 	body = stripCommerceAsset(body, "app.js")
@@ -36,16 +36,19 @@ func assembleNavigatorDashboard(body []byte) []byte {
 	// retaining the incomplete native-link navigation implementation.
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.js?v=20260824-router3`),
-		[]byte(`/navigator-reference.js?v=20260825-router11-stablev15`), -1)
+		[]byte(`/navigator-reference.js?v=20260825-router12-singleowner1`), -1)
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.js?v=20260825-router6`),
-		[]byte(`/navigator-reference.js?v=20260825-router11-stablev15`), -1)
+		[]byte(`/navigator-reference.js?v=20260825-router12-singleowner1`), -1)
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`),
-		[]byte(`/navigator-reference.js?v=20260825-router11-stablev15`), -1)
+		[]byte(`/navigator-reference.js?v=20260825-router12-singleowner1`), -1)
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.js?v=20260825-router9-v15owners1`),
-		[]byte(`/navigator-reference.js?v=20260825-router11-stablev15`), -1)
+		[]byte(`/navigator-reference.js?v=20260825-router12-singleowner1`), -1)
+	body = bytes.Replace(body,
+		[]byte(`/navigator-reference.js?v=20260825-router11-stablev15`),
+		[]byte(`/navigator-reference.js?v=20260825-router12-singleowner1`), -1)
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.css?v=20260816-1`),
 		[]byte(`/navigator-reference.css?v=20260825-native1`), -1)
@@ -92,7 +95,10 @@ func assembleNavigatorDashboard(body []byte) []byte {
 		headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-stablev15">
 <link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-stablev15">
 <link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-stablev15">
-<style id="blisLockedVisibilityRelease">.page{visibility:visible!important}.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
+<style id="blisLockedVisibilityRelease">.page{visibility:visible!important}</style>`
+		if hideCommerce {
+			headAssets += `<style id="blisCommerceFinalGuard">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
+		}
 		body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 	}
 
@@ -106,13 +112,15 @@ func assembleNavigatorDashboard(body []byte) []byte {
 <script src="/navigator-competition-environment-v10.js?v=20260825-stablev15"></script>
 <script src="/navigator-competition-page-v11.js?v=20260825-stablev15"></script>
 <script src="/navigator-competition-page-v12.js?v=20260825-stablev15"></script>
-<script src="/navigator-module-lock-v1.js?v=20260825-stablev15"></script>
-<script>(function(){
+<script src="/navigator-module-lock-v1.js?v=20260825-stablev15"></script>`
+		if hideCommerce {
+			bodyAssets += `<script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
   document.addEventListener('DOMContentLoaded',removeCommerceLauncher,{once:true});
   window.addEventListener('blis:clientdata',function(){requestAnimationFrame(removeCommerceLauncher)});
 })();</script>`
+		}
 		body = bytes.Replace(body, []byte("</body>"), []byte(bodyAssets+"</body>"), 1)
 	}
 
@@ -140,7 +148,8 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		body = assembleNavigatorDashboard(body)
+		s, ok := sessionFromRequest(resp.Request)
+		body = assembleNavigatorDashboard(body, !(ok && s.Admin))
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
 		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
