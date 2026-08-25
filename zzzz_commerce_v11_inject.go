@@ -20,9 +20,8 @@ func stripCommerceAsset(body []byte, asset string) []byte {
 }
 
 // Final commerce presentation layer. It removes every obsolete visual layer
-// and installs exactly one approved v11 family on both the public catalogue and
-// authenticated Navigator. This prevents late legacy scripts from hiding or
-// replacing cards after the correct render has already appeared.
+// and installs exactly one stable approved family on both the public catalogue
+// and authenticated Navigator.
 func init() {
 	if authProxy == nil {
 		return
@@ -62,8 +61,8 @@ func init() {
 			body = stripCommerceAsset(body, asset)
 		}
 
-		headAsset := `<link rel="stylesheet" href="/navigator-commerce-approved-all-v11.css?v=20260825-family11-clean" data-blis-approved-v11="1">`
-		bodyAsset := `<script>window.__BLIS_COMMERCE_VISUAL_CARDS_V7=true;window.__BLIS_COMMERCE_EXACT_CARDS_V8=true;window.__BLIS_APPROVED_SERVICE_CARDS_V10=true;</script><script src="/navigator-commerce-approved-all-v11.js?v=20260825-family11-clean" data-blis-approved-v11="1"></script><script>setTimeout(function(){window.BLISCommerceApprovedAllV11&&window.BLISCommerceApprovedAllV11.reset&&window.BLISCommerceApprovedAllV11.reset()},160);</script>`
+		headAsset := `<link rel="stylesheet" href="/navigator-commerce-approved-all-v11.css?v=20260825-stable2" data-blis-approved-v11="1">`
+		bodyAsset := `<script>window.__BLIS_COMMERCE_VISUAL_CARDS_V7=true;window.__BLIS_COMMERCE_EXACT_CARDS_V8=true;window.__BLIS_APPROVED_SERVICE_CARDS_V10=true;</script><script src="/navigator-commerce-approved-all-v11.js?v=20260825-stable2" data-blis-approved-v11="1"></script><script>setTimeout(function(){window.BLISCommerceApprovedAllV11&&window.BLISCommerceApprovedAllV11.reset&&window.BLISCommerceApprovedAllV11.reset()},160);</script>`
 
 		body = bytes.Replace(body, []byte("</head>"), []byte(headAsset+"</head>"), 1)
 		body = bytes.Replace(body, []byte("</body>"), []byte(bodyAsset+"</body>"), 1)
