@@ -63,6 +63,7 @@ jobs:
                 await p.goto(`${origin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:20000});
                 await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,{timeout:15000});
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,{timeout:15000});
+                await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',{timeout:12000});
                 const boot=await p.evaluate(()=>({
                   client:document.body.dataset.client,
                   name:document.querySelector('.client-brand-name')?.textContent||'',
@@ -71,6 +72,9 @@ jobs:
                   legacyBridge:[...document.scripts].some(s=>s.src.includes('navigator-runtime-bridge.js')),
                   pointEnhancer:[...document.scripts].some(s=>s.src.includes('navigator-chart-points.js')),
                   architectureV15:[...document.scripts].some(s=>s.src.includes('navigator-architecture-v15.js')),
+                  architectureOwner:window.BLISArchitectureV15?.version||'',
+                  architectureRoutes:[...(window.BLISArchitectureV15?.routes||[])],
+                  homeHref:document.querySelector('a[href="/"]')?.getAttribute('href')||'',
                   stabilityMode:window.BLISStabilityStats?.mode||'',
                   commerceLauncher:!!document.querySelector('[data-blis-commerce-open]')
                 }));
@@ -80,9 +84,12 @@ jobs:
                 assert(boot.runtimeCore,`${client}: runtime core missing`);
                 assert(!boot.legacyBridge,`${client}: legacy runtime bridge loaded`);
                 assert(!boot.pointEnhancer,`${client}: global chart-point enhancer loaded`);
-                assert(!boot.architectureV15,`${client}: legacy architecture V15 loaded`);
+                assert(boot.architectureV15,`${client}: approved architecture V15 missing`);
+                assert(boot.architectureOwner==='20260825-production-stable1',`${client}: wrong V15 owner ${boot.architectureOwner}`);
+                assert(boot.architectureRoutes.join(',')==='digital,live,social',`${client}: wrong V15 routes ${boot.architectureRoutes.join(',')}`);
+                assert(boot.homeHref==='/',`${client}: home link missing`);
                 assert(boot.stabilityMode==='event-driven',`${client}: stability preload is not event-driven (${boot.stabilityMode})`);
-                assert(boot.commerceLauncher,`${client}: Services and Payment launcher missing`);
+                assert(!boot.commerceLauncher,`${client}: hidden Services and Payment launcher leaked into sidebar`);
 
                 for(const id of pages){
                   await p.evaluate(id=>window.refGo(id),id);
@@ -101,10 +108,13 @@ jobs:
                       const lineLike=[...s.querySelectorAll('path')].some(p=>(p.getAttribute('d')||'').length>80&&String(p.getAttribute('fill')||'').toLowerCase()==='none');
                       return explicit || (vbW>=200&&vbH>=80&&lineLike);
                     }).map(s=>{const z=s.getBoundingClientRect();return {w:z.width,h:z.height,aria:s.getAttribute('aria-label')||'',cls:String(s.className?.baseVal||'')};});
-                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,charts};
+                    const ownerId={live:'n15Live',social:'n15Signals',digital:'n15Digital'}[id]||'';
+                  return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,charts,owner:!ownerId||!!document.getElementById(ownerId),loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||'')};
                   },id);
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
                   assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed page ${JSON.stringify(x)}`);
+                  assert(x.owner,`${client}/${id}: approved V15 owner root missing`);
+                  assert(!x.loading,`${client}/${id}: page remained in loading state`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
                   assert(x.charts.every(z=>z.w>=70&&z.h>=30),`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.charts.filter(z=>z.w<70||z.h<30))}`);
                 }

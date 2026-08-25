@@ -7,6 +7,8 @@ var $=window.$=window.$||function(id){return document.getElementById(id)};
 var esc=window.esc=window.esc||function(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])})};
 var slug=window.slug=String(window.BLIS_INITIAL_CLIENT||document.body?.dataset?.client||'aroma');
 var D=window.D=null,S=window.S=[],Q=window.Q={},A=window.A=[],H=window.H=[];
+var loadEpoch=0;
+const REQUEST_TIMEOUT_MS=7000;
 
 const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
 function currentClient(){
@@ -29,9 +31,24 @@ window.idx=idx;window.score=score;window.hist=hist;window.sourceName=sourceName;
 
 function setClient(key){if(!CLIENTS.has(key))key='aroma';slug=key;window.slug=key;window.BLIS_INITIAL_CLIENT=key;document.body.dataset.client=key;const sel=document.getElementById('clientSel');if(sel&&sel.value!==key)sel.value=key;try{localStorage.setItem('blis-client-ui',key)}catch(_){} }
 function endpoint(name){return `/api/clients/${encodeURIComponent(slug)}/${name}`}
-async function json(url,fallback){try{const r=await fetch(url,{cache:'no-store'});if(!r.ok)return fallback;return await r.json()}catch(_){return fallback}}
+async function json(url,fallback){
+  const controller=typeof AbortController==='function'?new AbortController():null;
+  const timer=controller?setTimeout(function(){controller.abort()},REQUEST_TIMEOUT_MS):0;
+  try{
+    const r=await fetch(url,{cache:'no-store',signal:controller?.signal});
+    if(!r.ok)return fallback;
+    return await r.json();
+  }catch(e){
+    console.warn('BLIS data request fallback',url,e?.name||e);
+    return fallback;
+  }finally{
+    if(timer)clearTimeout(timer);
+  }
+}
 async function load(key){
+  const epoch=++loadEpoch;
   setClient(CLIENTS.has(key)?key:currentClient());
+  document.body.dataset.blisLoading='true';
   const b=Date.now();
   const out=await Promise.all([
     json(endpoint('dashboard')+'?_='+b,{}),
@@ -40,7 +57,9 @@ async function load(key){
     json(endpoint('activity')+'?_='+b,[]),
     json(endpoint('history')+'?_='+b,[])
   ]);
+  if(epoch!==loadEpoch)return D;
   D=out[0]||{};S=Array.isArray(out[1])?out[1]:[];Q=out[2]||{};A=Array.isArray(out[3])?out[3]:[];H=Array.isArray(out[4])?out[4]:[];
+  document.body.dataset.blisLoading='false';
   syncGlobals();
   const ls=document.getElementById('lastSync');if(ls)ls.textContent=D?.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'няма синхронизация';
   window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:slug,slug:slug,data:D,sources:S,quality:Q,activity:A,history:H}}));

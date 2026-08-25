@@ -16,20 +16,20 @@
     "live": {
       "label": "Live Monitoring",
       "state": "LOCKED",
-      "js": ["navigator-live-master.js", "navigator-geo-v2.js"],
-      "css": ["navigator-live-master.css", "navigator-geo-v2.css"]
+      "js": ["navigator-architecture-v15.js"],
+      "css": []
     },
     "social": {
       "label": "Сигнали",
       "state": "LOCKED",
-      "js": ["navigator-social-master.js"],
-      "css": ["navigator-social-master.css"]
+      "js": ["navigator-architecture-v15.js"],
+      "css": []
     },
     "digital": {
       "label": "Дигитална видимост",
       "state": "LOCKED",
-      "js": ["navigator-digital-master.js"],
-      "css": ["navigator-digital-master.css"]
+      "js": ["navigator-architecture-v15.js"],
+      "css": []
     },
     "reputation": {
       "label": "Репутация",
@@ -48,6 +48,14 @@
     "navigator-final-paint-guard-v17.js",
     "navigator-social-bootstrap.js",
     "navigator-social-interactive.js",
+    "navigator-live-master.js",
+    "navigator-live-master.css",
+    "navigator-geo-v2.js",
+    "navigator-geo-v2.css",
+    "navigator-social-master.js",
+    "navigator-social-master.css",
+    "navigator-digital-master.js",
+    "navigator-digital-master.css",
     "navigator-reputation-bootstrap.js",
     "navigator-digital-bootstrap.js"
   ]
