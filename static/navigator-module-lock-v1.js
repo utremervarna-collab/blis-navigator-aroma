@@ -5,8 +5,8 @@
 if(window.__BLIS_MODULE_LOCK_V1)return;window.__BLIS_MODULE_LOCK_V1=true;
 
 const MANIFEST=Object.freeze({
-  live:Object.freeze({version:'live-master-20260818-confirmed2205',owner:'BLISLiveMount'}),
-  social:Object.freeze({version:'social-master-v7',owner:'BLISSocialSignalsRender'}),
+  live:Object.freeze({version:'architecture-v15-20260825',owner:'BLISArchitectureV15'}),
+  social:Object.freeze({version:'architecture-v15-20260825',owner:'BLISArchitectureV15'}),
   digital:Object.freeze({version:'digital-radar-20260819-radar2',owner:'BLISDigitalRadar'}),
   reputation:Object.freeze({version:'reputation-master+3d-v40',owner:'BLISReputation'})
 });
@@ -29,12 +29,11 @@ function removeLegacyReputation(){
 function normalizeNav(){
   const labels={overview:'Общ преглед',live:'Live Monitoring',social:'Сигнали',digital:'Дигитална видимост',reputation:'Репутация',market:'Нагласи',competition:'Конкуренти',reports:'Месечни доклади',history:'История',profile:'Клиентски профил',settings:'Настройки',help:'Помощ'};
   const nav=document.getElementById('nav');if(!nav)return;
-  Object.entries(labels).forEach(function(pair){const b=nav.querySelector(`button[data-page="${pair[0]}"]`),t=b?.querySelector('.navtxt')||b?.querySelector('span:last-child');if(t&&t.textContent!==pair[1])t.textContent=pair[1]});
+  Object.entries(labels).forEach(function(pair){const b=nav.querySelector(`[data-page="${pair[0]}"]`),t=b?.querySelector('.navtxt')||b?.querySelector('span:last-child');if(t&&t.textContent!==pair[1])t.textContent=pair[1]});
 }
 function renderLocked(id){
   try{
-    if(id==='live'&&typeof window.BLISLiveMount==='function')return window.BLISLiveMount();
-    if(id==='social'&&typeof window.BLISSocialSignalsRender==='function')return window.BLISSocialSignalsRender();
+    if((id==='live'||id==='social')&&window.BLISArchitectureV15?.render)return window.BLISArchitectureV15.render(id);
     if(id==='digital'&&window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();
     if(id==='reputation'&&window.BLISReputation?.render){removeLegacyReputation();const r=window.BLISReputation.render();requestAnimationFrame(function(){window.BLISReputationTotem3DV39?.mount?.();removeLegacyReputation()});return r;}
   }catch(e){console.error('BLIS locked renderer',id,e)}
@@ -46,8 +45,7 @@ function lockGlobal(name,value){
   try{Object.defineProperty(window,name,{configurable:false,enumerable:true,get:function(){return value},set:function(){console.warn('BLIS locked module blocked overwrite:',name)}})}catch(_){try{window[name]=value}catch(__){}}
 }
 function seal(){
-  lockGlobal('BLISLiveMount',window.BLISLiveMount);
-  lockGlobal('BLISSocialSignalsRender',window.BLISSocialSignalsRender);
+  lockGlobal('BLISArchitectureV15',window.BLISArchitectureV15);
   lockGlobal('BLISDigitalRadar',window.BLISDigitalRadar);
   lockGlobal('BLISReputation',window.BLISReputation);
   if(window.__BLIS_CANONICAL_REFGO)lockGlobal('refGo',window.__BLIS_CANONICAL_REFGO);
@@ -55,7 +53,7 @@ function seal(){
 function init(){
   installCSS();removeLegacyReputation();normalizeNav();seal();settle();
   const nav=document.getElementById('nav');if(nav)new MutationObserver(function(){normalizeNav()}).observe(nav,{childList:true,subtree:true,characterData:true});
-  document.addEventListener('click',function(e){const b=e.target.closest?.('#nav button[data-page]');if(!b)return;const id=b.dataset.page;if(MANIFEST[id])requestAnimationFrame(function(){renderLocked(id)})},true);
+  document.addEventListener('click',function(e){const b=e.target.closest?.('#nav [data-page]');if(!b)return;const id=b.dataset.page;if(MANIFEST[id])requestAnimationFrame(function(){renderLocked(id)})},true);
   window.addEventListener('blis:clientdata',function(){requestAnimationFrame(settle)});
   window.addEventListener('blis:periodchange',function(){requestAnimationFrame(settle)});
 }

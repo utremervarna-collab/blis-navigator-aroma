@@ -20,8 +20,8 @@ function renderUtility(id){if(window.BLISUtilityPages?.owns?.(id))return window.
 function renderRoute(id){id=canonical(id);try{
  if(id==='commerce'){if(window.BLISCommerceSafe?.render)return window.BLISCommerceSafe.render();return fallback(id)}
  if(id==='overview'){if(window.BLISOverviewMaster?.render)return window.BLISOverviewMaster.render();return fallback(id,'Общият преглед се инициализира.')}
- if(id==='live'){if(typeof window.BLISLiveMount==='function')return window.BLISLiveMount();return fallback(id)}
- if(id==='social'){if(typeof window.BLISSocialSignalsRender==='function')return window.BLISSocialSignalsRender();return fallback(id)}
+ if(id==='live'){if(window.BLISArchitectureV15?.render)return window.BLISArchitectureV15.render(id);if(typeof window.BLISLiveMount==='function')return window.BLISLiveMount();return fallback(id)}
+ if(id==='social'){if(window.BLISArchitectureV15?.render)return window.BLISArchitectureV15.render(id);if(typeof window.BLISSocialSignalsRender==='function')return window.BLISSocialSignalsRender();return fallback(id)}
  if(id==='digital'){if(window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();return fallback(id)}
  if(id==='reputation'){if(window.BLISReputation?.render)return window.BLISReputation.render();return fallback(id)}
  if(id==='market'){if(window.BLISPerceptionMap?.mount)return window.BLISPerceptionMap.mount();return fallback(id)}
