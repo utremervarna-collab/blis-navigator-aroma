@@ -31,17 +31,17 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		// Remove all legacy owners of navigation/page bodies.
+		// app.js is the obsolete second owner of nav + page bodies.
 		body = stripCommerceAsset(body, "app.js")
-		body = stripCommerceAsset(body, "navigator-reference.js")
 
-		// Remove obsolete raster Reputation overlay.
+		// Keep navigator-reference.js as the ONE canonical route owner.
+		// Remove only the old Reputation raster overlay.
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.css")
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.js")
 
-		// Data-only core runs before runtime/page masters.
+		// Data-only core replaces app.js and never renders pages.
 		if !bytes.Contains(body, []byte("navigator-data-core-v2.js")) {
-			coreTag := []byte(`<script src="/navigator-data-core-v2.js?v=20260825-freeze3"></script>`)
+			coreTag := []byte(`<script src="/navigator-data-core-v2.js?v=20260825-freeze4"></script>`)
 			anchor := []byte(`<script src="/navigator-runtime-core-v1.js`)
 			if i := bytes.Index(body, anchor); i >= 0 {
 				tmp := make([]byte, 0, len(body)+len(coreTag))
@@ -52,38 +52,42 @@ func init() {
 			}
 		}
 
-		// Frozen router is the only route owner. It is loaded before page masters;
-		// later modules may render only their own body, never own navigation.
-		if !bytes.Contains(body, []byte("navigator-frozen-router-v1.js")) {
-			routerTag := []byte(`<script src="/navigator-frozen-router-v1.js?v=20260825-freeze3"></script><script>window.__BLIS_CANONICAL_REFGO=window.refGo;</script>`)
-			anchor := []byte(`<script src="/navigator-social-master.js`)
+		// Capture navigator-reference.js immediately after it loads. Later legacy
+		// page scripts cannot permanently wrap or replace this function.
+		if !bytes.Contains(body, []byte("__BLIS_CANONICAL_REFGO")) {
+			anchor := []byte(`<script src="/navigator-reference.js`)
 			if i := bytes.Index(body, anchor); i >= 0 {
-				tmp := make([]byte, 0, len(body)+len(routerTag))
-				tmp = append(tmp, body[:i]...)
-				tmp = append(tmp, routerTag...)
-				tmp = append(tmp, body[i:]...)
-				body = tmp
+				rel := bytes.Index(body[i:], []byte(`</script>`))
+				if rel >= 0 {
+					pos := i + rel + len(`</script>`)
+					capture := []byte(`<script>window.__BLIS_CANONICAL_REFGO=window.refGo;</script>`)
+					tmp := make([]byte, 0, len(body)+len(capture))
+					tmp = append(tmp, body[:pos]...)
+					tmp = append(tmp, capture...)
+					tmp = append(tmp, body[pos:]...)
+					body = tmp
+				}
 			}
 		}
 
-		if !bytes.Contains(body, []byte("navigator-client-value-pages-v1.css?v=20260825-freeze3")) {
-			headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-freeze3">
-<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-freeze3">
-<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-freeze3">
+		if !bytes.Contains(body, []byte("navigator-client-value-pages-v1.css?v=20260825-freeze4")) {
+			headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-freeze4">
+<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-freeze4">
+<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-freeze4">
 <style id="blisCommerceLauncherRemoved">.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
 			body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 		}
 
-		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-freeze3")) {
-			bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-freeze3"></script>
-<script src="/navigator-reputation-master.js?v=20260825-freeze3"></script>
-<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-freeze3"></script>
-<script src="/navigator-competition-master-v5.js?v=20260825-freeze3"></script>
-<script src="/navigator-competition-intelligence-v9.js?v=20260825-freeze3"></script>
-<script src="/navigator-competition-environment-v10.js?v=20260825-freeze3"></script>
-<script src="/navigator-competition-page-v11.js?v=20260825-freeze3"></script>
-<script src="/navigator-competition-page-v12.js?v=20260825-freeze3"></script>
-<script src="/navigator-module-lock-v1.js?v=20260825-freeze3"></script>
+		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-freeze4")) {
+			bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-freeze4"></script>
+<script src="/navigator-reputation-master.js?v=20260825-freeze4"></script>
+<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-freeze4"></script>
+<script src="/navigator-competition-master-v5.js?v=20260825-freeze4"></script>
+<script src="/navigator-competition-intelligence-v9.js?v=20260825-freeze4"></script>
+<script src="/navigator-competition-environment-v10.js?v=20260825-freeze4"></script>
+<script src="/navigator-competition-page-v11.js?v=20260825-freeze4"></script>
+<script src="/navigator-competition-page-v12.js?v=20260825-freeze4"></script>
+<script src="/navigator-module-lock-v1.js?v=20260825-freeze4"></script>
 <script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
