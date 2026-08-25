@@ -1,0 +1,48 @@
+/* BLIS Navigator — owner-only commerce UI fixes v15 */
+#commerceBody .bc13-poster h3{
+  max-width:70%!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  hyphens:none!important;
+  -webkit-hyphens:none!important;
+  white-space:normal!important;
+}
+#commerceBody .bc13-title-long h3{
+  max-width:70%!important;
+  font-size:clamp(22px,1.8vw,31px)!important;
+  line-height:1!important;
+}
+#commerceBody .bc13-title-xlong h3{
+  max-width:72%!important;
+  font-size:clamp(20px,1.65vw,28px)!important;
+  line-height:1.03!important;
+  min-height:2.8em!important;
+}
+#commerceBody .bc13-type{
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  hyphens:none!important;
+  -webkit-hyphens:none!important;
+}
+.side>.blis-commerce-launch,
+.side .blis-commerce-launch.blis-commerce-owner-launch{
+  flex:0 0 auto!important;
+  width:calc(100% - 28px)!important;
+  margin:8px 14px 12px!important;
+  padding:14px 15px!important;
+  border:1px solid rgba(151,18,32,.45)!important;
+  background:linear-gradient(135deg,#ee3c3c 0%,#b41529 55%,#7c0c1c 100%)!important;
+  color:#fff!important;
+  box-shadow:0 12px 26px rgba(142,18,31,.22),inset 0 1px 0 rgba(255,255,255,.26)!important;
+  z-index:6!important;
+}
+.side .blis-commerce-launch.blis-commerce-owner-launch>span:first-child{
+  background:linear-gradient(145deg,#fff5c7,#e8b73d)!important;
+  color:#17385d!important;
+}
+.side .blis-commerce-launch.blis-commerce-owner-launch small{color:rgba(255,255,255,.80)!important}
+@media(max-width:480px){
+  #commerceBody .bc13-poster h3{max-width:72%!important;overflow-wrap:normal!important;word-break:normal!important;hyphens:none!important;-webkit-hyphens:none!important}
+  #commerceBody .bc13-title-long h3{font-size:26px!important}
+  #commerceBody .bc13-title-xlong h3{font-size:22px!important}
+}
