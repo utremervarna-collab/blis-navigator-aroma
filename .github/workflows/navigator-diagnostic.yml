@@ -94,7 +94,7 @@ jobs:
           const fs=require('fs');
           const dashboard=JSON.parse(fs.readFileSync('/tmp/mollox-dashboard.json'));
           const sources=JSON.parse(fs.readFileSync('/tmp/mollox-sources.json'));
-          const expected=['MOLLOX България','Хигиенно-медицинска индустрия','Hagleitner България','Булклийн','PaChico','Албис','Calvatis Hygiene Bulgaria (CALGONIT)'];
+          const expected=['MOLLOX България','Хигиенно-медицинска индустрия','Hagleitner България','Булклийн','PaChico','Албис','Калватис Хигиене България (CALGONIT)'];
           const actual=dashboard.competitors.map(x=>x.name);
           if(JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error(`Unexpected MOLLOX competitors: ${actual.join(', ')}`);
           const sourceKeys=sources.filter(x=>x.key.startsWith('cmp_')).map(x=>x.key).sort();

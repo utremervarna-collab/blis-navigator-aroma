@@ -92,7 +92,7 @@ func molloxSeedClient(stamp string) *Client {
 			{Key: "cmp_bulclean", Label: "Булклийн", URL: "https://bulclean.bg/", Method: "потвърден от собственика конкурент • професионални препарати, хигиенни планове и онлайн търговия", Reliability: .96},
 			{Key: "cmp_pachico", Label: "PaChico", URL: "https://pachico.net/", Method: "потвърден от собственика конкурент • български производител на продукти за професионална хигиена и дезинфекция", Reliability: .97},
 			{Key: "cmp_albis", Label: "Албис", URL: "https://albis.bg/", Method: "потвърден от собственика конкурент • професионални препарати, оборудване, консумативи и HACCP решения", Reliability: .96},
-			{Key: "cmp_calvatis", Label: "Calvatis Hygiene Bulgaria (CALGONIT)", URL: "https://www.calvatis.com/bg/", Method: "потвърден от собственика конкурент • Calvatis е компанията, CALGONIT е международната продуктова марка", Reliability: .98},
+			{Key: "cmp_calvatis", Label: "Калватис Хигиене България (CALGONIT)", URL: "https://www.calvatis.com/bg/", Method: "потвърден от собственика конкурент • Calvatis е компанията, CALGONIT е международната продуктова марка", Reliability: .98},
 		},
 	}
 
@@ -213,11 +213,11 @@ func molloxDashboard(c *Client) map[string]interface{} {
 	competitors := []interface{}{
 		map[string]interface{}{"name": "MOLLOX България", "score": web, "source": "измерен публичен web профил"},
 		map[string]interface{}{"name": "Хигиенно-медицинска индустрия", "score": molloxObservedScore(c, "cmp_hmi"), "source": "собственически потвърден конкурент"},
-		map[string]interface{}{"name": "Hagleitner България", "score": molloxObservedScore(c, "cmp_hagleitner"), "source": "измерен публичен web профил"},
+		map[string]interface{}{"name": "Hagleitner България", "score": molloxObservedScore(c, "cmp_hagleitner"), "source": "собственически потвърден конкурент"},
 		map[string]interface{}{"name": "Булклийн", "score": molloxObservedScore(c, "cmp_bulclean"), "source": "собственически потвърден конкурент"},
 		map[string]interface{}{"name": "PaChico", "score": molloxObservedScore(c, "cmp_pachico"), "source": "собственически потвърден конкурент"},
 		map[string]interface{}{"name": "Албис", "score": molloxObservedScore(c, "cmp_albis"), "source": "собственически потвърден конкурент"},
-		map[string]interface{}{"name": "Calvatis Hygiene Bulgaria (CALGONIT)", "score": molloxObservedScore(c, "cmp_calvatis"), "source": "собственически потвърден конкурент"},
+		map[string]interface{}{"name": "Калватис Хигиене България (CALGONIT)", "score": molloxObservedScore(c, "cmp_calvatis"), "source": "собственически потвърден конкурент"},
 	}
 
 	return map[string]interface{}{
@@ -229,7 +229,7 @@ func molloxDashboard(c *Client) map[string]interface{} {
 			idx("digital", "Индекс на дигиталната видимост", digital, "Средна стойност от текущо измерените публични web профили на сайта, продуктите, Private Label, контактите и новините.", []interface{}{comp("Официален сайт", web, "измерено"), comp("Продукти", products, "измерено"), comp("Private Label", privateLabelWeb, "измерено"), comp("Контакти", contactWeb, "измерено"), comp("Новини", newsWeb, "измерено")}, "", []string{"MOLLOX България", "MOLLOX – Продукти", "MOLLOX – Private Label", "MOLLOX – Контакти и дистрибутори", "MOLLOX – Новини"}),
 			idx("reputation", "Индекс на репутацията", reputation, "Използва единствено публично потвърдени доверителни сигнали от официалния профил: ISO, SDS/TDS, разрешителни, лабораторен подход и браншово членство.", []interface{}{comp("ISO 9001 и ISO 14001", iso, "потвърдено"), comp("SDS / TDS документация", docs, "потвърдено"), comp("Разрешителни за дезинфектанти", regulatory, "потвърдено"), comp("Специализирана лаборатория", lab, "потвърдено"), comp("Браншово членство", association, "потвърдено")}, "", []string{"MOLLOX България"}),
 			idx("interest", "Индекс на пазарния профил", market, "Изчислява се от измеримото продуктово, индустриално, Private Label и дистрибуторско покритие.", []interface{}{comp("Продуктова страница", products, "измерено"), comp("Private Label", privateLabelWeb, "измерено"), comp("Контактна и дистрибуторска среда", contactWeb, "измерено"), comp("4 индустриални направления", industries, "потвърдено"), comp("8 Private Label типа", productTypes, "потвърдено"), comp("5 регионални дистрибутора", distributors, "потвърдено")}, "", []string{"MOLLOX – Продукти", "MOLLOX – Private Label", "MOLLOX – Контакти и дистрибутори"}),
-			idx("competitive", "Индекс на конкурентната позиция", competitive, "BLIS производна от реално наблюдаваните дигитални, репутационни и пазарни входни данни. Сравнителните web оценки на собственически потвърдените конкуренти се измерват по една и съща процедура.", []interface{}{comp("Дигитална видимост", digital, "реални входни данни"), comp("Репутационни сигнали", reputation, "реални входни данни"), comp("Пазарен профил", market, "реални входни данни")}, "", []string{"MOLLOX България", "Хигиенно-медицинска индустрия", "Hagleitner България", "Булклийн", "PaChico", "Албис", "Calvatis Hygiene Bulgaria (CALGONIT)"}),
+			idx("competitive", "Индекс на конкурентната позиция", competitive, "BLIS производна от реално наблюдаваните дигитални, репутационни и пазарни входни данни. Сравнителните web оценки на собственически потвърдените конкуренти се измерват по една и съща процедура.", []interface{}{comp("Дигитална видимост", digital, "реални входни данни"), comp("Репутационни сигнали", reputation, "реални входни данни"), comp("Пазарен профил", market, "реални входни данни")}, "", []string{"MOLLOX България", "Хигиенно-медицинска индустрия", "Hagleitner България", "Булклийн", "PaChico", "Албис", "Калватис Хигиене България (CALGONIT)"}),
 		},
 		"metrics": []interface{}{
 			met("Индустриални направления", "4"),
