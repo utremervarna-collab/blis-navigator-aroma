@@ -8,8 +8,8 @@ import (
 	"strconv"
 )
 
-// stripCommerceAsset removes one legacy/current commerce JS or CSS tag from an
-// HTML response regardless of cache-busting query string or extra attributes.
+// stripCommerceAsset removes one commerce JS or CSS tag from an HTML response
+// regardless of cache-busting query string or extra attributes.
 func stripCommerceAsset(body []byte, asset string) []byte {
 	q := regexp.QuoteMeta(asset)
 	linkRE := regexp.MustCompile(`(?is)<link\b[^>]*href=["'][^"']*` + q + `[^"']*["'][^>]*>`)
@@ -19,9 +19,33 @@ func stripCommerceAsset(body []byte, asset string) []byte {
 	return body
 }
 
-// Final commerce presentation layer. It removes every obsolete visual layer
-// and installs one sharp, deterministic approved renderer on both the public
-// catalogue and the authenticated Navigator.
+func stripAllCommerceAssets(body []byte) []byte {
+	for _, asset := range []string{
+		"navigator-commerce-safe-v3.css",
+		"navigator-commerce-safe-v3.js",
+		"navigator-commerce-sales-v5.js",
+		"navigator-commerce-v1.js",
+		"navigator-commerce-v2.js",
+		"navigator-commerce-visual-cards-v7.css",
+		"navigator-commerce-visual-cards-v7.js",
+		"navigator-commerce-exact-cards-v8.css",
+		"navigator-commerce-exact-cards-v8.js",
+		"navigator-commerce-light-fix-v9.css",
+		"navigator-commerce-approved-v10.css",
+		"navigator-commerce-approved-v10.js",
+		"navigator-commerce-approved-all-v11.css",
+		"navigator-commerce-approved-all-v11.js",
+		"navigator-commerce-owner-fix-v15.css",
+	} {
+		body = stripCommerceAsset(body, asset)
+	}
+	return body
+}
+
+// Services & Payment is an owner workspace. Client dashboard responses receive
+// no commerce code at all. The owner receives one deterministic renderer plus
+// a launcher placed above the normal Navigator navigation instead of at the
+// bottom of the sidebar.
 func init() {
 	if authProxy == nil {
 		return
@@ -46,26 +70,23 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
+		body = stripAllCommerceAssets(body)
 
-		for _, asset := range []string{
-			"navigator-commerce-visual-cards-v7.css",
-			"navigator-commerce-visual-cards-v7.js",
-			"navigator-commerce-exact-cards-v8.css",
-			"navigator-commerce-exact-cards-v8.js",
-			"navigator-commerce-light-fix-v9.css",
-			"navigator-commerce-approved-v10.css",
-			"navigator-commerce-approved-v10.js",
-			"navigator-commerce-approved-all-v11.css",
-			"navigator-commerce-approved-all-v11.js",
-		} {
-			body = stripCommerceAsset(body, asset)
+		s, ok := sessionFromRequest(resp.Request)
+		isOwner := ok && s.Admin
+
+		if path == "/dashboard.html" && !isOwner {
+			head := `<style id="blisCommerceOwnerOnly">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
+			late := `<script>(function(){function hide(){document.querySelectorAll('#commerce,.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}hide();setTimeout(hide,250);setTimeout(hide,900);})();</script>`
+			body = bytes.Replace(body, []byte("</head>"), []byte(head+"</head>"), 1)
+			body = bytes.Replace(body, []byte("</body>"), []byte(late+"</body>"), 1)
+		} else if isOwner {
+			headAsset := `<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260825-owner15"><link rel="stylesheet" href="/navigator-commerce-approved-all-v11.css?v=20260825-owner15"><link rel="stylesheet" href="/navigator-commerce-owner-fix-v15.css?v=20260825-owner15">`
+			bodyAsset := `<script>window.__BLIS_COMMERCE_VISUAL_CARDS_V7=true;window.__BLIS_COMMERCE_EXACT_CARDS_V8=true;window.__BLIS_APPROVED_SERVICE_CARDS_V10=true;window.__BLIS_COMMERCE_APPROVED_STABLE_20260825=true;</script><script src="/navigator-commerce-safe-v3.js?v=20260825-owner15"></script><script src="/navigator-commerce-approved-all-v11.js?v=20260825-owner15"></script><script>(function(){function place(){var b=document.querySelector('[data-blis-commerce-open]');var nav=document.getElementById('nav');if(!b||!nav)return;b.classList.add('blis-commerce-owner-launch');if(b.nextElementSibling!==nav)nav.parentNode.insertBefore(b,nav);}function refresh(){place();if(window.BLISCommerceApprovedAllV11&&window.BLISCommerceApprovedAllV11.reset)window.BLISCommerceApprovedAllV11.reset();}setTimeout(refresh,100);setTimeout(place,350);setTimeout(place,1000);var side=document.querySelector('.side');if(side&&window.MutationObserver){new MutationObserver(function(){place()}).observe(side,{childList:true});}})();</script>`
+			body = bytes.Replace(body, []byte("</head>"), []byte(headAsset+"</head>"), 1)
+			body = bytes.Replace(body, []byte("</body>"), []byte(bodyAsset+"</body>"), 1)
 		}
 
-		headAsset := `<link rel="stylesheet" href="/navigator-commerce-approved-all-v11.css?v=20260825-v14-height1" data-blis-approved-v14="1">`
-		bodyAsset := `<script>window.__BLIS_COMMERCE_VISUAL_CARDS_V7=true;window.__BLIS_COMMERCE_EXACT_CARDS_V8=true;window.__BLIS_APPROVED_SERVICE_CARDS_V10=true;window.__BLIS_COMMERCE_APPROVED_STABLE_20260825=true;</script><script src="/navigator-commerce-approved-all-v11.js?v=20260825-v13-sharp1" data-blis-approved-v14="1"></script><script>setTimeout(function(){window.BLISCommerceApprovedAllV11&&window.BLISCommerceApprovedAllV11.reset&&window.BLISCommerceApprovedAllV11.reset()},180);</script>`
-
-		body = bytes.Replace(body, []byte("</head>"), []byte(headAsset+"</head>"), 1)
-		body = bytes.Replace(body, []byte("</body>"), []byte(bodyAsset+"</body>"), 1)
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
 		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
