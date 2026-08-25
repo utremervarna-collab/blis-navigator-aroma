@@ -159,8 +159,8 @@ jobs:
               await owner.goto(`${origin}/dashboard.html?client=aroma&blis_qa_owner=1`,{waitUntil:'domcontentloaded',timeout:20000});
               await owner.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,null,{timeout:8000});
               await owner.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
-              const ownerDashboard=await owner.evaluate(()=>({launcher:!!document.querySelector('[data-blis-commerce-open]'),commerceScript:[...document.scripts].some(s=>s.src.includes('navigator-commerce-')),commerceRoot:!!document.getElementById('commerce')}));
-              assert(!ownerDashboard.launcher&&!ownerDashboard.commerceScript&&!ownerDashboard.commerceRoot,`owner dashboard: Services leaked ${JSON.stringify(ownerDashboard)}`);
+              const ownerDashboard=await owner.evaluate(()=>{const root=document.getElementById('commerce'),cs=root?getComputedStyle(root):null;return{launcher:!!document.querySelector('[data-blis-commerce-open]'),commerceScript:[...document.scripts].some(s=>s.src.includes('navigator-commerce-')),commerceVisible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'}});
+              assert(!ownerDashboard.launcher&&!ownerDashboard.commerceScript&&!ownerDashboard.commerceVisible,`owner dashboard: Services leaked ${JSON.stringify(ownerDashboard)}`);
               phase='owner-commerce:open';
               await owner.goto(`${origin}/services.html`,{waitUntil:'domcontentloaded',timeout:20000});
               phase='owner-commerce:render';

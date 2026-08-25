@@ -101,7 +101,7 @@ jobs:
           ! grep -q 'src="/navigator-social-master.js' /tmp/varna-towers.html
           ! grep -q 'src="/navigator-digital-master.js' /tmp/varna-towers.html
           grep -q 'navigator-runtime-core-v1.js' /tmp/varna-towers.html
-          grep -q 'navigator-commerce-safe-v3.js' /tmp/varna-towers.html
+          ! grep -q 'navigator-commerce-' /tmp/varna-towers.html
 
       - name: Show diagnostic log on failure
         if: failure()
