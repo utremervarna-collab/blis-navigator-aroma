@@ -25,6 +25,7 @@ jobs:
       - name: Build Go application
         run: |
           set -euxo pipefail
+          BLIS_AUTH_PROXY_DISABLED=1 go test ./...
           go build -tags netgo -ldflags '-s -w' -o app .
 
       - name: Validate canonical static architecture
@@ -56,6 +57,8 @@ jobs:
           ! grep -q 'window.setTimeout=' static/navigator-stability-preload-v1.js
           node --check static/navigator-runtime-core-v1.js
           node --check static/navigator-reference.js
+          node --check static/navigator-architecture-v15.js
+          node --check static/navigator-module-lock-v1.js
           node --check static/navigator-curves.js
           node --check static/navigator-production-cleanup-v1.js
           node --check static/navigator-commerce-safe-v3.js

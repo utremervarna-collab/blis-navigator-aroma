@@ -1,4 +1,4 @@
-/* BLIS Navigator — canonical production router v8. Native links with in-app progressive navigation. */
+/* BLIS Navigator — canonical production router v9. Native links + production owner registry. */
 (function(){
 'use strict';
 if(window.__BLIS_REFERENCE_V8)return;window.__BLIS_REFERENCE_V8=true;
@@ -20,10 +20,7 @@ function renderUtility(id){if(window.BLISUtilityPages?.owns?.(id))return window.
 function renderRoute(id){id=canonical(id);try{
  if(id==='commerce'){if(window.BLISCommerceSafe?.render)return window.BLISCommerceSafe.render();return fallback(id)}
  if(id==='overview'){if(window.BLISOverviewMaster?.render)return window.BLISOverviewMaster.render();return fallback(id,'Общият преглед се инициализира.')}
- if(id==='live'){if(typeof window.BLISLiveMount==='function')return window.BLISLiveMount();return fallback(id)}
- if(id==='social'){if(typeof window.BLISSocialSignalsRender==='function')return window.BLISSocialSignalsRender();return fallback(id)}
- if(id==='digital'){if(window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();return fallback(id)}
- if(id==='reputation'){if(window.BLISReputation?.render)return window.BLISReputation.render();return fallback(id)}
+ if(window.BLISProductionOwners?.owns?.(id))return window.BLISProductionOwners.render(id)
  if(id==='market'){if(window.BLISPerceptionMap?.mount)return window.BLISPerceptionMap.mount();return fallback(id)}
  if(id==='competition'){if(window.BLISCompetitionMasterV5?.render){const r=window.BLISCompetitionMasterV5.render();try{window.BLISCompetitionIntelligenceV9?.enhance?.()}catch(_){}try{window.BLISCompetitionEnvironmentV10?.render?.()}catch(_){}try{window.BLISCompetitionPageV11?.apply?.()}catch(_){}try{window.BLISCompetitionPageV12?.enhance?.()}catch(_){}document.body.classList.add('blis-competition-ready');return r}return fallback(id)}
  if(['reports','history','profile','settings','help'].includes(id))return renderUtility(id);

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"encoding/xml"
@@ -1822,6 +1823,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if !strings.Contains(path, "..") && (strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") || strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp")) {
 		b, err := staticFS.ReadFile("static/" + path)
 		if err == nil {
+			if path == "dashboard.html" {
+				resp := &http.Response{Request: r, Body: io.NopCloser(bytes.NewReader(b)), Header: make(http.Header)}
+				if err := repairNavigatorClientResponse(resp); err == nil {
+					if repaired, readErr := io.ReadAll(resp.Body); readErr == nil {
+						b = repaired
+					}
+				}
+			}
 			ct := http.DetectContentType(b)
 			switch {
 			case strings.HasSuffix(path, ".css"):

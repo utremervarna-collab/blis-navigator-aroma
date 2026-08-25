@@ -61,16 +61,21 @@ jobs:
                 p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource/i.test(m.text()))errs.push('CONSOLE '+m.text())});
                 p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
                 await p.goto(`${origin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:20000});
-                await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,{timeout:15000});
+                await p.waitForFunction(()=>document.querySelectorAll('#nav [data-page]').length===12,{timeout:15000});
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,{timeout:15000});
                 const boot=await p.evaluate(()=>({
                   client:document.body.dataset.client,
                   name:document.querySelector('.client-brand-name')?.textContent||'',
-                  nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
+                  nav:[...document.querySelectorAll('#nav [data-page]')].map(x=>x.dataset.page),
                   runtimeCore:[...document.scripts].some(s=>s.src.includes('navigator-runtime-core-v1.js')),
                   legacyBridge:[...document.scripts].some(s=>s.src.includes('navigator-runtime-bridge.js')),
                   pointEnhancer:[...document.scripts].some(s=>s.src.includes('navigator-chart-points.js')),
                   architectureV15:[...document.scripts].some(s=>s.src.includes('navigator-architecture-v15.js')),
+                  productionOwners:!!window.BLISProductionOwners,
+                  liveOwner:window.BLIS_LOCKED_MODULES?.live?.owner||'',
+                  socialOwner:window.BLIS_LOCKED_MODULES?.social?.owner||'',
+                  legacyLive:[...document.scripts].some(s=>s.src.includes('navigator-live-master.js')),
+                  legacySocial:[...document.scripts].some(s=>s.src.includes('navigator-social-master.js')),
                   stabilityMode:window.BLISStabilityStats?.mode||'',
                   commerceLauncher:!!document.querySelector('[data-blis-commerce-open]')
                 }));
@@ -80,9 +85,12 @@ jobs:
                 assert(boot.runtimeCore,`${client}: runtime core missing`);
                 assert(!boot.legacyBridge,`${client}: legacy runtime bridge loaded`);
                 assert(!boot.pointEnhancer,`${client}: global chart-point enhancer loaded`);
-                assert(!boot.architectureV15,`${client}: legacy architecture V15 loaded`);
+                assert(boot.architectureV15,`${client}: production Architecture V15 missing`);
+                assert(boot.productionOwners,`${client}: production owner registry missing`);
+                assert(boot.liveOwner==='BLISArchitectureV15'&&boot.socialOwner==='BLISArchitectureV15',`${client}: wrong locked owners`);
+                assert(!boot.legacyLive&&!boot.legacySocial,`${client}: retired Live/Signals renderer loaded`);
                 assert(boot.stabilityMode==='event-driven',`${client}: stability preload is not event-driven (${boot.stabilityMode})`);
-                assert(boot.commerceLauncher,`${client}: Services and Payment launcher missing`);
+                assert(!boot.commerceLauncher,`${client}: owner-only Services launcher leaked into client dashboard`);
 
                 for(const id of pages){
                   await p.evaluate(id=>window.refGo(id),id);
@@ -107,6 +115,7 @@ jobs:
                   assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed page ${JSON.stringify(x)}`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
                   assert(x.charts.every(z=>z.w>=70&&z.h>=30),`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.charts.filter(z=>z.w<70||z.h<30))}`);
+                  if(id==='live'||id==='social'){const owner=await p.evaluate(x=>document.getElementById(x)?.dataset.blisProductionOwner||'',id);assert(owner==='BLISArchitectureV15',`${client}/${id}: wrong production owner ${owner}`);}
                 }
 
                 await p.evaluate(()=>window.BLISCommerceSafe.open());
