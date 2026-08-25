@@ -40,6 +40,16 @@ func navigatorDashboardTarget(r *http.Request) string {
 	return "/dashboard.html?client=" + url.QueryEscape(slug) + "&page=overview"
 }
 
+// Commerce is an owner/admin workspace. Catalogue pages, code and artwork are
+// deliberately unavailable to anonymous visitors and client sessions.
+func commerceOwnerOnlyPath(path string) bool {
+	path = strings.TrimSpace(path)
+	return path == "/services.html" || path == "/services" ||
+		strings.HasPrefix(path, "/navigator-commerce-") ||
+		strings.HasPrefix(path, "/service-cards/") ||
+		path == "/service-cards-v10.zip"
+}
+
 // Bootstrap exactly one public gateway in front of the internal Navigator engine.
 // The gateway keeps the existing client access rules, but the main Navigator has
 // its own explicit admin entry and never restores a remembered client profile.
@@ -102,6 +112,17 @@ func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
 
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+
+	// Services & Payment belongs only to the owner/admin session. A public URL or
+	// a normal client login receives a 404, including direct attempts to load its
+	// JS/CSS/card assets.
+	if commerceOwnerOnlyPath(path) {
+		s, ok := sessionFromRequest(r)
+		if !ok || !s.Admin {
+			http.NotFound(w, r)
+			return
+		}
+	}
 
 	// The main Navigator is intentionally separate from every client profile.
 	// A valid existing admin session opens it directly. Otherwise the protected
