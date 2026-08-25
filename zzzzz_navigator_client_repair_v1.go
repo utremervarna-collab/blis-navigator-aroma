@@ -43,10 +43,10 @@ func init() {
 		// from retaining the previous dead-button navigation implementation.
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.js?v=20260824-router3`),
-			[]byte(`/navigator-reference.js?v=20260825-router7-native1`), -1)
+			[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`), -1)
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.js?v=20260825-router6`),
-			[]byte(`/navigator-reference.js?v=20260825-router7-native1`), -1)
+			[]byte(`/navigator-reference.js?v=20260825-router8-progressive1`), -1)
 		body = bytes.Replace(body,
 			[]byte(`/navigator-reference.css?v=20260816-1`),
 			[]byte(`/navigator-reference.css?v=20260825-native1`), -1)
