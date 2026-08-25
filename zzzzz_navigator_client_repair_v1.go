@@ -21,6 +21,7 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
+		}
 		if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
 			return nil
 		}
@@ -36,19 +37,19 @@ func init() {
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.css")
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.js")
 
-		headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-clientrepair1">
-<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-clientrepair1">
-<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-clientrepair1">
+		headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-clientrepair2">
+<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-clientrepair2">
+<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-clientrepair2">
 <style id="blisCommerceLauncherRemoved">.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
 
-		bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-reputation-master.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-competition-master-v5.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-competition-intelligence-v9.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-competition-environment-v10.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-competition-page-v11.js?v=20260825-clientrepair1"></script>
-<script src="/navigator-competition-page-v12.js?v=20260825-clientrepair1"></script>
+		bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-reputation-master.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-competition-master-v5.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-competition-intelligence-v9.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-competition-environment-v10.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-competition-page-v11.js?v=20260825-clientrepair2"></script>
+<script src="/navigator-competition-page-v12.js?v=20260825-clientrepair2"></script>
 <script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
@@ -57,7 +58,7 @@ func init() {
   window.addEventListener('blis:periodchange',function(){requestAnimationFrame(removeCommerceLauncher)});
 })();</script>`
 
-		if !bytes.Contains(body, []byte("20260825-clientrepair1")) {
+		if !bytes.Contains(body, []byte("20260825-clientrepair2")) {
 			body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 			body = bytes.Replace(body, []byte("</body>"), []byte(bodyAssets+"</body>"), 1)
 		}
