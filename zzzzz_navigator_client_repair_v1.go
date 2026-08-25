@@ -52,6 +52,9 @@ func assembleNavigatorDashboard(body []byte, hideCommerce bool) []byte {
 	body = bytes.Replace(body,
 		[]byte(`/navigator-reference.css?v=20260816-1`),
 		[]byte(`/navigator-reference.css?v=20260825-native1`), -1)
+	body = bytes.Replace(body,
+		[]byte(`/navigator-runtime-core-v1.js?v=20260824-core3`),
+		[]byte(`/navigator-runtime-core-v1.js?v=20260825-core6-noowners1`), -1)
 
 	body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.css")
 	body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.js")

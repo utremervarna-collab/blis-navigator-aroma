@@ -51,6 +51,9 @@ jobs:
           ! grep -q 'src="/navigator-runtime-bridge.js' static/dashboard.html
           ! grep -q 'src="/navigator-chart-points.js' static/dashboard.html
           ! grep -q 'navigator-architecture-v15.js' static/navigator-runtime-core-v1.js
+          ! grep -q 'navigator-social-bootstrap.js' static/navigator-runtime-core-v1.js
+          ! grep -q 'navigator-social-interactive.js' static/navigator-runtime-core-v1.js
+          ! grep -q 'navigator-reputation-bootstrap.js' static/navigator-runtime-core-v1.js
           ! grep -q 'setInterval' static/navigator-runtime-core-v1.js
           ! grep -q 'setInterval' static/navigator-production-cleanup-v1.js
           ! grep -q 'MutationObserver' static/navigator-production-cleanup-v1.js
@@ -77,7 +80,7 @@ jobs:
           done
           curl -fsS http://127.0.0.1:10000/api/health | tee /tmp/health.json
           curl -fsS http://127.0.0.1:10000/api/clients | tee /tmp/clients.json
-          for c in aroma bolyarka astor-garden mollox; do
+          for c in aroma bolyarka astor-garden mollox varna-towers; do
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/dashboard" >/tmp/$c-dashboard.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/sources" >/tmp/$c-sources.json
             curl -fsS "http://127.0.0.1:10000/api/clients/$c/data-quality" >/tmp/$c-quality.json
