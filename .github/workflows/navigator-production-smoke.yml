@@ -150,7 +150,7 @@ jobs:
                 await p.close();
               }
 
-              phase='owner-commerce:open';
+              phase='owner-dashboard:no-services';
               console.log('SMOKE_PHASE',phase);
               const owner=await browser.newPage({viewport:{width:1440,height:1000}});
               const ownerErrs=[];
@@ -159,10 +159,12 @@ jobs:
               await owner.goto(`${origin}/dashboard.html?client=aroma&blis_qa_owner=1`,{waitUntil:'domcontentloaded',timeout:20000});
               await owner.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,null,{timeout:8000});
               await owner.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
-              await owner.waitForFunction(()=>!!document.querySelector('[data-blis-commerce-open]'),null,{timeout:8000});
+              const ownerDashboard=await owner.evaluate(()=>({launcher:!!document.querySelector('[data-blis-commerce-open]'),commerceScript:[...document.scripts].some(s=>s.src.includes('navigator-commerce-')),commerceRoot:!!document.getElementById('commerce')}));
+              assert(!ownerDashboard.launcher&&!ownerDashboard.commerceScript&&!ownerDashboard.commerceRoot,`owner dashboard: Services leaked ${JSON.stringify(ownerDashboard)}`);
+              phase='owner-commerce:open';
+              await owner.goto(`${origin}/services.html`,{waitUntil:'domcontentloaded',timeout:20000});
               phase='owner-commerce:render';
-              await owner.evaluate(()=>window.BLISCommerceSafe.open());
-              await owner.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce'&&document.getElementById('commerceBody')?.innerText.includes('Пакет Анализ'),null,{timeout:8000});
+              await owner.waitForFunction(()=>document.getElementById('commerceBody')?.innerText.includes('Пакет Анализ'),null,{timeout:8000});
               const subscriptions=await owner.evaluate(()=>{const root=document.getElementById('commerce'),cs=getComputedStyle(root);return{text:document.getElementById('commerceBody')?.innerText||'',tabs:document.querySelectorAll('[data-bc3-tab]').length,requests:document.querySelectorAll('[data-bc3-request]').length,overflow:document.documentElement.scrollWidth-window.innerWidth,visible:cs.display!=='none'&&cs.visibility!=='hidden'}});
               assert(subscriptions.visible&&subscriptions.text.includes('390')&&subscriptions.text.includes('750'),'owner: subscription catalogue missing');
               assert(subscriptions.tabs>=6&&subscriptions.requests>=4,'owner: subscription controls missing');
@@ -197,5 +199,5 @@ jobs:
             const state='${{ job.status }}'==='success'?'success':'failure';
             let detail='';
             try{detail=fs.readFileSync('/tmp/navigator-smoke-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'5 clients, 12 pages and commerce passed':'Navigator production smoke failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'5 clients, 12 pages and separate services passed':'Navigator production smoke failed'});
             if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`navigator-smoke:${detail}`,description:'First browser smoke failure'});}

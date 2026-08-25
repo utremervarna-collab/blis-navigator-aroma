@@ -7,12 +7,13 @@ import (
 	"strconv"
 )
 
-// Canonical client-dashboard assembly.
+// Canonical dashboard assembly.
 // Approved modules have one renderer only; legacy page renderers are removed
 // from the served dashboard so later changes cannot overlay locked pages.
-func assembleNavigatorDashboard(body []byte, hideCommerce bool) []byte {
+func assembleNavigatorDashboard(body []byte) []byte {
 	// Final production normalization: remove every competing bootstrap/owner
 	// before injecting one deterministic runtime for each route.
+	body = stripAllCommerceAssets(body)
 	body = stripCommerceAsset(body, "app.js")
 	body = stripCommerceAsset(body, "navigator-data-core-v2.js")
 	body = stripCommerceAsset(body, "navigator-architecture-v15.js")
@@ -99,9 +100,7 @@ func assembleNavigatorDashboard(body []byte, hideCommerce bool) []byte {
 <link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-stablev15">
 <link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-stablev15">
 <style id="blisLockedVisibilityRelease">.page{visibility:visible!important}</style>`
-		if hideCommerce {
-			headAssets += `<style id="blisCommerceFinalGuard">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
-		}
+		headAssets += `<style id="blisCommerceFinalGuard">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
 		body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 	}
 
@@ -116,14 +115,12 @@ func assembleNavigatorDashboard(body []byte, hideCommerce bool) []byte {
 <script src="/navigator-competition-page-v11.js?v=20260825-stablev15"></script>
 <script src="/navigator-competition-page-v12.js?v=20260825-stablev15"></script>
 <script src="/navigator-module-lock-v1.js?v=20260825-stablev15"></script>`
-		if hideCommerce {
-			bodyAssets += `<script>(function(){
+		bodyAssets += `<script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
   document.addEventListener('DOMContentLoaded',removeCommerceLauncher,{once:true});
   window.addEventListener('blis:clientdata',function(){requestAnimationFrame(removeCommerceLauncher)});
 })();</script>`
-		}
 		body = bytes.Replace(body, []byte("</body>"), []byte(bodyAssets+"</body>"), 1)
 	}
 
@@ -151,8 +148,7 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		s, ok := sessionFromRequest(resp.Request)
-		body = assembleNavigatorDashboard(body, !(ok && s.Admin))
+		body = assembleNavigatorDashboard(body)
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
 		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))

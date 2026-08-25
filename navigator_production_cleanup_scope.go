@@ -60,12 +60,12 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
     if path == "/dashboard.html" && !bytes.Contains(body, []byte("/navigator-production-cleanup-v1.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-production-cleanup-v1.css?v=20260824-clean3"><script src="/navigator-production-cleanup-v1.js?v=20260824-clean3"></script>`)...)
     }
-    if !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
+    if path == "/services.html" && !bytes.Contains(body, []byte("/navigator-commerce-safe-v3.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260824-commerce3"><script src="/navigator-commerce-safe-v3.js?v=20260824-commerce3"></script>`)...)
     }
-    if !bytes.Contains(body, []byte("/navigator-commerce-light-cards-v9.js")) {
+    if path == "/services.html" && !bytes.Contains(body, []byte("/navigator-commerce-light-cards-v9.js")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-cards-v9.css?v=20260824-light9"><link rel="stylesheet" href="/navigator-commerce-light-fix-v9.css?v=20260824-light9"><script src="/navigator-commerce-light-cards-v9.js?v=20260824-light9"></script>`)...)
-    } else if !bytes.Contains(body, []byte("/navigator-commerce-light-fix-v9.css")) {
+    } else if path == "/services.html" && !bytes.Contains(body, []byte("/navigator-commerce-light-fix-v9.css")) {
         tags = append(tags, []byte(`<link rel="stylesheet" href="/navigator-commerce-light-fix-v9.css?v=20260824-light9">`)...)
     }
 

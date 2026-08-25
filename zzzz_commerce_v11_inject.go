@@ -42,10 +42,8 @@ func stripAllCommerceAssets(body []byte) []byte {
 	return body
 }
 
-// Services & Payment is an owner workspace. Client dashboard responses receive
-// no commerce code at all. The owner receives one deterministic renderer plus
-// a launcher placed above the normal Navigator navigation instead of at the
-// bottom of the sidebar.
+// Services & Payment remains a separate owner workspace. Dashboard responses
+// never receive commerce code or a commerce launcher.
 func init() {
 	if authProxy == nil {
 		return
@@ -72,15 +70,12 @@ func init() {
 		_ = resp.Body.Close()
 		body = stripAllCommerceAssets(body)
 
-		s, ok := sessionFromRequest(resp.Request)
-		isOwner := ok && s.Admin
-
-		if path == "/dashboard.html" && !isOwner {
+		if path == "/dashboard.html" {
 			head := `<style id="blisCommerceOwnerOnly">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
 			late := `<script>(function(){function hide(){document.querySelectorAll('#commerce,.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}hide();setTimeout(hide,250);setTimeout(hide,900);})();</script>`
 			body = bytes.Replace(body, []byte("</head>"), []byte(head+"</head>"), 1)
 			body = bytes.Replace(body, []byte("</body>"), []byte(late+"</body>"), 1)
-		} else if isOwner {
+		} else if s, ok := sessionFromRequest(resp.Request); ok && s.Admin {
 			headAsset := `<link rel="stylesheet" href="/navigator-commerce-safe-v3.css?v=20260825-owner15"><link rel="stylesheet" href="/navigator-commerce-approved-all-v11.css?v=20260825-owner15"><link rel="stylesheet" href="/navigator-commerce-owner-fix-v15.css?v=20260825-owner15">`
 			bodyAsset := `<script>window.__BLIS_COMMERCE_VISUAL_CARDS_V7=true;window.__BLIS_COMMERCE_EXACT_CARDS_V8=true;window.__BLIS_APPROVED_SERVICE_CARDS_V10=true;window.__BLIS_COMMERCE_APPROVED_STABLE_20260825=true;</script><script src="/navigator-commerce-safe-v3.js?v=20260825-owner15"></script><script src="/navigator-commerce-approved-all-v11.js?v=20260825-owner15"></script><script>(function(){function place(){var b=document.querySelector('[data-blis-commerce-open]');var nav=document.getElementById('nav');if(!b||!nav)return;b.classList.add('blis-commerce-owner-launch');if(b.nextElementSibling!==nav)nav.parentNode.insertBefore(b,nav);}function refresh(){place();if(window.BLISCommerceApprovedAllV11&&window.BLISCommerceApprovedAllV11.reset)window.BLISCommerceApprovedAllV11.reset();}setTimeout(refresh,100);setTimeout(place,350);setTimeout(place,1000);var side=document.querySelector('.side');if(side&&window.MutationObserver){new MutationObserver(function(){place()}).observe(side,{childList:true});}})();</script>`
 			body = bytes.Replace(body, []byte("</head>"), []byte(headAsset+"</head>"), 1)
