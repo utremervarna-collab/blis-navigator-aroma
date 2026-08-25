@@ -1,17 +1,17 @@
-/* BLIS Navigator — production owner registry v2.
-   Approved modules have one renderer and the router is the only render coordinator. */
+/* BLIS Navigator — locked-module guard v1.
+   Approved modules have one owner and cannot be overwritten at runtime. */
 (function(){
 'use strict';
 if(window.__BLIS_MODULE_LOCK_V1)return;window.__BLIS_MODULE_LOCK_V1=true;
 
 const MANIFEST=Object.freeze({
-  live:Object.freeze({version:'architecture-v15-20260825-owner2',owner:'BLISArchitectureV15'}),
-  social:Object.freeze({version:'architecture-v15-20260825-owner2',owner:'BLISArchitectureV15'}),
+  live:Object.freeze({version:'live-master-20260818-confirmed2205',owner:'BLISLiveMount'}),
+  social:Object.freeze({version:'social-master-v7',owner:'BLISSocialSignalsRender'}),
   digital:Object.freeze({version:'digital-radar-20260819-radar2',owner:'BLISDigitalRadar'}),
   reputation:Object.freeze({version:'reputation-master+3d-v40',owner:'BLISReputation'})
 });
 window.BLIS_LOCKED_MODULES=MANIFEST;
-document.documentElement.dataset.blisModuleLock='v2';
+document.documentElement.dataset.blisModuleLock='v1';
 
 function installCSS(){
   if(document.getElementById('blisLockedModuleCSS'))return;
@@ -29,49 +29,35 @@ function removeLegacyReputation(){
 function normalizeNav(){
   const labels={overview:'Общ преглед',live:'Live Monitoring',social:'Сигнали',digital:'Дигитална видимост',reputation:'Репутация',market:'Нагласи',competition:'Конкуренти',reports:'Месечни доклади',history:'История',profile:'Клиентски профил',settings:'Настройки',help:'Помощ'};
   const nav=document.getElementById('nav');if(!nav)return;
-  Object.entries(labels).forEach(function(pair){const b=nav.querySelector(`[data-page="${pair[0]}"]`),t=b?.querySelector('.navtxt')||b?.querySelector('span:last-child');if(t&&t.textContent!==pair[1])t.textContent=pair[1]});
+  Object.entries(labels).forEach(function(pair){const b=nav.querySelector(`button[data-page="${pair[0]}"]`),t=b?.querySelector('.navtxt')||b?.querySelector('span:last-child');if(t&&t.textContent!==pair[1])t.textContent=pair[1]});
 }
-function markOwner(id){const page=document.getElementById(id),spec=MANIFEST[id];if(page&&spec){page.dataset.blisProductionOwner=spec.owner;page.dataset.blisProductionVersion=spec.version}}
-const REGISTRY=Object.freeze({
-  manifest:MANIFEST,
-  owns:function(id){return Object.prototype.hasOwnProperty.call(MANIFEST,id)},
-  render:function(id){
-    if(!this.owns(id))throw new Error('No locked production owner for route: '+id);
-    let result;
-    if(id==='live'||id==='social'){
-      if(!window.BLISArchitectureV15?.render)throw new Error('BLISArchitectureV15 is unavailable');
-      result=window.BLISArchitectureV15.render(id);
-    }else if(id==='digital'){
-      if(!window.BLISDigitalRadar?.render)throw new Error('BLISDigitalRadar is unavailable');
-      result=window.BLISDigitalRadar.render();
-    }else if(id==='reputation'){
-      if(!window.BLISReputation?.render)throw new Error('BLISReputation is unavailable');
-      removeLegacyReputation();result=window.BLISReputation.render();requestAnimationFrame(function(){window.BLISReputationTotem3DV39?.mount?.();removeLegacyReputation()});
-    }
-    markOwner(id);return result;
-  }
-});
-window.BLISProductionOwners=REGISTRY;
-function settle(){installCSS();normalizeNav();removeLegacyReputation()}
+function renderLocked(id){
+  try{
+    if(id==='live'&&typeof window.BLISLiveMount==='function')return window.BLISLiveMount();
+    if(id==='social'&&typeof window.BLISSocialSignalsRender==='function')return window.BLISSocialSignalsRender();
+    if(id==='digital'&&window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();
+    if(id==='reputation'&&window.BLISReputation?.render){removeLegacyReputation();const r=window.BLISReputation.render();requestAnimationFrame(function(){window.BLISReputationTotem3DV39?.mount?.();removeLegacyReputation()});return r;}
+  }catch(e){console.error('BLIS locked renderer',id,e)}
+}
+function active(){return document.querySelector('.page.active')?.id||'overview'}
+function settle(){installCSS();normalizeNav();removeLegacyReputation();const id=active();if(MANIFEST[id])renderLocked(id)}
 function lockGlobal(name,value){
   if(value==null)return;
   try{Object.defineProperty(window,name,{configurable:false,enumerable:true,get:function(){return value},set:function(){console.warn('BLIS locked module blocked overwrite:',name)}})}catch(_){try{window[name]=value}catch(__){}}
 }
-function blockLegacyGlobal(name){
-  try{Object.defineProperty(window,name,{configurable:false,enumerable:false,get:function(){return undefined},set:function(){console.warn('BLIS retired renderer blocked:',name)}})}catch(_){try{window[name]=undefined}catch(__){}}
-}
 function seal(){
-  lockGlobal('BLISProductionOwners',REGISTRY);
-  lockGlobal('BLISArchitectureV15',window.BLISArchitectureV15);
+  lockGlobal('BLISLiveMount',window.BLISLiveMount);
+  lockGlobal('BLISSocialSignalsRender',window.BLISSocialSignalsRender);
   lockGlobal('BLISDigitalRadar',window.BLISDigitalRadar);
   lockGlobal('BLISReputation',window.BLISReputation);
-  blockLegacyGlobal('BLISLiveMount');
-  blockLegacyGlobal('BLISSocialSignalsRender');
   if(window.__BLIS_CANONICAL_REFGO)lockGlobal('refGo',window.__BLIS_CANONICAL_REFGO);
 }
 function init(){
   installCSS();removeLegacyReputation();normalizeNav();seal();settle();
   const nav=document.getElementById('nav');if(nav)new MutationObserver(function(){normalizeNav()}).observe(nav,{childList:true,subtree:true,characterData:true});
+  document.addEventListener('click',function(e){const b=e.target.closest?.('#nav button[data-page]');if(!b)return;const id=b.dataset.page;if(MANIFEST[id])requestAnimationFrame(function(){renderLocked(id)})},true);
+  window.addEventListener('blis:clientdata',function(){requestAnimationFrame(settle)});
+  window.addEventListener('blis:periodchange',function(){requestAnimationFrame(settle)});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
