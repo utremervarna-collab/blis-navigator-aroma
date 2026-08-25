@@ -330,6 +330,10 @@ func mergeSeedMissing() {
 			store.Clients[k] = fresh
 			continue
 		}
+		if k == "mollox" {
+			syncMolloxProfile(cur, fresh)
+			continue
+		}
 		existing := map[string]bool{}
 		for _, src := range cur.Sources {
 			existing[src.Key] = true
@@ -353,6 +357,7 @@ func ensureStore() {
 	if b, err := os.ReadFile(dataPath); err == nil {
 		if json.Unmarshal(b, &store) == nil && len(store.Clients) > 0 {
 			mergeSeedMissing()
+			saveStore()
 			return
 		}
 	}

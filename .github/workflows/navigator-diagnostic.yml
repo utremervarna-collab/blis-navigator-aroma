@@ -90,6 +90,20 @@ jobs:
             node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('/tmp/$c-sources.json'));if(!Array.isArray(s)||!s.length)process.exit(1)"
             node -e "const fs=require('fs');const h=JSON.parse(fs.readFileSync('/tmp/$c-history.json'));if(!Array.isArray(h)||!h.length)process.exit(1)"
           done
+          node - <<'NODE'
+          const fs=require('fs');
+          const dashboard=JSON.parse(fs.readFileSync('/tmp/mollox-dashboard.json'));
+          const sources=JSON.parse(fs.readFileSync('/tmp/mollox-sources.json'));
+          const expected=['MOLLOX България','Хигиенно-медицинска индустрия','Hagleitner България','Булклийн','PaChico','Албис','Calvatis Hygiene Bulgaria (CALGONIT)'];
+          const actual=dashboard.competitors.map(x=>x.name);
+          if(JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error(`Unexpected MOLLOX competitors: ${actual.join(', ')}`);
+          const sourceKeys=sources.filter(x=>x.key.startsWith('cmp_')).map(x=>x.key).sort();
+          const expectedKeys=['cmp_albis','cmp_bulclean','cmp_calvatis','cmp_hagleitner','cmp_hmi','cmp_pachico'];
+          if(JSON.stringify(sourceKeys)!==JSON.stringify(expectedKeys)) throw new Error(`Unexpected MOLLOX competitor sources: ${sourceKeys.join(', ')}`);
+          for(const legacy of ['Katrin Max / BePure','Hygimarket','Euroshine']){
+            if(JSON.stringify({dashboard,sources}).includes(legacy)) throw new Error(`Legacy MOLLOX competitor remains: ${legacy}`);
+          }
+          NODE
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=varna-towers' >/tmp/varna-towers.html
           grep -q 'varna-towers-runtime.js' /tmp/varna-towers.html
           grep -q 'navigator-data-core-v2.js?v=20260825-stablev15' /tmp/varna-towers.html
