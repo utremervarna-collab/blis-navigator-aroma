@@ -1,15 +1,16 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "locked_at": "2026-08-25",
   "policy": "A locked module may change only after explicit user approval for that module.",
   "router": {
-    "owner": "navigator-frozen-router-v1.js",
-    "state": "LOCKED"
+    "owner": "navigator-reference.js",
+    "state": "LOCKED",
+    "rule": "single route owner; no secondary navigation builders or refGo wrappers may replace it"
   },
   "runtime": {
-    "owner": "navigator-frozen-runtime-v1.js",
+    "owner": "navigator-data-core-v2.js",
     "state": "LOCKED",
-    "rule": "data/client synchronization only; no page rendering, no polling, no dynamic page loaders"
+    "rule": "data/client synchronization only; no page rendering, no navigation building, no page overlays"
   },
   "modules": {
     "live": {
@@ -40,6 +41,9 @@
     }
   },
   "forbidden_global_overlays": [
+    "app.js",
+    "navigator-frozen-router-v1.js",
+    "navigator-frozen-runtime-v1.js",
     "navigator-final-fixes-v16.js",
     "navigator-final-paint-guard-v17.js",
     "navigator-social-bootstrap.js",
