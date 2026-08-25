@@ -18,7 +18,7 @@ jobs:
         run: |
           set -e
           BASE="https://blis-navigator-aroma.onrender.com"
-          for CLIENT in aroma bolyarka astor-garden; do
+          for CLIENT in aroma bolyarka astor-garden mollox varna-towers; do
             echo "Refreshing $CLIENT"
             curl --fail --retry 5 --retry-delay 10 --max-time 240 \
               -X POST "$BASE/api/clients/$CLIENT/refresh" \
@@ -43,7 +43,7 @@ jobs:
           p='data/live_store.json'
           d=json.load(open(p,encoding='utf-8'))
           clients=d.get('clients',{})
-          for slug in ('aroma','bolyarka','astor-garden'):
+          for slug in ('aroma','bolyarka','astor-garden','mollox','varna-towers'):
               assert slug in clients, f'{slug} missing from exported store'
               print(slug, 'snapshots=',len(clients[slug].get('snapshots',[])), 'observations=',len(clients[slug].get('observations',[])))
           PY
