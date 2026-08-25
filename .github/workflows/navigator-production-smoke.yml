@@ -137,26 +137,8 @@ jobs:
                   assert(x.charts.every(z=>z.w>=70&&z.h>=30),`${client}/${id}: collapsed analytical SVG ${JSON.stringify(x.charts.filter(z=>z.w<70||z.h<30))}`);
                 }
 
-                phase=`${client}:commerce:open`;
-                await p.evaluate(()=>window.BLISCommerceSafe.open());
-                await p.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce'&&document.getElementById('commerceBody')?.innerText.includes('Пакет Анализ'),{timeout:8000});
-                const subscriptions=await p.evaluate(()=>({
-                  text:document.getElementById('commerceBody')?.innerText||'',
-                  tabs:document.querySelectorAll('[data-bc3-tab]').length,
-                  requests:document.querySelectorAll('[data-bc3-request]').length,
-                  overflow:document.documentElement.scrollWidth-window.innerWidth
-                }));
-                assert(subscriptions.text.includes('390')&&subscriptions.text.includes('750'),`${client}: subscription prices missing`);
-                assert(subscriptions.tabs>=6,`${client}: commerce tabs missing`);
-                assert(subscriptions.requests>=4,`${client}: subscription cards missing`);
-                assert(subscriptions.overflow<=8,`${client}/commerce: overflow ${subscriptions.overflow}`);
-                await p.click('[data-bc3-tab="oneoff"]');
-                await p.waitForFunction(()=>document.getElementById('commerceBody')?.innerText.includes('Репутационен анализ'));
-                const oneoff=await p.evaluate(()=>({requests:document.querySelectorAll('[data-bc3-request]').length,text:document.getElementById('commerceBody')?.innerText||''}));
-                assert(oneoff.requests>=8,`${client}: one-off services missing`);
-                assert(oneoff.text.includes('350')&&oneoff.text.includes('550')&&oneoff.text.includes('650'),`${client}: one-off prices missing`);
-                await p.click('[data-bc3-tab="addons"]');
-                await p.waitForFunction(()=>document.querySelectorAll('[data-bc3-addon-request]').length>=8);
+                const clientCommerce=await p.evaluate(()=>{const root=document.getElementById('commerce'),cs=root?getComputedStyle(root):null;return{launcher:!!document.querySelector('[data-blis-commerce-open]'),visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'}});
+                assert(!clientCommerce.launcher&&!clientCommerce.visible,`${client}: owner commerce leaked into client dashboard ${JSON.stringify(clientCommerce)}`);
 
                 phase=`${client}:reputation:stability`;
                 await p.evaluate(()=>window.refGo('reputation'));
@@ -167,6 +149,32 @@ jobs:
                 assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
                 await p.close();
               }
+
+              phase='owner-commerce:open';
+              console.log('SMOKE_PHASE',phase);
+              const owner=await browser.newPage({viewport:{width:1440,height:1000}});
+              const ownerErrs=[];
+              owner.on('pageerror',e=>ownerErrs.push('PAGEERROR '+e.message));
+              owner.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource/i.test(m.text()))ownerErrs.push('CONSOLE '+m.text())});
+              await owner.goto(`${origin}/dashboard.html?client=aroma&blis_qa_owner=1`,{waitUntil:'domcontentloaded',timeout:20000});
+              await owner.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,null,{timeout:8000});
+              await owner.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
+              await owner.waitForFunction(()=>!!document.querySelector('[data-blis-commerce-open]'),null,{timeout:8000});
+              phase='owner-commerce:render';
+              await owner.evaluate(()=>window.BLISCommerceSafe.open());
+              await owner.waitForFunction(()=>document.querySelector('.page.active')?.id==='commerce'&&document.getElementById('commerceBody')?.innerText.includes('Пакет Анализ'),null,{timeout:8000});
+              const subscriptions=await owner.evaluate(()=>{const root=document.getElementById('commerce'),cs=getComputedStyle(root);return{text:document.getElementById('commerceBody')?.innerText||'',tabs:document.querySelectorAll('[data-bc3-tab]').length,requests:document.querySelectorAll('[data-bc3-request]').length,overflow:document.documentElement.scrollWidth-window.innerWidth,visible:cs.display!=='none'&&cs.visibility!=='hidden'}});
+              assert(subscriptions.visible&&subscriptions.text.includes('390')&&subscriptions.text.includes('750'),'owner: subscription catalogue missing');
+              assert(subscriptions.tabs>=6&&subscriptions.requests>=4,'owner: subscription controls missing');
+              assert(subscriptions.overflow<=8,`owner/commerce: overflow ${subscriptions.overflow}`);
+              await owner.click('[data-bc3-tab="oneoff"]');
+              await owner.waitForFunction(()=>document.getElementById('commerceBody')?.innerText.includes('Репутационен анализ'),null,{timeout:8000});
+              const oneoff=await owner.evaluate(()=>({requests:document.querySelectorAll('[data-bc3-request]').length,text:document.getElementById('commerceBody')?.innerText||''}));
+              assert(oneoff.requests>=8&&oneoff.text.includes('350')&&oneoff.text.includes('550')&&oneoff.text.includes('650'),'owner: one-off catalogue missing');
+              await owner.click('[data-bc3-tab="addons"]');
+              await owner.waitForFunction(()=>document.querySelectorAll('[data-bc3-addon-request]').length>=8,null,{timeout:8000});
+              assert(ownerErrs.length===0,`owner: runtime errors ${ownerErrs.join(' | ')}`);
+              await owner.close();
               clearTimeout(watchdog);
               console.log('NAVIGATOR_PRODUCTION_SMOKE_OK');
             } finally { await browser.close(); }
