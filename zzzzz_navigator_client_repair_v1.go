@@ -31,16 +31,17 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		// Remove the legacy monolith: it owns an obsolete nav and duplicate renderers.
+		// Remove all legacy owners of navigation/page bodies.
 		body = stripCommerceAsset(body, "app.js")
+		body = stripCommerceAsset(body, "navigator-reference.js")
 
 		// Remove obsolete raster Reputation overlay.
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.css")
 		body = stripCommerceAsset(body, "navigator-reputation-exact-art-v41.js")
 
-		// Data-only core runs before runtime/router/page masters.
+		// Data-only core runs before runtime/page masters.
 		if !bytes.Contains(body, []byte("navigator-data-core-v2.js")) {
-			coreTag := []byte(`<script src="/navigator-data-core-v2.js?v=20260825-lock2"></script>`)
+			coreTag := []byte(`<script src="/navigator-data-core-v2.js?v=20260825-freeze3"></script>`)
 			anchor := []byte(`<script src="/navigator-runtime-core-v1.js`)
 			if i := bytes.Index(body, anchor); i >= 0 {
 				tmp := make([]byte, 0, len(body)+len(coreTag))
@@ -51,31 +52,38 @@ func init() {
 			}
 		}
 
-		// Capture canonical router before later legacy modules can wrap refGo.
-		if !bytes.Contains(body, []byte("__BLIS_CANONICAL_REFGO")) {
-			refTag := []byte(`<script src="/navigator-reference.js?v=20260824-router3"></script>`)
-			refLocked := []byte(`<script src="/navigator-reference.js?v=20260824-router3"></script><script>window.__BLIS_CANONICAL_REFGO=window.refGo;</script>`)
-			body = bytes.Replace(body, refTag, refLocked, 1)
+		// Frozen router is the only route owner. It is loaded before page masters;
+		// later modules may render only their own body, never own navigation.
+		if !bytes.Contains(body, []byte("navigator-frozen-router-v1.js")) {
+			routerTag := []byte(`<script src="/navigator-frozen-router-v1.js?v=20260825-freeze3"></script><script>window.__BLIS_CANONICAL_REFGO=window.refGo;</script>`)
+			anchor := []byte(`<script src="/navigator-social-master.js`)
+			if i := bytes.Index(body, anchor); i >= 0 {
+				tmp := make([]byte, 0, len(body)+len(routerTag))
+				tmp = append(tmp, body[:i]...)
+				tmp = append(tmp, routerTag...)
+				tmp = append(tmp, body[i:]...)
+				body = tmp
+			}
 		}
 
-		if !bytes.Contains(body, []byte("navigator-client-value-pages-v1.css?v=20260825-lock2")) {
-			headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-lock2">
-<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-lock2">
-<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-lock2">
+		if !bytes.Contains(body, []byte("navigator-client-value-pages-v1.css?v=20260825-freeze3")) {
+			headAssets := `<link rel="stylesheet" href="/navigator-client-value-pages-v1.css?v=20260825-freeze3">
+<link rel="stylesheet" href="/navigator-reputation-master.css?v=20260825-freeze3">
+<link rel="stylesheet" href="/navigator-reputation-totem-3d-v40.css?v=20260825-freeze3">
 <style id="blisCommerceLauncherRemoved">.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
 			body = bytes.Replace(body, []byte("</head>"), []byte(headAssets+"</head>"), 1)
 		}
 
-		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-lock2")) {
-			bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-lock2"></script>
-<script src="/navigator-reputation-master.js?v=20260825-lock2"></script>
-<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-lock2"></script>
-<script src="/navigator-competition-master-v5.js?v=20260825-lock2"></script>
-<script src="/navigator-competition-intelligence-v9.js?v=20260825-lock2"></script>
-<script src="/navigator-competition-environment-v10.js?v=20260825-lock2"></script>
-<script src="/navigator-competition-page-v11.js?v=20260825-lock2"></script>
-<script src="/navigator-competition-page-v12.js?v=20260825-lock2"></script>
-<script src="/navigator-module-lock-v1.js?v=20260825-lock2"></script>
+		if !bytes.Contains(body, []byte("navigator-module-lock-v1.js?v=20260825-freeze3")) {
+			bodyAssets := `<script src="/navigator-client-value-pages-v1.js?v=20260825-freeze3"></script>
+<script src="/navigator-reputation-master.js?v=20260825-freeze3"></script>
+<script src="/navigator-reputation-totem-3d-v39.js?v=20260825-freeze3"></script>
+<script src="/navigator-competition-master-v5.js?v=20260825-freeze3"></script>
+<script src="/navigator-competition-intelligence-v9.js?v=20260825-freeze3"></script>
+<script src="/navigator-competition-environment-v10.js?v=20260825-freeze3"></script>
+<script src="/navigator-competition-page-v11.js?v=20260825-freeze3"></script>
+<script src="/navigator-competition-page-v12.js?v=20260825-freeze3"></script>
+<script src="/navigator-module-lock-v1.js?v=20260825-freeze3"></script>
 <script>(function(){
   function removeCommerceLauncher(){document.querySelectorAll('.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}
   removeCommerceLauncher();
