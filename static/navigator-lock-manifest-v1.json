@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "locked_at": "2026-08-25",
+  "policy": "A locked module may change only after explicit user approval for that module.",
+  "router": {
+    "owner": "navigator-frozen-router-v1.js",
+    "state": "LOCKED"
+  },
+  "runtime": {
+    "owner": "navigator-frozen-runtime-v1.js",
+    "state": "LOCKED",
+    "rule": "data/client synchronization only; no page rendering, no polling, no dynamic page loaders"
+  },
+  "modules": {
+    "live": {
+      "label": "Live Monitoring",
+      "state": "LOCKED",
+      "js": ["navigator-live-master.js", "navigator-geo-v2.js"],
+      "css": ["navigator-live-master.css", "navigator-geo-v2.css"]
+    },
+    "social": {
+      "label": "Сигнали",
+      "state": "LOCKED",
+      "js": ["navigator-social-master.js"],
+      "css": ["navigator-social-master.css"]
+    },
+    "digital": {
+      "label": "Дигитална видимост",
+      "state": "LOCKED",
+      "js": ["navigator-digital-master.js"],
+      "css": ["navigator-digital-master.css"]
+    },
+    "reputation": {
+      "label": "Репутация",
+      "state": "LOCKED",
+      "js": ["navigator-reputation-master.js", "navigator-reputation-totem-3d-v39.js"],
+      "css": ["navigator-reputation-master.css", "navigator-reputation-totem-3d-v40.css"],
+      "visual": "approved 3D crystal/podium; shared structure, client identity only",
+      "forbidden": ["navigator-reputation-exact-art-v41.js", "navigator-reputation-exact-art-v41.css"]
+    }
+  },
+  "forbidden_global_overlays": [
+    "navigator-final-fixes-v16.js",
+    "navigator-final-paint-guard-v17.js",
+    "navigator-social-bootstrap.js",
+    "navigator-social-interactive.js",
+    "navigator-reputation-bootstrap.js",
+    "navigator-digital-bootstrap.js"
+  ]
+}
