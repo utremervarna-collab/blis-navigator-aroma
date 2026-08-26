@@ -110,8 +110,42 @@ func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// The dedicated milestone service is an owner/demo workspace. It must open the
+// full Navigator immediately, without exposing the client-login screen. Owner
+// mode keeps the client switcher unrestricted across every profile in this build.
+func ensureMilestoneOwnerSession(w http.ResponseWriter, r *http.Request) bool {
+	if s, ok := sessionFromRequest(r); ok && s.Admin {
+		return true
+	}
+	clearSession(w, r)
+	clearLegacyClientRememberCookie(w, r)
+	s, err := newOwnerSession()
+	if err != nil {
+		http.Error(w, "Неуспешно създаване на Navigator сесия", http.StatusInternalServerError)
+		return false
+	}
+	setSessionCookie(w, r, s)
+	return true
+}
+
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+
+	// Dedicated Milestone behaviour: the public service URL, every legacy login
+	// URL and every direct dashboard URL enter the full owner Navigator directly.
+	// This removes the login page while preserving the dashboard's client switcher.
+	if path == "/" || path == "/client-login" || path == "/client-login/" || path == "/login" {
+		if !ensureMilestoneOwnerSession(w, r) {
+			return
+		}
+		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
+		return
+	}
+	if path == "/dashboard.html" || path == "/navigator-v2.html" {
+		if !ensureMilestoneOwnerSession(w, r) {
+			return
+		}
+	}
 
 	// Services & Payment belongs only to the owner/admin session. A public URL or
 	// a normal client login receives a 404, including direct attempts to load its
