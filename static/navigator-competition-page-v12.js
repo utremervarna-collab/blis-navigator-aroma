@@ -1,4 +1,4 @@
-/* BLIS Navigator — Competition Page V12. Focused cleanup after V11. */
+/* BLIS Navigator — Competition Page V12.1. Live signal-flow repair. */
 (function(){
 'use strict';
 let observer=null,scheduled=0;
@@ -13,15 +13,19 @@ function css(){
 #competition .cmpv11-row{cursor:default!important;pointer-events:none!important}
 #competition .cmpv11-row.active{background:transparent!important;color:#526071!important;font-weight:700!important}
 
-/* signal flow becomes a real visual module */
+/* live signal flow — use the V11 data-driven SVG, never the old static image */
 #competition .cmpv12-flow-panel{padding:18px!important;border-color:#dbeae5!important;background:linear-gradient(155deg,#ffffff 0%,#fbfffd 58%,#f3fbf8 100%)!important;box-shadow:0 14px 34px rgba(17,83,65,.07)!important}
 #competition .cmpv12-flow-panel>h3{font-size:16px!important;letter-spacing:-.015em!important;color:#18362f!important;margin-bottom:12px!important}
 #competition .cmpv11-flowmetrics{gap:10px!important;margin:6px 0 13px!important}
 #competition .cmpv11-flowmetric{padding:12px 13px!important;border-color:#dce9e4!important;background:rgba(255,255,255,.88)!important;box-shadow:0 5px 14px rgba(17,83,65,.045)!important}
 #competition .cmpv11-flowmetric span{font-size:9px!important;color:#71847e!important;margin-bottom:5px!important}
 #competition .cmpv11-flowmetric b{font-size:18px!important;color:#173e34!important}
-#competition .cmpv12-flow-panel .cmpv11-flowbox{display:none!important}
-#competition .cmpv12-static-flow{display:block!important;width:100%!important;height:128px!important;object-fit:cover!important;object-position:center!important;margin:4px 0 12px!important;border:1px solid #dfe9e5!important;border-radius:16px!important;background:#f8fbfa!important;box-shadow:0 8px 24px rgba(22,74,89,.06)!important}
+#competition .cmpv12-flow-panel .cmpv11-flowbox{display:block!important;height:128px!important;margin:4px 0 12px!important;padding:8px 10px!important;overflow:hidden!important;border:1px solid #dfe9e5!important;border-radius:16px!important;background:linear-gradient(180deg,#fbfefd,#f5fbf8)!important;box-shadow:0 8px 24px rgba(22,74,89,.06)!important}
+#competition .cmpv12-flow-panel .cmpv11-flowwave{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
+#competition .cmpv12-flow-panel .cmpv11-wave-base{stroke:#d7e8e1!important;stroke-width:3!important}
+#competition .cmpv12-flow-panel .cmpv11-wave-live{stroke:#16a36a!important;stroke-width:3.6!important;stroke-dasharray:12 11!important;filter:drop-shadow(0 0 4px rgba(22,163,106,.20));animation:cmpv11dash 2.2s linear infinite!important}
+#competition .cmpv12-flow-panel .cmpv11-wave-dot{fill:#16a36a!important;stroke:#fff!important;stroke-width:2!important;filter:drop-shadow(0 0 5px rgba(22,163,106,.38))}
+#competition .cmpv12-static-flow{display:none!important}
 
 /* Dynamics: one clear active curve; remove the old secondary mini-series, including the blue flat line */
 #competition .cmpv10-layout>section.cmpv10-card .cmpv10-series.small{display:none!important}
@@ -72,25 +76,18 @@ function css(){
 @keyframes cmpv12live{0%{box-shadow:0 0 0 0 rgba(22,163,106,.34)}70%{box-shadow:0 0 0 12px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
 @keyframes cmpv12dotpulse{0%{box-shadow:0 0 0 0 rgba(22,163,106,.50)}70%{box-shadow:0 0 0 8px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
 @media(max-width:1100px){#competition .cmpv5-board,#competition .cmpv10-layout{grid-template-columns:1fr!important}#competition .cmpv10-layout>aside.cmpv10-card{min-height:0!important}}
-@media(max-width:700px){#competition .cmpv11-flowmetrics{grid-template-columns:1fr!important}#competition .cmpv10-layout>aside .cmpv10-kpi b{font-size:19px!important}#competition .cmpv10-layout>section .cmpv10-series:not(.small){grid-template-columns:1fr!important}}
+@media(max-width:700px){#competition .cmpv11-flowmetrics{grid-template-columns:1fr!important}#competition .cmpv12-flow-panel .cmpv11-flowbox{height:112px!important}#competition .cmpv10-layout>aside .cmpv10-kpi b{font-size:19px!important}#competition .cmpv10-layout>section .cmpv10-series:not(.small){grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(st);
 }
-function ensureStaticFlow(panel){
+function restoreLiveFlow(panel){
   if(!panel)return;
-  let img=panel.querySelector('.cmpv12-static-flow');
-  if(!img){
-    img=document.createElement('img');
-    img.className='cmpv12-static-flow';
-    img.src='/competition-signals-flow.svg?v=20260822-3';
-    img.alt='';
-    img.decoding='async';
-    img.loading='eager';
-    const metrics=panel.querySelector('.cmpv11-flowmetrics');
-    if(metrics)metrics.insertAdjacentElement('afterend',img);else panel.appendChild(img);
+  panel.querySelectorAll('.cmpv12-static-flow').forEach(x=>x.remove());
+  const live=panel.querySelector('.cmpv11-flowbox');
+  if(live){
+    live.style.removeProperty('display');
+    live.removeAttribute('aria-hidden');
   }
-  const old=panel.querySelector('.cmpv11-flowbox');
-  if(old)old.style.setProperty('display','none','important');
 }
 function enhance(){
   css();
@@ -102,7 +99,7 @@ function enhance(){
     const h=(p.querySelector('h3')?.textContent||'').trim();
     const isFlow=/ПОТОК ОТ СИГНАЛИ/i.test(h);
     p.classList.toggle('cmpv12-flow-panel',isFlow);
-    if(isFlow)ensureStaticFlow(p);
+    if(isFlow)restoreLiveFlow(p);
   });
   const host=root.querySelector('.cmpv5-chart.cmpv10-host');
   if(host){
