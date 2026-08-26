@@ -1,19 +1,19 @@
 /* BLIS Navigator — Competition Master V5. Continuous 60fps 3D race. */
 (function(){
 'use strict';
-const COLORS=['#ef3f43','#2568e8','#63a313','#8355e7','#f08a28','#0a8fa5'];
+const COLORS=['#ef3f43','#2568e8','#63a313','#8355e7','#f08a28','#0a8fa5','#b14fb5'];
 const state={period:30,raf:0,clock:0,start:0,companies:[],series:[],selected:0};
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:null};
 const clamp=v=>Math.max(2.8,Math.min(96.5,num(v)??0));
 const norm=s=>String(s||'').trim().toLowerCase();
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
 function G(){let d={},h=[],a=[],s=[];try{if(typeof D!=='undefined'&&D)d=D}catch(_){}try{if(typeof H!=='undefined'&&Array.isArray(H))h=H}catch(_){}try{if(typeof A!=='undefined'&&Array.isArray(A))a=A}catch(_){}try{if(typeof S!=='undefined'&&Array.isArray(S))s=S}catch(_){}return{d,h,a,s}}
 function stamp(x){const r=x?.time||x?.timestamp||x?.created_at||x?.createdAt||x?.date||x?.observed_at;const t=r?new Date(r).getTime():NaN;return Number.isFinite(t)?t:null}
 function inPeriod(t){return !t||Date.now()-t<=state.period*864e5}
 function clientName(){return G().d?.name||'Клиент'}
 function sourceLabel(k){return G().s.find(x=>x.key===k)?.label||k||'Източник'}
 function history(name){const {h}=G(),key=norm(name),out=[];(h||[]).forEach(s=>{const t=stamp(s);if(t&&!inPeriod(t))return;const p=s?.payload||s||{},arr=Array.isArray(p?.competitors)?p.competitors:[],hit=arr.find(x=>norm(x?.name||x?.label)===key),v=num(hit?.score)??num(hit?.value);if(v!==null)out.push({t:t||out.length,v:Math.max(0,Math.min(100,v))})});out.sort((a,b)=>a.t-b.t);return out.map(x=>x.v)}
-function companies(){const {d}=G(),dn=norm(clientName()),raw=Array.isArray(d?.competitors)?d.competitors:[];let rows=raw.map(c=>({...c,name:c?.name||c?.label||'Конкурент',score:num(c?.score)??num(c?.value)})).filter(c=>c.score!==null);if(!rows.length){const i=(d?.indices||[]).find(x=>x.key==='competitive'),score=num(i?.value);if(score!==null)rows=[{name:clientName(),score}]}let own=rows.findIndex(c=>norm(c.name)===dn||dn.startsWith(norm(c.name))||norm(c.name).startsWith(dn));if(own<0&&rows.length)own=0;rows.forEach((c,i)=>{c.isClient=i===own;const hs=history(c.name),tr=num(c.trend);c.series=hs.length>1?hs:(tr!==null?[Math.max(0,Math.min(100,c.score-tr)),c.score]:[c.score]);c.trend=tr!==null?tr:(c.series.length>1?c.series.at(-1)-c.series.at(-2):null)});return rows.sort((a,b)=>b.score-a.score).slice(0,6)}
+function companies(){const {d}=G(),dn=norm(clientName()),raw=Array.isArray(d?.competitors)?d.competitors:[];let rows=raw.map(c=>({...c,name:c?.name||c?.label||'Конкурент',score:num(c?.score)??num(c?.value)})).filter(c=>c.score!==null);if(!rows.length){const i=(d?.indices||[]).find(x=>x.key==='competitive'),score=num(i?.value);if(score!==null)rows=[{name:clientName(),score}]}let own=rows.findIndex(c=>norm(c.name)===dn||dn.startsWith(norm(c.name))||norm(c.name).startsWith(dn));if(own<0&&rows.length)own=0;rows.forEach((c,i)=>{c.isClient=i===own;const hs=history(c.name),tr=num(c.trend);c.series=hs.length>1?hs:(tr!==null?[Math.max(0,Math.min(100,c.score-tr)),c.score]:[c.score]);c.trend=tr!==null?tr:(c.series.length>1?c.series.at(-1)-c.series.at(-2):null)});return rows.sort((a,b)=>b.score-a.score).slice(0,7)}
 const META={website:['Официален сайт','binary'],ecommerce:['E-commerce','binary'],pricing:['Видими цени','binary'],social:['Социални канали','binary'],categories:['Категорийно покритие','rel'],content:['Съдържателно покритие','rel'],news:['Новинарска видимост','rel'],rating:['Публична оценка','rating'],ratings:['Обем оценки','rel'],activity:['Потребителска активност','auto'],visibility:['Дигитална видимост','auto'],search:['Търсене','rel']};
 function metricKeys(cs){const no=new Set(['name','label','score','value','trend','confidence','source','sector','category','history','series','indices','isClient']);const m=new Map();cs.forEach(c=>Object.keys(c).forEach(k=>{if(no.has(k)||num(c[k])===null)return;m.set(k,(m.get(k)||0)+1)}));return [...m].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).map(([k])=>k).slice(0,5)}
 function label(k){return META[k]?.[0]||String(k).replaceAll('_',' ')}
