@@ -1,4 +1,4 @@
-/* BLIS Navigator — Competition Page V12.1. Live signal-flow repair. */
+/* BLIS Navigator — Competition Page V12.2. Animated static signal-flow asset. */
 (function(){
 'use strict';
 let observer=null,scheduled=0;
@@ -13,19 +13,18 @@ function css(){
 #competition .cmpv11-row{cursor:default!important;pointer-events:none!important}
 #competition .cmpv11-row.active{background:transparent!important;color:#526071!important;font-weight:700!important}
 
-/* live signal flow — use the V11 data-driven SVG, never the old static image */
-#competition .cmpv12-flow-panel{padding:18px!important;border-color:#dbeae5!important;background:linear-gradient(155deg,#ffffff 0%,#fbfffd 58%,#f3fbf8 100%)!important;box-shadow:0 14px 34px rgba(17,83,65,.07)!important}
+/* signal flow — static visual asset with gentle motion */
+#competition .cmpv12-flow-panel{padding:18px!important;border-color:#dbeae5!important;background:linear-gradient(155deg,#ffffff 0%,#fbfffd 58%,#f3fbf8 100%)!important;box-shadow:0 14px 34px rgba(17,83,65,.07)!important;overflow:hidden!important}
 #competition .cmpv12-flow-panel>h3{font-size:16px!important;letter-spacing:-.015em!important;color:#18362f!important;margin-bottom:12px!important}
 #competition .cmpv11-flowmetrics{gap:10px!important;margin:6px 0 13px!important}
 #competition .cmpv11-flowmetric{padding:12px 13px!important;border-color:#dce9e4!important;background:rgba(255,255,255,.88)!important;box-shadow:0 5px 14px rgba(17,83,65,.045)!important}
 #competition .cmpv11-flowmetric span{font-size:9px!important;color:#71847e!important;margin-bottom:5px!important}
 #competition .cmpv11-flowmetric b{font-size:18px!important;color:#173e34!important}
-#competition .cmpv12-flow-panel .cmpv11-flowbox{display:block!important;height:128px!important;margin:4px 0 12px!important;padding:8px 10px!important;overflow:hidden!important;border:1px solid #dfe9e5!important;border-radius:16px!important;background:linear-gradient(180deg,#fbfefd,#f5fbf8)!important;box-shadow:0 8px 24px rgba(22,74,89,.06)!important}
-#competition .cmpv12-flow-panel .cmpv11-flowwave{display:block!important;width:100%!important;height:100%!important;overflow:visible!important}
-#competition .cmpv12-flow-panel .cmpv11-wave-base{stroke:#d7e8e1!important;stroke-width:3!important}
-#competition .cmpv12-flow-panel .cmpv11-wave-live{stroke:#16a36a!important;stroke-width:3.6!important;stroke-dasharray:12 11!important;filter:drop-shadow(0 0 4px rgba(22,163,106,.20));animation:cmpv11dash 2.2s linear infinite!important}
-#competition .cmpv12-flow-panel .cmpv11-wave-dot{fill:#16a36a!important;stroke:#fff!important;stroke-width:2!important;filter:drop-shadow(0 0 5px rgba(22,163,106,.38))}
-#competition .cmpv12-static-flow{display:none!important}
+#competition .cmpv12-flow-panel .cmpv11-flowbox{display:none!important}
+#competition .cmpv12-static-wrap{position:relative;height:132px;margin:4px 0 12px;border:1px solid #dfe9e5;border-radius:16px;overflow:hidden;background:#fbfefd;box-shadow:0 8px 24px rgba(22,74,89,.06);isolation:isolate}
+#competition .cmpv12-static-flow{position:absolute;left:-4%;top:-11%;width:108%;height:122%;max-width:none!important;object-fit:cover;object-position:center;display:block!important;transform-origin:center;will-change:transform;animation:cmpv12FlowDrift 13s cubic-bezier(.45,.05,.55,.95) infinite alternate}
+#competition .cmpv12-static-wrap:before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0) 34%,rgba(255,255,255,.06) 70%,rgba(255,255,255,.22));mix-blend-mode:screen}
+#competition .cmpv12-static-wrap:after{content:"";position:absolute;z-index:3;top:-20%;bottom:-20%;left:-42%;width:32%;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.44),rgba(255,255,255,0));filter:blur(8px);transform:skewX(-16deg);animation:cmpv12FlowSweep 6.8s ease-in-out infinite}
 
 /* Dynamics: one clear active curve; remove the old secondary mini-series, including the blue flat line */
 #competition .cmpv10-layout>section.cmpv10-card .cmpv10-series.small{display:none!important}
@@ -72,21 +71,43 @@ function css(){
 #competition .cmpv5-chart.cmpv10-host>.cmpv5-charthead,
 #competition .cmpv5-chart.cmpv10-host>.cmpv9-chart-empty{display:none!important}
 
+@keyframes cmpv12FlowDrift{
+  0%{transform:translate3d(-1.7%,1.2%,0) scale(1.065)}
+  48%{transform:translate3d(.7%,-.8%,0) scale(1.085)}
+  100%{transform:translate3d(2.0%,.8%,0) scale(1.07)}
+}
+@keyframes cmpv12FlowSweep{
+  0%,12%{left:-42%;opacity:0}
+  28%{opacity:.75}
+  62%{left:112%;opacity:.34}
+  72%,100%{left:112%;opacity:0}
+}
 @keyframes cmpv12curve{to{stroke-dashoffset:-66}}
 @keyframes cmpv12live{0%{box-shadow:0 0 0 0 rgba(22,163,106,.34)}70%{box-shadow:0 0 0 12px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
 @keyframes cmpv12dotpulse{0%{box-shadow:0 0 0 0 rgba(22,163,106,.50)}70%{box-shadow:0 0 0 8px rgba(22,163,106,0)}100%{box-shadow:0 0 0 0 rgba(22,163,106,0)}}
+@media(prefers-reduced-motion:reduce){#competition .cmpv12-static-flow,#competition .cmpv12-static-wrap:after{animation:none!important}}
 @media(max-width:1100px){#competition .cmpv5-board,#competition .cmpv10-layout{grid-template-columns:1fr!important}#competition .cmpv10-layout>aside.cmpv10-card{min-height:0!important}}
-@media(max-width:700px){#competition .cmpv11-flowmetrics{grid-template-columns:1fr!important}#competition .cmpv12-flow-panel .cmpv11-flowbox{height:112px!important}#competition .cmpv10-layout>aside .cmpv10-kpi b{font-size:19px!important}#competition .cmpv10-layout>section .cmpv10-series:not(.small){grid-template-columns:1fr!important}}
+@media(max-width:700px){#competition .cmpv11-flowmetrics{grid-template-columns:1fr!important}#competition .cmpv12-static-wrap{height:116px!important}#competition .cmpv10-layout>aside .cmpv10-kpi b{font-size:19px!important}#competition .cmpv10-layout>section .cmpv10-series:not(.small){grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(st);
 }
-function restoreLiveFlow(panel){
+function ensureStaticFlow(panel){
   if(!panel)return;
-  panel.querySelectorAll('.cmpv12-static-flow').forEach(x=>x.remove());
   const live=panel.querySelector('.cmpv11-flowbox');
-  if(live){
-    live.style.removeProperty('display');
-    live.removeAttribute('aria-hidden');
+  if(live){live.style.setProperty('display','none','important');live.setAttribute('aria-hidden','true')}
+  let wrap=panel.querySelector('.cmpv12-static-wrap');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.className='cmpv12-static-wrap';
+    const img=document.createElement('img');
+    img.className='cmpv12-static-flow';
+    img.src='/competition-signals-flow.svg?v=20260826-motion-1';
+    img.alt='';
+    img.decoding='async';
+    img.loading='eager';
+    wrap.appendChild(img);
+    const metrics=panel.querySelector('.cmpv11-flowmetrics');
+    if(metrics)metrics.insertAdjacentElement('afterend',wrap);else panel.appendChild(wrap);
   }
 }
 function enhance(){
@@ -99,7 +120,7 @@ function enhance(){
     const h=(p.querySelector('h3')?.textContent||'').trim();
     const isFlow=/ПОТОК ОТ СИГНАЛИ/i.test(h);
     p.classList.toggle('cmpv12-flow-panel',isFlow);
-    if(isFlow)restoreLiveFlow(p);
+    if(isFlow)ensureStaticFlow(p);
   });
   const host=root.querySelector('.cmpv5-chart.cmpv10-host');
   if(host){
