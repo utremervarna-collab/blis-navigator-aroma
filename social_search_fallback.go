@@ -23,10 +23,6 @@ func ensureKnownSocialSources(c *Client) {
 		return
 	}
 
-	// Verified public profiles for Bolyarka. The Instagram profile is confirmed by
-	// the brand's own published campaign rules. The YouTube channel id comes from
-	// the company's official website link, so we monitor the channel itself rather
-	// than a YouTube search-results page.
 	instagram := Source{
 		Key:         "instagram",
 		Label:       "Instagram – Болярка",
@@ -62,10 +58,6 @@ func ensureKnownSocialSources(c *Client) {
 		c.Sources = append(c.Sources, youtube)
 	}
 
-	// A current public LinkedIn result exposes 34 followers for Boliarka VT AD.
-	// Use it only as a positive verified baseline when no better positive
-	// observation has yet been collected. It is never used to overwrite a newer
-	// positive measurement.
 	if f(latest(c, "linkedin", "followers")) <= 0 {
 		add(c, "linkedin", "followers", 34.0, nowISO())
 	}
@@ -128,8 +120,6 @@ func maxPositiveMetric(text string, re *regexp.Regexp) float64 {
 }
 
 func reactionEvidence(text string) float64 {
-	// For a single indexed result, use the largest visible interaction count.
-	// This avoids double counting the same post when a snippet repeats a number.
 	return maxPositiveMetric(text, socialReactionSearchRE)
 }
 
@@ -203,8 +193,11 @@ func runSocialSearchFallback() {
 			continue
 		}
 		ensureKnownSocialSources(c)
-		for i := range c.Sources {
-			s := &c.Sources[i]
+		// Work on a stable snapshot. Other startup routines may legitimately
+		// migrate/replace source lists; iterating the live backing slice could panic.
+		sources := append([]Source(nil), c.Sources...)
+		for i := range sources {
+			s := &sources[i]
 			if !isSpecificSocialSource(*s) {
 				continue
 			}
@@ -215,13 +208,9 @@ func runSocialSearchFallback() {
 			ev := extractSocialSearchEvidence(c, s, platform)
 			stamp := nowISO()
 			if ev.Audience > 0 {
-				// Only positive, publicly observed audience counts are persisted.
-				// A blocked/empty response never replaces a valid historical value with zero.
 				add(c, s.Key, "followers", ev.Audience, stamp)
 			}
 			if ev.Reactions > 0 {
-				// Search-derived reactions are a fallback evidence metric. The UI uses it
-				// only when direct likes/comments/shares are unavailable.
 				add(c, s.Key, "visible_reactions_search", ev.Reactions, stamp)
 			}
 			if len(ev.Posts) > 0 {
