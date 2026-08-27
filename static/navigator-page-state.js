@@ -4,7 +4,7 @@
 if(window.__BLIS_PAGE_STATE_V5)return;window.__BLIS_PAGE_STATE_V5=true;
 const PAGES=new Set(['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help','commerce']);
 const ALIAS={signals:'social',sources:'profile',timeline:'history'};
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
 const KEY='blis.navigator.page.';
 let internal=false;
 const canonical=p=>{p=String(p||'');return ALIAS[p]||p};

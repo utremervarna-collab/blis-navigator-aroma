@@ -5,7 +5,7 @@
 'use strict';
 if(window.__BLIS_RUNTIME_CORE_V6)return;window.__BLIS_RUNTIME_CORE_V6=true;
 
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
 function initialClient(){
   try{const q=new URLSearchParams(location.search).get('client');if(CLIENTS.has(q))return q}catch(_){ }
   try{if(CLIENTS.has(window.BLIS_INITIAL_CLIENT))return window.BLIS_INITIAL_CLIENT}catch(_){ }

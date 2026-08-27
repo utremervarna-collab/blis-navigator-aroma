@@ -20,7 +20,7 @@
     if(e.target.closest?.('#nav [data-page="competition"]'))document.body.classList.remove('blis-competition-ready');
   },true);
 
-  const clients=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+  const clients=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
   const initialClient=()=>{
     try{const q=new URLSearchParams(location.search).get('client');if(q&&clients.has(q))return q}catch(e){}
     return window.BLIS_INITIAL_CLIENT&&clients.has(window.BLIS_INITIAL_CLIENT)?window.BLIS_INITIAL_CLIENT:null;

@@ -5,7 +5,8 @@
     aroma:{name:'Aroma Cosmetics',type:'Козметика',mark:'A',accent:'#1677ff',soft:'#eef6ff'},
     bolyarka:{name:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ',accent:'#a61f2b',soft:'#fff2f3'},
     'astor-garden':{name:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG',accent:'#0b6f73',soft:'#ecfafa'},
-    'varna-towers':{name:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',accent:'#315b78',soft:'#eef4f8'}
+    'varna-towers':{name:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT',accent:'#315b78',soft:'#eef4f8'},
+    wirello:{name:'Wirello Market',type:'Търговска верига / модерен ритейл',mark:'WM',accent:'#7c3aed',soft:'#f4f0ff'}
   };
   const CATS = [
     {id:'search',label:'Търсене',color:'#2979ff'},

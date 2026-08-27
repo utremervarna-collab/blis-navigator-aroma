@@ -3,7 +3,7 @@
 'use strict';
 if(window.__BLISReputationExactArtV64)return;window.__BLISReputationExactArtV64=true;
 const PARTS=[1,2,3,4].map(n=>`/reputation-aroma-exact-v2-0${n}.js?v=20260823-reputation62`);
-const CLIENTS={aroma:'Aroma Cosmetics',mollox:'MOLLOX България',bolyarka:'Болярка','astor-garden':'Astor Garden','varna-towers':'Varna Towers'};
+const CLIENTS={aroma:'Aroma Cosmetics',mollox:'MOLLOX България',bolyarka:'Болярка','astor-garden':'Astor Garden','varna-towers':'Varna Towers',wirello:'Wirello Market'};
 let srcPromise=null,applyPromise=null,forcedClient='';
 const valid=v=>CLIENTS[String(v||'').trim()]?String(v||'').trim():'';
 function fromData(){try{const v=valid(window.D?.client||window.D?.slug);if(v)return v}catch(_){};return''}

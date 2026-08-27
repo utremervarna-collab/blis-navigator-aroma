@@ -10,7 +10,7 @@ var D=window.D=null,S=window.S=[],Q=window.Q={},A=window.A=[],H=window.H=[];
 var loadEpoch=0;
 const REQUEST_TIMEOUT_MS=7000;
 
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
 function currentClient(){
   try{const q=new URLSearchParams(location.search).get('client');if(CLIENTS.has(q))return q}catch(_){}
   const b=document.body?.dataset?.client;if(CLIENTS.has(b))return b;
