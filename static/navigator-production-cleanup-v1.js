@@ -4,7 +4,7 @@
 'use strict';
 if(window.__BLIS_PRODUCTION_CLEANUP_V2)return;window.__BLIS_PRODUCTION_CLEANUP_V2=true;
 
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
 const PAGES=new Set(['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help']);
 
 function currentClient(){

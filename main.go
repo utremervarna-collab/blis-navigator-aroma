@@ -312,11 +312,13 @@ func seedStore() Store {
 	}
 
 	mollox := molloxSeedClient(stamp)
-	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox}}
+	wirello := wirelloSeedClient(stamp)
+	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello}}
 	for _, c := range s.Clients {
 		d := dashboard(c)
 		c.Snapshots = []Snapshot{{CreatedAt: stamp, Payload: d}}
 	}
+	wirello.Snapshots = wirelloDemoSnapshots(wirello)
 	return s
 }
 func mergeSeedMissing() {
@@ -328,10 +330,6 @@ func mergeSeedMissing() {
 		cur := store.Clients[k]
 		if cur == nil {
 			store.Clients[k] = fresh
-			continue
-		}
-		if k == "mollox" {
-			syncMolloxProfile(cur, fresh)
 			continue
 		}
 		existing := map[string]bool{}
@@ -357,7 +355,6 @@ func ensureStore() {
 	if b, err := os.ReadFile(dataPath); err == nil {
 		if json.Unmarshal(b, &store) == nil && len(store.Clients) > 0 {
 			mergeSeedMissing()
-			saveStore()
 			return
 		}
 	}
@@ -720,6 +717,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return bolyarkaDashboard(c)
 	case "mollox":
 		return molloxDashboard(c)
+	case "wirello":
+		return wirelloDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1858,7 +1857,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "api/clients" {
 		out := []map[string]string{}
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
+		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "wirello"} {
 			if c := store.Clients[slug]; c != nil {
 				out = append(out, map[string]string{"slug": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note})
 			}

@@ -8,7 +8,8 @@ const clients={
   bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ'},
   'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG'},
   'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT'},
-  mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX'}
+  mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX'},
+  wirello:{name:'Wirello Market',full:'Wirello Market',type:'Търговска верига / модерен ритейл',mark:'WM'}
 };
 const valid=k=>!!clients[k];
 const greeting=()=>{const h=new Date().getHours();return h>=5&&h<12?'Добро утро':h>=12&&h<18?'Добър ден':'Добър вечер'};

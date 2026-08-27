@@ -7,7 +7,8 @@ const CLIENTS={
   bolyarka:{name:'Болярка',full:'Болярка ВТ АД',type:'Пивоварна компания',mark:'БЛ'},
   'astor-garden':{name:'Astor Garden',full:'Astor Garden Hotel',type:'Хотелиерство',mark:'AG'},
   'varna-towers':{name:'Varna Towers',full:'Varna Towers',type:'Бизнес център / недвижими имоти',mark:'VT'},
-  mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX'}
+  mollox:{name:'MOLLOX',full:'MOLLOX България',type:'Професионална хигиена',mark:'MX'},
+  wirello:{name:'Wirello Market',full:'Wirello Market',type:'Търговска верига / модерен ритейл',mark:'WM'}
 };
 const valid=k=>!!CLIENTS[k];
 const current=()=>{try{const q=new URLSearchParams(location.search).get('client');if(valid(q))return q}catch(_){};try{if(valid(window.slug))return window.slug}catch(_){};const b=document.body?.dataset?.client;if(valid(b))return b;return 'aroma'};

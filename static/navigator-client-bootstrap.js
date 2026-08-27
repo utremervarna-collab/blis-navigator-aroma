@@ -1,7 +1,7 @@
 /* BLIS Navigator — establish the selected client before legacy app.js boots. */
 (function(){
   'use strict';
-  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
   function selectedClient(){
     try{
       const q=new URLSearchParams(location.search).get('client');

@@ -1,7 +1,7 @@
 /* BLIS Navigator — lock requested client through legacy app bootstrap. */
 (function(){
   'use strict';
-  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox']);
+  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
   let key='';
   try{key=new URLSearchParams(location.search).get('client')||''}catch(_){ }
   if(!allowed.has(key)){

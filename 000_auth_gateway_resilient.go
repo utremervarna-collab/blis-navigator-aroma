@@ -16,6 +16,7 @@ import (
 
 const legacyClientRememberCookieName = "blis_client_remember"
 const adminClientCookieName = "blis_admin_client"
+const publicDemoCookieName = "blis_public_demo"
 const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bbca5d5ced1705"
 
 func validNavigatorClient(slug string) bool {
@@ -110,8 +111,60 @@ func clearLegacyClientRememberCookie(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func setPublicDemoCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: publicDemoCookieName, Value: "wirello", Path: "/", HttpOnly: true, Secure: secureRequest(r), SameSite: http.SameSiteLaxMode, MaxAge: 60 * 60 * 8})
+}
+
+func clearPublicDemoCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: publicDemoCookieName, Value: "", Path: "/", HttpOnly: true, Secure: secureRequest(r), SameSite: http.SameSiteLaxMode, MaxAge: -1, Expires: time.Unix(0, 0)})
+}
+
+func isWirelloDemo(r *http.Request) bool {
+	c, err := r.Cookie(publicDemoCookieName)
+	return err == nil && c.Value == "wirello"
+}
+
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
+
+	// Wirello Market is the isolated public demonstration profile. It bypasses
+	// client login but remains scoped to a single fictional dataset.
+	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
+		clearSession(w, r)
+		setPublicDemoCookie(w, r)
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		q.Set("client", "wirello")
+		if q.Get("page") == "" { q.Set("page", "overview") }
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Set("X-BLIS-Client-Scope", "wirello")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+
+	if isWirelloDemo(r) {
+		if path == "/api/clients" {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			_, _ = w.Write([]byte(`[{"slug":"wirello","name":"Wirello Market","sector":"Търговска верига / модерен ритейл","note":"Публичен демо профил"}]`))
+			return
+		}
+		if strings.HasPrefix(path, "/api/clients/") && !strings.HasPrefix(path, "/api/clients/wirello/") {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"Публичното демо е ограничено до Wirello Market"}`))
+			return
+		}
+		if path == "/dashboard.html" {
+			http.Redirect(w, r, "/wirello", http.StatusFound)
+			return
+		}
+	}
+
+	if path == "/client-login" || path == "/client-login/" || path == "/login" || path == "/navigator" || path == "/navigator/" || path == "/owner-access" {
+		clearPublicDemoCookie(w, r)
+	}
 
 	// Services & Payment belongs only to the owner/admin session. A public URL or
 	// a normal client login receives a 404, including direct attempts to load its
