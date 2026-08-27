@@ -41,14 +41,11 @@ func navigatorDashboardTarget(r *http.Request) string {
 	return "/dashboard.html?client=" + url.QueryEscape(slug) + "&page=overview"
 }
 
-// Commerce is an owner/admin workspace. Catalogue pages, code and artwork are
-// deliberately unavailable to anonymous visitors and client sessions.
+// Keep only the internal source archive restricted. The rendered Services and
+// Payment catalogue and its browser assets are intentionally public.
 func commerceOwnerOnlyPath(path string) bool {
 	path = strings.TrimSpace(path)
-	return path == "/services.html" || path == "/services" ||
-		strings.HasPrefix(path, "/navigator-commerce-") ||
-		strings.HasPrefix(path, "/service-cards/") ||
-		path == "/service-cards-v10.zip"
+	return path == "/service-cards-v10.zip"
 }
 
 // Bootstrap exactly one public gateway in front of the internal Navigator engine.
@@ -127,6 +124,11 @@ func isWirelloDemo(r *http.Request) bool {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	if path == "/services" {
+		http.Redirect(w, r, "/services.html", http.StatusMovedPermanently)
+		return
+	}
+
 	// Wirello Market is the isolated public demonstration profile. It bypasses
 	// client login but remains scoped to a single fictional dataset.
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
@@ -166,9 +168,8 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		clearPublicDemoCookie(w, r)
 	}
 
-	// Services & Payment belongs only to the owner/admin session. A public URL or
-	// a normal client login receives a 404, including direct attempts to load its
-	// JS/CSS/card assets.
+	// The internal source archive remains owner-only. The public catalogue and
+	// its browser assets are served normally.
 	if commerceOwnerOnlyPath(path) {
 		s, ok := sessionFromRequest(r)
 		if !ok || !s.Admin {
