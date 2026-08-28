@@ -1,0 +1,45 @@
+name: Validate Competitor Mention Collection Live
+
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/validate-competitor-collector-live.yml
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run real competitor collection without changing production data
+        run: |
+          cat > competitor_signal_live_test.go <<'EOF'
+          package main
+          import "testing"
+          func TestCompetitorSignalLive(t *testing.T) {
+            ensureStore()
+            before := len(store.Clients)
+            counts := runCompetitorSignalCollector()
+            after := len(store.Clients)
+            if before != after { t.Fatalf("collector changed client count: %d -> %d", before, after) }
+            t.Logf("counts=%v", counts)
+            signalMu.RLock()
+            defer signalMu.RUnlock()
+            for client, rows := range signalState.Signals {
+              n := 0
+              for _, s := range rows {
+                if s.Scope != "competitor" { continue }
+                n++
+                if s.Client != client { t.Fatalf("wrong client scope: %s != %s", s.Client, client) }
+                if s.Brand == "" || s.URL == "" || s.Fingerprint == "" { t.Fatalf("incomplete competitor signal: %+v", s) }
+                if n <= 3 { t.Logf("%s | %s | %s | %s", client, s.Brand, s.Source, s.Title) }
+              }
+              t.Logf("%s competitor_signals=%d", client, n)
+            }
+          }
+          EOF
+          go test -run TestCompetitorSignalLive -v -count=1
+          rm competitor_signal_live_test.go
