@@ -630,7 +630,7 @@ func signalListHandler(w http.ResponseWriter, r *http.Request) {
 	signalMu.RLock()
 	defer signalMu.RUnlock()
 	if client != "" {
-		rows := append([]Signal(nil), signalState.Signals[client]...)
+		rows := append([]Signal{}, signalState.Signals[client]...)
 		if scope == "external" || scope == "owned" {
 			filtered := rows[:0]
 			for _, s := range rows {
