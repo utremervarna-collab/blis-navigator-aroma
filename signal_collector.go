@@ -52,6 +52,7 @@ type collectorRSS struct {
 			Link        string `xml:"link"`
 			PubDate     string `xml:"pubDate"`
 			Description string `xml:"description"`
+			Source      string `xml:"source"`
 		} `xml:"item"`
 	} `xml:"channel"`
 }
@@ -292,7 +293,11 @@ func collectNewsSignals(c *Client) []Signal {
 	}
 	out := make([]Signal, 0, 20)
 	for _, item := range feed.Channel.Items {
-		if s, ok := buildSignal(c, "Google News", "news", item.Link, item.Title, item.Description, item.PubDate); ok {
+		source := strings.TrimSpace(item.Source)
+		if source == "" {
+			source = "Google News"
+		}
+		if s, ok := buildSignal(c, source, "news", item.Link, item.Title, item.Description, item.PubDate); ok {
 			out = append(out, s)
 			if len(out) >= 20 {
 				break
@@ -606,14 +611,16 @@ func runSignalCollector() map[string]interface{} {
 		freshCounts[slug] = len(fresh)
 		newCounts[slug] = mergeSignals(slug, fresh)
 	}
+	competitorCounts := runCompetitorSignalCollector()
 	saveSignalStateFile()
 	saveStore()
 	return map[string]interface{}{
-		"ok":           true,
-		"updated_at":   nowISO(),
-		"duration_ms":  time.Since(started).Milliseconds(),
-		"fresh_counts": freshCounts,
-		"new_counts":   newCounts,
+		"ok":                      true,
+		"competitor_fresh_counts": competitorCounts,
+		"updated_at":              nowISO(),
+		"duration_ms":             time.Since(started).Milliseconds(),
+		"fresh_counts":            freshCounts,
+		"new_counts":              newCounts,
 	}
 }
 
@@ -668,11 +675,15 @@ func signalHealthHandler(w http.ResponseWriter, r *http.Request) {
 	signalMu.RLock()
 	counts := map[string]int{}
 	external := map[string]int{}
+	competitor := map[string]int{}
 	for client, rows := range signalState.Signals {
 		counts[client] = len(rows)
 		for _, s := range rows {
 			if s.Scope == "external" {
 				external[client]++
+			}
+			if s.Scope == "competitor" {
+				competitor[client]++
 			}
 		}
 	}
@@ -684,6 +695,7 @@ func signalHealthHandler(w http.ResponseWriter, r *http.Request) {
 		"interval_minutes": 10,
 		"clients":          counts,
 		"external":         external,
+		"competitor":       competitor,
 	})
 }
 
