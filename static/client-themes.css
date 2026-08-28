@@ -50,3 +50,6 @@ body[data-client="mollox"] .profileIdentity .monogram,body:has(#clientSel option
 body[data-client="mollox"] .profileIdentity .fact,body:has(#clientSel option[value="mollox"]:checked) .profileIdentity .fact{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22);backdrop-filter:blur(5px)}
 body[data-client="mollox"] .profileIdentity .profileSummary,body:has(#clientSel option[value="mollox"]:checked) .profileIdentity .profileSummary{max-width:64%;text-shadow:0 1px 2px rgba(0,0,0,.22)}
 @media(max-width:760px){body[data-client="mollox"] .profileIdentity,body:has(#clientSel option[value="mollox"]:checked) .profileIdentity{min-height:280px;background-position:60% center}body[data-client="mollox"] .profileIdentity .profileSummary,body:has(#clientSel option[value="mollox"]:checked) .profileIdentity .profileSummary{max-width:100%}}
+
+body[data-client="everbet"]{--client:#16352f;--clientSoft:#eef5f2;--client-bg:#f6f8f7;--client-bg2:#e8efec;--client-panel:#fff;--client-panel2:#f1f5f3;--client-glow:rgba(22,53,47,.14);--client-ink:#16352f;--client-line:#d9e3df;--client-hero:linear-gradient(110deg,rgba(22,53,47,.09),rgba(87,116,105,.05) 48%,rgba(255,255,255,0) 78%)}
+body[data-client="everbet"] .brandname{color:#16352f}

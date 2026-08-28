@@ -313,7 +313,8 @@ func seedStore() Store {
 
 	mollox := molloxSeedClient(stamp)
 	wirello := wirelloSeedClient(stamp)
-	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello}}
+	everbet := everbetSeedClient(stamp)
+	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello, "everbet": everbet}}
 	for _, c := range s.Clients {
 		d := dashboard(c)
 		c.Snapshots = []Snapshot{{CreatedAt: stamp, Payload: d}}
@@ -719,6 +720,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return molloxDashboard(c)
 	case "wirello":
 		return wirelloDashboard(c)
+	case "everbet":
+		return everbetDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1487,6 +1490,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return runAstorEngine(c, snapshot)
 	case "mollox":
 		return runMolloxEngine(c, snapshot)
+	case "everbet":
+		return runEverbetEngine(c, snapshot)
 	default:
 		return runAromaEngine(c, snapshot)
 	}
