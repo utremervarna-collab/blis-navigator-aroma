@@ -1,0 +1,33 @@
+name: Install Everbet generated hero
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/install-everbet-hero.yml']
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire generated Everbet hero into client header
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('static/navigator-client-hero.js')
+          s = p.read_text()
+          target = "    'astor-garden':'https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-astor-micro.txt'"
+          addition = target + ",\n    everbet:'https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/static/hero-everbet-micro.txt'"
+          if 'hero-everbet-micro.txt' not in s:
+              if target not in s:
+                  raise SystemExit('Everbet hero insertion point not found')
+              s = s.replace(target, addition, 1)
+          p.write_text(s)
+          PY
+      - name: Commit Everbet hero integration
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add static/navigator-client-hero.js
+          git commit -m 'Use generated Everbet client header' || exit 0
+          git push
