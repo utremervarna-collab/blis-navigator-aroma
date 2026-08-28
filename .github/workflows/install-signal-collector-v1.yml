@@ -1,0 +1,368 @@
+name: Install BLIS Signal Collector v1
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/install-signal-collector-v1.yml
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install signal collector
+        run: |
+          cat > signal_collector.go <<'GO'
+          package main
+
+          import (
+              "crypto/sha1"
+              "encoding/hex"
+              "encoding/json"
+              "fmt"
+              "net/http"
+              "net/url"
+              "os"
+              "sort"
+              "strconv"
+              "strings"
+              "sync"
+              "time"
+          )
+
+          type Signal struct {
+              ID          string  `json:"id"`
+              Client      string  `json:"client"`
+              Brand       string  `json:"brand"`
+              Source      string  `json:"source"`
+              SourceType  string  `json:"source_type"`
+              URL         string  `json:"url"`
+              Title       string  `json:"title"`
+              Text        string  `json:"text"`
+              PublishedAt string  `json:"published_at,omitempty"`
+              DetectedAt  string  `json:"detected_at"`
+              Relevance   float64 `json:"relevance"`
+              Sentiment   string  `json:"sentiment"`
+              Topic       string  `json:"topic"`
+              RiskScore   float64 `json:"risk_score"`
+              Severity    string  `json:"severity"`
+              Fingerprint string  `json:"fingerprint"`
+          }
+
+          type SignalState struct {
+              UpdatedAt string              `json:"updated_at"`
+              Signals   map[string][]Signal `json:"signals"`
+          }
+
+          var signalMu sync.RWMutex
+          var signalState = SignalState{Signals: map[string][]Signal{}}
+
+          func signalDataPath() string { return appDataDir() + "/signals.json" }
+
+          func signalBrandTerms(c *Client) []string {
+              if c == nil { return nil }
+              switch c.Slug {
+              case "aroma":
+                  return []string{"Aroma Cosmetics", "Aroma Cosmetics AD", "Арома Козметикс", "Арома"}
+              case "bolyarka":
+                  return []string{"Болярка", "Bolyarka", "Boliarka", "Болярка ВТ"}
+              case "mollox":
+                  return []string{"MOLLOX", "MOLLOX България", "Mollox Bulgaria", "Молокс"}
+              default:
+                  return []string{c.Name}
+              }
+          }
+
+          func signalQuery(c *Client) string {
+              terms := signalBrandTerms(c)
+              q := make([]string, 0, len(terms))
+              for _, t := range terms {
+                  t = strings.TrimSpace(t)
+                  if t != "" { q = append(q, `"`+t+`"`) }
+              }
+              return strings.Join(q, " OR ")
+          }
+
+          func signalHash(client, rawURL, title, text string) string {
+              h := sha1.Sum([]byte(strings.ToLower(strings.TrimSpace(client+"|"+rawURL+"|"+title+"|"+text))))
+              return hex.EncodeToString(h[:])
+          }
+
+          func signalTopic(text string) string {
+              low := strings.ToLower(text)
+              groups := []struct{ topic string; terms []string }{
+                  {"regulatory", []string{"комисия", "санкц", "глоб", "регул", "забран", "изтегля", "recall", "warning", "echa", "кзп"}},
+                  {"reputation", []string{"скандал", "измама", "оплак", "жалб", "лош", "проблем", "недовол", "бойкот", "фалш", "опас"}},
+                  {"product", []string{"продукт", "опаков", "качество", "състав", "формул", "бира", "козмет", "препарат"}},
+                  {"commercial", []string{"цена", "промо", "продаж", "дистриб", "магазин", "пазар", "клиент", "поръч"}},
+                  {"competition", []string{"конкур", "пазарен дял", "каменица", "загорка", "хаглайтнер", "calvatis", "albis", "biofresh", "alteya"}},
+              }
+              for _, g := range groups {
+                  for _, term := range g.terms { if strings.Contains(low, term) { return g.topic } }
+              }
+              return "brand_mention"
+          }
+
+          func signalSentimentAndRisk(text string) (string, float64) {
+              low := strings.ToLower(text)
+              neg := []string{"скандал", "измама", "опас", "забран", "санкц", "глоб", "изтегля", "жалб", "оплак", "недовол", "лош", "проблем", "бойкот", "дефект", "наруш", "fake", "fraud", "recall", "warning"}
+              pos := []string{"награда", "успех", "растеж", "нов продукт", "партньор", "иновац", "отлич", "добър", "препоръч", "award", "growth", "launch"}
+              n, p := 0, 0
+              for _, t := range neg { if strings.Contains(low, t) { n++ } }
+              for _, t := range pos { if strings.Contains(low, t) { p++ } }
+              if n > 0 {
+                  risk := 40.0 + float64(n)*15
+                  if risk > 100 { risk = 100 }
+                  return "negative", risk
+              }
+              if p > 0 { return "positive", 10 }
+              return "neutral", 20
+          }
+
+          func signalSeverity(r float64) string {
+              switch {
+              case r >= 80: return "critical"
+              case r >= 60: return "high"
+              case r >= 35: return "medium"
+              default: return "low"
+              }
+          }
+
+          func signalRelevance(c *Client, title, text string) float64 {
+              low := strings.ToLower(title + " " + text)
+              score := 0.0
+              for _, t := range signalBrandTerms(c) {
+                  t = strings.ToLower(strings.TrimSpace(t))
+                  if t != "" && strings.Contains(low, t) { score += 35 }
+              }
+              if score > 100 { score = 100 }
+              return score
+          }
+
+          func signalFromPost(c *Client, sourceType, source string, p socialPost) (Signal, bool) {
+              title := strings.TrimSpace(p.Text)
+              text := strings.TrimSpace(p.Text)
+              rel := signalRelevance(c, title, text)
+              if rel < 35 { return Signal{}, false }
+              sent, risk := signalSentimentAndRisk(title + " " + text)
+              fp := signalHash(c.Slug, p.URL, title, text)
+              return Signal{ID: fp[:16], Client: c.Slug, Brand: c.Name, Source: source, SourceType: sourceType, URL: p.URL, Title: title, Text: text, PublishedAt: p.Published, DetectedAt: nowISO(), Relevance: rel, Sentiment: sent, Topic: signalTopic(title+" "+text), RiskScore: risk, Severity: signalSeverity(risk), Fingerprint: fp}, true
+          }
+
+          func collectNewsSignals(c *Client) []Signal {
+              q := signalQuery(c)
+              if q == "" { return nil }
+              raw := "https://news.google.com/rss/search?q=" + url.QueryEscape(q) + "&hl=bg&gl=BG&ceid=BG:bg"
+              status, body, _, err := timedFetch(raw, 3*1024*1024)
+              if err != nil || status < 200 || status >= 400 { return nil }
+              var feed newsRSS
+              if err := xmlUnmarshalCompat([]byte(body), &feed); err != nil { return nil }
+              out := []Signal{}
+              for _, item := range feed.Channel.Items {
+                  title := cleanPostSnippet(item.Title)
+                  text := cleanPostSnippet(item.Description)
+                  rel := signalRelevance(c, title, text)
+                  if rel < 35 { continue }
+                  sent, risk := signalSentimentAndRisk(title+" "+text)
+                  fp := signalHash(c.Slug, item.Link, title, text)
+                  pub := item.PubDate
+                  out = append(out, Signal{ID: fp[:16], Client:c.Slug, Brand:c.Name, Source:"Google News", SourceType:"news", URL:item.Link, Title:title, Text:text, PublishedAt:pub, DetectedAt:nowISO(), Relevance:rel, Sentiment:sent, Topic:signalTopic(title+" "+text), RiskScore:risk, Severity:signalSeverity(risk), Fingerprint:fp})
+                  if len(out) >= 20 { break }
+              }
+              return out
+          }
+
+          func collectPublicWebSignals(c *Client) []Signal {
+              q := signalQuery(c)
+              if q == "" { return nil }
+              raw := "https://www.bing.com/search?q=" + url.QueryEscape(q) + "&count=20&setlang=bg"
+              status, body, _, err := timedFetch(raw, 3*1024*1024)
+              if err != nil || status < 200 || status >= 400 { return nil }
+              return parseBingSignals(c, body)
+          }
+
+          func parseBingSignals(c *Client, body string) []Signal {
+              blocks := bingResultBlocks(body)
+              out := []Signal{}
+              for _, b := range blocks {
+                  rawURL, title, snippet := bingResultParts(b)
+                  if rawURL == "" || title == "" { continue }
+                  host := "web"
+                  if u, err := url.Parse(rawURL); err == nil && u.Host != "" { host = u.Host }
+                  rel := signalRelevance(c, title, snippet)
+                  if rel < 35 { continue }
+                  sent, risk := signalSentimentAndRisk(title+" "+snippet)
+                  fp := signalHash(c.Slug, rawURL, title, snippet)
+                  out = append(out, Signal{ID:fp[:16], Client:c.Slug, Brand:c.Name, Source:host, SourceType:"web", URL:rawURL, Title:title, Text:snippet, DetectedAt:nowISO(), Relevance:rel, Sentiment:sent, Topic:signalTopic(title+" "+snippet), RiskScore:risk, Severity:signalSeverity(risk), Fingerprint:fp})
+                  if len(out) >= 15 { break }
+              }
+              return out
+          }
+
+          func collectSocialSignals(c *Client) []Signal {
+              out := []Signal{}
+              for i := range c.Sources {
+                  src := &c.Sources[i]
+                  if !isSpecificSocialSource(*src) { continue }
+                  platform := socialPlatform(src)
+                  if platform == "" { continue }
+                  posts := preciseSearchPosts(c, src, platform)
+                  for _, p := range posts {
+                      if s, ok := signalFromPost(c, "social", platform, p); ok { out = append(out, s) }
+                  }
+              }
+              return out
+          }
+
+          func collectClientSignals(c *Client) []Signal {
+              if c == nil { return nil }
+              combined := append([]Signal{}, collectNewsSignals(c)...)
+              combined = append(combined, collectPublicWebSignals(c)...)
+              combined = append(combined, collectSocialSignals(c)...)
+              return dedupeSignals(combined)
+          }
+
+          func dedupeSignals(in []Signal) []Signal {
+              seen := map[string]bool{}
+              out := make([]Signal,0,len(in))
+              for _, s := range in {
+                  if s.Fingerprint == "" || seen[s.Fingerprint] { continue }
+                  seen[s.Fingerprint] = true
+                  out = append(out,s)
+              }
+              sort.SliceStable(out, func(i,j int) bool { return out[i].RiskScore > out[j].RiskScore })
+              return out
+          }
+
+          func mergeSignals(client string, fresh []Signal) {
+              signalMu.Lock()
+              defer signalMu.Unlock()
+              existing := signalState.Signals[client]
+              byFP := map[string]Signal{}
+              for _, s := range existing { byFP[s.Fingerprint] = s }
+              for _, s := range fresh {
+                  if old, ok := byFP[s.Fingerprint]; ok {
+                      if old.DetectedAt != "" { s.DetectedAt = old.DetectedAt }
+                  }
+                  byFP[s.Fingerprint] = s
+              }
+              merged := make([]Signal,0,len(byFP))
+              for _, s := range byFP { merged = append(merged,s) }
+              sort.SliceStable(merged, func(i,j int) bool { return merged[i].DetectedAt > merged[j].DetectedAt })
+              if len(merged) > 500 { merged = merged[:500] }
+              signalState.Signals[client] = merged
+              signalState.UpdatedAt = nowISO()
+          }
+
+          func loadSignalState() {
+              b, err := os.ReadFile(signalDataPath())
+              if err != nil { return }
+              var st SignalState
+              if json.Unmarshal(b,&st) == nil && st.Signals != nil {
+                  signalMu.Lock(); signalState = st; signalMu.Unlock()
+              }
+          }
+
+          func saveSignalState() {
+              signalMu.RLock(); b,_ := json.MarshalIndent(signalState,"","  "); signalMu.RUnlock()
+              _ = os.MkdirAll(appDataDir(),0755)
+              _ = os.WriteFile(signalDataPath(), b, 0644)
+          }
+
+          func runSignalCollector() map[string]interface{} {
+              started := time.Now()
+              counts := map[string]int{}
+              for _, slug := range []string{"aroma","bolyarka","mollox"} {
+                  c := store.Clients[slug]
+                  if c == nil { continue }
+                  fresh := collectClientSignals(c)
+                  mergeSignals(slug,fresh)
+                  counts[slug] = len(fresh)
+              }
+              saveSignalState()
+              return map[string]interface{}{"ok":true,"updated_at":nowISO(),"duration_ms":time.Since(started).Milliseconds(),"fresh_counts":counts}
+          }
+
+          func signalListHandler(w http.ResponseWriter, r *http.Request) {
+              client := strings.TrimSpace(r.URL.Query().Get("client"))
+              limit := 100
+              if raw := r.URL.Query().Get("limit"); raw != "" { if n,err:=strconv.Atoi(raw); err==nil && n>0 && n<=500 { limit=n } }
+              signalMu.RLock(); defer signalMu.RUnlock()
+              if client != "" {
+                  rows := append([]Signal(nil), signalState.Signals[client]...)
+                  if len(rows)>limit { rows=rows[:limit] }
+                  writeJSONCompat(w, map[string]interface{}{"client":client,"updated_at":signalState.UpdatedAt,"signals":rows})
+                  return
+              }
+              writeJSONCompat(w, signalState)
+          }
+
+          func signalRefreshHandler(w http.ResponseWriter, r *http.Request) {
+              if r.Method != http.MethodPost { http.Error(w,"method not allowed",http.StatusMethodNotAllowed); return }
+              writeJSONCompat(w, runSignalCollector())
+          }
+
+          func signalHealthHandler(w http.ResponseWriter, r *http.Request) {
+              signalMu.RLock(); defer signalMu.RUnlock()
+              counts := map[string]int{}
+              for k,v := range signalState.Signals { counts[k]=len(v) }
+              writeJSONCompat(w,map[string]interface{}{"ok":true,"updated_at":signalState.UpdatedAt,"interval_minutes":10,"clients":counts})
+          }
+
+          func writeJSONCompat(w http.ResponseWriter, v interface{}) {
+              w.Header().Set("Content-Type","application/json; charset=utf-8")
+              _ = json.NewEncoder(w).Encode(v)
+          }
+
+          // lightweight wrappers keep collector isolated from existing parsing code.
+          func xmlUnmarshalCompat(b []byte, v interface{}) error { return xml.Unmarshal(b,v) }
+          func bingResultBlocks(body string) []string {
+              re := regexp.MustCompile(`(?is)<li[^>]*class=["'][^"']*b_algo[^"']*["'][^>]*>(.*?)</li>`)
+              ms := re.FindAllStringSubmatch(body,-1); out:=make([]string,0,len(ms)); for _,m:=range ms { if len(m)>1 { out=append(out,m[1]) } }; return out
+          }
+          func bingResultParts(block string) (string,string,string) {
+              linkRE:=regexp.MustCompile(`(?is)<h2[^>]*>.*?<a[^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>`)
+              pRE:=regexp.MustCompile(`(?is)<p[^>]*>(.*?)</p>`)
+              lm:=linkRE.FindStringSubmatch(block); if len(lm)<3 { return "","","" }
+              snippet:=""; if pm:=pRE.FindStringSubmatch(block); len(pm)>1 { snippet=cleanPostSnippet(pm[1]) }
+              return html.UnescapeString(lm[1]),cleanPostSnippet(lm[2]),snippet
+          }
+
+          func init() {
+              loadSignalState()
+              http.HandleFunc("/api/signals", signalListHandler)
+              http.HandleFunc("/api/signals/refresh", signalRefreshHandler)
+              http.HandleFunc("/api/signals/health", signalHealthHandler)
+              go func(){
+                  time.Sleep(90*time.Second)
+                  runSignalCollector()
+                  t:=time.NewTicker(10*time.Minute); defer t.Stop()
+                  for range t.C { runSignalCollector() }
+              }()
+          }
+
+          // imports used by isolated parsing wrappers
+          var _ = fmt.Sprintf
+          GO
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('signal_collector.go')
+          s=p.read_text()
+          s=s.replace('"fmt"\n', '')
+          s=s.replace('"net/http"\n', '"net/http"\n    "encoding/xml"\n    "html"\n    "regexp"\n')
+          s=s.replace('\n          // imports used by isolated parsing wrappers\n          var _ = fmt.Sprintf\n', '\n')
+          p.write_text(s)
+          PY
+          gofmt -w signal_collector.go
+          go test ./...
+      - name: Commit collector
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add signal_collector.go
+          git commit -m 'Add BLIS Signal Collector with 10 minute discovery' || exit 0
+          git push origin HEAD:milestone/navigator-production-stable-20260825
