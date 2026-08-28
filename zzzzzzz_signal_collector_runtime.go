@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-//go:embed static/navigator-signal-collector-v1.js
+//go:embed static/navigator-signal-collector-v1.js static/navigator-intelligence-stream-v2.js
 var signalCollectorAssets embed.FS
 
 func serveSignalCollectorJS() {
@@ -22,13 +22,26 @@ func serveSignalCollectorJS() {
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		_, _ = w.Write(b)
 	})
+	http.HandleFunc("/navigator-intelligence-stream-v2.js", func(w http.ResponseWriter, r *http.Request) {
+		b, err := signalCollectorAssets.ReadFile("static/navigator-intelligence-stream-v2.js")
+		if err != nil {
+			http.Error(w, "asset not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		_, _ = w.Write(b)
+	})
 }
 
 func injectSignalCollector(body []byte) []byte {
-	if bytes.Contains(body, []byte("navigator-signal-collector-v1.js")) {
+	if bytes.Contains(body, []byte("navigator-intelligence-stream-v2.js")) {
 		return body
 	}
-	tag := []byte(`<script src="/navigator-signal-collector-v1.js?v=20260828-signal1"></script>`)
+	// v2 supersedes the small Signals-only panel and distributes the same real
+	// evidence across Monitoring, Signals, Reputation, Digital, Market,
+	// Competition, Overview and History.
+	tag := []byte(`<script src="/navigator-intelligence-stream-v2.js?v=20260828-intelligence2"></script>`)
 	if bytes.Contains(body, []byte("</body>")) {
 		return bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 	}
@@ -46,7 +59,6 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
-		}
 		if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
 			return nil
 		}
