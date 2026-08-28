@@ -1,0 +1,23 @@
+name: Validate Signal Collector Integration
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/validate-signal-integration.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and test
+        run: go test ./...
+      - name: Verify collector wiring
+        run: |
+          test -f signal_collector.go
+          test -f static/navigator-signal-collector-v1.js
+          test -f zzzzzzz_signal_collector_runtime.go
+          grep -q '/api/signals/refresh' signal_collector.go
+          grep -q 'navigator-signal-collector-v1.js' zzzzzzz_signal_collector_runtime.go
