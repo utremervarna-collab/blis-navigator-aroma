@@ -1,0 +1,8 @@
+name: Signal Collector State
+on:
+  workflow_dispatch:
+jobs:
+  state:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ready
