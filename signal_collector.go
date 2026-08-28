@@ -249,13 +249,19 @@ func buildSignal(c *Client, source, sourceType, rawURL, title, text, published s
 	}
 	sentiment, risk := signalSentimentAndRisk(title + " " + text)
 	fingerprint := signalHash(c.Slug, rawURL, title, text)
+	scope := signalSourceScope(c, rawURL)
+	// Google News is a discovery transport, not an owned brand channel.
+	// Articles discovered through it are external information signals.
+	if sourceType == "news" {
+		scope = "external"
+	}
 	return Signal{
 		ID:          fingerprint[:16],
 		Client:      c.Slug,
 		Brand:       c.Name,
 		Source:      source,
 		SourceType:  sourceType,
-		Scope:       signalSourceScope(c, rawURL),
+		Scope:       scope,
 		URL:         rawURL,
 		Title:       title,
 		Text:        text,
