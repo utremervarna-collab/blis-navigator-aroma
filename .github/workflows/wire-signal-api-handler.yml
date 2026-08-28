@@ -1,0 +1,39 @@
+name: Wire Signal Collector API Handler
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/wire-signal-api-handler.yml
+permissions:
+  contents: write
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Route collector endpoints through production handler
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('main.go')
+          s=p.read_text()
+          needle='func handler(w http.ResponseWriter, r *http.Request) {\n\tpath := strings.Trim(r.URL.Path, "/")\n'
+          block='''func handler(w http.ResponseWriter, r *http.Request) {\n\tpath := strings.Trim(r.URL.Path, "/")\n\t// BLIS Signal Collector endpoints are routed here because production uses\n\t// handler directly rather than http.DefaultServeMux.\n\tswitch path {\n\tcase "api/signals":\n\t\tsignalListHandler(w, r)\n\t\treturn\n\tcase "api/signals/refresh":\n\t\tsignalRefreshHandler(w, r)\n\t\treturn\n\tcase "api/signals/health":\n\t\tsignalHealthHandler(w, r)\n\t\treturn\n\t}\n'''
+          if 'case "api/signals/health":' not in s:
+              if needle not in s:
+                  raise SystemExit('handler insertion point not found')
+              s=s.replace(needle,block,1)
+          p.write_text(s)
+          PY
+          gofmt -w main.go
+          go test ./...
+      - name: Commit handler wiring
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add main.go
+          git commit -m 'Route Signal Collector APIs through production handler'
+          git push origin HEAD:milestone/navigator-production-stable-20260825
