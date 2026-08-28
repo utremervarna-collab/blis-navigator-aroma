@@ -1,0 +1,25 @@
+name: Validate Intelligence Stream v2
+
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - competitor_signal_collector.go
+      - static/navigator-intelligence-stream-v2.js
+      - zzzzzzz_signal_collector_runtime.go
+      - .github/workflows/validate-intelligence-v2.yml
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Go build and tests
+        run: |
+          gofmt -w competitor_signal_collector.go zzzzzzz_signal_collector_runtime.go
+          git diff --exit-code competitor_signal_collector.go zzzzzzz_signal_collector_runtime.go
+          go test ./...
+      - name: JavaScript syntax
+        run: node --check static/navigator-intelligence-stream-v2.js
