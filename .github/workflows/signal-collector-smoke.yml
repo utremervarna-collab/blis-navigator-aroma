@@ -1,0 +1,16 @@
+name: Signal Collector Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - signal_collector.go
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: go test ./...
