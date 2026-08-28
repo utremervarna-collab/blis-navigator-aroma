@@ -1,0 +1,59 @@
+name: Verify Signal Collector Live v2
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/verify-signal-collector-live-v2.yml
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health and collect
+        run: |
+          set -euo pipefail
+          BASE='https://blis-navigator-milestone-20260825.onrender.com'
+          curl --fail --show-error --silent --retry 4 --retry-delay 5 --retry-all-errors --max-time 120 "$BASE/api/signals/health" -o /tmp/health.json
+          cat /tmp/health.json
+          curl --fail --show-error --silent --retry 3 --retry-delay 8 --retry-all-errors --max-time 420 -X POST "$BASE/api/signals/refresh" -o /tmp/refresh.json
+          cat /tmp/refresh.json
+      - name: Validate signal feeds
+        run: |
+          set -euo pipefail
+          BASE='https://blis-navigator-milestone-20260825.onrender.com'
+          for C in aroma bolyarka mollox; do
+            curl --fail --show-error --silent --max-time 120 "$BASE/api/signals?client=$C&scope=external&limit=20" -o "/tmp/$C.json"
+            python3 - "$C" <<'PY'
+          import json,sys
+          client=sys.argv[1]
+          d=json.load(open('/tmp/'+client+'.json',encoding='utf-8'))
+          assert d.get('client')==client, d
+          rows=d.get('signals') or []
+          assert isinstance(rows,list), d
+          for s in rows:
+              assert s.get('client')==client
+              assert s.get('scope')=='external'
+              assert s.get('fingerprint')
+              assert s.get('source_type') in ('news','social','web')
+              assert 0 <= float(s.get('risk_score',0)) <= 100
+              assert s.get('url','').startswith('http')
+          print(client,'external_signals=',len(rows),'updated_at=',d.get('updated_at'))
+          PY
+          done
+      - name: Confirm UI wiring and no Everbet
+        run: |
+          set -euo pipefail
+          BASE='https://blis-navigator-milestone-20260825.onrender.com'
+          curl --fail --show-error --silent --max-time 120 "$BASE/dashboard.html" -o /tmp/dashboard.html
+          grep -q 'navigator-signal-collector-v1.js' /tmp/dashboard.html
+          curl --fail --show-error --silent --max-time 120 "$BASE/navigator-signal-collector-v1.js" -o /tmp/collector.js
+          grep -q 'Външни сигнали' /tmp/collector.js
+          curl --fail --show-error --silent --max-time 120 "$BASE/api/signals?client=everbet&limit=5" -o /tmp/everbet.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/everbet.json',encoding='utf-8'))
+          assert (d.get('signals') or []) == [], d
+          print('UI wiring OK; Everbet absent')
+          PY
