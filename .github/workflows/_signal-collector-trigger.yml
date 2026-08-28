@@ -1,0 +1,12 @@
+name: Trigger Signal Collector
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/_signal-collector-trigger.yml
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo trigger
