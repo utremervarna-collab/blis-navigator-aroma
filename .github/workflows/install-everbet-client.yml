@@ -1,0 +1,91 @@
+name: Install Everbet client
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/install-everbet-client.yml']
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Activate Everbet in Navigator
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Backend: seed, dashboard routing and live engine.
+          p = Path('main.go')
+          s = p.read_text()
+          old = 'mollox := molloxSeedClient(stamp)\n\twirello := wirelloSeedClient(stamp)\n\ts := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello}}'
+          new = 'mollox := molloxSeedClient(stamp)\n\twirello := wirelloSeedClient(stamp)\n\teverbet := everbetSeedClient(stamp)\n\ts := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello, "everbet": everbet}}'
+          if old not in s:
+              raise SystemExit('seedStore insertion point not found')
+          s = s.replace(old, new, 1)
+
+          old = 'case "wirello":\n\t\treturn wirelloDashboard(c)\n\tdefault:'
+          new = 'case "wirello":\n\t\treturn wirelloDashboard(c)\n\tcase "everbet":\n\t\treturn everbetDashboard(c)\n\tdefault:'
+          if old not in s:
+              raise SystemExit('dashboard switch insertion point not found')
+          s = s.replace(old, new, 1)
+
+          old = 'case "mollox":\n\t\treturn runMolloxEngine(c, snapshot)\n\tdefault:'
+          new = 'case "mollox":\n\t\treturn runMolloxEngine(c, snapshot)\n\tcase "everbet":\n\t\treturn runEverbetEngine(c, snapshot)\n\tdefault:'
+          if old not in s:
+              raise SystemExit('engine switch insertion point not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Main client switch: Everbet visible; Astor Garden retained in backend but hidden from client UI.
+          p = Path('static/dashboard.html')
+          s = p.read_text()
+          s = s.replace('<option value="astor-garden">Astor Garden</option>', '')
+          s = s.replace('<option value="mollox">MOLLOX България</option>', '<option value="mollox">MOLLOX България</option><option value="everbet">Everbet</option>', 1)
+          astor_button = '<button type="button" class="client-option" data-client-key="astor-garden" role="option" aria-selected="false"><span class="client-option-mark" style="background:#0b6f73">AG</span><span><b>Astor Garden Hotel</b><small>Хотелиерство</small></span><span class="client-option-check"></span></button>'
+          s = s.replace(astor_button, '')
+          mollox_button = '<button type="button" class="client-option" data-client-key="mollox" role="option" aria-selected="false"><span class="client-option-mark" style="background:#17735f">MX</span><span><b>MOLLOX България</b><small>Професионална хигиена</small></span><span class="client-option-check"></span></button>'
+          everbet_button = '<button type="button" class="client-option" data-client-key="everbet" role="option" aria-selected="false"><span class="client-option-mark" style="background:#16352f">EB</span><span><b>Everbet</b><small>Онлайн казино и спортни залози</small></span><span class="client-option-check"></span></button>'
+          if mollox_button not in s:
+              raise SystemExit('client switch insertion point not found')
+          s = s.replace(mollox_button, mollox_button + everbet_button, 1)
+          s = s.replace("['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']", "['aroma','bolyarka','varna-towers','mollox','wirello','everbet']", 1)
+          p.write_text(s)
+
+          # Canonical client UI metadata.
+          p = Path('static/navigator-client-ui.js')
+          s = p.read_text()
+          old = "  wirello:{name:'Wirello Market',full:'Wirello Market',type:'Търговска верига / модерен ритейл',mark:'WM'}"
+          new = "  wirello:{name:'Wirello Market',full:'Wirello Market',type:'Търговска верига / модерен ритейл',mark:'WM'},\n  everbet:{name:'Everbet',full:'Everbet',type:'Онлайн казино и спортни залози',mark:'EB'}"
+          if old not in s:
+              raise SystemExit('client UI insertion point not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Profile dossier: text-only, based on the verified Everbet client model.
+          p = Path('static/app.js')
+          s = p.read_text()
+          marker = ",'astor-garden':{accent:'#0f766e'"
+          everbet = ",everbet:{accent:'#16352f',soft:'#eef5f2',mono:'EB',descriptor:'Лицензиран български оператор за онлайн казино и спортни залози.',summary:'Everbet развива публична дигитална платформа за спортни залози и онлайн казино. BLIS наблюдава продуктовата среда, промоционалната активност, VIP и retention механиките, регулаторните сигнали, публичната видимост и конкурентната позиция спрямо водещи оператори на българския пазар.',facts:[['2','Публично посочени лицензи'],['18+','Възрастово ограничение'],['15+','Наблюдавани casino провайдъри'],['9','Видими платежни метода']],portfolio:['Спортни залози','Live залози','Онлайн казино','Live casino','Промоции','VIP Club'],assets:['Официална платформа Everbet.bg','Онлайн казино каталог','Промоционална секция','VIP Club','Условия, KYC и responsible gaming информация'],history:['Публична регулаторна идентичност на оператора','Активни лицензи за спортни залози и онлайн казино','Развитие на отделни casino, sport, promotions и VIP продуктови зони','Постоянно наблюдение на конкурентна и регулаторна среда'],links:[['Официална платформа','https://everbet.bg/bg'],['Онлайн казино','https://everbet.bg/bg/online-casino'],['Промоции','https://everbet.bg/bg/promotions/new-clients'],['VIP Club','https://everbet.bg/bg/everbet-vip-club-new']],notes:['BLIS профилът използва само публични източници','Конкурентният клъстер включва efbet, WINBET, Betano, Palms Bet и Sesame','Регулацията, KYC и responsible gaming се наблюдават като отделни доверителни и рискови сигнали']}"
+          if marker not in s:
+              raise SystemExit('dossier insertion point not found')
+          s = s.replace(marker, everbet + marker, 1)
+          p.write_text(s)
+
+          # Text-only Everbet theme. No hero image or generated artwork.
+          p = Path('static/client-themes.css')
+          css = p.read_text()
+          block = '''\nbody[data-client="everbet"]{--client:#16352f;--clientSoft:#eef5f2;--client-bg:#f6f8f7;--client-bg2:#e8efec;--client-panel:#fff;--client-panel2:#f1f5f3;--client-glow:rgba(22,53,47,.14);--client-ink:#16352f;--client-line:#d9e3df;--client-hero:linear-gradient(110deg,rgba(22,53,47,.09),rgba(87,116,105,.05) 48%,rgba(255,255,255,0) 78%)}\nbody[data-client="everbet"] .brandname{color:#16352f}\n'''
+          if 'body[data-client="everbet"]' not in css:
+              css += block
+          p.write_text(css)
+          PY
+          gofmt -w main.go everbet_client.go
+          go test ./...
+      - name: Commit activation
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add main.go everbet_client.go static/dashboard.html static/navigator-client-ui.js static/client-themes.css static/app.js
+          git commit -m 'Activate Everbet client profile in Navigator' || exit 0
+          git push
