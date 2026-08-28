@@ -126,7 +126,7 @@ func signalSeverity(risk float64) string {
 	}
 }
 
-func containsAny(low string, terms ...string) bool {
+func collectorContainsAny(low string, terms ...string) bool {
 	for _, term := range terms {
 		if strings.Contains(low, term) {
 			return true
@@ -138,15 +138,15 @@ func containsAny(low string, terms ...string) bool {
 func signalTopic(text string) string {
 	low := strings.ToLower(text)
 	switch {
-	case containsAny(low, "комисия", "санкц", "глоб", "регул", "забран", "изтегля", "recall", "warning", "echa", "кзп", "нарушение"):
+	case collectorContainsAny(low, "комисия", "санкц", "глоб", "регул", "забран", "изтегля", "recall", "warning", "echa", "кзп", "нарушение"):
 		return "regulatory"
-	case containsAny(low, "скандал", "измама", "оплак", "жалб", "недовол", "бойкот", "фалш", "опас", "репутац"):
+	case collectorContainsAny(low, "скандал", "измама", "оплак", "жалб", "недовол", "бойкот", "фалш", "опас", "репутац"):
 		return "reputation"
-	case containsAny(low, "конкур", "пазарен дял", "каменица", "загорка", "хаглайтнер", "calvatis", "albis", "biofresh", "alteya"):
+	case collectorContainsAny(low, "конкур", "пазарен дял", "каменица", "загорка", "хаглайтнер", "calvatis", "albis", "biofresh", "alteya"):
 		return "competition"
-	case containsAny(low, "продукт", "опаков", "качество", "състав", "формул", "бира", "козмет", "препарат"):
+	case collectorContainsAny(low, "продукт", "опаков", "качество", "състав", "формул", "бира", "козмет", "препарат"):
 		return "product"
-	case containsAny(low, "цена", "промо", "продаж", "дистриб", "магазин", "пазар", "клиент", "поръч"):
+	case collectorContainsAny(low, "цена", "промо", "продаж", "дистриб", "магазин", "пазар", "клиент", "поръч"):
 		return "commercial"
 	default:
 		return "brand_mention"
@@ -170,7 +170,7 @@ func signalSentimentAndRisk(text string) (string, float64) {
 	}
 	if n > 0 {
 		risk := 40.0 + float64(n)*15.0
-		if containsAny(low, "опас", "забран", "санкц", "изтегля", "fraud", "recall") {
+		if collectorContainsAny(low, "опас", "забран", "санкц", "изтегля", "fraud", "recall") {
 			risk += 15
 		}
 		if risk > 100 {
@@ -201,7 +201,7 @@ func signalRelevance(c *Client, title, text string) float64 {
 			score += 35
 		}
 	}
-	if c.Slug == "aroma" && score == 0 && strings.Contains(low, "арома") && containsAny(low, "козмет", "шампоан", "крем", "toothpaste", "cosmetic") {
+	if c.Slug == "aroma" && score == 0 && strings.Contains(low, "арома") && collectorContainsAny(low, "козмет", "шампоан", "крем", "toothpaste", "cosmetic") {
 		score = 45
 	}
 	if score > 100 {
