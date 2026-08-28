@@ -1,0 +1,63 @@
+name: Upgrade Signal Evidence Detail
+
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/upgrade-signal-evidence-detail.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add publication provenance and competitor refresh integration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('signal_collector.go')
+          s=p.read_text()
+          old='''\t\t\tDescription string `xml:"description"`\n'''
+          new='''\t\t\tDescription string `xml:"description"`\n\t\t\tSource      string `xml:"source"`\n'''
+          if old in s and 'Source      string `xml:"source"`' not in s:
+              s=s.replace(old,new,1)
+          old='''\tfor _, item := range feed.Channel.Items {\n\t\tif s, ok := buildSignal(c, "Google News", "news", item.Link, item.Title, item.Description, item.PubDate); ok {'''
+          new='''\tfor _, item := range feed.Channel.Items {\n\t\tsource := strings.TrimSpace(item.Source)\n\t\tif source == "" {\n\t\t\tsource = "Google News"\n\t\t}\n\t\tif s, ok := buildSignal(c, source, "news", item.Link, item.Title, item.Description, item.PubDate); ok {'''
+          if old not in s:
+              raise SystemExit('news source patch anchor not found')
+          s=s.replace(old,new,1)
+          old='''\tsaveSignalStateFile()\n\tsaveStore()\n\treturn map[string]interface{}{\n\t\t"ok":           true,'''
+          new='''\tcompetitorCounts := runCompetitorSignalCollector()\n\tsaveSignalStateFile()\n\tsaveStore()\n\treturn map[string]interface{}{\n\t\t"ok":           true,\n\t\t"competitor_fresh_counts": competitorCounts,'''
+          if old not in s:
+              raise SystemExit('refresh integration anchor not found')
+          s=s.replace(old,new,1)
+          old='''\tcounts := map[string]int{}\n\texternal := map[string]int{}\n\tfor client, rows := range signalState.Signals {\n\t\tcounts[client] = len(rows)\n\t\tfor _, s := range rows {\n\t\t\tif s.Scope == "external" {\n\t\t\t\texternal[client]++\n\t\t\t}\n\t\t}\n\t}'''
+          new='''\tcounts := map[string]int{}\n\texternal := map[string]int{}\n\tcompetitor := map[string]int{}\n\tfor client, rows := range signalState.Signals {\n\t\tcounts[client] = len(rows)\n\t\tfor _, s := range rows {\n\t\t\tif s.Scope == "external" {\n\t\t\t\texternal[client]++\n\t\t\t}\n\t\t\tif s.Scope == "competitor" {\n\t\t\t\tcompetitor[client]++\n\t\t\t}\n\t\t}\n\t}'''
+          if old not in s:
+              raise SystemExit('health count anchor not found')
+          s=s.replace(old,new,1)
+          old='''\t\t"clients":          counts,\n\t\t"external":         external,'''
+          new='''\t\t"clients":          counts,\n\t\t"external":         external,\n\t\t"competitor":       competitor,'''
+          if old not in s:
+              raise SystemExit('health response anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          gofmt -w signal_collector.go competitor_signal_collector.go
+          go test ./...
+          node --check static/navigator-intelligence-stream-v2.js
+      - name: Commit upgrade
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "BLIS Navigator Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add signal_collector.go competitor_signal_collector.go
+          git commit -m "Enrich signal provenance and refresh competitor mentions"
+          git push origin HEAD:milestone/navigator-production-stable-20260825
