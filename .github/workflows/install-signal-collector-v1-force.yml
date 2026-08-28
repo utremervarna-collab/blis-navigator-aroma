@@ -1,0 +1,41 @@
+name: Force Install BLIS Signal Collector v1
+on:
+  push:
+    branches:
+      - milestone/navigator-production-stable-20260825
+    paths:
+      - .github/workflows/install-signal-collector-v1-force.yml
+permissions:
+  contents: write
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build collector source
+        run: |
+          cp /dev/null signal_collector.go
+          python3 - <<'PY'
+          from pathlib import Path
+          wf=Path('.github/workflows/install-signal-collector-v1.yml').read_text()
+          start=wf.index("cat > signal_collector.go <<'GO'\n")+len("cat > signal_collector.go <<'GO'\n")
+          end=wf.index("\n          GO\n", start)
+          Path('signal_collector.go').write_text(wf[start:end])
+          p=Path('signal_collector.go')
+          s=p.read_text()
+          s=s.replace('"fmt"\n', '')
+          s=s.replace('"net/http"\n', '"net/http"\n    "encoding/xml"\n    "html"\n    "regexp"\n')
+          s=s.replace('\n          // imports used by isolated parsing wrappers\n          var _ = fmt.Sprintf\n', '\n')
+          p.write_text(s)
+          PY
+          gofmt -w signal_collector.go
+          go test ./...
+      - name: Commit collector
+        run: |
+          git config user.name 'BLIS Navigator Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add signal_collector.go
+          git commit -m 'Add BLIS Signal Collector with 10 minute discovery' || exit 0
+          git push origin HEAD:milestone/navigator-production-stable-20260825
