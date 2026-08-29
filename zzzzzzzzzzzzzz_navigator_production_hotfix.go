@@ -11,8 +11,8 @@ import (
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
 
 // This late init wraps the existing response modifier. It keeps the production
-// Navigator on one canonical UI path and also makes the public client-login CTA
-// neutral instead of carrying a legacy Varna Towers profile into the login form.
+// Navigator on one canonical UI path and routes the public client CTA to a
+// neutral access page that is isolated from remembered client sessions.
 func init() {
 	if authProxy == nil {
 		return
@@ -55,9 +55,9 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
-		// The public site must always open a neutral client login. Client-specific
-		// login links may still use ?client=<slug> when intentionally distributed.
-		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/client-login?generic=1"`))
+		// The public CTA opens a standalone neutral form. It never restores an
+		// existing client session and therefore cannot default to Varna Towers.
+		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/client-access.html?v=20260829-neutral2"`))
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
