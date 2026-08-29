@@ -47,7 +47,9 @@ function snapIndex(row,key){
   return N(hit?.value);
 }
 function historyTurningPoints(){
-  const rows=A(window.BLISPeriod?.snapshots?.()||window.H).map(r=>({row:r,t:stamp(r),blis:snapIndex(r,'blis')})).filter(x=>x.t&&x.blis!=null).sort((a,b)=>a.t-b.t);
+  const periodRows=A(window.BLISPeriod?.snapshots?.());
+  const rawRows=periodRows.length?periodRows:A(window.H);
+  const rows=rawRows.map(r=>({row:r,t:stamp(r),blis:snapIndex(r,'blis')})).filter(x=>x.t&&x.blis!=null).sort((a,b)=>a.t-b.t);
   if(rows.length<2)return[];
   const out=[];
   for(let i=1;i<rows.length;i++){
