@@ -1,17 +1,21 @@
-/* BLIS Navigator — production entrypoint v10.
+/* BLIS Navigator — production entrypoint v11.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V10)return;
-window.__BLIS_PRODUCTION_ENTRY_V10=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V11)return;
+window.__BLIS_PRODUCTION_ENTRY_V11=true;
 
-const VERSION='20260829-executive-pages-4';
-const q=new URLSearchParams(location.search);
-const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
-if(document.body){document.body.dataset.client=client;document.body.dataset.navigatorBuild=VERSION;}
-window.BLIS_INITIAL_CLIENT=client;
-try{window.slug=client}catch(_){}
+const VERSION='20260829-executive-pages-5';
+function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
+const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
+if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
+window.BLIS_INITIAL_CLIENT=initialClient;
+try{window.slug=initialClient}catch(_){}
 
+function currentClient(){
+  try{const c=window.BLISClientUIV3?.current?.();if(c)return c}catch(_){}
+  return urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.slug||initialClient;
+}
 function reset(name){try{window[name]=false}catch(_){}}
 [
   '__BLIS_REFERENCE_V15',
@@ -90,11 +94,13 @@ async function boot(){
   const firstPage=activePage();
   function renderCanonical(target=activePage()){
     syncGlobals();
+    const client=currentClient();
     try{window.BLISClientUIV3?.paint?.(client)}catch(_){}
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-4';
+    document.documentElement.dataset.navigatorUi='executive-pages-5';
+    document.documentElement.dataset.navigatorClient=client;
   }
 
   [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
@@ -107,7 +113,7 @@ async function boot(){
   window.addEventListener('blis:executive-data',()=>setTimeout(()=>renderCanonical(activePage()),60));
   window.addEventListener('blis:clientdata',()=>setTimeout(()=>renderCanonical(activePage()),50));
   window.addEventListener('blis:periodchange',()=>setTimeout(()=>renderCanonical(activePage()),50));
-  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client,page:firstPage,version:VERSION}}));
+  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:currentClient(),page:firstPage,version:VERSION}}));
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
