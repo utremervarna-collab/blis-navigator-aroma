@@ -1,0 +1,42 @@
+/* BLIS Navigator — canonical asset/layout guard v2.
+   Prevents raw module overflow and keeps all executive pages inside the viewport. */
+html,body,.app,.main,.shell,.page,.exec-page{max-width:100%;min-width:0}
+html,body{overflow-x:hidden!important}
+.main,.shell,.page,.page.active,.exec-page,.exec-page>*,.exec-glance,.exec-card,.exec-visual{min-width:0!important}
+.page.active{overflow-x:hidden!important}
+.exec-page{width:100%!important}
+.exec-glance{width:100%!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.exec-glance>*{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.exec-card b,.exec-card p,.exec-answer b{overflow-wrap:anywhere}
+.exec-visual{width:100%!important;max-width:100%!important}
+
+/* Digital radar must never escape the content column. */
+#digital,#digitalBody,#digitalBody .dv-shell,#digitalBody .dv-stage{width:100%!important;max-width:100%!important;min-width:0!important}
+#digitalBody .dv-stage{grid-template-columns:minmax(0,1fr) minmax(250px,34%)!important;align-items:stretch!important;overflow:hidden!important}
+#digitalBody .dv-radar-column,#digitalBody .dv-detail{min-width:0!important;max-width:100%!important}
+#digitalBody .dv-radar-wrap{width:min(470px,100%)!important;max-width:100%!important}
+#digitalBody .dv-detail{overflow:hidden!important;overflow-wrap:anywhere!important}
+#digitalBody svg{max-width:100%}
+
+/* Perception map is the only large visual on Market and stays contained. */
+#market,#marketBody,#marketBody .pm-wrap,#marketBody .pm-main,#marketBody .pm-mapcard{min-width:0!important;max-width:100%!important}
+#marketBody .pm-main{grid-template-columns:minmax(0,1fr) minmax(260px,320px)!important}
+#marketBody .pm-stage{max-width:100%!important}
+
+/* Generic protection for analytical grids/cards. */
+.rep46-grid,.cmpv6-grid,.sig2-list,.ov5-insights,.market1-themes{min-width:0!important;max-width:100%!important}
+.rep46-card,.cmpv6-card,.sig2-item,.ov5-insight,.market1-theme{min-width:0!important;max-width:100%!important}
+
+@media(max-width:1050px){
+  .exec-glance{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #digitalBody .dv-stage{grid-template-columns:1fr!important}
+  #digitalBody .dv-detail{min-height:0!important}
+  #marketBody .pm-main{grid-template-columns:1fr!important}
+  #marketBody .pm-drawer{min-height:0!important}
+}
+@media(max-width:760px){
+  .exec-glance{grid-template-columns:1fr!important}
+  .exec-head{flex-direction:column!important}
+  #digitalBody .dv-radar-wrap{width:min(390px,100%)!important}
+  #marketBody .pm-stage{height:520px!important}
+}
