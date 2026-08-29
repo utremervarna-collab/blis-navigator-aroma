@@ -3,7 +3,7 @@
 (function(){
 'use strict';
 if(window.__BLIS_PRODUCTION_ENTRY_V18)return;window.__BLIS_PRODUCTION_ENTRY_V18=true;
-const VERSION='20260829-single-owner-color-1';
+const VERSION='20260829-single-owner-color-2';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -28,7 +28,7 @@ async function boot(){
  sync();
  window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
  window.addEventListener('blis:production-ready',()=>sync());
- document.documentElement.dataset.navigatorUi='single-owner-color-1';
+ document.documentElement.dataset.navigatorUi='single-owner-color-2';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
  setTimeout(()=>window.BLISColorSystemV1?.decorate?.(),80);
 }
