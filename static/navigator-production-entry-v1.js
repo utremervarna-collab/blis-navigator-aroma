@@ -1,44 +1,34 @@
-/* BLIS Navigator — production entrypoint v1.
-   Зарежда се последен от gateway-а и гарантира, че legacy client-specific
-   скриптове не могат да останат собственик на навигацията или модулите. */
+/* BLIS Navigator — production entrypoint v2.
+   Зарежда се последен от gateway-а и установява единната аналитична структура. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V1)return;
-window.__BLIS_PRODUCTION_ENTRY_V1=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V2)return;
+window.__BLIS_PRODUCTION_ENTRY_V2=true;
 
-const VERSION='20260829-production-entry-1';
+const VERSION='20260829-system-structure-1';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body)document.body.dataset.client=client;
 window.BLIS_INITIAL_CLIENT=client;
 try{window.slug=client}catch(_){}
 
-function reset(name){try{window[name]=false}catch(_){}}
-function load(src){
-  return new Promise((resolve,reject)=>{
-    const s=document.createElement('script');
-    s.src=src;
-    s.async=false;
-    s.onload=()=>resolve();
-    s.onerror=()=>reject(new Error('Неуспешно зареждане: '+src));
-    document.body.appendChild(s);
-  });
-}
+function load(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=()=>resolve();s.onerror=()=>reject(new Error('Неуспешно зареждане: '+src));document.body.appendChild(s)})}
+async function safe(src){try{await load(src+'?v='+VERSION)}catch(e){console.error(e)}}
 
 async function boot(){
-  /* Старият Varna Towers wrapper не трябва да остава последният refGo. */
-  reset('__BLIS_REFERENCE_V12');
-  reset('__BLIS_OVERVIEW_V3');
-  reset('__BLIS_COMPETITION_V6');
-  reset('__BLISReputationMasterLoaded');
-  reset('__BLIS_CLIENT_UI_V3');
+  await safe('/navigator-system-structure-v1.js');
+  await safe('/navigator-overview-system-v4.js');
+  await safe('/navigator-signals-system-v1.js');
+  await safe('/navigator-market-system-v1.js');
 
-  try{await load('/navigator-overview-master.js?v='+VERSION)}catch(e){console.error(e)}
-  try{await load('/navigator-competition-master-v5.js?v='+VERSION)}catch(e){console.error(e)}
-  try{await load('/navigator-reputation-exact-art-v41.js?v='+VERSION)}catch(e){console.error(e)}
-  try{await load('/navigator-digital-master.js?v='+VERSION)}catch(e){console.error(e)}
-  try{await load('/navigator-client-ui.js?v='+VERSION)}catch(e){console.error(e)}
-  try{await load('/navigator-reference.js?v='+VERSION)}catch(e){console.error(e)}
+  /* Каноничните модули, които остават собственици на следващите етапи. */
+  await safe('/navigator-competition-master-v5.js');
+  await safe('/navigator-reputation-master.js');
+  await safe('/navigator-digital-master.js');
+  await safe('/navigator-client-ui.js');
+
+  /* Router-ът се зарежда последен, за да няма legacy собственик след него. */
+  await safe('/navigator-reference.js');
 
   const page=(q.get('page')||document.querySelector('.page.active')?.id||'overview');
   requestAnimationFrame(()=>{
