@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v6.
-   Един каноничен UI; интерактивната карта е задължителна част от Market. */
+/* BLIS Navigator — production entrypoint v7.
+   Един каноничен Executive UI; един ключов визуален елемент на страница. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V6)return;
-window.__BLIS_PRODUCTION_ENTRY_V6=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V7)return;
+window.__BLIS_PRODUCTION_ENTRY_V7=true;
 
-const VERSION='20260829-canonical-ui-2-map';
+const VERSION='20260829-executive-ui-1';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=client;document.body.dataset.navigatorBuild=VERSION;}
@@ -29,7 +29,7 @@ function forceMarketMap(){
   syncGlobals();
   try{window.BLISPerceptionMap?.render?.()}catch(e){console.error('BLIS perception render:',e)}
   try{window.BLISMarketSystemV1?.decorate?.()}catch(e){console.error('BLIS market decorate:',e)}
-  try{window.BLISUnifiedVisualSystemV1?.decorate?.('market')}catch(_){}
+  try{window.BLISExecutiveUIV1?.decorate?.('market')}catch(_){}
 }
 
 async function boot(){
@@ -39,20 +39,20 @@ async function boot(){
   if(window.BLISOverviewSystemV5)window.BLISOverviewSystemV4=window.BLISOverviewSystemV5;
   if(window.BLISSignalsSystemV2)window.BLISSignalsSystemV1=window.BLISSignalsSystemV2;
 
-  /* The perception map is no longer inherited from legacy dashboard.html.
-     It is explicitly loaded and owned by the canonical UI. */
+  /* The perception map is a permanent canonical component. */
   await safe('/navigator-perception-core-v8.js');
   await safe('/navigator-perception-map.js');
   await safe('/navigator-market-system-v1.js');
 
+  /* Canonical analytical renderers. */
   await safe('/navigator-system-dynamics-v1.js');
   await safe('/navigator-competition-master-v5.js');
   await safe('/navigator-reputation-master.js');
   await safe('/navigator-digital-master.js');
-  await safe('/navigator-clarity-flow-v1.js');
-  await safe('/navigator-clarity-polish-v1.js');
-  await safe('/navigator-unified-visual-system-v1.js');
   await safe('/navigator-client-ui.js');
+
+  /* One client-facing composition layer. No stacked clarity/polish overlays. */
+  await safe('/navigator-executive-ui-v1.js');
 
   reset('__BLIS_REFERENCE_V15');
   await safe('/navigator-reference.js');
@@ -63,14 +63,16 @@ async function boot(){
     try{window.BLISClientUIV3?.paint?.(client)}catch(_){}
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
-    try{window.BLISClarityFlowV1?.decorate?.(target)}catch(_){}
-    try{window.BLISClarityPolishV1?.decorate?.(target)}catch(_){}
-    try{window.BLISUnifiedVisualSystemV1?.decorate?.(target)}catch(_){}
-    document.documentElement.dataset.navigatorUi='canonical-v6-map';
+    [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
+    document.documentElement.dataset.navigatorUi='executive-v1';
   }
 
   [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
-  window.addEventListener('blis:routechange',e=>{if(e.detail?.page==='market'){[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms))}});
+  window.addEventListener('blis:routechange',e=>{
+    const target=e.detail?.page||activePage();
+    if(target==='market')[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms));
+    [60,220,520].forEach(ms=>setTimeout(()=>window.BLISExecutiveUIV1?.decorate?.(target),ms));
+  });
   window.addEventListener('blis:clientdata',()=>setTimeout(()=>renderCanonical(activePage()),50));
   window.addEventListener('blis:periodchange',()=>setTimeout(()=>renderCanonical(activePage()),50));
   window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client,page:firstPage,version:VERSION}}));
