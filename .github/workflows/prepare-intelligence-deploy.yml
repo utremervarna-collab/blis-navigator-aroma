@@ -26,14 +26,16 @@ jobs:
             signal_collector.go \
             competitor_signal_collector.go \
             zzzzzzz_signal_collector_runtime.go \
+            static/navigator-signal-collector-v1.js \
             static/navigator-intelligence-stream-v2.js
           gofmt -w signal_collector.go competitor_signal_collector.go zzzzzzz_signal_collector_runtime.go
           go test ./...
+          node --check static/navigator-signal-collector-v1.js
           node --check static/navigator-intelligence-stream-v2.js
       - name: Commit validated deployment payload
         run: |
           git config user.name "BLIS Navigator Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add signal_collector.go competitor_signal_collector.go zzzzzzz_signal_collector_runtime.go static/navigator-intelligence-stream-v2.js
+          git add signal_collector.go competitor_signal_collector.go zzzzzzz_signal_collector_runtime.go static/navigator-signal-collector-v1.js static/navigator-intelligence-stream-v2.js
           git commit -m "Deploy live intelligence stream and competitor mentions"
           git push origin HEAD:deploy/intelligence-stream-20260829
