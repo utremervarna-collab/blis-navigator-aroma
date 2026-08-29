@@ -1,0 +1,139 @@
+/* BLIS Navigator — navigation clarity v1.
+   Faster orientation: numbered sidebar, compact progress, more analysis in the first viewport. */
+
+/* Desktop shell: keep identity, give analysis more space. */
+.side{width:204px!important;padding:14px 10px 12px!important;border-right:1px solid #dfe6ee!important;box-shadow:8px 0 30px rgba(24,55,91,.025)!important}
+.main{margin-left:204px!important;width:calc(100vw - 204px)!important}
+.shell{position:relative!important;padding:0 22px 26px!important}
+.brand{padding:4px 10px 12px!important}
+.brandname{font-size:26px!important;line-height:.96!important}
+.brandname:after{font-size:13px!important;margin-top:6px!important;letter-spacing:-.015em!important}
+.brandsub{font-size:8px!important;margin-top:6px!important;color:#627590!important}
+.clientbox{min-height:58px!important;margin:2px 0 10px!important;padding:8px!important;border-radius:10px!important}
+.client-switch-button{min-height:42px!important}
+.client-brand-name{font-size:10px!important}
+.client-brand-type,.client-brand-status{font-size:7.5px!important}
+
+/* Sidebar = primary navigation. Sequence is more useful than decorative icons. */
+#nav{counter-reset:blisNav!important;gap:1px!important}
+#nav button,#nav a{counter-increment:blisNav;height:36px!important;border-radius:8px!important;padding:0 8px!important;gap:8px!important;font-size:9.5px!important;position:relative!important}
+#nav button::before,#nav a::before{content:counter(blisNav,decimal-leading-zero);display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;border:1px solid #dce4ed;border-radius:8px;background:#f8fafc;color:#75879b;font-size:7.5px;font-weight:900;letter-spacing:.02em}
+#nav .navico{display:none!important}
+#nav .navtxt{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#nav button.active,#nav a.active{background:#edf5fe!important;color:#155a9f!important;border-left:0!important;border-radius:8px!important;box-shadow:inset 3px 0 0 #1f67b8!important}
+#nav button.active::before,#nav a.active::before{background:#1f67b8!important;border-color:#1f67b8!important;color:#fff!important}
+#nav button:nth-child(4),#nav button:nth-child(7){margin-top:7px!important}
+#nav button:nth-child(4):after,#nav button:nth-child(7):after{content:'';position:absolute;left:8px;right:8px;top:-4px;height:1px;background:#edf1f5}
+.dashboard-home-link{margin-top:10px!important;font-size:8.5px!important}
+
+/* The generic top chrome must not push the analytical answer below the fold. */
+.topbar{height:58px!important;padding:11px 0 7px!important;justify-content:flex-end!important;align-items:center!important}
+.topbar .title{display:none!important}
+.toptools{gap:8px!important;align-items:center!important}
+.datebox{height:34px!important;border-radius:9px!important;font-size:8.5px!important;padding:0 11px!important}
+.blis-system-bar{display:none!important}
+.sync{position:absolute!important;right:154px!important;top:18px!important;width:auto!important;display:flex!important;align-items:center!important;gap:5px!important;white-space:nowrap!important;font-size:7.5px!important;color:#647a90!important;line-height:1.2!important}
+.sync br{display:none!important}
+.sync span{display:none!important}
+.sync:before{font-size:8px!important}
+
+/* The 9-stage element is progress, not a second navigation menu. */
+.exec-page .blis-system-rail{padding:6px 8px!important;margin-bottom:8px!important;border-radius:12px!important;background:#fafcfe!important}
+.exec-page .blis-system-rail-track{display:grid!important;grid-template-columns:repeat(9,minmax(0,1fr))!important;gap:0!important;min-width:0!important;width:100%!important}
+.exec-page .blis-system-step{height:30px!important;min-width:0!important;padding:3px!important;justify-content:center!important;border-radius:7px!important;overflow:visible!important}
+.exec-page .blis-system-step .txt{display:none!important}
+.exec-page .blis-system-step .num{position:relative!important;z-index:2!important;width:22px!important;height:22px!important;border-radius:7px!important;font-size:7px!important}
+.exec-page .blis-system-step:not(:last-child):after{content:''!important;position:absolute!important;z-index:1!important;left:calc(50% + 12px)!important;right:calc(-50% + 12px)!important;top:50%!important;height:1px!important;background:#dfe6ed!important;margin:0!important}
+.exec-page .blis-system-step.done:not(:last-child):after{background:#b9ccde!important}
+.exec-page .blis-system-step.active{background:transparent!important}
+.exec-page .blis-system-step.active .num{box-shadow:0 0 0 4px rgba(31,102,181,.09)!important}
+
+/* One compact bridge explains the flow; no repeated vertical chrome. */
+.exec-page .blis-stage-context{grid-template-columns:minmax(220px,.72fr) minmax(0,1.28fr)!important;gap:10px!important;margin-bottom:11px!important;padding:8px 11px!important;border-radius:0 10px 10px 0!important}
+.exec-page .blis-stage-context-main span{font-size:7px!important}
+.exec-page .blis-stage-context-main b{font-size:10px!important;margin-top:2px!important;line-height:1.3!important}
+.exec-page .blis-stage-bridge{gap:4px!important}
+.exec-page .blis-stage-node{padding:3px 5px!important}
+.exec-page .blis-stage-node small{font-size:6px!important}
+.exec-page .blis-stage-node strong{font-size:7.5px!important;max-width:135px!important}
+.exec-page .blis-stage-arrow{font-size:9px!important}
+
+/* Put more decision-useful content in the first viewport without making it tiny. */
+.exec-head{margin-bottom:10px!important}
+.exec-head h2{font-size:27px!important}
+.exec-head p{font-size:10px!important;margin-top:5px!important}
+.exec-head .exec-step{font-size:7.5px!important;padding:6px 9px!important}
+.exec-answer{padding:14px 17px!important;margin-bottom:12px!important}
+.exec-answer span{font-size:7.5px!important}
+.exec-answer b{font-size:14px!important;line-height:1.5!important;margin-top:5px!important}
+.exec-glance{gap:10px!important;margin-bottom:12px!important}
+.exec-card{min-height:92px!important;padding:13px 14px!important}
+.exec-card span{font-size:7.5px!important}
+.exec-card b{font-size:11px!important;margin-top:6px!important}
+.exec-card p{font-size:8.5px!important;line-height:1.48!important;margin-top:4px!important}
+.exec-visual{margin-bottom:12px!important}
+.exec-visual-head{padding:14px 16px 0!important}
+.exec-visual-head b{font-size:14px!important}
+.exec-visual-head p{font-size:8.5px!important}
+
+/* Same compact rhythm for the three custom first pages. */
+#overviewPremium.exec-page .ov5-head,#marketBody.exec-page .market1-head{margin-bottom:10px!important}
+#overviewPremium.exec-page .ov5-head h2,#socialBody.exec-page .sig2-head h2,#marketBody.exec-page .market1-head h2{font-size:27px!important}
+#overviewPremium.exec-page .ov5-head p,#socialBody.exec-page .sig2-head p,#marketBody.exec-page .market1-head p{font-size:10px!important}
+#overviewPremium.exec-page .ov5-answer,#socialBody.exec-page .sig2-answer,#marketBody.exec-page .market1-answer{padding:14px 17px!important;margin-bottom:12px!important}
+#overviewPremium.exec-page .ov5-answer b,#socialBody.exec-page .sig2-answer b,#marketBody.exec-page .market1-answer b{font-size:14px!important;line-height:1.5!important}
+#overviewPremium.exec-page .ov5-hero{margin-bottom:12px!important}
+#overviewPremium.exec-page .ov5-trajectory{height:165px!important}
+#overviewPremium.exec-page .ov5-insights,#marketBody.exec-page .market1-themes{gap:10px!important;margin-bottom:12px!important}
+#overviewPremium.exec-page .ov5-insight,#marketBody.exec-page .market1-theme{min-height:104px!important;padding:13px 14px!important}
+#socialBody.exec-page .sig2-dynamic{padding:14px!important}
+#socialBody.exec-page .sig2-pulse{height:94px!important}
+#socialBody.exec-page .sig2-line,#socialBody.exec-page .sig2-dot{top:57px!important}
+#socialBody.exec-page .sig2-item{min-height:178px!important;padding:14px!important}
+
+/* Fast navigation: do not animate the page itself. */
+.page.active{animation:none!important;transition:none!important}
+
+@media(max-width:1000px){
+  .side{width:188px!important}
+  .main{margin-left:188px!important;width:calc(100vw - 188px)!important}
+  .shell{padding-left:16px!important;padding-right:16px!important}
+  .exec-page .blis-stage-context{grid-template-columns:1fr!important}
+  .exec-page .blis-stage-bridge{justify-content:flex-start!important}
+}
+
+/* Mobile: horizontal step navigator. Keep only the active label visible. */
+@media(max-width:800px){
+  .side{position:sticky!important;top:0!important;width:100%!important;height:auto!important;padding:8px 10px 7px!important;display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;grid-template-areas:'brand client' 'nav nav'!important;gap:6px 10px!important;overflow:visible!important;background:rgba(255,255,255,.97)!important;backdrop-filter:blur(12px)!important}
+  .brand{grid-area:brand!important;padding:4px 0!important;align-self:center!important}
+  .brandname{font-size:20px!important}
+  .brandname:after{font-size:9px!important;margin-top:3px!important}
+  .brandsub{display:none!important}
+  .clientbox{grid-area:client!important;margin:0!important;min-height:42px!important;padding:4px!important;align-self:center!important}
+  .client-switch-button{min-height:34px!important}
+  #nav{grid-area:nav!important;display:flex!important;gap:4px!important;overflow-x:auto!important;padding:1px 0 2px!important;scrollbar-width:none!important}
+  #nav::-webkit-scrollbar{display:none!important}
+  #nav button{flex:0 0 auto!important;width:auto!important;min-width:36px!important;height:34px!important;padding:0 6px!important;margin-top:0!important}
+  #nav button:after{display:none!important}
+  #nav button::before{flex-basis:23px!important;width:23px!important;height:23px!important}
+  #nav button .navtxt{display:none!important;max-width:0!important}
+  #nav button.active{padding-right:9px!important}
+  #nav button.active .navtxt{display:inline!important;max-width:150px!important;font-size:9px!important}
+  .dashboard-home-link{display:none!important}
+  .main{margin-left:0!important;width:100%!important}
+  .shell{padding:0 12px 20px!important}
+  .topbar{height:48px!important;padding:7px 0 5px!important}
+  .datebox{height:32px!important}
+  .sync{top:15px!important;right:142px!important;font-size:7px!important}
+  .exec-page .blis-system-rail{display:none!important}
+  .exec-page .blis-stage-context{margin-top:3px!important}
+  .exec-page .blis-stage-bridge{display:none!important}
+  .exec-head h2{font-size:25px!important}
+  #overviewPremium.exec-page .ov5-head h2,#socialBody.exec-page .sig2-head h2,#marketBody.exec-page .market1-head h2{font-size:25px!important}
+}
+
+@media(max-width:520px){
+  .sync{display:none!important}
+  .topbar{justify-content:flex-end!important}
+  .datebox{font-size:8px!important}
+}
