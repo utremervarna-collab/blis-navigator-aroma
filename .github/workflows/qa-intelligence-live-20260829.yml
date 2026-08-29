@@ -1,0 +1,61 @@
+name: QA Intelligence Live 20260829
+
+on:
+  push:
+    branches:
+      - qa/intelligence-live-20260829
+    paths:
+      - .github/workflows/qa-intelligence-live-20260829.yml
+
+jobs:
+  qa:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refresh production intelligence
+        run: |
+          set -euo pipefail
+          BASE="https://blis-navigator-aroma.onrender.com"
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 30 --max-time 420 -X POST "$BASE/api/signals/refresh" \
+            -o /tmp/refresh.json
+          cat /tmp/refresh.json
+      - name: Validate production health and evidence
+        run: |
+          set -euo pipefail
+          BASE="https://blis-navigator-aroma.onrender.com"
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-all-errors \
+            "$BASE/api/signals/health" -o /tmp/health.json
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-all-errors \
+            "$BASE/api/signals?client=mollox&limit=300" -o /tmp/mollox.json
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-all-errors \
+            "$BASE/api/signals?client=bolyarka&limit=300" -o /tmp/bolyarka.json
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --retry-all-errors \
+            "$BASE/navigator-intelligence-stream-v2.js" -o /tmp/intelligence.js
+          python3 - <<'PY'
+          import json
+          health=json.load(open('/tmp/health.json'))
+          assert health.get('ok') is True, health
+          assert health.get('interval_minutes') == 10, health
+          assert isinstance(health.get('competitor'), dict), health
+          all_comp=[]
+          for path in ('/tmp/mollox.json','/tmp/bolyarka.json'):
+              d=json.load(open(path))
+              rows=d.get('signals') or []
+              for s in rows:
+                  if s.get('scope')=='competitor':
+                      all_comp.append(s)
+          assert all_comp, 'No competitor signals returned after refresh'
+          required=('brand','source','source_type','url','title','detected_at','relevance','sentiment','topic','risk_score','severity','fingerprint')
+          bad=[]
+          for s in all_comp[:20]:
+              missing=[k for k in required if s.get(k) in (None,'')]
+              if missing: bad.append((s.get('title'),missing))
+          assert not bad, bad
+          print('health=',health)
+          print('competitor_signals=',len(all_comp))
+          for s in all_comp[:5]:
+              print(s.get('client'), '|', s.get('brand'), '|', s.get('source'), '|', s.get('title'))
+          PY
+          grep -q 'api/signals' /tmp/intelligence.js
+          grep -q 'competitor' /tmp/intelligence.js
+          echo "Production intelligence QA passed"
