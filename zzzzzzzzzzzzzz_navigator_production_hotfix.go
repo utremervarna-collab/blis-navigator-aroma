@@ -33,13 +33,13 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-executive-pages-11"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-executive-pages-9"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-executive-pages-11")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-executive-pages-9")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
