@@ -81,7 +81,7 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#f4f7fa 100%)!important}
 
 /* 06 Competition — colored strength axis, client + leader differentiation */
 .xv2-ladder{position:relative;padding-top:28px!important}
-.xv2-ladder:before{content:'по-слаба позиция';position:absolute;left:calc(30px + 10px + min(160px, .55fr));top:7px;color:#8797a8;font-size:7px;font-weight:750}
+.xv2-ladder:before{content:'по-слаба позиция';position:absolute;left:212px;top:7px;color:#8797a8;font-size:7px;font-weight:750}
 .xv2-ladder:after{content:'по-силна позиция';position:absolute;right:82px;top:7px;color:var(--blis-primary);font-size:7px;font-weight:850}
 .xv2-track{background:linear-gradient(90deg,#dce6f0 0%,#bfd3e7 36%,#7eacd6 68%,var(--blis-primary) 100%)!important;box-shadow:inset 0 0 0 1px rgba(31,101,183,.10)}
 .xv2-track i{background:linear-gradient(90deg,#a8bed3,#5c91c2,var(--blis-primary))!important;opacity:.84}
@@ -114,22 +114,18 @@ body{background:linear-gradient(180deg,#f7f9fc 0,#f4f7fa 100%)!important}
 function text(el){return String(el?.textContent||'').toLowerCase()}
 function decorate(){
  css();
- // Market themes: color follows measured direction, never the theme identity.
  document.querySelectorAll('.market1-theme').forEach(el=>{
    el.classList.remove('tone-positive','tone-risk','tone-warning');const t=text(el);
    el.classList.add(t.includes('положителна')?'tone-positive':t.includes('негативна')?'tone-risk':'tone-warning');
  });
- // Reputation drivers: bar color follows the evidence context.
  document.querySelectorAll('.rep46-driver').forEach(el=>{
    el.classList.remove('tone-positive','tone-risk','tone-neutral');const t=text(el);
    el.classList.add(t.includes('негатив')||t.includes('рисков')?'tone-risk':t.includes('положител')?'tone-positive':'tone-neutral');
  });
- // Competition: highlight the actual leader independently of the client.
  document.querySelectorAll('#competitionBody .xv2-row').forEach((el,i)=>el.classList.toggle('leader',i===0));
- // History: event marker color follows event meaning.
  document.querySelectorAll('#historyBody .xv2-event').forEach(el=>{
    el.classList.remove('tone-positive','tone-risk','tone-warning');const t=text(el);
-   el.classList.add(t.includes('риск')||t.includes('понижи')||t.includes('негатив')?'tone-risk':t.includes('възмож')||t.includes('повиши')||t.includes('положител')?'tone-positive':'tone-warning');
+   el.classList.add(t.includes('риск')||t.includes('понижи')||t.includes('негатив')||t.includes('изисква внимание')?'tone-risk':t.includes('възмож')||t.includes('повиши')||t.includes('положител')||t.includes('подобр')?'tone-positive':'tone-warning');
  });
  document.documentElement.dataset.navigatorColorSystem='semantic-v1';
 }
