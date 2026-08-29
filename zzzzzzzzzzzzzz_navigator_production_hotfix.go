@@ -30,7 +30,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		marker := []byte("navigator-production-entry-v1.js")
 		if !bytes.Contains(body, marker) {
-			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-system-structure-7"></script>`)
+			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-clarity-flow-1"></script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
