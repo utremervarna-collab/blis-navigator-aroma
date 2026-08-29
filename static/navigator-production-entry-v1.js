@@ -5,7 +5,7 @@
 if(window.__BLIS_PRODUCTION_ENTRY_V2)return;
 window.__BLIS_PRODUCTION_ENTRY_V2=true;
 
-const VERSION='20260829-system-structure-1';
+const VERSION='20260829-system-structure-2';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body)document.body.dataset.client=client;
@@ -20,6 +20,7 @@ async function boot(){
   await safe('/navigator-overview-system-v4.js');
   await safe('/navigator-signals-system-v1.js');
   await safe('/navigator-market-system-v1.js');
+  await safe('/navigator-system-dynamics-v1.js');
 
   /* Каноничните модули, които остават собственици на следващите етапи. */
   await safe('/navigator-competition-master-v5.js');
