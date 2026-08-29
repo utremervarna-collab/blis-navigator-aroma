@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v9.
+/* BLIS Navigator — production entrypoint v10.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V9)return;
-window.__BLIS_PRODUCTION_ENTRY_V9=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V10)return;
+window.__BLIS_PRODUCTION_ENTRY_V10=true;
 
-const VERSION='20260829-executive-pages-3';
+const VERSION='20260829-executive-pages-4';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=client;document.body.dataset.navigatorBuild=VERSION;}
@@ -94,7 +94,7 @@ async function boot(){
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-3';
+    document.documentElement.dataset.navigatorUi='executive-pages-4';
   }
 
   [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
