@@ -9,7 +9,7 @@ import (
 )
 
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
-var legacyNavigatorUIScripts = regexp.MustCompile(`<script[^>]+src="/(?:navigator-reference|navigator-social-master|navigator-overview-master|navigator-live-master|navigator-geo-v2|navigator-digital-master|navigator-digital-bootstrap|navigator-client-ui|navigator-client-hero|varna-towers-hero-guard|navigator-reputation-exact-art-v41|navigator-production-cleanup-v1|navigator-perception-core-v8|navigator-perception-map|navigator-system-dynamics-v1|navigator-competition-master-v5|navigator-competition-ladder-v1|navigator-competition-layout-fix-v1|navigator-executive-ui-v1|navigator-executive-ui-v2|navigator-executive-reports-v1|navigator-color-system-v1|navigator-visual-focus-v1)\.js[^\"]*"[^>]*></script>`)
+var legacyNavigatorUIScripts = regexp.MustCompile(`<script[^>]+src="/(?:navigator-reference|navigator-social-master|navigator-overview-master|navigator-live-master|navigator-geo-v2|navigator-digital-master|navigator-digital-bootstrap|navigator-client-ui|navigator-client-hero|varna-towers-hero-guard|navigator-reputation-exact-art-v41|navigator-production-cleanup-v1|navigator-perception-core-v8|navigator-perception-map|navigator-system-dynamics-v1|navigator-competition-master-v5|navigator-competition-ladder-v1|navigator-competition-layout-fix-v1|navigator-executive-ui-v1|navigator-executive-ui-v2|navigator-executive-reports-v1|navigator-color-system-v1|navigator-visual-focus-v1|navigator-visual-interaction-v1)\.js[^\"]*"[^>]*></script>`)
 var legacyNavigatorUIStyles = regexp.MustCompile(`<link[^>]+href="/(?:navigator-reference|navigator-overview-master|navigator-live-master|navigator-geo-v2|navigator-digital-master|navigator-shell-master|navigator-client-ui|navigator-social-master|navigator-reputation-exact-art-v41|navigator-perception-map|navigator-production-cleanup-v1|navigator-overview-clarity|navigator-trend-fix)\.css[^\"]*"[^>]*>`)
 var legacyCompetitionPaintGuard = regexp.MustCompile(`(?s)<style[^>]+id="blisCompetitionPaintGuard"[^>]*>.*?</style>`)
 var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
@@ -35,13 +35,13 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-single-owner-color-visual-1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-single-owner-color-visual-2"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-single-owner-color-visual-1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-single-owner-color-visual-2")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
