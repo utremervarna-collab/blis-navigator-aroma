@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v2.
-   Зарежда се последен от gateway-а и установява единната аналитична структура. */
+/* BLIS Navigator — production entrypoint v3.
+   Зарежда се последен от gateway-а и установява clarity-first аналитичния процес. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V2)return;
-window.__BLIS_PRODUCTION_ENTRY_V2=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V3)return;
+window.__BLIS_PRODUCTION_ENTRY_V3=true;
 
-const VERSION='20260829-system-structure-3';
+const VERSION='20260829-clarity-flow-1';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body)document.body.dataset.client=client;
@@ -17,14 +17,19 @@ async function safe(src){try{await load(src+'?v='+VERSION)}catch(e){console.erro
 
 async function boot(){
   await safe('/navigator-system-structure-v1.js');
-  await safe('/navigator-overview-system-v4.js');
-  await safe('/navigator-signals-system-v1.js');
+  await safe('/navigator-overview-system-v5.js');
+  await safe('/navigator-signals-system-v2.js');
+  // Compatibility aliases: canonical router still calls the established names.
+  if(window.BLISOverviewSystemV5)window.BLISOverviewSystemV4=window.BLISOverviewSystemV5;
+  if(window.BLISSignalsSystemV2)window.BLISSignalsSystemV1=window.BLISSignalsSystemV2;
+
   await safe('/navigator-market-system-v1.js');
   await safe('/navigator-system-dynamics-v1.js');
 
   await safe('/navigator-competition-master-v5.js');
   await safe('/navigator-reputation-master.js');
   await safe('/navigator-digital-master.js');
+  await safe('/navigator-clarity-flow-v1.js');
   await safe('/navigator-client-ui.js');
   await safe('/navigator-reference.js');
 
@@ -32,6 +37,7 @@ async function boot(){
   requestAnimationFrame(()=>{
     try{window.BLISClientUIV3?.paint?.(client)}catch(_){}
     try{window.refGo?.(page)}catch(e){console.error('BLIS production route:',e)}
+    setTimeout(()=>{try{window.BLISClarityFlowV1?.decorate?.(page)}catch(_){}},220);
     window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client,page,version:VERSION}}));
   });
 }
