@@ -1,0 +1,84 @@
+/* BLIS Navigator — canonical Executive pages 04–09.
+   One visual focus per page. Exact metrics live in interaction/detail, not on the first read. */
+
+/* 04 DIGITAL VISIBILITY — one radar, one qualitative read, detail on click. */
+#digitalBody.exec-page .dv-summary{display:none!important}
+#digitalBody.exec-page .dv-stage{position:relative!important;border:1px solid #dfe6ee!important;border-radius:18px!important;background:#fff!important;box-shadow:0 12px 34px rgba(31,56,89,.055)!important;padding:18px!important;grid-template-columns:minmax(0,1.45fr) minmax(270px,.55fr)!important;gap:18px!important;margin-bottom:16px!important}
+#digitalBody.exec-page .dv-radar-column{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;padding:8px 12px!important}
+#digitalBody.exec-page .dv-radar-wrap{width:min(540px,100%)!important;margin-inline:auto!important}
+#digitalBody.exec-page .dv-radar-sector{min-width:108px!important;min-height:46px!important;border-radius:13px!important;box-shadow:0 8px 22px rgba(31,56,89,.055)!important}
+#digitalBody.exec-page .dv-radar-sector span{font-size:10px!important;font-weight:800!important;line-height:1.25!important}
+#digitalBody.exec-page .dv-radar-sector b{display:none!important}
+#digitalBody.exec-page .dv-radar-hint{font-size:9px!important;color:#718297!important;margin-top:10px!important}
+#digitalBody.exec-page .dv-detail{border:1px solid #e1e8ef!important;border-radius:16px!important;background:linear-gradient(145deg,#f8fbfe,#fff)!important;padding:17px!important;box-shadow:none!important;align-self:stretch!important}
+#digitalBody.exec-page .dv-detail-kicker{font-size:8px!important;letter-spacing:.07em!important;color:#7890a7!important}
+#digitalBody.exec-page .dv-detail-title{margin-top:10px!important;align-items:flex-start!important}
+#digitalBody.exec-page .dv-detail-title h3{font-size:16px!important;line-height:1.2!important}
+#digitalBody.exec-page .dv-detail-title small{font-size:9px!important;line-height:1.4!important}
+#digitalBody.exec-page .dv-detail-title strong{font-size:18px!important}
+#digitalBody.exec-page .dv-detail-copy{font-size:9px!important;line-height:1.6!important;margin-top:13px!important}
+#digitalBody.exec-page .dv-detail-metrics,#digitalBody.exec-page .dv-detail-trend{display:none!important}
+#digitalBody.exec-page .dv-detail-action{margin-top:14px!important;width:100%!important;border-radius:10px!important;font-size:9px!important;padding:10px 12px!important}
+
+/* 05 REPUTATION — one trajectory is the visual anchor. */
+#reputationBody.exec-page .rep46{margin-top:0!important}
+#reputationBody.exec-page .rep46-head,#reputationBody.exec-page .rep46-kpis{display:none!important}
+#reputationBody.exec-page .rep46-grid{display:block!important;margin:0 0 16px!important}
+#reputationBody.exec-page .rep46-grid>section{display:none!important}
+#reputationBody.exec-page .rep46-grid:first-of-type>section:first-child{display:block!important;border:1px solid #dfe6ee!important;border-radius:18px!important;background:#fff!important;box-shadow:0 12px 34px rgba(31,56,89,.055)!important;padding:18px!important}
+#reputationBody.exec-page .rep46-grid:nth-of-type(n+2),#reputationBody.exec-page .rep46>section.rep46-card{display:none!important}
+#reputationBody.exec-page .rep46-grid:first-of-type>section:first-child h3{font-size:15px!important;color:#244360!important}
+#reputationBody.exec-page .rep46-grid:first-of-type>section:first-child>p{font-size:9px!important;line-height:1.5!important;color:#7b8a9c!important}
+#reputationBody.exec-page .rep46-chart{height:225px!important;margin-top:12px!important;color:#2f729f!important}
+#reputationBody.exec-page .rep46-chart circle{fill:#2f729f!important}
+
+/* 06 COMPETITION — Executive field is the only comparison visual. */
+#competitionBody.exec-page .cmpv6{margin:0!important}
+#competitionBody.exec-page .cmpv6-head,#competitionBody.exec-page .cmpv6-kpis,#competitionBody.exec-page .cmpv6-grid,#competitionBody.exec-page .cmpv6>section.cmpv6-card{display:none!important}
+#competitionBody.exec-page .exec-visual[data-exec="competition"]{border:1px solid #dfe6ee!important;background:#fff!important}
+#competitionBody.exec-page .exec-field{height:340px!important;background:linear-gradient(180deg,#f8fbfe,#fff)!important}
+#competitionBody.exec-page .exec-dot{min-width:34px!important;height:34px!important;font-size:9px!important}
+#competitionBody.exec-page .exec-dot.client{box-shadow:0 0 0 7px rgba(31,101,183,.10),0 7px 18px rgba(31,70,110,.18)!important}
+#competitionBody.exec-page .exec-label{font-size:8.5px!important;max-width:150px!important}
+
+/* 07 DECISION — synthesis only, not another dashboard. */
+#opportunitiesBody.exec-page .exec-glance{margin-bottom:16px!important}
+#opportunitiesBody.exec-page .exec-card:first-child{border-top:3px solid #c96861!important;background:linear-gradient(180deg,#fffafa,#fff)!important}
+#opportunitiesBody.exec-page .exec-card:nth-child(2){border-top:3px solid #47956f!important;background:linear-gradient(180deg,#f9fdfb,#fff)!important}
+#opportunitiesBody.exec-page .exec-card:nth-child(3){border-top:3px solid #6c7eb3!important}
+#opportunitiesBody.exec-page .exec-field{height:350px!important;background:linear-gradient(180deg,#f8fbfe,#fff)!important}
+#opportunitiesBody.exec-page .exec-dot.risk{box-shadow:0 0 0 6px rgba(199,90,84,.08),0 7px 18px rgba(120,60,55,.16)!important}
+#opportunitiesBody.exec-page .exec-dot.opp{box-shadow:0 0 0 6px rgba(61,149,110,.08),0 7px 18px rgba(50,110,80,.16)!important}
+
+/* 08 HISTORY — causal line, fewer and clearer turning points. */
+#historyBody.exec-page .exec-timeline{padding:25px 18px 12px!important;margin:8px 0 6px!important;overflow-x:auto!important}
+#historyBody.exec-page .exec-timeline-line{top:42px!important;left:30px!important;right:30px!important}
+#historyBody.exec-page .exec-events{gap:18px!important}
+#historyBody.exec-page .exec-event{width:165px!important;padding-top:46px!important}
+#historyBody.exec-page .exec-event:before{top:13px!important;width:16px!important;height:16px!important}
+#historyBody.exec-page .exec-event time{font-size:8px!important}
+#historyBody.exec-page .exec-event b{font-size:9px!important;line-height:1.45!important;margin-top:5px!important}
+#historyBody.exec-page .exec-event small{font-size:8px!important;line-height:1.4!important}
+
+/* 09 REPORTS — composer first; real library is useful but visually secondary. */
+#reportsBody.exec-page .exec-report{grid-template-columns:minmax(0,1fr) minmax(250px,.34fr)!important}
+#reportsBody.exec-page .exec-report-options{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+#reportsBody.exec-page .exec-check{min-height:42px!important;font-size:9px!important}
+#reportsBody.exec-page .exec-report-side{padding:16px!important}
+#reportsBody.exec-page .exec-report-side strong{font-size:34px!important}
+#reportsBody.exec-page .exec-library{margin-top:4px!important;box-shadow:none!important;border-color:#e4eaf0!important;background:#fbfcfe!important}
+#reportsBody.exec-page .exec-library-head{padding:14px 16px!important}
+#reportsBody.exec-page .exec-library-head b{font-size:13px!important}
+#reportsBody.exec-page .exec-library-head p{font-size:8.5px!important}
+#reportsBody.exec-page .exec-library-grid{background:#fff!important}
+
+@media(max-width:980px){
+  #digitalBody.exec-page .dv-stage{grid-template-columns:1fr!important}
+  #digitalBody.exec-page .dv-detail{min-height:0!important}
+  #reportsBody.exec-page .exec-report{grid-template-columns:1fr!important}
+}
+@media(max-width:760px){
+  #digitalBody.exec-page .dv-radar-wrap{width:min(420px,100%)!important}
+  #competitionBody.exec-page .exec-field,#opportunitiesBody.exec-page .exec-field{height:390px!important}
+  #reportsBody.exec-page .exec-report-options{grid-template-columns:1fr!important}
+}
