@@ -9,6 +9,7 @@ import (
 )
 
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
+var legacyNavigatorUIScripts = regexp.MustCompile(`<script[^>]+src="/(?:navigator-reference|navigator-social-master|navigator-overview-master|navigator-live-master|navigator-geo-v2|navigator-digital-master|navigator-digital-bootstrap|navigator-client-ui|navigator-client-hero|varna-towers-hero-guard|navigator-reputation-exact-art-v41|navigator-production-cleanup-v1)\.js[^\"]*"[^>]*></script>`)
 var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 
 func init() {
@@ -28,13 +29,17 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	if err != nil { return err }
 	_ = resp.Body.Close()
 	if path == "/dashboard.html" {
+		/* Keep app.js and data/runtime infrastructure, but remove the old UI owners.
+		   The canonical production entrypoint is the only renderer/router loaded last. */
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-unified-visual-2"></script>`)
+		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-canonical-ui-1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-canonical-ui-1")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
