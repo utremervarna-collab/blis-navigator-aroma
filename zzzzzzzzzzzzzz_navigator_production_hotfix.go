@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 )
+
+var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
 
 // This late init wraps the existing dashboard response modifier. The canonical
 // Navigator entrypoint is injected after every legacy browser asset, so old
@@ -34,9 +37,14 @@ func injectNavigatorProductionEntrypoint(resp *http.Response) error {
 	}
 	_ = resp.Body.Close()
 
+	// Never send the two legacy Varna Towers UI/router overrides to the browser.
+	// The isolated Varna Towers data adapter may remain, but presentation and
+	// routing are now universal across every client profile.
+	body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
+
 	marker := []byte("navigator-production-entry-v1.js")
 	if !bytes.Contains(body, marker) {
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-2"></script>`)
 		body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 	}
 
