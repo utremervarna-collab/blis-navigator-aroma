@@ -1781,6 +1781,19 @@ func jsonOut(w http.ResponseWriter, v interface{}) {
 }
 func handler(w http.ResponseWriter, r *http.Request) {
 	path := strings.Trim(r.URL.Path, "/")
+	// BLIS Signal Collector endpoints are routed here because production uses
+	// handler directly rather than http.DefaultServeMux.
+	switch path {
+	case "api/signals":
+		signalListHandler(w, r)
+		return
+	case "api/signals/refresh":
+		signalRefreshHandler(w, r)
+		return
+	case "api/signals/health":
+		signalHealthHandler(w, r)
+		return
+	}
 	if path == "" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		io.WriteString(w, indexHTML)
