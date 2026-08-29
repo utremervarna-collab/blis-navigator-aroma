@@ -11,8 +11,8 @@ import (
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
 
 // This late init wraps the existing response modifier. It keeps the production
-// Navigator on one canonical UI path and routes the public client CTA to a
-// neutral access page that is isolated from remembered client sessions.
+// Navigator on one canonical UI path and routes the public client CTA directly
+// to the dashboard without a login screen.
 func init() {
 	if authProxy == nil {
 		return
@@ -45,19 +45,18 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	_ = resp.Body.Close()
 
 	if path == "/dashboard.html" {
-		// Never send the two legacy Varna Towers UI/router overrides to the browser.
-		// Varna Towers remains a data profile, not a global presentation owner.
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 
 		marker := []byte("navigator-production-entry-v1.js")
 		if !bytes.Contains(body, marker) {
-			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-3"></script>`)
+			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-4"></script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
-		// The public CTA opens a standalone neutral form. It never restores an
-		// existing client session and therefore cannot default to Varna Towers.
-		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/client-access.html?v=20260829-neutral2"`))
+		// Every existing public client-entry link now opens the canonical dashboard.
+		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
+		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
+		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
