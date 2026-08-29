@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v15.
+/* BLIS Navigator — production entrypoint v16.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V15)return;
-window.__BLIS_PRODUCTION_ENTRY_V15=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V16)return;
+window.__BLIS_PRODUCTION_ENTRY_V16=true;
 
-const VERSION='20260829-executive-pages-9';
+const VERSION='20260829-executive-pages-10';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
@@ -25,7 +25,8 @@ function reset(name){try{window[name]=false}catch(_){}}
   '__BLIS_INTELLIGENCE_STREAM_V3',
   '__BLIS_EXECUTIVE_DATA_V1',
   '__BLIS_EXECUTIVE_UI_V1',
-  '__BLIS_EXECUTIVE_REPORTS_V1'
+  '__BLIS_EXECUTIVE_REPORTS_V1',
+  '__BLIS_NAV_CLARITY_V1'
 ].forEach(reset);
 function syncGlobals(){
   try{if(typeof D!=='undefined')window.D=D}catch(_){}
@@ -60,7 +61,8 @@ async function boot(){
     '/navigator-digital-master.css',
     '/navigator-perception-map.css',
     '/navigator-executive-layout-fix-v2.css',
-    '/navigator-executive-pages-4-9.css'
+    '/navigator-executive-pages-4-9.css',
+    '/navigator-navigation-clarity-v1.css'
   ]) await safeStyle(css);
 
   await safe('/navigator-system-structure-v1.js');
@@ -88,6 +90,7 @@ async function boot(){
 
   reset('__BLIS_REFERENCE_V15');
   await safe('/navigator-reference.js');
+  await safe('/navigator-navigation-clarity-v1.js');
 
   const firstPage=activePage();
   function renderCanonical(target=activePage()){
@@ -98,7 +101,7 @@ async function boot(){
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
     if(target==='reports')[180,520].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-9';
+    document.documentElement.dataset.navigatorUi='executive-pages-10';
     document.documentElement.dataset.navigatorClient=client;
   }
 
