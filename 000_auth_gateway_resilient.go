@@ -129,6 +129,19 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The generic public client-login must never inherit a previous client session.
+	// This is intentionally handled before clientGateway(), whose normal behaviour
+	// is to restore an already authenticated client such as Varna Towers.
+	if (path == "/client-login" || path == "/client-login/" || path == "/login") && r.URL.Query().Get("generic") == "1" {
+		clearPublicDemoCookie(w, r)
+		clearLegacyClientRememberCookie(w, r)
+		if s, ok := sessionFromRequest(r); ok && !s.Admin {
+			clearSession(w, r)
+		}
+		serveClientLogin(w, r)
+		return
+	}
+
 	// Wirello Market is the isolated public demonstration profile. It bypasses
 	// client login but remains scoped to a single fictional dataset.
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
