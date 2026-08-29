@@ -30,16 +30,16 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	_ = resp.Body.Close()
 	if path == "/dashboard.html" {
 		/* Keep app.js and data/runtime infrastructure, but remove the old UI owners.
-		   Client-facing composition is owned by navigator-production-entry-v1.js. */
+		   Client-facing composition and its CSS manifest are owned by the production entrypoint. */
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-executive-ui-1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-executive-ui-2-assets"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-executive-ui-1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260829-executive-ui-2-assets")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
