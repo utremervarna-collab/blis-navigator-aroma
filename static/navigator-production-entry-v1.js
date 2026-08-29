@@ -5,7 +5,7 @@
 if(window.__BLIS_PRODUCTION_ENTRY_V2)return;
 window.__BLIS_PRODUCTION_ENTRY_V2=true;
 
-const VERSION='20260829-system-structure-2';
+const VERSION='20260829-system-structure-3';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body)document.body.dataset.client=client;
@@ -22,13 +22,10 @@ async function boot(){
   await safe('/navigator-market-system-v1.js');
   await safe('/navigator-system-dynamics-v1.js');
 
-  /* Каноничните модули, които остават собственици на следващите етапи. */
   await safe('/navigator-competition-master-v5.js');
   await safe('/navigator-reputation-master.js');
   await safe('/navigator-digital-master.js');
   await safe('/navigator-client-ui.js');
-
-  /* Router-ът се зарежда последен, за да няма legacy собственик след него. */
   await safe('/navigator-reference.js');
 
   const page=(q.get('page')||document.querySelector('.page.active')?.id||'overview');
