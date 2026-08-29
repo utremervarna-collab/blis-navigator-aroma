@@ -21,7 +21,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox":
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox", "everbet":
 		return true
 	default:
 		return false
@@ -41,16 +41,11 @@ func navigatorDashboardTarget(r *http.Request) string {
 	return "/dashboard.html?client=" + url.QueryEscape(slug) + "&page=overview"
 }
 
-// Keep only the internal source archive restricted. The rendered Services and
-// Payment catalogue and its browser assets are intentionally public.
 func commerceOwnerOnlyPath(path string) bool {
 	path = strings.TrimSpace(path)
 	return path == "/service-cards-v10.zip"
 }
 
-// Bootstrap exactly one public gateway in front of the internal Navigator engine.
-// The gateway keeps the existing client access rules, but the main Navigator has
-// its own explicit admin entry and never restores a remembered client profile.
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" || os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") == "1" {
 		return
@@ -121,6 +116,22 @@ func isWirelloDemo(r *http.Request) bool {
 	return err == nil && c.Value == "wirello"
 }
 
+func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool {
+	if s, ok := sessionFromRequest(r); ok && s.Admin {
+		return true
+	}
+	clearSession(w, r)
+	clearLegacyClientRememberCookie(w, r)
+	clearPublicDemoCookie(w, r)
+	s, err := newOwnerSession()
+	if err != nil {
+		http.Error(w, "Неуспешно създаване на Navigator сесия", http.StatusInternalServerError)
+		return false
+	}
+	setSessionCookie(w, r, s)
+	return true
+}
+
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
@@ -129,21 +140,17 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The generic public client-login must never inherit a previous client session.
-	// This is intentionally handled before clientGateway(), whose normal behaviour
-	// is to restore an already authenticated client such as Varna Towers.
-	if (path == "/client-login" || path == "/client-login/" || path == "/login") && r.URL.Query().Get("generic") == "1" {
-		clearPublicDemoCookie(w, r)
-		clearLegacyClientRememberCookie(w, r)
-		if s, ok := sessionFromRequest(r); ok && !s.Admin {
-			clearSession(w, r)
+	// Login screens are retired from the public flow. Any legacy login URL now
+	// enters the main Navigator directly.
+	if path == "/client-login" || path == "/client-login/" || path == "/login" || path == "/client-access.html" {
+		if !ensureOwnerDashboardSession(w, r) {
+			return
 		}
-		serveClientLogin(w, r)
+		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
 		return
 	}
 
-	// Wirello Market is the isolated public demonstration profile. It bypasses
-	// client login but remains scoped to a single fictional dataset.
+	// Wirello Market remains the isolated public demonstration profile.
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
 		clearSession(w, r)
 		setPublicDemoCookie(w, r)
@@ -151,7 +158,9 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		r2.URL.Path = "/dashboard.html"
 		q := r2.URL.Query()
 		q.Set("client", "wirello")
-		if q.Get("page") == "" { q.Set("page", "overview") }
+		if q.Get("page") == "" {
+			q.Set("page", "overview")
+		}
 		r2.URL.RawQuery = q.Encode()
 		r2.Header.Set("X-BLIS-Client-Scope", "wirello")
 		authProxy.ServeHTTP(w, r2)
@@ -177,12 +186,22 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if path == "/client-login" || path == "/client-login/" || path == "/login" || path == "/navigator" || path == "/navigator/" || path == "/owner-access" {
+	// Opening the dashboard without an owner session creates one automatically,
+	// then reloads the same dashboard URL. This removes the login step entirely.
+	if path == "/dashboard.html" || path == "/navigator-v2.html" {
+		if s, ok := sessionFromRequest(r); !ok || !s.Admin {
+			if !ensureOwnerDashboardSession(w, r) {
+				return
+			}
+			http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
+			return
+		}
+	}
+
+	if path == "/navigator" || path == "/navigator/" || path == "/owner-access" {
 		clearPublicDemoCookie(w, r)
 	}
 
-	// The internal source archive remains owner-only. The public catalogue and
-	// its browser assets are served normally.
 	if commerceOwnerOnlyPath(path) {
 		s, ok := sessionFromRequest(r)
 		if !ok || !s.Admin {
@@ -191,9 +210,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// The main Navigator is intentionally separate from every client profile.
-	// A valid existing admin session opens it directly. Otherwise the protected
-	// Navigator magic link creates a fresh owner session.
 	if path == "/navigator" || path == "/navigator/" {
 		clearLegacyClientRememberCookie(w, r)
 
@@ -203,32 +219,23 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if !navigatorMagicOK(r.URL.Query().Get("key")) {
-			clearSession(w, r)
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte("<!doctype html><html lang=\"bg\"><meta charset=\"utf-8\"><title>BLIS Navigator</title><body style=\"font-family:Inter,Arial,sans-serif;background:#f7f9fc;color:#17324c;display:grid;place-items:center;min-height:100vh;margin:0\"><div style=\"text-align:center\"><h1>BLIS Navigator</h1><p>Използвайте вашия защитен Navigator линк за вход.</p></div></body></html>"))
+			if !ensureOwnerDashboardSession(w, r) {
+				return
+			}
+			http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
 			return
 		}
 
-		// A client session must never leak into the main Navigator.
-		clearSession(w, r)
-		s, err := newOwnerSession()
-		if err != nil {
-			http.Error(w, "Неуспешно създаване на Navigator сесия", http.StatusInternalServerError)
+		if !ensureOwnerDashboardSession(w, r) {
 			return
 		}
-		setSessionCookie(w, r, s)
 		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
 		return
 	}
 
-	// Explicit client logout also removes the obsolete remember cookie created by
-	// the previous gateway implementation.
 	if path == "/api/client-logout" {
 		clearLegacyClientRememberCookie(w, r)
 	}
 
-	// All normal client behaviour remains handled by the original gateway logic.
-	// There is deliberately no automatic client-session restoration here.
 	clientGateway(w, r)
 }
