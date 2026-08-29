@@ -1,72 +1,35 @@
-/* BLIS Navigator — клиентска аналитична навигация v15. Един последователен аналитичен процес. */
+/* BLIS Navigator — canonical router v16.
+   One route, one owner. No legacy render-then-hide chain. */
 (function(){
 'use strict';
-if(window.__BLIS_REFERENCE_V15)return;window.__BLIS_REFERENCE_V15=true;
+if(window.__BLIS_REFERENCE_V16)return;window.__BLIS_REFERENCE_V16=true;
 const NAV=[
-  ['overview','▦','Общ преглед'],
-  ['social','!','Важни сигнали'],
-  ['market','◌','Пазар и нагласи'],
-  ['digital','◎','Дигитална видимост'],
-  ['reputation','◇','Репутация'],
-  ['competition','⚑','Конкуренция'],
-  ['opportunities','↗','Риск и възможности'],
-  ['history','◷','История'],
-  ['reports','▤','Доклади']
+ ['overview','▦','Общ преглед'],['social','!','Важни сигнали'],['market','◌','Пазар и нагласи'],
+ ['digital','◎','Дигитална видимост'],['reputation','◇','Репутация'],['competition','⚑','Конкуренция'],
+ ['opportunities','↗','Риск и възможности'],['history','◷','История'],['reports','▤','Доклади']
 ];
-const UTILITY=['profile','settings','help','commerce'];
-const IDS=new Set([...NAV.map(x=>x[0]),...UTILITY]);
-const ALIAS={signals:'social',sources:'profile',timeline:'history',live:'overview'};
+const IDS=new Set(NAV.map(x=>x[0]));
+const ALIAS={signals:'social',timeline:'history',live:'overview'};
 const canonical=id=>ALIAS[String(id||'')]||String(id||'');
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const clientName=()=>window.D?.name||document.querySelector('.client-brand-name')?.textContent||'Клиент';
-const clientSector=()=>window.D?.sector||document.querySelector('.client-brand-type')?.textContent||'Аналитичен профил';
-function currentClient(){try{const q=new URLSearchParams(location.search).get('client');if(q)return q}catch(_){}return window.BLIS_INITIAL_CLIENT||document.body?.dataset?.client||'aroma'}
-function ensurePages(){const shell=document.querySelector('.shell');if(!shell)return;[...IDS].forEach(id=>{if(document.getElementById(id))return;const s=document.createElement('section');s.id=id;s.className='page';s.innerHTML=`<div id="${id}Body"></div>`;shell.appendChild(s)})}
-function nav(){const n=document.getElementById('nav');if(!n)return;const active=document.querySelector('.page.active')?.id||'overview',sig=NAV.map(([id,icon,label])=>`${id}|${icon}|${label}|${id===active?'1':'0'}|${currentClient()}`).join(';'),labels=[...n.querySelectorAll('[data-page] .navtxt')].map(x=>x.textContent).join('|'),expected=NAV.map(x=>x[2]).join('|');if(n.dataset.refv15Sig===sig&&labels===expected)return;n.innerHTML=NAV.map(([id,icon,label])=>`<button type="button" data-page="${id}" class="${id===active?'active':''}"><span class="navico">${icon}</span><span class="navtxt">${E(label)}</span></button>`).join('');n.dataset.refv15Sig=sig}
-function activate(id,historyMode='replace'){id=canonical(id);ensurePages();if(!IDS.has(id))id='overview';document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('#nav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(historyMode)try{const u=new URL(location.href);u.searchParams.set('client',currentClient());u.searchParams.set('page',id);u.hash='';history[historyMode+'State']({page:id},'',u.pathname+u.search)}catch(_){}return id}
+const currentClient=()=>{try{return window.BLISClientUIV3?.current?.()||new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma'}catch(_){return document.body?.dataset?.client||'aroma'}};
+function ensurePages(){const shell=document.querySelector('.shell');if(!shell)return;NAV.forEach(([id])=>{if(document.getElementById(id))return;const s=document.createElement('section');s.id=id;s.className='page';s.innerHTML=`<div id="${id}Body"></div>`;shell.appendChild(s)})}
+function nav(){const n=document.getElementById('nav');if(!n)return;const active=document.querySelector('.page.active')?.id||'overview';n.innerHTML=NAV.map(([id,icon,label])=>`<button type="button" data-page="${id}" class="${id===active?'active':''}"><span class="navico">${icon}</span><span class="navtxt">${E(label)}</span></button>`).join('')}
+function activate(id,mode='replace'){id=canonical(id);if(!IDS.has(id))id='overview';ensurePages();document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('#nav [data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));if(mode)try{const u=new URL(location.href);u.searchParams.set('client',currentClient());u.searchParams.set('page',id);u.hash='';history[mode+'State']({page:id},'',u.pathname+u.search)}catch(_){}return id}
 function host(id){return id==='overview'?document.getElementById('overviewPremium'):(document.getElementById(id+'Body')||document.getElementById(id))}
-function fallback(id,text='Модулът се зарежда.'){const h=host(id);if(!h)return;const label=NAV.find(x=>x[0]===id)?.[2]||({profile:'Клиентски профил',settings:'Настройки',help:'Помощ',commerce:'Услуги и плащане'}[id]||'BLIS Navigator');if((h.innerText||'').trim().length>20)return;h.innerHTML=`<div class="ref-title"><h2>${E(label)}</h2><p>${E(clientName())} · ${E(clientSector())}</p></div><div class="scan">${E(text)}</div>`}
-function renderUtility(id){if(window.BLISUtilityPages?.owns?.(id))return window.BLISUtilityPages.mount(id);return fallback(id)}
-function renderRoute(id){id=canonical(id);try{
-  if(id==='commerce'){if(window.BLISCommerceSafe?.render)return window.BLISCommerceSafe.render();return fallback(id)}
-  if(id==='overview'){
-    if(window.BLISOverviewSystemV4?.render)return window.BLISOverviewSystemV4.render();
-    if(window.BLISOverviewMaster?.render)return window.BLISOverviewMaster.render();
-    return fallback(id,'Обобщението се подготвя.');
-  }
-  if(id==='social'){
-    if(window.BLISSignalsSystemV1?.render)return window.BLISSignalsSystemV1.render();
-    if(window.BLISIntelligenceStreamV3?.renderSignals)return window.BLISIntelligenceStreamV3.renderSignals();
-    return fallback(id,'Важните сигнали се подготвят.');
-  }
-  if(id==='market'){
-    if(window.BLISMarketSystemV1?.mount)return window.BLISMarketSystemV1.mount();
-    if(window.BLISPerceptionMap?.mount)return window.BLISPerceptionMap.mount();
-    return fallback(id,'Пазарният контекст се подготвя.');
-  }
-  if(id==='digital'){
-    if(window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();
-    if(window.BLISArchitectureV15?.render)return window.BLISArchitectureV15.render(id);
-    return fallback(id,'Анализът на дигиталната видимост се подготвя.');
-  }
-  if(id==='reputation'){if(window.BLISReputation?.render)return window.BLISReputation.render();return fallback(id)}
-  if(id==='competition'){
-    if(window.BLISCompetitionMasterV6?.render)return window.BLISCompetitionMasterV6.render();
-    if(window.BLISCompetitionMasterV5?.render)return window.BLISCompetitionMasterV5.render();
-    return fallback(id,'Конкурентният анализ се подготвя.');
-  }
-  if(id==='opportunities'){
-    if(window.BLISIntelligenceStreamV3?.renderOpportunities)return window.BLISIntelligenceStreamV3.renderOpportunities();
-    return fallback(id,'Анализът на рисковете и възможностите се подготвя.');
-  }
-  if(['reports','history','profile','settings','help'].includes(id))return renderUtility(id);
-}catch(e){console.warn('BLIS route fallback',id,e?.message||e);return fallback(id,'Модулът се възстановява.')}
-return fallback(id)}
-function decorateLater(id){setTimeout(()=>window.BLISSystemStructure?.decorate?.(id),90);setTimeout(()=>window.BLISSystemStructure?.decorate?.(id),420)}
-window.refGo=function(id){id=canonical(id);id=IDS.has(id)?id:'overview';const current=canonical(document.querySelector('.page.active')?.id||'');activate(id,current===id?'replace':'push');nav();const out=renderRoute(id);window.dispatchEvent(new CustomEvent('blis:routechange',{detail:{page:id}}));decorateLater(id);nav();window.scrollTo({top:0,behavior:'smooth'});return out};window.refGo.__blisCanonicalClientRouter=true;window.BLISRouteAlias=canonical;
-window.BLISCanonicalRenderActive=function(){const id=canonical(document.querySelector('.page.active')?.id||'overview');const out=renderRoute(IDS.has(id)?id:'overview');decorateLater(id);nav();return out};
-function syncGlobals(){try{window.D=D}catch(_){}try{window.S=S}catch(_){}try{window.Q=Q}catch(_){}try{window.A=A}catch(_){}try{window.H=H}catch(_){}}
-function bindStableNav(){if(window.__BLIS_NAV_STABLE_V5)return;window.__BLIS_NAV_STABLE_V5=true;document.addEventListener('click',function(e){const b=e.target.closest?.('#nav button[data-page]');if(!b||typeof window.refGo!=='function')return;e.preventDefault();e.stopPropagation();window.refGo(b.dataset.page)},true)}
-function boot(){ensurePages();syncGlobals();nav();bindStableNav();const q=canonical(new URLSearchParams(location.search).get('page')),active=canonical(document.querySelector('.page.active')?.id),id=IDS.has(q)?q:(IDS.has(active)?active:'overview');activate(id,'replace');nav();renderRoute(id);decorateLater(id);nav();window.addEventListener('popstate',()=>{const next=canonical(new URLSearchParams(location.search).get('page'));const target=IDS.has(next)?next:'overview';activate(target,false);nav();renderRoute(target);decorateLater(target);nav();window.dispatchEvent(new CustomEvent('blis:routechange',{detail:{page:target}}))});window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>{syncGlobals();nav();window.BLISCanonicalRenderActive()}));window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>window.BLISCanonicalRenderActive()))}
+function fallback(id,msg='Модулът се зарежда.'){const h=host(id);if(!h)return;if((h.innerText||'').trim().length>20)return;const label=NAV.find(x=>x[0]===id)?.[2]||'BLIS Navigator';h.innerHTML=`<div class="ref-title"><h2>${E(label)}</h2></div><div class="scan">${E(msg)}</div>`}
+function renderOwned(id){try{
+ if(id==='overview'){if(window.BLISOverviewSystemV4?.render)return window.BLISOverviewSystemV4.render();return fallback(id,'Обобщението се подготвя.');}
+ if(id==='social'){if(window.BLISSignalsSystemV1?.render)return window.BLISSignalsSystemV1.render();return fallback(id,'Важните сигнали се подготвят.');}
+ if(id==='market'){if(window.BLISMarketSystemV1?.mount)return window.BLISMarketSystemV1.mount();if(window.BLISPerceptionMap?.mount)return window.BLISPerceptionMap.mount();return fallback(id,'Пазарният контекст се подготвя.');}
+ if(id==='digital'){if(window.BLISDigitalRadar?.render)return window.BLISDigitalRadar.render();return fallback(id,'Дигиталната видимост се подготвя.');}
+ if(id==='reputation'){if(window.BLISReputation?.render)return window.BLISReputation.render();return fallback(id,'Репутационният анализ се подготвя.');}
+ if(['competition','opportunities','history','reports'].includes(id)){if(window.BLISExecutiveUIV2?.render)return window.BLISExecutiveUIV2.render(id);return fallback(id,'Executive модулът се подготвя.');}
+ }catch(e){console.error('BLIS route owner error',id,e);fallback(id,'Модулът се възстановява.')}}
+function after(id){if(['overview','social','market','digital','reputation'].includes(id)){[80,220].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(id)}catch(_){}},ms))}if(id==='market')[80,260].forEach(ms=>setTimeout(()=>{try{window.BLISPerceptionMap?.render?.()}catch(_){}},ms));if(id==='reports')[140,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));setTimeout(()=>window.BLISSystemStructure?.decorate?.(id),90)}
+function go(id,mode){id=canonical(id);if(!IDS.has(id))id='overview';const current=canonical(document.querySelector('.page.active')?.id||'');activate(id,mode||(current===id?'replace':'push'));nav();renderOwned(id);after(id);window.dispatchEvent(new CustomEvent('blis:routechange',{detail:{page:id}}));window.scrollTo({top:0,behavior:'auto'});return id}
+window.refGo=id=>go(id);window.refGo.__blisCanonicalClientRouter=true;window.BLISCanonicalRenderActive=()=>{const id=canonical(document.querySelector('.page.active')?.id||'overview');renderOwned(IDS.has(id)?id:'overview');after(id)};window.BLISRouteAlias=canonical;
+function bind(){if(window.__BLIS_NAV_STABLE_V6)return;window.__BLIS_NAV_STABLE_V6=true;document.addEventListener('click',e=>{const b=e.target.closest?.('#nav button[data-page]');if(!b)return;e.preventDefault();e.stopPropagation();go(b.dataset.page)},true)}
+function boot(){ensurePages();nav();bind();const q=canonical(new URLSearchParams(location.search).get('page'));go(IDS.has(q)?q:'overview','replace');window.addEventListener('popstate',()=>{const q=canonical(new URLSearchParams(location.search).get('page'));go(IDS.has(q)?q:'overview',false)});window.addEventListener('blis:clientdata',()=>requestAnimationFrame(()=>window.BLISCanonicalRenderActive()));window.addEventListener('blis:periodchange',()=>requestAnimationFrame(()=>window.BLISCanonicalRenderActive()));window.addEventListener('blis:executive-data',()=>{const id=document.querySelector('.page.active')?.id;if(['competition','opportunities','history'].includes(id))requestAnimationFrame(()=>window.BLISCanonicalRenderActive())})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
