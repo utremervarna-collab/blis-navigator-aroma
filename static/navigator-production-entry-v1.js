@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v11.
+/* BLIS Navigator — production entrypoint v12.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V11)return;
-window.__BLIS_PRODUCTION_ENTRY_V11=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V12)return;
+window.__BLIS_PRODUCTION_ENTRY_V12=true;
 
-const VERSION='20260829-executive-pages-5';
+const VERSION='20260829-executive-pages-6';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
@@ -24,7 +24,8 @@ function reset(name){try{window[name]=false}catch(_){}}
   '__BLIS_CLIENT_UI_V3',
   '__BLIS_INTELLIGENCE_STREAM_V3',
   '__BLIS_EXECUTIVE_DATA_V1',
-  '__BLIS_EXECUTIVE_UI_V1'
+  '__BLIS_EXECUTIVE_UI_V1',
+  '__BLIS_EXECUTIVE_REPORTS_V1'
 ].forEach(reset);
 function syncGlobals(){
   try{if(typeof D!=='undefined')window.D=D}catch(_){}
@@ -85,8 +86,9 @@ async function boot(){
   await safe('/navigator-digital-master.js');
   await safe('/navigator-client-ui.js');
 
-  /* One client-facing composition layer. */
+  /* One client-facing composition layer plus real report utility. */
   await safe('/navigator-executive-ui-v1.js');
+  await safe('/navigator-executive-reports-v1.js');
 
   reset('__BLIS_REFERENCE_V15');
   await safe('/navigator-reference.js');
@@ -99,7 +101,8 @@ async function boot(){
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-5';
+    if(target==='reports')[180,520].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));
+    document.documentElement.dataset.navigatorUi='executive-pages-6';
     document.documentElement.dataset.navigatorClient=client;
   }
 
@@ -108,6 +111,7 @@ async function boot(){
     const target=e.detail?.page||activePage();
     if(target==='market')[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms));
     [60,220,520].forEach(ms=>setTimeout(()=>window.BLISExecutiveUIV1?.decorate?.(target),ms));
+    if(target==='reports')[240,620].forEach(ms=>setTimeout(()=>window.BLISExecutiveReportsV1?.enhance?.(),ms));
   });
   window.addEventListener('blis:intelligence',()=>setTimeout(()=>renderCanonical(activePage()),40));
   window.addEventListener('blis:executive-data',()=>setTimeout(()=>renderCanonical(activePage()),60));
