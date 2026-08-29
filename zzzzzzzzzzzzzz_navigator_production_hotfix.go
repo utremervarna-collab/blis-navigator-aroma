@@ -9,6 +9,7 @@ import (
 )
 
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
+var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 
 func init() {
 	if authProxy == nil { return }
@@ -28,9 +29,10 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	_ = resp.Body.Close()
 	if path == "/dashboard.html" {
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
-		marker := []byte("navigator-production-entry-v1.js")
-		if !bytes.Contains(body, marker) {
-			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-clarity-flow-2"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-unified-visual-2"></script>`)
+		if navigatorProductionEntrypoint.Match(body) {
+			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
+		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
