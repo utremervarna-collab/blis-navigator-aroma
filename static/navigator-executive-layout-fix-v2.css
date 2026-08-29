@@ -1,18 +1,152 @@
-/* BLIS Navigator — canonical asset/layout guard v2.
-   Prevents raw module overflow and keeps all executive pages inside the viewport. */
+/* BLIS Navigator — canonical executive layout & visual hierarchy v3.
+   One analytical rhythm across pages; no decorative duplicate UI layers. */
 html,body,.app,.main,.shell,.page,.exec-page{max-width:100%;min-width:0}
 html,body{overflow-x:hidden!important}
 .main,.shell,.page,.page.active,.exec-page,.exec-page>*,.exec-glance,.exec-card,.exec-visual{min-width:0!important}
 .page.active{overflow-x:hidden!important}
-.exec-page{width:100%!important}
-.exec-glance{width:100%!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.exec-page{width:100%!important;max-width:1180px!important;margin-inline:auto!important}
+.exec-page>*+*{margin-top:0}
+.exec-glance{width:100%!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin-bottom:16px!important}
 .exec-glance>*{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.exec-card{min-height:112px!important;padding:16px 17px!important;border-radius:17px!important;border-color:#dfe6ee!important;box-shadow:0 8px 24px rgba(31,56,89,.045)!important}
+.exec-card span{font-size:8px!important;letter-spacing:.07em!important}
+.exec-card b{font-size:12px!important;line-height:1.42!important;margin-top:8px!important}
+.exec-card p{font-size:9px!important;line-height:1.55!important;margin-top:6px!important}
 .exec-card b,.exec-card p,.exec-answer b{overflow-wrap:anywhere}
-.exec-visual{width:100%!important;max-width:100%!important}
+.exec-visual{width:100%!important;max-width:100%!important;border-radius:18px!important;border-color:#dfe6ee!important;box-shadow:0 12px 34px rgba(31,56,89,.055)!important;margin-bottom:16px!important}
+.exec-visual-head{padding:17px 18px 0!important}
+.exec-visual-head span{font-size:8px!important}
+.exec-visual-head b{font-size:15px!important;margin-top:5px!important}
+.exec-visual-head p{font-size:9px!important;line-height:1.5!important;margin-top:5px!important}
+.exec-visual-head em{font-size:8px!important;padding:7px 10px!important}
+.exec-head{margin-bottom:14px!important}
+.exec-head h2{font-size:30px!important;line-height:1.02!important;letter-spacing:-.045em!important}
+.exec-head p{font-size:11px!important;line-height:1.55!important;margin-top:7px!important}
+.exec-head .exec-step{font-size:8px!important;padding:8px 11px!important}
+.exec-answer{padding:18px 20px!important;margin-bottom:16px!important;border-left-width:4px!important;border-left-color:#2468b5!important;background:linear-gradient(110deg,#f3f8fe 0%,#fff 68%)!important;border-radius:0 17px 17px 0!important}
+.exec-answer span{font-size:8px!important}
+.exec-answer b{font-size:15px!important;line-height:1.58!important;margin-top:7px!important}
+.exec-detail{margin-bottom:16px!important;border-radius:13px!important}
+.exec-detail summary{font-size:9px!important;padding:12px 14px!important}
+.exec-detail-body{font-size:9px!important;line-height:1.6!important;padding:0 14px 14px!important}
+.exec-note{font-size:9px!important;line-height:1.5!important;padding:10px 12px!important}
+.exec-field{height:310px!important;margin:14px 18px 16px!important;border-radius:14px!important}
+.exec-axis-x,.exec-axis-y,.exec-label{font-size:8px!important}
+.exec-dot{min-width:31px!important;height:31px!important;font-size:8px!important}
+
+/* Analytical path: make the system visible, not just the current page. */
+.exec-page .blis-system-rail{margin-bottom:12px!important;padding:10px 11px!important;border-radius:15px!important;background:linear-gradient(180deg,#fbfdff,#f6f9fc)!important;box-shadow:none!important}
+.exec-page .blis-system-rail-track{width:100%!important;display:grid!important;grid-template-columns:repeat(9,minmax(0,1fr))!important;gap:3px!important;min-width:900px!important}
+.exec-page .blis-system-step{justify-content:center!important;padding:7px 5px!important}
+.exec-page .blis-system-step:not(:last-child):after{position:absolute!important;right:-5px!important;margin:0!important}
+.exec-page .blis-system-step .txt b{font-size:8px!important}
+.exec-page .blis-system-step .num{width:23px!important;height:23px!important}
+.exec-page .blis-stage-context{margin-bottom:17px!important;padding:12px 14px!important;background:#f8fbfe!important;border-radius:0 13px 13px 0!important}
+.exec-page .blis-stage-context-main span{font-size:7.5px!important}
+.exec-page .blis-stage-context-main b{font-size:11px!important;line-height:1.4!important}
+.exec-page .blis-stage-node small{font-size:7px!important}
+.exec-page .blis-stage-node strong{font-size:8.5px!important}
+.exec-page .blis-next-step{margin-top:18px!important;border-radius:14px!important;padding:14px 16px!important}
+.exec-page .blis-next-step span{font-size:8px!important}
+.exec-page .blis-next-step b{font-size:11px!important}
+.exec-page .blis-next-step button{font-size:9px!important;padding:10px 12px!important}
+
+/* OVERVIEW — state first, trajectory second, three conclusions last. */
+#overviewPremium.exec-page .ov5-head{margin-bottom:14px!important}
+#overviewPremium.exec-page .ov5-head h2{font-size:30px!important}
+#overviewPremium.exec-page .ov5-head p{font-size:11px!important}
+#overviewPremium.exec-page .ov5-period{font-size:9px!important;padding:8px 11px!important}
+#overviewPremium.exec-page .ov5-answer{padding:18px 20px!important;margin-bottom:16px!important;border-color:#dfe8f2!important;border-left-color:#2468b5!important;background:linear-gradient(110deg,#f3f8fe,#fff)!important;border-radius:0 17px 17px 0!important}
+#overviewPremium.exec-page .ov5-answer span{font-size:8px!important;color:#587b9c!important}
+#overviewPremium.exec-page .ov5-answer b{font-size:15px!important;line-height:1.58!important}
+#overviewPremium.exec-page .ov5-hero{grid-template-columns:minmax(220px,.38fr) minmax(0,1.62fr)!important;gap:14px!important;margin-bottom:17px!important}
+#overviewPremium.exec-page .ov5-card{border-radius:18px!important;border-color:#dfe6ee!important;box-shadow:0 12px 34px rgba(31,56,89,.055)!important}
+#overviewPremium.exec-page .ov5-score{padding:20px!important;background:linear-gradient(145deg,#f3f8fe,#fff)!important}
+#overviewPremium.exec-page .ov5-score span{font-size:8px!important}
+#overviewPremium.exec-page .ov5-score strong{font-size:56px!important;color:#18538f!important}
+#overviewPremium.exec-page .ov5-score em{font-size:11px!important}
+#overviewPremium.exec-page .ov5-score small{font-size:9px!important;line-height:1.5!important}
+#overviewPremium.exec-page .ov5-chart{padding:18px 20px!important}
+#overviewPremium.exec-page .ov5-chart h3{font-size:15px!important}
+#overviewPremium.exec-page .ov5-chart p{font-size:9px!important}
+#overviewPremium.exec-page .ov5-trajectory{height:185px!important;margin-top:12px!important}
+#overviewPremium.exec-page .ov5-section-title span{font-size:8px!important}
+#overviewPremium.exec-page .ov5-section-title h3{font-size:17px!important}
+#overviewPremium.exec-page .ov5-insights{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin-bottom:16px!important}
+#overviewPremium.exec-page .ov5-insight{padding:16px 17px!important;border-radius:17px!important;border-color:#dfe6ee!important;box-shadow:0 8px 24px rgba(31,56,89,.04)!important}
+#overviewPremium.exec-page .ov5-insight span{font-size:8px!important}
+#overviewPremium.exec-page .ov5-insight b{font-size:12px!important;line-height:1.45!important;margin-top:8px!important}
+#overviewPremium.exec-page .ov5-insight p{font-size:9px!important;line-height:1.55!important}
+#overviewPremium.exec-page .ov5-details{box-shadow:none!important;margin-bottom:16px!important}
+#overviewPremium.exec-page .ov5-details summary{font-size:9px!important}
+
+/* SIGNALS — pulse is the hero; risk / positive / watch are three parallel meanings. */
+#socialBody.exec-page .sig2{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+#socialBody.exec-page .sig2>.blis-system-rail,
+#socialBody.exec-page .sig2>.blis-stage-context,
+#socialBody.exec-page .sig2>.sig2-head,
+#socialBody.exec-page .sig2>.sig2-answer,
+#socialBody.exec-page .sig2>.sig2-dynamic,
+#socialBody.exec-page .sig2>.blis-next-step{grid-column:1/-1!important}
+#socialBody.exec-page .sig2-head{margin-bottom:2px!important}
+#socialBody.exec-page .sig2-head h2{font-size:30px!important}
+#socialBody.exec-page .sig2-head p{font-size:11px!important;line-height:1.55!important}
+#socialBody.exec-page .sig2-answer{padding:18px 20px!important;margin-bottom:4px!important;border-color:#dfe8f2!important;border-left-color:#2468b5!important;background:linear-gradient(110deg,#f3f8fe,#fff)!important;border-radius:0 17px 17px 0!important}
+#socialBody.exec-page .sig2-answer span{font-size:8px!important;color:#587b9c!important}
+#socialBody.exec-page .sig2-answer b{font-size:15px!important;line-height:1.58!important}
+#socialBody.exec-page .sig2-dynamic{grid-column:1/-1!important;padding:18px!important;margin:0 0 4px!important;box-shadow:0 12px 34px rgba(31,56,89,.055)!important;border-radius:18px!important;border-color:#dfe6ee!important}
+#socialBody.exec-page .sig2-dynamic h3{font-size:15px!important}
+#socialBody.exec-page .sig2-dynamic p{font-size:9px!important;line-height:1.5!important;margin:5px 0 13px!important}
+#socialBody.exec-page .sig2-pulse{height:110px!important;border-radius:13px!important}
+#socialBody.exec-page .sig2-axis{font-size:8px!important;top:10px!important}
+#socialBody.exec-page .sig2-line{top:66px!important}
+#socialBody.exec-page .sig2-dot{top:66px!important;width:15px!important;height:15px!important}
+#socialBody.exec-page .sig2-group{margin:0!important;min-width:0!important}
+#socialBody.exec-page .sig2-group-head{margin:0 0 9px!important;padding:0 2px!important;min-height:43px!important;align-items:flex-start!important}
+#socialBody.exec-page .sig2-group-head span{font-size:7.5px!important}
+#socialBody.exec-page .sig2-group-head h3{font-size:15px!important;line-height:1.2!important}
+#socialBody.exec-page .sig2-list{grid-template-columns:1fr!important;min-width:0!important;max-width:100%!important}
+#socialBody.exec-page .sig2-item:nth-child(n+2){display:none!important}
+#socialBody.exec-page .sig2-item{min-height:210px!important;padding:16px!important;border-radius:17px!important;border-color:#dfe6ee!important;box-shadow:0 8px 24px rgba(31,56,89,.04)!important;display:flex!important;flex-direction:column!important}
+#socialBody.exec-page .sig2-item.risk{background:linear-gradient(180deg,#fffafa,#fff)!important}
+#socialBody.exec-page .sig2-item.good{background:linear-gradient(180deg,#f9fdfb,#fff)!important}
+#socialBody.exec-page .sig2-kind{font-size:8px!important}
+#socialBody.exec-page .sig2-item h4{font-size:12px!important;line-height:1.45!important;margin-top:8px!important}
+#socialBody.exec-page .sig2-item p{font-size:9px!important;line-height:1.55!important}
+#socialBody.exec-page .sig2-proof{font-size:8px!important;line-height:1.45!important;margin-top:auto!important;padding-top:10px!important}
+#socialBody.exec-page .sig2-item summary{font-size:8.5px!important}
+#socialBody.exec-page .sig2-detail{font-size:8px!important}
+#socialBody.exec-page .sig2-empty{min-height:110px!important;display:grid!important;place-items:center!important;font-size:9px!important}
+
+/* MARKET — three explanatory themes lead into the permanent interactive map. */
+#marketBody.exec-page .market1-head{margin-bottom:14px!important}
+#marketBody.exec-page .market1-head h2{font-size:30px!important}
+#marketBody.exec-page .market1-head p{font-size:11px!important;line-height:1.55!important}
+#marketBody.exec-page .market1-answer{padding:18px 20px!important;margin-bottom:16px!important;border-color:#dfe8f2!important;border-left-color:#2468b5!important;background:linear-gradient(110deg,#f3f8fe,#fff)!important;border-radius:0 17px 17px 0!important}
+#marketBody.exec-page .market1-answer span{font-size:8px!important;color:#587b9c!important}
+#marketBody.exec-page .market1-answer b{font-size:15px!important;line-height:1.58!important}
+#marketBody.exec-page .market1-themes{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin-bottom:17px!important;min-width:0!important;max-width:100%!important}
+#marketBody.exec-page .market1-theme:nth-child(n+4){display:none!important}
+#marketBody.exec-page .market1-theme{min-height:128px!important;padding:16px 17px!important;border-radius:17px!important;border-color:#dfe6ee!important;box-shadow:0 8px 24px rgba(31,56,89,.04)!important;position:relative!important;overflow:hidden!important}
+#marketBody.exec-page .market1-theme:before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,#4d7ca9,#8ea9c2)}
+#marketBody.exec-page .market1-theme span{font-size:8px!important}
+#marketBody.exec-page .market1-theme b{font-size:12px!important;line-height:1.4!important;margin-top:8px!important}
+#marketBody.exec-page .market1-theme strong{font-size:11px!important;margin-top:11px!important;color:#285f98!important}
+#marketBody.exec-page .market1-theme small{font-size:8.5px!important;line-height:1.45!important;margin-top:5px!important}
+#marketBody.exec-page .market1-map-intro{margin:2px 0 11px!important}
+#marketBody.exec-page .market1-map-intro span{font-size:8px!important}
+#marketBody.exec-page .market1-map-intro b{font-size:13px!important}
+#marketBody.exec-page .market1-map-intro em{font-size:8px!important;padding:7px 10px!important}
+#marketBody.exec-page .pm-mapcard{box-shadow:0 12px 34px rgba(31,56,89,.055)!important;border-radius:18px!important;border-color:#dfe6ee!important}
+#marketBody.exec-page .pm-maphead{padding:18px 18px 10px!important}
+#marketBody.exec-page .pm-maphead b{font-size:15px!important}
+#marketBody.exec-page .pm-maphead small{font-size:9px!important}
+#marketBody.exec-page .pm-toolbar{padding-top:8px!important}
 
 /* Digital radar must never escape the content column. */
 #digital,#digitalBody,#digitalBody .dv-shell,#digitalBody .dv-stage{width:100%!important;max-width:100%!important;min-width:0!important}
-#digitalBody .dv-stage{grid-template-columns:minmax(0,1fr) minmax(250px,34%)!important;align-items:stretch!important;overflow:hidden!important}
+#digitalBody .dv-searchbar,#digitalBody .dv-chips,#digitalBody .dv-kpis,#digitalBody .dv-source-rail{display:none!important}
+#digitalBody .dv-stage{grid-template-columns:minmax(0,1fr) minmax(250px,34%)!important;align-items:stretch!important;overflow:hidden!important;border-radius:18px!important;padding:14px!important;gap:14px!important}
 #digitalBody .dv-radar-column,#digitalBody .dv-detail{min-width:0!important;max-width:100%!important}
 #digitalBody .dv-radar-wrap{width:min(470px,100%)!important;max-width:100%!important}
 #digitalBody .dv-detail{overflow:hidden!important;overflow-wrap:anywhere!important}
@@ -23,12 +157,24 @@ html,body{overflow-x:hidden!important}
 #marketBody .pm-main{grid-template-columns:minmax(0,1fr) minmax(260px,320px)!important}
 #marketBody .pm-stage{max-width:100%!important}
 
-/* Generic protection for analytical grids/cards. */
+/* Reputation / Competition retain one primary visual each. */
 .rep46-grid,.cmpv6-grid,.sig2-list,.ov5-insights,.market1-themes{min-width:0!important;max-width:100%!important}
 .rep46-card,.cmpv6-card,.sig2-item,.ov5-insight,.market1-theme{min-width:0!important;max-width:100%!important}
+#reputationBody.exec-page .rep46-chart{height:205px!important}
+#reputationBody.exec-page .rep46-panel{padding:18px!important;border-radius:18px!important}
+#competitionBody.exec-page .exec-field,#opportunitiesBody.exec-page .exec-field{background:linear-gradient(180deg,#f9fbfe,#fff)!important}
+
+/* Reports utility uses the same visual hierarchy. */
+#reportsBody.exec-page .exec-report{gap:16px!important;padding:15px 18px 18px!important}
+#reportsBody.exec-page .exec-check{font-size:9px!important;padding:11px 12px!important}
+#reportsBody.exec-page .exec-report-side span{font-size:8px!important}
+#reportsBody.exec-page .exec-report-side p{font-size:9px!important}
+#reportsBody.exec-page .exec-library{border-radius:18px!important}
 
 @media(max-width:1050px){
   .exec-glance{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #socialBody.exec-page .sig2{grid-template-columns:1fr 1fr!important}
+  #socialBody.exec-page .sig2>.sig2-group:last-of-type{grid-column:1/-1!important}
   #digitalBody .dv-stage{grid-template-columns:1fr!important}
   #digitalBody .dv-detail{min-height:0!important}
   #marketBody .pm-main{grid-template-columns:1fr!important}
@@ -37,6 +183,11 @@ html,body{overflow-x:hidden!important}
 @media(max-width:760px){
   .exec-glance{grid-template-columns:1fr!important}
   .exec-head{flex-direction:column!important}
+  .exec-page .blis-system-rail-track{display:flex!important;min-width:max-content!important}
+  #overviewPremium.exec-page .ov5-hero,#overviewPremium.exec-page .ov5-insights,#marketBody.exec-page .market1-themes{grid-template-columns:1fr!important}
+  #socialBody.exec-page .sig2{grid-template-columns:1fr!important}
+  #socialBody.exec-page .sig2>.sig2-group:last-of-type{grid-column:auto!important}
+  #socialBody.exec-page .sig2-item{min-height:0!important}
   #digitalBody .dv-radar-wrap{width:min(390px,100%)!important}
   #marketBody .pm-stage{height:520px!important}
 }
