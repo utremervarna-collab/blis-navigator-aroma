@@ -49,7 +49,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 
 		marker := []byte("navigator-production-entry-v1.js")
 		if !bytes.Contains(body, marker) {
-			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-system-structure-5"></script>`)
+			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-system-structure-6"></script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
