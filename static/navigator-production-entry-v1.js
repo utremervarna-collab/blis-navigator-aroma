@@ -1,15 +1,15 @@
-/* BLIS Navigator — production entrypoint v19.
-   Stability build: one renderer owner per page + semantic color + one visual focus per page. */
+/* BLIS Navigator — production entrypoint v20.
+   Stability build: one renderer owner per page + semantic color + one interactive visual focus per page. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V19)return;window.__BLIS_PRODUCTION_ENTRY_V19=true;
-const VERSION='20260829-single-owner-color-visual-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V20)return;window.__BLIS_PRODUCTION_ENTRY_V20=true;
+const VERSION='20260829-single-owner-color-visual-2';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
 window.BLIS_INITIAL_CLIENT=initialClient;try{window.slug=initialClient}catch(_){}
 function reset(n){try{window[n]=false}catch(_){}}
-['__BLIS_REFERENCE_V15','__BLIS_REFERENCE_V16','__BLIS_REPUTATION_V46','__BLIS_CLIENT_UI_V3','__BLIS_INTELLIGENCE_STREAM_V3','__BLIS_EXECUTIVE_DATA_V1','__BLIS_EXECUTIVE_UI_V2','__BLIS_EXECUTIVE_REPORTS_V1','__BLIS_COLOR_SYSTEM_V1','__BLIS_VISUAL_FOCUS_V1'].forEach(reset);
+['__BLIS_REFERENCE_V15','__BLIS_REFERENCE_V16','__BLIS_REPUTATION_V46','__BLIS_CLIENT_UI_V3','__BLIS_INTELLIGENCE_STREAM_V3','__BLIS_EXECUTIVE_DATA_V1','__BLIS_EXECUTIVE_UI_V2','__BLIS_EXECUTIVE_REPORTS_V1','__BLIS_COLOR_SYSTEM_V1','__BLIS_VISUAL_FOCUS_V1','__BLIS_VISUAL_INTERACTION_V1'].forEach(reset);
 function sync(){try{if(typeof D!=='undefined')window.D=D}catch(_){}try{if(typeof S!=='undefined')window.S=S}catch(_){}try{if(typeof Q!=='undefined')window.Q=Q}catch(_){}try{if(typeof A!=='undefined')window.A=A}catch(_){}try{if(typeof H!=='undefined')window.H=H}catch(_){}}
 function loadStyle(src){return new Promise((resolve,reject)=>{const l=document.createElement('link');l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';l.onload=resolve;l.onerror=()=>reject(new Error('CSS: '+src));document.head.appendChild(l)})}
 function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('JS: '+src));document.body.appendChild(s)})}
@@ -26,13 +26,15 @@ async function boot(){
  reset('__BLIS_REFERENCE_V16');await safe('/navigator-reference.js');
  await safe('/navigator-color-system-v1.js');
  await safe('/navigator-visual-focus-v1.js');
+ await safe('/navigator-visual-interaction-v1.js');
  sync();
  window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
  window.addEventListener('blis:production-ready',()=>sync());
- document.documentElement.dataset.navigatorUi='single-owner-color-visual-1';
+ document.documentElement.dataset.navigatorUi='single-owner-color-visual-2';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
  setTimeout(()=>window.BLISColorSystemV1?.decorate?.(),80);
  setTimeout(()=>window.BLISVisualFocusV1?.decorate?.(),120);
+ setTimeout(()=>window.BLISVisualInteractionV1?.refresh?.(),160);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
