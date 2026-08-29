@@ -1,150 +1,34 @@
-/* BLIS Navigator — production entrypoint v16.
-   Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
+/* BLIS Navigator — production entrypoint v17.
+   Stability build: one renderer owner per page. No render-then-hide overlays. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V16)return;
-window.__BLIS_PRODUCTION_ENTRY_V16=true;
-
-const VERSION='20260829-competition-recovery-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V17)return;window.__BLIS_PRODUCTION_ENTRY_V17=true;
+const VERSION='20260829-single-owner-1';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
-if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
-window.BLIS_INITIAL_CLIENT=initialClient;
-try{window.slug=initialClient}catch(_){}
-
-function currentClient(){
-  try{const c=window.BLISClientUIV3?.current?.();if(c)return c}catch(_){}
-  return urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.slug||initialClient;
-}
-function reset(name){try{window[name]=false}catch(_){}}
-[
-  '__BLIS_REFERENCE_V15',
-  '__BLIS_COMPETITION_V6',
-  '__BLIS_REPUTATION_V46',
-  '__BLIS_CLIENT_UI_V3',
-  '__BLIS_INTELLIGENCE_STREAM_V3',
-  '__BLIS_EXECUTIVE_DATA_V1',
-  '__BLIS_EXECUTIVE_UI_V1',
-  '__BLIS_EXECUTIVE_REPORTS_V1'
-].forEach(reset);
-function syncGlobals(){
-  try{if(typeof D!=='undefined')window.D=D}catch(_){}
-  try{if(typeof S!=='undefined')window.S=S}catch(_){}
-  try{if(typeof Q!=='undefined')window.Q=Q}catch(_){}
-  try{if(typeof A!=='undefined')window.A=A}catch(_){}
-  try{if(typeof H!=='undefined')window.H=H}catch(_){}
-}
-function releaseCompetitionPaintGuard(){
-  try{document.getElementById('blisCompetitionPaintGuard')?.remove()}catch(_){}
-  try{document.body?.classList.add('blis-competition-ready')}catch(_){}
-  const h=document.getElementById('competitionBody');
-  if(h){h.style.visibility='visible';h.style.opacity='1'}
-}
-releaseCompetitionPaintGuard();
-function loadStyle(src){return new Promise((resolve,reject)=>{
-  const l=document.createElement('link');
-  l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';
-  l.onload=resolve;l.onerror=()=>reject(new Error('Неуспешно зареждане на стил: '+src));
-  document.head.appendChild(l);
-})}
-function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('Неуспешно зареждане: '+src));document.body.appendChild(s)})}
-async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}
-async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
-function activePage(){return new URLSearchParams(location.search).get('page')||document.querySelector('.page.active')?.id||'overview'}
-function forceMarketMap(){
-  if(activePage()!=='market'&&!document.getElementById('market')?.classList.contains('active'))return;
-  syncGlobals();
-  try{window.BLISPerceptionMap?.render?.()}catch(e){console.error('BLIS perception render:',e)}
-  try{window.BLISMarketSystemV1?.decorate?.()}catch(e){console.error('BLIS market decorate:',e)}
-  try{window.BLISExecutiveUIV1?.decorate?.('market')}catch(_){}
-}
-function ensureCompetition(){
-  releaseCompetitionPaintGuard();
-  syncGlobals();
-  const h=document.getElementById('competitionBody');
-  if(!h)return;
-  try{
-    if(!h.querySelector('.cmpv6'))window.BLISCompetitionMasterV6?.render?.();
-    window.BLISExecutiveUIV1?.decorate?.('competition');
-  }catch(e){console.error('BLIS competition canonical render:',e)}
-  setTimeout(()=>{
-    releaseCompetitionPaintGuard();
-    const executive=h.querySelector('.exec-visual[data-exec="competition"]');
-    if(executive)return;
-    try{window.BLISCompetitionMasterV6?.render?.()}catch(e){console.error('BLIS competition recovery render:',e)}
-    h.classList.remove('exec-page');
-    h.style.visibility='visible';
-    h.querySelectorAll('.cmpv6-head,.cmpv6-kpis,.cmpv6-grid,.cmpv6>section.cmpv6-card').forEach(el=>{el.style.removeProperty('display')});
-  },700);
-}
-
+if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
+window.BLIS_INITIAL_CLIENT=initialClient;try{window.slug=initialClient}catch(_){}
+function reset(n){try{window[n]=false}catch(_){}}
+['__BLIS_REFERENCE_V15','__BLIS_REFERENCE_V16','__BLIS_REPUTATION_V46','__BLIS_CLIENT_UI_V3','__BLIS_INTELLIGENCE_STREAM_V3','__BLIS_EXECUTIVE_DATA_V1','__BLIS_EXECUTIVE_UI_V2','__BLIS_EXECUTIVE_REPORTS_V1'].forEach(reset);
+function sync(){try{if(typeof D!=='undefined')window.D=D}catch(_){}try{if(typeof S!=='undefined')window.S=S}catch(_){}try{if(typeof Q!=='undefined')window.Q=Q}catch(_){}try{if(typeof A!=='undefined')window.A=A}catch(_){}try{if(typeof H!=='undefined')window.H=H}catch(_){}}
+function loadStyle(src){return new Promise((resolve,reject)=>{const l=document.createElement('link');l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';l.onload=resolve;l.onerror=()=>reject(new Error('CSS: '+src));document.head.appendChild(l)})}
+function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('JS: '+src));document.body.appendChild(s)})}
+async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
 async function boot(){
-  releaseCompetitionPaintGuard();
-  for(const css of [
-    '/navigator-reference.css',
-    '/navigator-shell-master.css',
-    '/navigator-client-ui.css',
-    '/navigator-digital-master.css',
-    '/navigator-perception-map.css',
-    '/navigator-executive-layout-fix-v2.css',
-    '/navigator-executive-pages-4-9.css'
-  ]) await safeStyle(css);
-
-  await safe('/navigator-system-structure-v1.js');
-  await safe('/navigator-overview-system-v5.js');
-  await safe('/navigator-signals-system-v2.js');
-  if(window.BLISOverviewSystemV5)window.BLISOverviewSystemV4=window.BLISOverviewSystemV5;
-  if(window.BLISSignalsSystemV2)window.BLISSignalsSystemV1=window.BLISSignalsSystemV2;
-
-  await safe('/navigator-perception-core-v8.js');
-  await safe('/navigator-perception-map.js');
-  await safe('/navigator-market-system-v1.js');
-
-  syncGlobals();
-  await safe('/navigator-intelligence-stream-v2.js');
-  await safe('/navigator-executive-data-v1.js');
-
-  await safe('/navigator-system-dynamics-v1.js');
-  await safe('/navigator-competition-master-v5.js');
-  await safe('/navigator-reputation-master.js');
-  await safe('/navigator-digital-master.js');
-  await safe('/navigator-client-ui.js');
-
-  await safe('/navigator-executive-ui-v1.js');
-  await safe('/navigator-executive-reports-v1.js');
-
-  reset('__BLIS_REFERENCE_V15');
-  await safe('/navigator-reference.js');
-
-  const firstPage=activePage();
-  function renderCanonical(target=activePage()){
-    syncGlobals();
-    const client=currentClient();
-    try{window.BLISClientUIV3?.paint?.(client)}catch(_){}
-    try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
-    if(target==='market')setTimeout(forceMarketMap,30);
-    if(target==='competition')[25,180,520].forEach(ms=>setTimeout(ensureCompetition,ms));
-    [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    if(target==='reports')[180,520].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='competition-recovery-1';
-    document.documentElement.dataset.navigatorClient=client;
-  }
-
-  [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
-  window.addEventListener('blis:routechange',e=>{
-    const target=e.detail?.page||activePage();
-    if(target==='market')[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms));
-    if(target==='competition')[20,160,480].forEach(ms=>setTimeout(ensureCompetition,ms));
-    [60,220,520].forEach(ms=>setTimeout(()=>window.BLISExecutiveUIV1?.decorate?.(target),ms));
-    if(target==='reports')[240,620].forEach(ms=>setTimeout(()=>window.BLISExecutiveReportsV1?.enhance?.(),ms));
-  });
-  window.addEventListener('blis:intelligence',()=>setTimeout(()=>renderCanonical(activePage()),40));
-  window.addEventListener('blis:executive-data',()=>setTimeout(()=>renderCanonical(activePage()),60));
-  window.addEventListener('blis:clientdata',()=>setTimeout(()=>renderCanonical(activePage()),50));
-  window.addEventListener('blis:periodchange',()=>setTimeout(()=>renderCanonical(activePage()),50));
-  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:currentClient(),page:firstPage,version:VERSION}}));
+ for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css'])await safeStyle(css);
+ await safe('/navigator-system-structure-v1.js');
+ await safe('/navigator-overview-system-v5.js');if(window.BLISOverviewSystemV5)window.BLISOverviewSystemV4=window.BLISOverviewSystemV5;
+ await safe('/navigator-signals-system-v2.js');if(window.BLISSignalsSystemV2)window.BLISSignalsSystemV1=window.BLISSignalsSystemV2;
+ await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
+ sync();await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-executive-data-v1.js');
+ await safe('/navigator-reputation-master.js');await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');
+ await safe('/navigator-executive-ui-v2.js');await safe('/navigator-executive-reports-v1.js');
+ reset('__BLIS_REFERENCE_V16');await safe('/navigator-reference.js');
+ sync();
+ window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
+ window.addEventListener('blis:production-ready',()=>sync());
+ document.documentElement.dataset.navigatorUi='single-owner-1';
+ window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
 }
-
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-else boot();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
