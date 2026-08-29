@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v12.
+/* BLIS Navigator — production entrypoint v13.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V12)return;
-window.__BLIS_PRODUCTION_ENTRY_V12=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V13)return;
+window.__BLIS_PRODUCTION_ENTRY_V13=true;
 
-const VERSION='20260829-executive-pages-6';
+const VERSION='20260829-executive-pages-7';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
@@ -53,7 +53,6 @@ function forceMarketMap(){
 }
 
 async function boot(){
-  /* Canonical CSS manifest. The production UI no longer relies on stale links in dashboard.html. */
   for(const css of [
     '/navigator-reference.css',
     '/navigator-shell-master.css',
@@ -69,24 +68,20 @@ async function boot(){
   if(window.BLISOverviewSystemV5)window.BLISOverviewSystemV4=window.BLISOverviewSystemV5;
   if(window.BLISSignalsSystemV2)window.BLISSignalsSystemV1=window.BLISSignalsSystemV2;
 
-  /* The perception map is a permanent canonical component. */
   await safe('/navigator-perception-core-v8.js');
   await safe('/navigator-perception-map.js');
   await safe('/navigator-market-system-v1.js');
 
-  /* Evidence stream used by Reputation, Competition, Risk/Opportunity and History. */
   syncGlobals();
   await safe('/navigator-intelligence-stream-v2.js');
   await safe('/navigator-executive-data-v1.js');
 
-  /* Canonical analytical renderers. */
   await safe('/navigator-system-dynamics-v1.js');
   await safe('/navigator-competition-master-v5.js');
   await safe('/navigator-reputation-master.js');
   await safe('/navigator-digital-master.js');
   await safe('/navigator-client-ui.js');
 
-  /* One client-facing composition layer plus real report utility. */
   await safe('/navigator-executive-ui-v1.js');
   await safe('/navigator-executive-reports-v1.js');
 
@@ -102,7 +97,7 @@ async function boot(){
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
     if(target==='reports')[180,520].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-6';
+    document.documentElement.dataset.navigatorUi='executive-pages-7';
     document.documentElement.dataset.navigatorClient=client;
   }
 
