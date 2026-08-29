@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v8.
+/* BLIS Navigator — production entrypoint v9.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V8)return;
-window.__BLIS_PRODUCTION_ENTRY_V8=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V9)return;
+window.__BLIS_PRODUCTION_ENTRY_V9=true;
 
-const VERSION='20260829-executive-ui-2-assets';
+const VERSION='20260829-executive-pages-3';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=client;document.body.dataset.navigatorBuild=VERSION;}
@@ -13,7 +13,15 @@ window.BLIS_INITIAL_CLIENT=client;
 try{window.slug=client}catch(_){}
 
 function reset(name){try{window[name]=false}catch(_){}}
-['__BLIS_REFERENCE_V15','__BLIS_COMPETITION_V6','__BLIS_REPUTATION_V46','__BLIS_CLIENT_UI_V3'].forEach(reset);
+[
+  '__BLIS_REFERENCE_V15',
+  '__BLIS_COMPETITION_V6',
+  '__BLIS_REPUTATION_V46',
+  '__BLIS_CLIENT_UI_V3',
+  '__BLIS_INTELLIGENCE_STREAM_V3',
+  '__BLIS_EXECUTIVE_DATA_V1',
+  '__BLIS_EXECUTIVE_UI_V1'
+].forEach(reset);
 function syncGlobals(){
   try{if(typeof D!=='undefined')window.D=D}catch(_){}
   try{if(typeof S!=='undefined')window.S=S}catch(_){}
@@ -61,6 +69,11 @@ async function boot(){
   await safe('/navigator-perception-map.js');
   await safe('/navigator-market-system-v1.js');
 
+  /* Evidence stream used by Reputation, Competition, Risk/Opportunity and History. */
+  syncGlobals();
+  await safe('/navigator-intelligence-stream-v2.js');
+  await safe('/navigator-executive-data-v1.js');
+
   /* Canonical analytical renderers. */
   await safe('/navigator-system-dynamics-v1.js');
   await safe('/navigator-competition-master-v5.js');
@@ -81,7 +94,7 @@ async function boot(){
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-v2-assets';
+    document.documentElement.dataset.navigatorUi='executive-pages-3';
   }
 
   [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
@@ -90,6 +103,8 @@ async function boot(){
     if(target==='market')[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms));
     [60,220,520].forEach(ms=>setTimeout(()=>window.BLISExecutiveUIV1?.decorate?.(target),ms));
   });
+  window.addEventListener('blis:intelligence',()=>setTimeout(()=>renderCanonical(activePage()),40));
+  window.addEventListener('blis:executive-data',()=>setTimeout(()=>renderCanonical(activePage()),60));
   window.addEventListener('blis:clientdata',()=>setTimeout(()=>renderCanonical(activePage()),50));
   window.addEventListener('blis:periodchange',()=>setTimeout(()=>renderCanonical(activePage()),50));
   window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client,page:firstPage,version:VERSION}}));
