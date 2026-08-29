@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v7.
-   Един каноничен Executive UI; един ключов визуален елемент на страница. */
+/* BLIS Navigator — production entrypoint v8.
+   Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V7)return;
-window.__BLIS_PRODUCTION_ENTRY_V7=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V8)return;
+window.__BLIS_PRODUCTION_ENTRY_V8=true;
 
-const VERSION='20260829-executive-ui-1';
+const VERSION='20260829-executive-ui-2-assets';
 const q=new URLSearchParams(location.search);
 const client=q.get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=client;document.body.dataset.navigatorBuild=VERSION;}
@@ -21,7 +21,14 @@ function syncGlobals(){
   try{if(typeof A!=='undefined')window.A=A}catch(_){}
   try{if(typeof H!=='undefined')window.H=H}catch(_){}
 }
+function loadStyle(src){return new Promise((resolve,reject)=>{
+  const l=document.createElement('link');
+  l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';
+  l.onload=resolve;l.onerror=()=>reject(new Error('Неуспешно зареждане на стил: '+src));
+  document.head.appendChild(l);
+})}
 function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('Неуспешно зареждане: '+src));document.body.appendChild(s)})}
+async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}
 async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
 function activePage(){return new URLSearchParams(location.search).get('page')||document.querySelector('.page.active')?.id||'overview'}
 function forceMarketMap(){
@@ -33,6 +40,16 @@ function forceMarketMap(){
 }
 
 async function boot(){
+  /* Canonical CSS manifest. The production UI no longer relies on stale links in dashboard.html. */
+  for(const css of [
+    '/navigator-reference.css',
+    '/navigator-shell-master.css',
+    '/navigator-client-ui.css',
+    '/navigator-digital-master.css',
+    '/navigator-perception-map.css',
+    '/navigator-executive-layout-fix-v2.css'
+  ]) await safeStyle(css);
+
   await safe('/navigator-system-structure-v1.js');
   await safe('/navigator-overview-system-v5.js');
   await safe('/navigator-signals-system-v2.js');
@@ -51,7 +68,7 @@ async function boot(){
   await safe('/navigator-digital-master.js');
   await safe('/navigator-client-ui.js');
 
-  /* One client-facing composition layer. No stacked clarity/polish overlays. */
+  /* One client-facing composition layer. */
   await safe('/navigator-executive-ui-v1.js');
 
   reset('__BLIS_REFERENCE_V15');
@@ -64,7 +81,7 @@ async function boot(){
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-v1';
+    document.documentElement.dataset.navigatorUi='executive-v2-assets';
   }
 
   [0,180,420,850,1500,2600].forEach(ms=>setTimeout(()=>renderCanonical(firstPage),ms));
