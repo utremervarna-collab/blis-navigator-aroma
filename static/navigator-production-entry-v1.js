@@ -1,11 +1,11 @@
-/* BLIS Navigator — production entrypoint v15.
+/* BLIS Navigator — production entrypoint v16.
    Един каноничен Executive UI; JS и CSS зависимостите се зареждат заедно. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V15)return;
-window.__BLIS_PRODUCTION_ENTRY_V15=true;
+if(window.__BLIS_PRODUCTION_ENTRY_V16)return;
+window.__BLIS_PRODUCTION_ENTRY_V16=true;
 
-const VERSION='20260829-executive-pages-9';
+const VERSION='20260829-competition-recovery-1';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION;}
@@ -34,6 +34,13 @@ function syncGlobals(){
   try{if(typeof A!=='undefined')window.A=A}catch(_){}
   try{if(typeof H!=='undefined')window.H=H}catch(_){}
 }
+function releaseCompetitionPaintGuard(){
+  try{document.getElementById('blisCompetitionPaintGuard')?.remove()}catch(_){}
+  try{document.body?.classList.add('blis-competition-ready')}catch(_){}
+  const h=document.getElementById('competitionBody');
+  if(h){h.style.visibility='visible';h.style.opacity='1'}
+}
+releaseCompetitionPaintGuard();
 function loadStyle(src){return new Promise((resolve,reject)=>{
   const l=document.createElement('link');
   l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';
@@ -51,8 +58,28 @@ function forceMarketMap(){
   try{window.BLISMarketSystemV1?.decorate?.()}catch(e){console.error('BLIS market decorate:',e)}
   try{window.BLISExecutiveUIV1?.decorate?.('market')}catch(_){}
 }
+function ensureCompetition(){
+  releaseCompetitionPaintGuard();
+  syncGlobals();
+  const h=document.getElementById('competitionBody');
+  if(!h)return;
+  try{
+    if(!h.querySelector('.cmpv6'))window.BLISCompetitionMasterV6?.render?.();
+    window.BLISExecutiveUIV1?.decorate?.('competition');
+  }catch(e){console.error('BLIS competition canonical render:',e)}
+  setTimeout(()=>{
+    releaseCompetitionPaintGuard();
+    const executive=h.querySelector('.exec-visual[data-exec="competition"]');
+    if(executive)return;
+    try{window.BLISCompetitionMasterV6?.render?.()}catch(e){console.error('BLIS competition recovery render:',e)}
+    h.classList.remove('exec-page');
+    h.style.visibility='visible';
+    h.querySelectorAll('.cmpv6-head,.cmpv6-kpis,.cmpv6-grid,.cmpv6>section.cmpv6-card').forEach(el=>{el.style.removeProperty('display')});
+  },700);
+}
 
 async function boot(){
+  releaseCompetitionPaintGuard();
   for(const css of [
     '/navigator-reference.css',
     '/navigator-shell-master.css',
@@ -96,9 +123,10 @@ async function boot(){
     try{window.BLISClientUIV3?.paint?.(client)}catch(_){}
     try{window.refGo?.(target)}catch(e){console.error('BLIS canonical route:',e)}
     if(target==='market')setTimeout(forceMarketMap,30);
+    if(target==='competition')[25,180,520].forEach(ms=>setTimeout(ensureCompetition,ms));
     [60,180,420].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveUIV1?.decorate?.(target)}catch(_){}},ms));
     if(target==='reports')[180,520].forEach(ms=>setTimeout(()=>{try{window.BLISExecutiveReportsV1?.enhance?.()}catch(_){}},ms));
-    document.documentElement.dataset.navigatorUi='executive-pages-9';
+    document.documentElement.dataset.navigatorUi='competition-recovery-1';
     document.documentElement.dataset.navigatorClient=client;
   }
 
@@ -106,6 +134,7 @@ async function boot(){
   window.addEventListener('blis:routechange',e=>{
     const target=e.detail?.page||activePage();
     if(target==='market')[40,180,520].forEach(ms=>setTimeout(forceMarketMap,ms));
+    if(target==='competition')[20,160,480].forEach(ms=>setTimeout(ensureCompetition,ms));
     [60,220,520].forEach(ms=>setTimeout(()=>window.BLISExecutiveUIV1?.decorate?.(target),ms));
     if(target==='reports')[240,620].forEach(ms=>setTimeout(()=>window.BLISExecutiveReportsV1?.enhance?.(),ms));
   });
