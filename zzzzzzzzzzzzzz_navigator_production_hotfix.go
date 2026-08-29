@@ -10,9 +10,9 @@ import (
 
 var legacyVarnaTowersUIScripts = regexp.MustCompile(`<script[^>]+src="/varna-towers-(?:ui|reference)\.js[^\"]*"[^>]*></script>`)
 
-// This late init wraps the existing dashboard response modifier. The canonical
-// Navigator entrypoint is injected after every legacy browser asset, so old
-// client-specific scripts cannot remain the final owner of window.refGo.
+// This late init wraps the existing response modifier. It keeps the production
+// Navigator on one canonical UI path and also makes the public client-login CTA
+// neutral instead of carrying a legacy Varna Towers profile into the login form.
 func init() {
 	if authProxy == nil {
 		return
@@ -24,29 +24,40 @@ func init() {
 				return err
 			}
 		}
-		return injectNavigatorProductionEntrypoint(resp)
+		return applyNavigatorProductionHotfixes(resp)
 	}
 }
 
-func injectNavigatorProductionEntrypoint(resp *http.Response) error {
-	if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" || resp.Body == nil {
+func applyNavigatorProductionHotfixes(resp *http.Response) error {
+	if resp == nil || resp.Request == nil || resp.Body == nil {
 		return nil
 	}
+
+	path := resp.Request.URL.Path
+	if path != "/dashboard.html" && path != "/" && path != "/index.html" {
+		return nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	_ = resp.Body.Close()
 
-	// Never send the two legacy Varna Towers UI/router overrides to the browser.
-	// The isolated Varna Towers data adapter may remain, but presentation and
-	// routing are now universal across every client profile.
-	body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
+	if path == "/dashboard.html" {
+		// Never send the two legacy Varna Towers UI/router overrides to the browser.
+		// Varna Towers remains a data profile, not a global presentation owner.
+		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 
-	marker := []byte("navigator-production-entry-v1.js")
-	if !bytes.Contains(body, marker) {
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-2"></script>`)
-		body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
+		marker := []byte("navigator-production-entry-v1.js")
+		if !bytes.Contains(body, marker) {
+			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-3"></script>`)
+			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
+		}
+	} else {
+		// The public site must always open a neutral client login. Client-specific
+		// login links may still use ?client=<slug> when intentionally distributed.
+		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/client-login?generic=1"`))
 	}
 
 	resp.Body = io.NopCloser(bytes.NewReader(body))
