@@ -49,11 +49,10 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 
 		marker := []byte("navigator-production-entry-v1.js")
 		if !bytes.Contains(body, marker) {
-			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-production-entry-4"></script>`)
+			tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260829-system-structure-5"></script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
 	} else {
-		// Every existing public client-entry link now opens the canonical dashboard.
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
