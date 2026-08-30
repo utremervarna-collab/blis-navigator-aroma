@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "logos": {
     "aroma": {
       "path": "/client-logos/aroma.svg",
@@ -8,6 +8,10 @@
     "bolyarka": {
       "path": "/client-logos/bolyarka.png",
       "source": "http://boliarka.bg/wp-content/uploads/2019/02/logo_2019.png"
+    },
+    "astor-garden": {
+      "path": "/client-logos/astor-garden.svg",
+      "source": "https://astorgardenhotel.com/build/hotel/astorgarden/images/fa-brands-400.1d5619cd.svg#fontawesome"
     },
     "mollox": {
       "path": "/client-logos/mollox.png",
