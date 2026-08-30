@@ -1796,7 +1796,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		io.WriteString(w, indexHTML)
+		_, _ = w.Write(injectBLISI18N([]byte(indexHTML)))
 		return
 	}
 	if path == "api/health" {
@@ -1814,7 +1814,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		var in Inquiry
 		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&in); err != nil {
-			jsonOut(w, map[string]interface{}{"error": "Невалидна заявка"})
+			jsonOut(w, map[string]interface{}{"error": blisLocalized(r, "Невалидна заявка", "Invalid request")})
 			return
 		}
 		in.Name = strings.TrimSpace(in.Name)
@@ -1825,7 +1825,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		in.Type = strings.TrimSpace(in.Type)
 		if in.Name == "" || in.Email == "" || !strings.Contains(in.Email, "@") {
 			w.WriteHeader(http.StatusBadRequest)
-			jsonOut(w, map[string]interface{}{"error": "Име и валиден имейл са задължителни"})
+			jsonOut(w, map[string]interface{}{"error": blisLocalized(r, "Име и валиден имейл са задължителни", "Name and a valid email are required")})
 			return
 		}
 		if in.Type == "" {
@@ -1835,7 +1835,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		in.CreatedAt = nowISO()
 		if err := saveInquiry(in); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			jsonOut(w, map[string]interface{}{"error": "Заявката не можа да бъде записана"})
+			jsonOut(w, map[string]interface{}{"error": blisLocalized(r, "Заявката не можа да бъде записана", "The request could not be saved")})
 			return
 		}
 		jsonOut(w, map[string]interface{}{"ok": true, "id": in.ID, "created_at": in.CreatedAt})
@@ -1848,6 +1848,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			// Apply the exact production dashboard assembly in that mode as well.
 			if path == "dashboard.html" && os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") != "1" {
 				b = assembleNavigatorDashboard(b)
+			}
+			if strings.HasSuffix(path, ".html") {
+				b = injectBLISI18N(b)
 			}
 			ct := http.DetectContentType(b)
 			switch {
@@ -1891,7 +1894,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		reportID := p[4]
-		title, body := reportContent(c, reportID)
+		title, body := localizedReportContent(r, c, reportID)
 		if title == "" {
 			http.NotFound(w, r)
 			return
@@ -1899,7 +1902,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		filename := strings.ReplaceAll(c.Name, " ", "_") + "_" + reportID + "_08-2026.html"
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
-		io.WriteString(w, "<!doctype html><html lang='bg'><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;max-width:900px;margin:45px auto;color:#0c2547;line-height:1.55}h1{font-size:28px}h2{font-size:19px;margin-top:28px}small{color:#6f7e92}.box{background:#f7fbff;border-left:4px solid #0e58be;padding:14px 16px;margin:20px 0}</style><body><small>Brand Lab • BLIS™ • Август 2026</small><h1>"+title+"</h1>"+body+"</body></html>")
+		docLang := blisLocalized(r, "bg", "en")
+		reportPeriod := blisLocalized(r, "Август 2026", "August 2026")
+		_, _ = io.WriteString(w, "<!doctype html><html lang='"+docLang+"'><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;max-width:900px;margin:45px auto;color:#0c2547;line-height:1.55}h1{font-size:28px}h2{font-size:19px;margin-top:28px}small{color:#6f7e92}.box{background:#f7fbff;border-left:4px solid #0e58be;padding:14px 16px;margin:20px 0}</style><body><small>Brand Lab • BLIS™ • "+reportPeriod+"</small><h1>"+title+"</h1>"+body+"</body></html>")
 		return
 	}
 
@@ -1960,13 +1965,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			jsonOut(w, c.Snapshots)
 			return
 		case "reports":
-			jsonOut(w, []map[string]string{
-				{"id": "digital", "title": "Дигитално и съдържателно присъствие", "period": "Август 2026"},
-				{"id": "reputation", "title": "Репутация и информационна среда", "period": "Август 2026"},
-				{"id": "signals", "title": "Пазарни сигнали", "period": "Август 2026"},
-				{"id": "competitive", "title": "Конкурентно позициониране", "period": "Август 2026"},
-				{"id": "summary", "title": "Месечно обобщение", "period": "Август 2026"},
-			})
+			jsonOut(w, localizedReportList(r))
 			return
 		case "refresh":
 			if r.Method != "POST" {
