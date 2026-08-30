@@ -6,7 +6,6 @@ on:
     paths:
       - 'scripts/sync_client_logos.py'
       - 'scripts/sync_inline_client_logos.py'
-      - 'scripts/probe_astor_pdf.py'
       - '.github/workflows/sync-client-logos.yml'
   workflow_dispatch:
 
@@ -92,16 +91,6 @@ jobs:
           data['version'] = max(int(data.get('version') or 0), 5)
           mf.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
           PY
-      - name: Probe Astor official PDF artwork
-        run: |
-          python3 -m pip install --quiet pymupdf
-          python3 scripts/probe_astor_pdf.py
-      - name: Upload Astor logo probe
-        uses: actions/upload-artifact@v4
-        with:
-          name: astor-logo-probe
-          path: /tmp/astor-logo-probe
-          retention-days: 1
       - name: Commit local logo bundle
         run: |
           git config user.name "github-actions[bot]"
