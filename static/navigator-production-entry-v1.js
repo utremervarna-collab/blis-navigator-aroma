@@ -1,9 +1,9 @@
-/* BLIS Navigator — production entrypoint v27.
-   Canonical data loader + fail-safe router owners + number-free page chrome. */
+/* BLIS Navigator — production entrypoint v28.
+   Canonical data loader + fail-safe router owners + number-free page chrome + clear Signals current marker. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V27)return;window.__BLIS_PRODUCTION_ENTRY_V27=true;
-const VERSION='20260829-no-page-numbers-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V28)return;window.__BLIS_PRODUCTION_ENTRY_V28=true;
+const VERSION='20260830-signal-current-marker-1';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -15,7 +15,7 @@ function loadScript(src){return new Promise((resolve,reject)=>{const s=document.
 async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}
 async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
 async function boot(){
- for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css'])await safeStyle(css);
+ for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
  await safe('/navigator-system-structure-v1.js');
  await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
  await safe('/navigator-data-loader-v1.js');
@@ -27,7 +27,7 @@ async function boot(){
  await safe('/navigator-color-system-v1.js');
  await safe('/navigator-no-page-numbers-v1.js');
  window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
- document.documentElement.dataset.navigatorUi='no-page-numbers-1';
+ document.documentElement.dataset.navigatorUi='signal-current-marker-1';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
  setTimeout(()=>{window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.()},100);
 }
