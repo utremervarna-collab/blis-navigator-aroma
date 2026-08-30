@@ -36,24 +36,20 @@ jobs:
             'Регионална дистрибуция'
           ];
           (async()=>{
-            const api=await fetch(origin+'/api/signals?client=mollox&limit=300',{headers:{'cache-control':'no-cache'}});
-            if(!api.ok)throw new Error('signal api '+api.status);
-            const payload=await api.json();
-            const rows=Array.isArray(payload.signals)?payload.signals:[];
-            const ownedStatic=rows.filter(s=>String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web');
-            console.log('MOLLOX_API_SIGNALS',rows.length);
-            console.log('MOLLOX_OWNED_STATIC_WEB',ownedStatic.length);
-            console.log('MOLLOX_API_TOP',rows.slice(0,12).map(s=>({title:s.title,scope:s.scope,type:s.source_type,topic:s.topic,detected_at:s.detected_at})));
-            if(ownedStatic.length)throw new Error('owned static web pages still present in MOLLOX signal API');
-
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             const context=await browser.newContext({viewport:{width:1440,height:1000}});
             const page=await context.newPage();
             await page.goto(origin+'/dashboard.html?client=mollox&page=social',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.waitForTimeout(5000);
-            const state=await page.evaluate((baseline)=>{
+            await page.waitForTimeout(5500);
+            const state=await page.evaluate(async(baseline)=>{
               const Drows=Array.isArray(window.D?.signals)?window.D.signals:[];
               let useful=[];try{useful=window.BLISIntelligenceStreamV3?.getUsefulSignals?.()||[]}catch(_){}
+              let api={status:0,rows:[]};
+              try{
+                const r=await fetch('/api/signals?client=mollox&limit=300',{cache:'no-store'});
+                api.status=r.status;
+                if(r.ok){const j=await r.json();api.rows=Array.isArray(j?.signals)?j.signals:[]}
+              }catch(_){}
               const text=(document.getElementById('socialBody')||document.body).innerText||'';
               const badVisible=baseline.filter(x=>text.includes(x));
               const badD=Drows.filter(s=>baseline.includes(String(s.title||s.text||'')));
@@ -62,19 +58,26 @@ jobs:
                 const staticOwned=String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web';
                 return baseline.includes(title)||staticOwned;
               });
+              const badApi=api.rows.filter(s=>String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web');
               return {
+                href:location.href,
                 client:document.body?.dataset?.client||window.D?.client||'',
+                pageActive:document.querySelector('.page.active')?.id||'',
+                truthLoaded:Boolean(window.BLISMolloxSignalTruthV1),
                 dSignals:Drows.map(s=>s.title||s.text||''),
                 useful:useful.map(s=>({title:s.title||s.text||'',scope:s.scope||'',type:s.source_type||'',topic:s.topic||''})),
+                apiStatus:api.status,apiCount:api.rows.length,badApi,
                 badVisible,badD:badD.map(s=>s.title||s.text||''),badUseful
               };
             },baseline);
             console.log('MOLLOX_PAGE_STATE',JSON.stringify(state,null,2));
             await browser.close();
-            if(String(state.client).toLowerCase()!=='mollox')throw new Error('wrong client rendered: '+state.client);
+            if(String(state.client).toLowerCase()!=='mollox')throw new Error('wrong client rendered: '+state.client+' '+state.href);
+            if(!state.truthLoaded)throw new Error('MOLLOX truth guard is not loaded');
             if(state.badVisible.length)throw new Error('baseline facts still visible as signals: '+state.badVisible.join(' | '));
             if(state.badD.length)throw new Error('baseline facts still remain in D.signals');
             if(state.badUseful.length)throw new Error('baseline/static owned facts still remain in useful signal stream');
+            if(state.apiStatus===200&&state.badApi.length)throw new Error('owned static web pages still present in authenticated API signal stream');
             console.log('MOLLOX_SIGNAL_TRUTH_OK');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
