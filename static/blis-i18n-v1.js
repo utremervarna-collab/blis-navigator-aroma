@@ -12,13 +12,13 @@ document.documentElement.lang=lang;
 document.documentElement.dataset.blisLang=lang;
 window.BLIS_LANGUAGE=lang;
 
-const MAP=window.BLIS_EN_TRANSLATIONS||{};
-const RULES=window.BLIS_EN_RULES||[];
 const ATTRS=['title','aria-label','placeholder','alt','value'];
 let observer=null;
 let scheduled=false;
 const pending=new Set();
 
+function liveMap(){return window.BLIS_EN_TRANSLATIONS||{}}
+function liveRules(){return window.BLIS_EN_RULES||[]}
 function preserveSpace(src,dst){
   const lead=(src.match(/^\s*/)||[''])[0],trail=(src.match(/\s*$/)||[''])[0];
   return lead+dst+trail;
@@ -38,8 +38,9 @@ function translateString(raw,el){
   if(lang!=='en'||!raw||!CYR.test(raw))return raw;
   const trimmed=raw.trim();if(!trimmed)return raw;
   const ctx=contextual(el,raw);if(ctx)return preserveSpace(raw,ctx);
-  if(Object.prototype.hasOwnProperty.call(MAP,trimmed))return preserveSpace(raw,MAP[trimmed]);
-  for(const [re,repl] of RULES){if(re.test(trimmed)){re.lastIndex=0;return preserveSpace(raw,trimmed.replace(re,repl));}}
+  const map=liveMap();
+  if(Object.prototype.hasOwnProperty.call(map,trimmed))return preserveSpace(raw,map[trimmed]);
+  for(const [re,repl] of liveRules()){if(re.test(trimmed)){re.lastIndex=0;return preserveSpace(raw,trimmed.replace(re,repl));}}
   // Safe composite replacements. Only full catalog phrases are replaced inside larger UI strings.
   let out=trimmed;
   const composites=[
@@ -118,22 +119,27 @@ function changeLanguage(next){
   const u=new URL(location.href);u.searchParams.set('lang',next);location.href=u.pathname+u.search+u.hash;
 }
 function addSwitch(){
-  if(document.querySelector('[data-blis-language-switch]'))return;
-  const btn=document.createElement('button');btn.type='button';btn.dataset.blisLanguageSwitch='1';btn.className='blis-lang-switch';
+  let btn=document.querySelector('[data-blis-language-switch]');
+  if(!btn){
+    btn=document.createElement('button');btn.type='button';btn.dataset.blisLanguageSwitch='1';btn.className='blis-lang-switch';
+    const isHome=location.pathname==='/'||location.pathname==='/index.html';
+    const candidates=isHome?['.top .actions','.topin .actions','.topin','.toptools','.public-topin','.ih-topin','header nav','header','.brand']:['.toptools','.actions','.public-topin','.ih-topin','.topin','header nav','header','.brand'];
+    let host=null;for(const s of candidates){host=document.querySelector(s);if(host)break}
+    if(host){host.appendChild(btn)}else if(document.body){const row=document.createElement('div');row.className='blis-lang-row';row.appendChild(btn);document.body.insertBefore(row,document.body.firstChild)}
+  }
+  btn.type='button';btn.dataset.blisLanguageSwitch='1';btn.classList.add('blis-lang-switch');
   btn.textContent=lang==='en'?'BG':'EN';
   btn.setAttribute('aria-label',lang==='en'?'Switch to Bulgarian':'Превключи на английски');
   btn.title=lang==='en'?'Switch to Bulgarian':'Превключи на английски';
-  btn.addEventListener('click',()=>changeLanguage(switchTarget()));
-  const candidates=['.toptools','.actions','.public-topin','.ih-topin','.topin','header nav','header','.brand'];
-  let host=null;for(const s of candidates){host=document.querySelector(s);if(host)break}
-  if(host){host.appendChild(btn)}else if(document.body){const row=document.createElement('div');row.className='blis-lang-row';row.appendChild(btn);document.body.insertBefore(row,document.body.firstChild)}
+  if(!btn.dataset.blisLanguageBound){btn.dataset.blisLanguageBound='1';btn.addEventListener('click',()=>changeLanguage(switchTarget()))}
 }
 function addStyle(){
   if(document.getElementById('blisI18NStyle'))return;
   const s=document.createElement('style');s.id='blisI18NStyle';s.textContent=`
-  .blis-lang-switch{appearance:none;border:1px solid rgba(26,55,80,.20);background:#fff;color:#17324c;border-radius:8px;min-width:42px;height:36px;padding:0 10px;font:800 10px/1 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.08em;cursor:pointer;box-shadow:none;flex:0 0 auto}
+  .blis-lang-switch{appearance:none;border:1px solid rgba(26,55,80,.20);background:#fff;color:#17324c;border-radius:8px;min-width:46px;height:36px;padding:0 11px;font:800 10px/1 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.08em;cursor:pointer;box-shadow:none;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
   .blis-lang-switch:hover{border-color:rgba(26,55,80,.38);background:#f7fafc}.blis-lang-row{width:min(1180px,calc(100% - 32px));margin:12px auto 0;display:flex;justify-content:flex-end}
-  .brand>.blis-lang-switch{margin:12px auto 0;width:auto;display:inline-flex;align-items:center;justify-content:center}
+  .top .actions>.blis-lang-switch{order:-1}.brand>.blis-lang-switch{margin:12px auto 0;width:auto}
+  @media(max-width:720px){.top .actions>.blis-lang-switch{min-width:42px;height:34px;padding:0 9px}}
   `;document.head.appendChild(s);
 }
 function scanBulgarian(){
@@ -156,8 +162,8 @@ function observe(){
   observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS.concat(['href'])});
 }
 patchFetch();addStyle();
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply(document);observe();setTimeout(()=>schedule(document),80);setTimeout(()=>schedule(document),350);setTimeout(scanBulgarian,700)},{once:true});
-else{apply(document);observe();setTimeout(()=>schedule(document),80);setTimeout(()=>schedule(document),350);setTimeout(scanBulgarian,700)}
-for(const ev of ['blis:clientdata','blis:periodchange','blis:routechange','blis:navigator-route','blis:rendered'])window.addEventListener(ev,()=>{schedule(document);setTimeout(()=>schedule(document),90);setTimeout(()=>schedule(document),260)});
-window.BLISI18N={lang,t:(s,el)=>translateString(s,el),apply:schedule,scanBulgarian,setLanguage:changeLanguage};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply(document);observe();setTimeout(()=>schedule(document),80);setTimeout(()=>schedule(document),350);setTimeout(()=>schedule(document),900);setTimeout(scanBulgarian,1200)},{once:true});
+else{apply(document);observe();setTimeout(()=>schedule(document),80);setTimeout(()=>schedule(document),350);setTimeout(()=>schedule(document),900);setTimeout(scanBulgarian,1200)}
+for(const ev of ['blis:clientdata','blis:periodchange','blis:routechange','blis:navigator-route','blis:rendered','blis:i18n-catalog'])window.addEventListener(ev,()=>{schedule(document);setTimeout(()=>schedule(document),90);setTimeout(()=>schedule(document),260)});
+window.BLISI18N={lang,t:(s,el)=>translateString(s,el),apply:schedule,scanBulgarian,setLanguage:changeLanguage,getCatalog:liveMap};
 })();
