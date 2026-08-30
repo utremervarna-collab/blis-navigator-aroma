@@ -6,6 +6,10 @@ on:
     paths:
       - 'static/blis-i18n-v1.js'
       - 'static/blis-i18n-en-v1.js'
+      - 'static/blis-i18n-en-public-core-v1.js'
+      - 'static/blis-i18n-en-legal-v1.js'
+      - 'static/blis-i18n-en-articles-v1.js'
+      - 'static/blis-i18n-en-dashboard-v1.js'
       - 'static/navigator-language-cleanup-v1.js'
       - 'static/navigator-ui-terminology.js'
       - 'i18n_runtime.go'
@@ -63,7 +67,7 @@ jobs:
               for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!vis(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({text:v,kind:a})}}
               if(document.title&&cyr.test(document.title))out.push({text:document.title,kind:'title'});
               const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({text:md,kind:'meta-description'});
-              return {rows,lang:document.documentElement.lang,residual:document.documentElement.dataset.blisI18nResidual||'',hasSwitch:!!document.querySelector('[data-blis-language-switch]')};
+              return {rows:out,lang:document.documentElement.lang,residual:document.documentElement.dataset.blisI18nResidual||'',hasSwitch:!!document.querySelector('[data-blis-language-switch]')};
             });
             if(rows.lang!=='en')errors.push(`${where}: html lang=${rows.lang}`);if(!rows.hasSwitch)errors.push(`${where}: language switch missing`);rows.rows.forEach(r=>add(r.text,where,r.kind));
           }
@@ -74,7 +78,6 @@ jobs:
             for(const path of publicPaths){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(en(path),{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1700);await collect(p,path)}catch(e){errors.push(`${path}: ${e.message}`)}await p.close()}
             const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
             for(const client of clients){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(`${origin}/dashboard.html?client=${client}&page=overview&lang=en`,{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1600);for(const route of routes){if(route!=='overview'){await p.evaluate(r=>window.refGo&&window.refGo(r),route);await p.waitForTimeout(750)}await collect(p,`dashboard:${client}:${route}`)}}catch(e){errors.push(`dashboard:${client}: ${e.message}`)}await p.close()}
-            // Server-side downloadable reports must be English without depending on the browser runtime.
             for(const id of ['digital','reputation','signals','competitive','summary']){const res=await fetch(`${origin}/api/clients/aroma/reports/${id}?lang=en`);const body=await res.text();if(cyr.test(body))errors.push(`download report ${id}: Cyrillic remains`)}
             await browser.close();
             const phrases=[...residual.values()].sort((a,b)=>b.count-a.count||b.text.length-a.text.length||a.text.localeCompare(b.text,'bg'));const out={summary:{unique:phrases.length,occurrences:phrases.reduce((s,x)=>s+x.count,0),errors:errors.length},errors,phrases};fs.writeFileSync('i18n-english-residual.json',JSON.stringify(out,null,2));console.log(JSON.stringify(out.summary));errors.forEach(x=>console.log('ERROR',x));for(const r of phrases.slice(0,220))console.log(String(r.count).padStart(3),r.kind,'|',r.text.slice(0,260),'|',r.where.slice(0,3).join(','));
