@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var blisI18NScripts = []byte(`<script src="/blis-i18n-en-v1.js?v=20260830-en2" data-blis-i18n-catalog="en-base"></script><script src="/blis-i18n-en-public-core-v1.js?v=20260830-en2" data-blis-i18n-catalog="en-public"></script><script src="/blis-i18n-en-legal-v1.js?v=20260830-en2" data-blis-i18n-catalog="en-legal"></script><script src="/blis-i18n-v1.js?v=20260830-en2" data-blis-i18n-runtime="1"></script>`)
+var blisI18NScripts = []byte(`<script src="/blis-i18n-en-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-base"></script><script src="/blis-i18n-en-public-core-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-public"></script><script src="/blis-i18n-en-legal-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-legal"></script><script src="/blis-i18n-en-public-extra-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-public-extra"></script><script src="/blis-i18n-en-dashboard-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-dashboard"></script><script src="/blis-i18n-en-articles-v1.js?v=20260830-en3" data-blis-i18n-catalog="en-articles"></script><script src="/blis-i18n-v1.js?v=20260830-en3" data-blis-i18n-runtime="1"></script>`)
 
 // injectBLISI18N adds the single presentation-language layer to HTML served by
 // the existing Navigator. It does not own routing or analytical rendering.
