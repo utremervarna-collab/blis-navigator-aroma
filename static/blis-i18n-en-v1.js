@@ -31,7 +31,7 @@ const T={
 /* Safe AI/LLM wording — never imply functional measurement in Navigator */
 'AI видимост':'AI visibility (methodology only; not measured in Navigator)','AI/LLM видимост':'AI/LLM visibility (methodology only; not measured in Navigator)','LLM видимост':'LLM visibility (methodology only; not measured in Navigator)','AI Visibility':'AI visibility methodology','LLM Visibility':'LLM visibility methodology','AI Search видимост':'AI Search visibility methodology'
 };
-window.BLIS_EN_TRANSLATIONS=Object.freeze(T);
+window.BLIS_EN_TRANSLATIONS=Object.assign({},T);
 window.BLIS_EN_RULES=Object.freeze([
   [/^Клиентски профил\s*[·•|-]\s*/i,'Client profile · '],
   [/^BLIS индекс\s+(.+?)\s+от 100$/i,'BLIS Index $1 out of 100'],
