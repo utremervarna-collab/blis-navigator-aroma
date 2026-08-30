@@ -2,7 +2,8 @@
 """Sync real client brand logos into static/client-logos from official websites.
 
 Only artwork exposed by the brand's own official website is accepted. The sync
-never creates initials, generated marks, favicons, or third-party substitutes.
+never creates initials, generated marks, favicons, icon-library glyphs, or
+third-party substitutes.
 """
 from __future__ import annotations
 
@@ -25,29 +26,34 @@ UA = (
 
 BRANDS = {
     "aroma": {
-        "home": "https://aroma.bg/",
+        "homes": ["https://aroma.bg/"],
         "tokens": ["aroma"],
         "fallbacks": [],
     },
     "bolyarka": {
-        "home": "https://boliarka.bg/",
+        "homes": ["https://boliarka.bg/", "http://boliarka.bg/"],
         "tokens": ["boliarka", "bolyarka", "болярка"],
         "fallbacks": ["https://boliarka.bg/wp-content/uploads/2019/02/logo_2019.png"],
     },
     "astor-garden": {
-        "home": "https://astorgardenhotel.com/",
+        "homes": ["https://astorgardenhotel.com/", "https://en.astorgardenhotel.com/"],
         "tokens": ["astor", "garden"],
         "fallbacks": [],
         "require_logo_hint": True,
     },
     "varna-towers": {
-        "home": "https://www.varnatowers.bg/",
+        "homes": [
+            "https://varnatowers.bg/",
+            "https://www.varnatowers.bg/",
+            "http://varnatowers.bg/",
+            "http://www.varnatowers.bg/",
+        ],
         "tokens": ["varna", "tower", "towers"],
         "fallbacks": [],
         "require_logo_hint": True,
     },
     "mollox": {
-        "home": "https://mollox.bg/",
+        "homes": ["https://mollox.bg/"],
         "tokens": ["mollox"],
         "fallbacks": [
             "https://mollox.bg/assets/img/logo-mollox.png",
@@ -55,15 +61,17 @@ BRANDS = {
         ],
     },
     "everbet": {
-        "home": "https://everbet.bg/",
+        "homes": ["https://everbet.bg/", "https://everbet.bg/bg"],
         "tokens": ["everbet"],
-        "fallbacks": [
-            "https://everbet.bg/assets/icons/logo-left-column-dark.svg",
-            "https://everbet.bg/assets/icons/logo-left-column-light.svg",
-        ],
+        "fallbacks": [],
         "require_logo_hint": True,
     },
 }
+
+BLOCKED = re.compile(
+    r"(?:fontawesome|fa-(?:brands|solid|regular)|/fonts?/|favicon|sprite|payment|vendor|partner|tenant)",
+    re.I,
+)
 
 
 class AssetParser(HTMLParser):
@@ -71,6 +79,7 @@ class AssetParser(HTMLParser):
         super().__init__()
         self.images: list[dict[str, str]] = []
         self.stylesheets: list[str] = []
+        self.scripts: list[str] = []
 
     @staticmethod
     def _attrs(attrs) -> dict[str, str]:
@@ -80,12 +89,7 @@ class AssetParser(HTMLParser):
         tag = tag.lower()
         d = self._attrs(attrs)
         if tag == "img":
-            src = (
-                d.get("src")
-                or d.get("data-src")
-                or d.get("data-lazy-src")
-                or d.get("data-original")
-            )
+            src = d.get("src") or d.get("data-src") or d.get("data-lazy-src") or d.get("data-original")
             if src:
                 d["src"] = src
                 self.images.append(d)
@@ -111,14 +115,18 @@ class AssetParser(HTMLParser):
             href = d.get("href", "")
             if href and "stylesheet" in rel:
                 self.stylesheets.append(href)
+        elif tag == "script":
+            src = d.get("src", "")
+            if src:
+                self.scripts.append(src)
 
 
-def fetch(url: str, limit: int = 4_000_000) -> tuple[bytes, str]:
+def fetch(url: str, limit: int = 6_000_000) -> tuple[bytes, str]:
     req = Request(
         url,
         headers={
             "User-Agent": UA,
-            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Accept": "*/*",
             "Accept-Language": "bg-BG,bg;q=0.9,en;q=0.8",
             "Cache-Control": "no-cache",
         },
@@ -128,6 +136,10 @@ def fetch(url: str, limit: int = 4_000_000) -> tuple[bytes, str]:
         if len(data) > limit:
             raise ValueError(f"asset too large: {url}")
         return data, (r.headers.get_content_type() or "application/octet-stream").lower()
+
+
+def blocked(url: str) -> bool:
+    return bool(BLOCKED.search(url or ""))
 
 
 def score_img(img: dict[str, str], tokens: list[str]) -> int:
@@ -147,8 +159,7 @@ def score_img(img: dict[str, str], tokens: list[str]) -> int:
     if any(t in title for t in tokens): score += 55
     if any(t in src for t in tokens): score += 45
     if all(t in hay for t in tokens[:2]): score += 20
-    if any(x in src for x in ["favicon", "icon-", "sprite", "payment", "partner", "tenant"]):
-        score -= 150
+    if blocked(src): score -= 300
     return score
 
 
@@ -157,15 +168,15 @@ def has_logo_hint(img: dict[str, str]) -> bool:
         img.get("src", ""), img.get("alt", ""), img.get("class", ""),
         img.get("id", ""), img.get("title", "")
     ]).lower()
-    return "logo" in hay or "brand" in hay
+    return ("logo" in hay or "brand" in hay) and not blocked(hay)
 
 
-def css_logo_candidates(home: str, stylesheet_urls: list[str]) -> list[str]:
+def css_logo_candidates(base: str, stylesheet_urls: list[str]) -> list[str]:
     out: list[str] = []
-    for href in stylesheet_urls[:10]:
-        css_url = urljoin(home, href)
+    for href in stylesheet_urls[:12]:
+        css_url = urljoin(base, href)
         try:
-            body, _ = fetch(css_url, limit=2_000_000)
+            body, _ = fetch(css_url, limit=3_000_000)
             text = body.decode("utf-8", "ignore")
         except Exception as e:
             print(f"WARN stylesheet {css_url}: {e}", file=sys.stderr)
@@ -174,7 +185,9 @@ def css_logo_candidates(home: str, stylesheet_urls: list[str]) -> list[str]:
             raw = m.group(1).strip()
             if not raw or raw.startswith("data:"):
                 continue
-            context = text[max(0, m.start() - 260):m.end() + 120].lower()
+            context = text[max(0, m.start() - 300):m.end() + 140].lower()
+            if blocked(raw) or blocked(context):
+                continue
             if "logo" not in context and "brand" not in context and not re.search(r"(?:logo|brand)", raw, re.I):
                 continue
             u = urljoin(css_url, raw)
@@ -183,7 +196,32 @@ def css_logo_candidates(home: str, stylesheet_urls: list[str]) -> list[str]:
     return out
 
 
-def discover(home: str, tokens: list[str], require_logo_hint: bool = False) -> list[str]:
+def script_logo_candidates(base: str, script_urls: list[str], tokens: list[str]) -> list[str]:
+    """Find hashed modern-app logo assets referenced from official JS bundles."""
+    out: list[str] = []
+    asset_re = re.compile(r"[\"']([^\"']{1,260}\.(?:svg|png|webp|jpe?g)(?:\?[^\"']*)?)[\"']", re.I)
+    for src in script_urls[:14]:
+        js_url = urljoin(base, src)
+        try:
+            body, _ = fetch(js_url, limit=7_000_000)
+            text = body.decode("utf-8", "ignore")
+        except Exception:
+            continue
+        for m in asset_re.finditer(text):
+            raw = m.group(1)
+            context = text[max(0, m.start() - 360):m.end() + 360].lower()
+            if blocked(raw) or blocked(context):
+                continue
+            semantic = "logo" in context or "brand" in context or any(t in context for t in tokens)
+            if not semantic:
+                continue
+            u = urljoin(js_url, raw)
+            if u.startswith("http") and u not in out:
+                out.append(u)
+    return out
+
+
+def discover_one(home: str, tokens: list[str], require_logo_hint: bool = False) -> list[str]:
     try:
         body, _ = fetch(home)
         text = body.decode("utf-8", "ignore")
@@ -202,26 +240,35 @@ def discover(home: str, tokens: list[str], require_logo_hint: bool = False) -> l
         if require_logo_hint and not has_logo_hint(img):
             continue
         u = urljoin(home, img["src"])
-        if u.startswith("http") and u not in out:
+        if u.startswith("http") and not blocked(u) and u not in out:
             out.append(u)
 
-    # Explicit asset URLs carrying a logo/brand semantic in the official markup.
     patterns = [
         r"(?:src|href|content)=[\"']([^\"']*(?:logo|brand)[^\"']*\.(?:svg|png|webp|jpe?g)(?:\?[^\"']*)?)[\"']",
         r"[\"']([^\"']*/(?:logo|brand)[^\"']*\.(?:svg|png|webp|jpe?g)(?:\?[^\"']*)?)[\"']",
     ]
     for pattern in patterns:
-        for m in re.findall(pattern, text, flags=re.I):
-            u = urljoin(home, m)
-            if u.startswith("http") and u not in out:
+        for raw in re.findall(pattern, text, flags=re.I):
+            u = urljoin(home, raw)
+            if u.startswith("http") and not blocked(u) and u not in out:
                 out.append(u)
 
-    # Old sites often expose the actual masthead logo only as a CSS background.
     for u in css_logo_candidates(home, parser.stylesheets):
-        if u not in out:
+        if not blocked(u) and u not in out:
             out.append(u)
+    for u in script_logo_candidates(home, parser.scripts, tokens):
+        if not blocked(u) and u not in out:
+            out.append(u)
+    return out[:36]
 
-    return out[:24]
+
+def discover(homes: list[str], tokens: list[str], require_logo_hint: bool = False) -> list[str]:
+    out: list[str] = []
+    for home in homes:
+        for u in discover_one(home, tokens, require_logo_hint):
+            if u not in out:
+                out.append(u)
+    return out
 
 
 def ext_for(url: str, ctype: str, data: bytes) -> str:
@@ -238,7 +285,8 @@ def ext_for(url: str, ctype: str, data: bytes) -> str:
     p = Path(urlparse(url).path).suffix.lower()
     if p in {".svg", ".png", ".jpg", ".jpeg", ".webp", ".gif"}:
         return ".jpg" if p == ".jpeg" else p
-    if data.lstrip().startswith(b"<svg") or b"<svg" in data[:500].lower():
+    head = data[:1000].lower()
+    if b"<svg" in head:
         return ".svg"
     if data.startswith(b"\x89PNG"):
         return ".png"
@@ -249,12 +297,16 @@ def ext_for(url: str, ctype: str, data: bytes) -> str:
     raise ValueError("unknown image type")
 
 
-def valid_image(data: bytes, ext: str) -> bool:
-    if len(data) < 250:
+def valid_image(data: bytes, ext: str, url: str) -> bool:
+    if len(data) < 250 or blocked(url):
         return False
     if ext == ".svg":
-        head = data[:2500].lower()
-        return b"<svg" in head and b"<html" not in head
+        head = data[:6000].lower()
+        if b"<svg" not in head or b"<html" in head:
+            return False
+        if b"fontawesome" in head or b"fa-brands" in head or b"glyph" in head and b"font" in head:
+            return False
+        return True
     if ext == ".png":
         return data.startswith(b"\x89PNG")
     if ext == ".jpg":
@@ -264,15 +316,23 @@ def valid_image(data: bytes, ext: str) -> bool:
     return True
 
 
+def remove_stale(slug: str) -> None:
+    for old in OUT.glob(slug + ".*"):
+        if old.name != "manifest.json":
+            old.unlink(missing_ok=True)
+
+
 def sync_brand(slug: str, cfg: dict) -> dict | None:
     strict = bool(cfg.get("require_logo_hint"))
-    discovered = discover(cfg["home"], cfg["tokens"], strict)
+    discovered = discover(cfg["homes"], cfg["tokens"], strict)
+    if discovered:
+        print(f"DISCOVER {slug}: " + " | ".join(discovered[:12]))
     candidates: list[tuple[str, bool]] = [(u, True) for u in discovered]
     candidates += [(u, bool(re.search(r"(?:logo|brand)", u, flags=re.I))) for u in cfg.get("fallbacks", [])]
     seen: set[str] = set()
 
     for url, verified_hint in candidates:
-        if url in seen:
+        if url in seen or blocked(url):
             continue
         seen.add(url)
         if strict and not verified_hint:
@@ -280,11 +340,10 @@ def sync_brand(slug: str, cfg: dict) -> dict | None:
         try:
             data, ctype = fetch(url)
             ext = ext_for(url, ctype, data)
-            if not valid_image(data, ext):
+            if not valid_image(data, ext, url):
+                print(f"REJECT {slug}: {url}", file=sys.stderr)
                 continue
-            for old in OUT.glob(slug + ".*"):
-                if old.name != "manifest.json":
-                    old.unlink(missing_ok=True)
+            remove_stale(slug)
             dest = OUT / f"{slug}{ext}"
             dest.write_bytes(data)
             print(f"OK {slug}: {url} -> {dest.relative_to(ROOT)}")
@@ -292,12 +351,13 @@ def sync_brand(slug: str, cfg: dict) -> dict | None:
         except Exception as e:
             print(f"WARN {slug} candidate {url}: {e}", file=sys.stderr)
 
-    print(f"WARN no verified logo downloaded for {slug}", file=sys.stderr)
+    remove_stale(slug)
+    print(f"WARN no verified logo downloaded for {slug}; stale local asset removed", file=sys.stderr)
     return None
 
 
 def main() -> int:
-    manifest = {"version": 3, "logos": {}}
+    manifest = {"version": 4, "logos": {}}
     for slug, cfg in BRANDS.items():
         item = sync_brand(slug, cfg)
         if item:
