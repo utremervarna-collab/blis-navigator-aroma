@@ -1,0 +1,117 @@
+name: Navigator I18N Browser Inventory
+
+on:
+  push:
+    branches: [ feature/full-english-i18n-20260830 ]
+    paths:
+      - '.github/workflows/navigator-i18n-browser-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rendered-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build local production renderer
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis-i18n-server.log 2>&1 &
+          echo $! >/tmp/blis-i18n.pid
+          for i in $(seq 1 40); do
+            curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break
+            sleep 1
+          done
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Collect rendered Cyrillic UI text
+        run: |
+          cat >/tmp/i18n-browser-inventory.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const fs=require('fs');
+          const origin='http://127.0.0.1:10000';
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          const seen=new Map();
+          function add(text,where,kind='text'){
+            text=norm(text); if(!text||!cyr.test(text)||text.length>1800)return;
+            const k=kind+'\u0000'+text;
+            if(!seen.has(k))seen.set(k,{text,kind,count:0,where:[]});
+            const r=seen.get(k);r.count++;if(r.where.length<10&&!r.where.includes(where))r.where.push(where);
+          }
+          async function collect(page,where){
+            const rows=await page.evaluate(()=>{
+              const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+              const vis=el=>{if(!el||!el.getBoundingClientRect)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0};
+              const out=[];
+              const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE'].includes(p.tagName)||!vis(p))return NodeFilter.FILTER_REJECT;const t=(n.nodeValue||'').replace(/\s+/g,' ').trim();return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+              while(w.nextNode())out.push({text:w.currentNode.nodeValue,kind:'text'});
+              for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){
+                if(!vis(el))continue;
+                for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({text:v,kind:a});}
+              }
+              if(document.title&&cyr.test(document.title))out.push({text:document.title,kind:'title'});
+              const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({text:md,kind:'meta-description'});
+              return out;
+            });
+            rows.forEach(r=>add(r.text,where,r.kind));
+          }
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const publicPaths=[
+              '/', '/about.html','/blis.html','/brand-lab.html','/clients.html','/contact.html','/methodology.html',
+              '/privacy.html','/terms.html','/services.html','/intelligence-hub.html','/intelligence-ai-search.html',
+              '/intelligence-calendar.html','/intelligence-reputation-trust.html','/intelligence-retail-bulgaria-2026.html',
+              '/demo.html','/demo-navigator.html','/demo-status.html','/mollox.html'
+            ];
+            for(const path of publicPaths){
+              const p=await browser.newPage({viewport:{width:1440,height:1200}});
+              try{await p.goto(origin+path,{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1400);await collect(p,path);}catch(e){add('INVENTORY ERROR '+e.message,path,'error')}
+              await p.close();
+            }
+            const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
+            const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+            for(const client of clients){
+              const p=await browser.newPage({viewport:{width:1440,height:1200}});
+              try{
+                await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
+                await p.waitForTimeout(1400);
+                for(const route of routes){
+                  if(route!=='overview'){
+                    try{await p.evaluate(r=>window.refGo&&window.refGo(r),route);await p.waitForTimeout(650);}catch(_){}
+                  }
+                  await collect(p,`dashboard:${client}:${route}`);
+                }
+              }catch(e){add('INVENTORY ERROR '+e.message,`dashboard:${client}`,'error')}
+              await p.close();
+            }
+            await browser.close();
+            const phrases=[...seen.values()].sort((a,b)=>b.count-a.count||b.text.length-a.text.length||a.text.localeCompare(b.text,'bg'));
+            const out={summary:{unique:phrases.length,occurrences:phrases.reduce((s,x)=>s+x.count,0)},phrases};
+            fs.writeFileSync('i18n-browser-inventory.json',JSON.stringify(out,null,2));
+            console.log(JSON.stringify(out.summary));
+            for(const r of phrases.slice(0,180))console.log(String(r.count).padStart(3),r.kind,'|',r.text.slice(0,220),'|',r.where.slice(0,3).join(','));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/i18n-browser-inventory.cjs
+      - name: Upload rendered inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-i18n-browser-inventory
+          path: i18n-browser-inventory.json
+          retention-days: 2
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/blis-i18n-server.log || true
