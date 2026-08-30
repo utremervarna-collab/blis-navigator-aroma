@@ -41,7 +41,6 @@ function translateString(raw,el){
   const map=liveMap();
   if(Object.prototype.hasOwnProperty.call(map,trimmed))return preserveSpace(raw,map[trimmed]);
   for(const [re,repl] of liveRules()){if(re.test(trimmed)){re.lastIndex=0;return preserveSpace(raw,trimmed.replace(re,repl));}}
-  // Safe composite replacements. Only full catalog phrases are replaced inside larger UI strings.
   let out=trimmed;
   const composites=[
     ['Август 2026','August 2026'],['август 2026','August 2026'],
@@ -155,10 +154,20 @@ function scanBulgarian(){
 function apply(root=document){
   if(lang==='en'){walk(root);translateMeta()}propagateLinks(root);addSwitch();
 }
-function flush(){scheduled=false;if(observer)observer.disconnect();const roots=[...pending];pending.clear();for(const r of roots)apply(r);if(observer)observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS.concat(['href'])});setTimeout(scanBulgarian,60)}
+function flush(){
+  scheduled=false;
+  const roots=[...pending];pending.clear();
+  for(const r of roots)apply(r);
+  if(observer)observer.takeRecords();
+  setTimeout(scanBulgarian,60);
+}
 function schedule(root=document){pending.add(root?.nodeType?root:document);if(!scheduled){scheduled=true;requestAnimationFrame(flush)}}
 function observe(){
-  if(observer)return;observer=new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')pending.add(m.target);else {pending.add(m.target);m.addedNodes?.forEach(n=>pending.add(n))}}if(!scheduled){scheduled=true;requestAnimationFrame(flush)}});
+  if(observer)return;
+  observer=new MutationObserver(ms=>{
+    for(const m of ms){if(m.type==='characterData')pending.add(m.target);else {pending.add(m.target);m.addedNodes?.forEach(n=>pending.add(n))}}
+    if(!scheduled){scheduled=true;requestAnimationFrame(flush)}
+  });
   observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:ATTRS.concat(['href'])});
 }
 patchFetch();addStyle();
