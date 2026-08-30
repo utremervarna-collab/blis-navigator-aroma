@@ -1,11 +1,20 @@
-/* BLIS Navigator — trend layout correction only; no redesign. */
-#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:hidden!important;padding-bottom:24px!important}
-#overviewPremium .ov-trend{height:246px!important;min-height:246px!important;overflow:hidden!important;display:block!important;margin:2px 0 0!important;position:relative!important}
-#overviewPremium .ov-trend>svg{display:block!important;width:100%!important;height:246px!important;margin:0!important;overflow:visible!important}
+/* BLIS Navigator — daily trend layout v5. Truthful curve, no footer overlap. */
+#overviewPremium .ov-row-main>.ov-panel:first-child{overflow:visible!important;padding-bottom:22px!important}
+#overviewPremium .ov-trend{height:auto!important;min-height:0!important;overflow:visible!important;display:block!important;margin:2px 0 0!important;position:relative!important}
+#overviewPremium .ov3-trend{overflow:visible!important;min-height:0!important}
+#overviewPremium .blis-daily-chart{display:grid!important;grid-template-rows:minmax(220px,1fr) auto!important;gap:10px!important;width:100%!important;min-width:0!important;margin-top:10px!important}
+#overviewPremium .blis-daily-chart>svg{display:block!important;width:100%!important;height:238px!important;overflow:visible!important}
+#overviewPremium .blis-daily-grid{stroke:#e7edf5!important;stroke-width:1!important}
+#overviewPremium .blis-daily-axis,#overviewPremium .blis-daily-date{fill:#74839a!important;font-size:9px!important;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important}
+#overviewPremium .blis-daily-line{fill:none!important;stroke:#2674f2!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
+#overviewPremium .blis-daily-point{fill:#2674f2!important;stroke:#fff!important;stroke-width:1.6!important;vector-effect:non-scaling-stroke!important}
+#overviewPremium .blis-daily-foot{position:static!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:8px 18px!important;margin:0!important;padding:10px 12px!important;min-height:38px!important;border:1px solid #e3eaf3!important;border-radius:10px!important;background:#f8fbff!important;color:#708096!important;font-size:9.5px!important;line-height:1.35!important;clear:both!important;overflow:visible!important}
+#overviewPremium .blis-daily-foot b{color:#29496b!important;font-weight:780!important}
+#overviewPremium .blis-daily-foot b.up{color:#0a9b59!important}
+#overviewPremium .blis-daily-foot b.down{color:#d74444!important}
+#overviewPremium .blis-daily-foot b.flat{color:#65758c!important}
+#overviewPremium .blis-daily-empty{margin-top:12px!important;padding:34px 18px!important;border:1px dashed #dce5ef!important;border-radius:12px!important;background:#fbfcfe!important;color:#75859a!important;font-size:10px!important;text-align:center!important;line-height:1.5!important}
 #overviewPremium .ov-method-note{display:none!important}
-#overviewPremium .ov-panel>.ov-method-note + .ov-link,#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;float:none!important;inset:auto!important;margin:16px 0 0!important;transform:none!important}
-#overviewPremium .daily-curve{fill:none!important;stroke:#2674f2!important;stroke-width:3!important;stroke-linecap:round!important;stroke-linejoin:round!important;vector-effect:non-scaling-stroke!important}
-#overviewPremium .ov-daily-point{vector-effect:non-scaling-stroke!important}
-#overviewPremium .ov-date-label{font-size:9px!important;dominant-baseline:auto!important}
-@media(max-width:900px){#overviewPremium .ov-trend{height:228px!important;min-height:228px!important}#overviewPremium .ov-trend>svg{height:228px!important}#overviewPremium .ov-row-main>.ov-panel:first-child{padding-bottom:22px!important}}
-@media(max-width:640px){#overviewPremium .ov-trend{height:216px!important;min-height:216px!important}#overviewPremium .ov-trend>svg{height:216px!important}#overviewPremium .ov-panel>.ov-trend + .ov-link{margin-top:18px!important}}
+#overviewPremium .ov-panel>.ov-trend + .ov-link{display:inline-flex!important;position:relative!important;z-index:3!important;clear:both!important;float:none!important;inset:auto!important;margin:16px 0 0!important;transform:none!important}
+@media(max-width:900px){#overviewPremium .blis-daily-chart{grid-template-rows:minmax(205px,1fr) auto!important}#overviewPremium .blis-daily-chart>svg{height:220px!important}#overviewPremium .blis-daily-foot{gap:7px 12px!important}}
+@media(max-width:640px){#overviewPremium .blis-daily-chart{grid-template-rows:minmax(190px,1fr) auto!important}#overviewPremium .blis-daily-chart>svg{height:205px!important}#overviewPremium .blis-daily-foot{display:grid!important;grid-template-columns:1fr!important;gap:5px!important}#overviewPremium .ov-panel>.ov-trend + .ov-link{margin-top:18px!important}}
