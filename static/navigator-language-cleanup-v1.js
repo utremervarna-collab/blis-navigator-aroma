@@ -1,0 +1,22 @@
+/* BLIS Navigator — client-facing language and layout cleanup v1. */
+(function(){
+'use strict';
+if(window.__BLIS_LANGUAGE_CLEANUP_V1)return;window.__BLIS_LANGUAGE_CLEANUP_V1=true;
+const MAP=new Map([
+['Отговорът накратко','Обобщение'],['Ключова визуализация','Основен изглед'],['BLIS индекс – траектория','BLIS индекс'],['BLIS индекс - траектория','BLIS индекс'],
+['Ключови събития и сигнали за действие','Значими сигнали за периода'],['Пулс на сигналите във времето','Динамика на сигналите'],['Общо сигнали','Значими сигнали'],['С висок риск','Критични сигнали'],['Положителен импулс','Положителни сигнали'],['Пазарни сигнали','Пазар и конкуренция'],['Рискови сигнали','Сигнали за внимание'],
+['Репутационен пулс','Динамика на репутацията'],['Текущ индекс','Репутационен индекс'],['Положителен тон','Положителни сигнали'],['Рискови теми','Теми за внимание'],
+['Конкурентен компас','Позиция в конкурентната среда'],['Конкурентна позиция','Сравнителна позиция'],['Дистанция до лидер','Разлика спрямо лидера'],
+['Карта за стратегически решения','Рискове и възможности'],['Карта на стратегическите решения','Матрица на приоритетите'],['Стратегически приоритети','Висок приоритет'],
+['Хронология на ключови събития','Развитие във времето'],['Покритие и статус на доклади','Аналитично покритие и доклади'],['Покритие на аналитичния пакет','Аналитично покритие'],['Общо покритие','Аналитично покритие'],
+['Каква среда стои зад промяната','Пазарен контекст'],['Динамичен изглед','Взаимовръзки'],['Основна стойност','Индекс на сектора'],['Дневни измервания','Налични измервания'],['Промяна','Изменение'],['Тренд','Посока'],['Надеждност','Покритие на данните'],['налична измерена база','дял на наличната измерена база'],['няма сравнение','няма сравнима история'],['LIVE','АКТУАЛНО'],
+['Следващ аналитичен въпрос','Следващ раздел'],['Как сме сега?','Общ профил на бранда'],['Какво точно се промени?','Значими сигнали и промени'],['Каква среда стои зад промяната?','Пазарна среда и нагласи'],['Къде се проявява това онлайн?','Дигитална видимост и присъствие'],['Как влияе върху възприятието за бранда?','Репутационно състояние'],['Как изглеждаме спрямо конкурентите?','Позиция спрямо конкурентите'],['Кое изисква внимание и къде има потенциал?','Рискове, възможности и приоритети'],['Как стигнахме дотук?','Развитие във времето'],['Как превръщаме анализа в резултат?','Аналитично покритие и доклади']
+]);
+function replaceNode(node){if(!node||node.nodeType!==3)return;const raw=node.nodeValue||'',trim=raw.trim();if(!trim)return;let out=MAP.get(trim);if(!out&&/^Тема\s+0?\d{1,2}$/i.test(trim))out='Водеща тема';if(!out)return;node.nodeValue=raw.replace(trim,out)}
+function clean(root=document){document.documentElement.classList.add('blis-client-language-v1');const scope=root?.querySelectorAll?root:document;const start=scope===document?document.body:scope;if(!start)return;const walker=document.createTreeWalker(start,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT'].includes(p.tagName))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT}});let n;while((n=walker.nextNode()))replaceNode(n)}
+function css(){if(document.getElementById('blisClientLanguageCss'))return;const s=document.createElement('style');s.id='blisClientLanguageCss';s.textContent=`
+.blis-client-language-v1 .blis-system-rail,.blis-client-language-v1 .blis-stage-context{display:none!important;margin:0!important;padding:0!important;height:0!important;min-height:0!important;border:0!important;overflow:hidden!important}.blis-client-language-v1 .page>.blis-system-rail,.blis-client-language-v1 .page>.blis-stage-context{display:none!important}.blis-client-language-v1 .vs-page,.blis-client-language-v1 .sv2,.blis-client-language-v1 .market-system-v1{padding-top:0!important}.blis-client-language-v1 .blis-next-step{margin-top:12px!important}.blis-client-language-v1 .vs-vhead>div>span,.blis-client-language-v1 .sv2-ch>div>span{letter-spacing:.04em}
+`;document.head.appendChild(s)}
+let timer;function schedule(){clearTimeout(timer);timer=setTimeout(()=>clean(document.querySelector('.page.active')||document.body),20)}
+css();clean();['blis:routechange','blis:clientdata','blis:periodchange','blis:intelligence','blis:production-ready','blis:executive-data'].forEach(ev=>window.addEventListener(ev,schedule));const root=document.querySelector('.shell')||document.body;if(root)new MutationObserver(schedule).observe(root,{childList:true,subtree:true});window.BLISLanguageCleanupV1={clean};
+})();
