@@ -23,7 +23,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
-      - name: Audit live production dashboard in English
+      - name: Audit live production dashboard after EN switch
         run: |
           cat >/tmp/dashboard-en-production-audit.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
@@ -44,25 +44,28 @@ jobs:
             for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!visible(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v),tag:el.tagName,cls:el.className?.toString?.().slice(0,180)||''})}}
             if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title),tag:'TITLE',cls:''});
             const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({kind:'meta-description',text:norm(md),tag:'META',cls:''});
-            return {lang:document.documentElement.lang,residualHint:document.documentElement.dataset.blisI18nResidual||'',switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',rows:out};
+            let stored='';try{stored=localStorage.getItem('blis.language.v1')||''}catch(_){}
+            return {lang:document.documentElement.lang,residualHint:document.documentElement.dataset.blisI18nResidual||'',switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',stored,href:location.href,rows:out};
           })}
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-            const report={origin,generatedAt:new Date().toISOString(),summary:{},pages:[],globalPhrases:{}};
+            const report={origin,generatedAt:new Date().toISOString(),scenario:'persisted EN switch',summary:{},pages:[],globalPhrases:{}};
             for(const route of routes){
               const routeResults=await Promise.all(clients.map(async client=>{
-                const page=await browser.newPage({viewport:{width:1600,height:1400}});
+                const context=await browser.newContext({viewport:{width:1600,height:1400}});
+                await context.addInitScript(()=>{try{localStorage.setItem('blis.language.v1','en')}catch(_){}});
+                const page=await context.newPage();
                 const url=`${origin}/dashboard.html?client=${encodeURIComponent(client)}&page=${encodeURIComponent(route)}&lang=en`;
                 const errors=[];let rows=[];let meta={};
                 try{
                   await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-                  await page.waitForTimeout(3000);
+                  await page.waitForTimeout(3200);
                   await page.evaluate(()=>window.BLISI18N?.apply?.(document));
-                  await page.waitForTimeout(900);
-                  const s=await scan(page);meta={lang:s.lang,residualHint:s.residualHint,switchText:s.switchText};
+                  await page.waitForTimeout(1000);
+                  const s=await scan(page);meta={lang:s.lang,residualHint:s.residualHint,switchText:s.switchText,stored:s.stored,href:s.href};
                   rows=s.rows.filter(r=>r.text&&/[А-Яа-яЁёЀ-ӿ]/.test(r.text)&&![/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i].some(x=>x.test(r.text)));
                 }catch(e){errors.push(e.message)}
-                await page.close();
+                await context.close();
                 return {route,client,url,errors,rows,meta};
               }));
               const routePhrases=new Map();let occurrences=0;
@@ -79,6 +82,7 @@ jobs:
             fs.writeFileSync('dashboard-en-production-audit.json',JSON.stringify(report,null,2));
             console.log('TOTAL',report.totalUnique,report.totalOccurrences);
             for(const route of routes){const s=report.summary[route];console.log(`ROUTE ${route}: unique=${s.unique} occurrences=${s.occurrences}`);for(const p of s.phrases.slice(0,80))console.log(' ',p.count,p.kind,'|',p.text,'|',p.clients.join(','));}
+            console.log('META SAMPLE',JSON.stringify(report.pages.slice(0,3).map(x=>x.meta)));
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
