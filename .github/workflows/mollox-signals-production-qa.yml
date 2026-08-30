@@ -1,0 +1,75 @@
+name: MOLLOX Signals Production Truth QA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mollox-signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Verify MOLLOX event-based signals in production
+        run: |
+          cat >/tmp/mollox-signals.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const origin='https://blis-navigator-aroma.onrender.com';
+          const baseline=[
+            'Пълна техническа документация',
+            'Private Label е публично потвърдена услуга',
+            'Регионална дистрибуция'
+          ];
+          (async()=>{
+            const api=await fetch(origin+'/api/signals?client=mollox&limit=300',{headers:{'cache-control':'no-cache'}});
+            if(!api.ok)throw new Error('signal api '+api.status);
+            const payload=await api.json();
+            const rows=Array.isArray(payload.signals)?payload.signals:[];
+            const ownedStatic=rows.filter(s=>String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web');
+            console.log('MOLLOX_API_SIGNALS',rows.length);
+            console.log('MOLLOX_OWNED_STATIC_WEB',ownedStatic.length);
+            console.log('MOLLOX_API_TOP',rows.slice(0,12).map(s=>({title:s.title,scope:s.scope,type:s.source_type,topic:s.topic,detected_at:s.detected_at})));
+            if(ownedStatic.length)throw new Error('owned static web pages still present in MOLLOX signal API');
+
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const context=await browser.newContext({viewport:{width:1440,height:1000}});
+            const page=await context.newPage();
+            await page.goto(origin+'/dashboard.html?client=mollox&page=social',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(5000);
+            const state=await page.evaluate((baseline)=>{
+              const Drows=Array.isArray(window.D?.signals)?window.D.signals:[];
+              let useful=[];try{useful=window.BLISIntelligenceStreamV3?.getUsefulSignals?.()||[]}catch(_){}
+              const text=(document.getElementById('socialBody')||document.body).innerText||'';
+              const badVisible=baseline.filter(x=>text.includes(x));
+              const badD=Drows.filter(s=>baseline.includes(String(s.title||s.text||'')));
+              const badUseful=useful.filter(s=>{
+                const title=String(s.title||s.text||'');
+                const staticOwned=String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web';
+                return baseline.includes(title)||staticOwned;
+              });
+              return {
+                client:document.body?.dataset?.client||window.D?.client||'',
+                dSignals:Drows.map(s=>s.title||s.text||''),
+                useful:useful.map(s=>({title:s.title||s.text||'',scope:s.scope||'',type:s.source_type||'',topic:s.topic||''})),
+                badVisible,badD:badD.map(s=>s.title||s.text||''),badUseful
+              };
+            },baseline);
+            console.log('MOLLOX_PAGE_STATE',JSON.stringify(state,null,2));
+            await browser.close();
+            if(String(state.client).toLowerCase()!=='mollox')throw new Error('wrong client rendered: '+state.client);
+            if(state.badVisible.length)throw new Error('baseline facts still visible as signals: '+state.badVisible.join(' | '));
+            if(state.badD.length)throw new Error('baseline facts still remain in D.signals');
+            if(state.badUseful.length)throw new Error('baseline/static owned facts still remain in useful signal stream');
+            console.log('MOLLOX_SIGNAL_TRUTH_OK');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/mollox-signals.cjs
