@@ -1,0 +1,95 @@
+name: Navigator Full English Real User Production QA
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/navigator-i18n-full-real-user-prod.yml'
+      - 'static/blis-i18n*.js'
+      - 'static/navigator-*.js'
+      - 'static/navigator-*.css'
+      - 'zz_dashboard_en_complete.go'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-real-user-en:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Full Navigator EN reload audit
+        run: |
+          cat >/tmp/full-real-user-en.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const origin='https://blis-navigator-aroma.onrender.com';
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          const residual=new Map(),errors=[];
+          function add(kind,text,where){text=norm(text);if(!text||!cyr.test(text))return;const k=kind+'\0'+text;if(!residual.has(k))residual.set(k,{kind,text,where:[]});const r=residual.get(k);if(r.where.length<15&&!r.where.includes(where))r.where.push(where)}
+          async function scan(page,where){
+            const rows=await page.evaluate(()=>{
+              const cyr=/[А-Яа-яЁёЀ-ӿ]/,norm=s=>(s||'').replace(/\s+/g,' ').trim(),out=[];
+              const skip=/SCRIPT|STYLE|NOSCRIPT|TEMPLATE|TEXTAREA/;
+              const visible=el=>{try{const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0}catch(_){return false}};
+              const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||skip.test(p.tagName)||!visible(p))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+              while(w.nextNode())out.push({kind:'text',text:norm(w.currentNode.nodeValue)});
+              for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!visible(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v)})}}
+              for(const el of document.querySelectorAll('body *')){if(!visible(el))continue;for(const pseudo of ['::before','::after']){try{let v=getComputedStyle(el,pseudo).content||'';if(v==='none'||v==='normal'||v==='""'||v==="''")continue;v=v.replace(/^['"]|['"]$/g,'');if(cyr.test(v))out.push({kind:'pseudo'+pseudo,text:norm(v)})}catch(_){}}}
+              if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title)});
+              const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({kind:'meta-description',text:norm(md)});
+              for(const t of (window.__blisCanvasTexts||[]))if(cyr.test(String(t)))out.push({kind:'canvas',text:norm(String(t))});
+              return out;
+            });
+            rows.forEach(r=>add(r.kind,r.text,where));
+          }
+          async function settleAndScroll(page){
+            await page.waitForTimeout(2600);
+            await page.evaluate(async()=>{for(let y=0;y<document.documentElement.scrollHeight;y+=650){scrollTo(0,y);await new Promise(r=>setTimeout(r,90))}scrollTo(0,0)});
+            await page.waitForTimeout(900);
+          }
+          async function context(browser,viewport={width:1440,height:1000}){
+            const c=await browser.newContext({viewport});
+            await c.addInitScript(()=>{
+              localStorage.setItem('blis.language.v1','en');window.__blisCanvasTexts=[];
+              const patch=(proto,name)=>{if(!proto||typeof proto[name]!=='function')return;const orig=proto[name];proto[name]=function(text,...args){try{window.__blisCanvasTexts.push(String(text))}catch(_){}return orig.call(this,text,...args)}};
+              try{patch(CanvasRenderingContext2D.prototype,'fillText');patch(CanvasRenderingContext2D.prototype,'strokeText')}catch(_){}
+              try{if(typeof OffscreenCanvasRenderingContext2D!=='undefined'){patch(OffscreenCanvasRenderingContext2D.prototype,'fillText');patch(OffscreenCanvasRenderingContext2D.prototype,'strokeText')}}catch(_){}
+            });return c;
+          }
+          function enURL(path){const u=new URL(path,origin);u.searchParams.set('lang','en');return u.toString()}
+          async function auditPage(browser,path,where){
+            const c=await context(browser);const p=await c.newPage();
+            try{
+              await p.goto(enURL(path),{waitUntil:'domcontentloaded',timeout:35000});await settleAndScroll(p);
+              await p.reload({waitUntil:'domcontentloaded',timeout:35000});await settleAndScroll(p);
+              const lang=await p.evaluate(()=>document.documentElement.lang||'');if(lang!=='en')errors.push(`${where}: lang=${lang}`);
+              await scan(p,where);
+            }catch(e){errors.push(`${where}: ${e.message}`)}finally{await c.close()}
+          }
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const publicPaths=['/','/about.html','/blis.html','/brand-lab.html','/clients.html','/contact.html','/methodology.html','/privacy.html','/terms.html','/services.html','/intelligence-hub.html','/intelligence-ai-search.html','/intelligence-calendar.html','/intelligence-reputation-trust.html','/intelligence-retail-bulgaria-2026.html','/demo.html','/demo-navigator.html','/demo-status.html','/mollox.html'];
+            for(const path of publicPaths)await auditPage(browser,path,`public:${path}`);
+            const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
+            const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+            for(const route of routes){
+              await Promise.all(clients.map(client=>auditPage(browser,`/dashboard.html?client=${client}&page=${route}`,`dashboard:${client}:${route}`)));
+            }
+            await browser.close();
+            console.log('FULL_NAVIGATOR_EN_RESIDUAL',residual.size,[...residual.values()].reduce((s,x)=>s+x.where.length,0));
+            for(const r of residual.values())console.log(r.kind,'|',r.text,'|',r.where.join(','));
+            errors.forEach(e=>console.log('ERROR',e));
+            if(residual.size||errors.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/full-real-user-en.cjs
