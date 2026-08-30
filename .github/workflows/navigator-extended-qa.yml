@@ -38,27 +38,86 @@ jobs:
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
-          const clients=['aroma','bolyarka','astor-garden','mollox','varna-towers'];
-          const pages=['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help'];
-          const expected={aroma:'Aroma',bolyarka:'Болярка','astor-garden':'Astor Garden',mollox:'MOLLOX','varna-towers':'Varna Towers'};
+          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
+          const pages=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
-          async function ready(p,client){phase=`ready:${client}:goto`;await p.goto(`${origin}/dashboard.html?client=${client}`,{waitUntil:'domcontentloaded',timeout:20000});phase=`ready:${client}:nav`;try{await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===12,null,{timeout:8000})}catch(e){const debug=await p.evaluate(()=>({nav:[...document.querySelectorAll('#nav [data-page]')].map(x=>({tag:x.tagName,page:x.dataset.page})),navHTML:document.getElementById('nav')?.innerHTML||'',scripts:[...document.scripts].map(s=>s.src).filter(Boolean),guards:Object.keys(window).filter(k=>k.startsWith('__BLIS_REFERENCE_')||k.startsWith('__BLIS_NAV_'))}));throw new Error(`${client}: nav bootstrap failed ${JSON.stringify(debug)}`)}phase=`ready:${client}:content`;await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});phase=`ready:${client}:data`;await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});phase=`ready:${client}:owners`;const owner=await p.evaluate(()=>({version:window.BLISArchitectureV15?.version||'',routes:[...(window.BLISArchitectureV15?.routes||[])]}));assert(owner.version==='20260825-production-stable1'&&owner.routes.join(',')==='digital,live,social',`${client}: wrong V15 owner ${JSON.stringify(owner)}`)}
-          async function inspect(p,id){return p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null,ownerId={live:'n15Live',social:'n15Signals',digital:'n15Digital'}[id]||'';return{id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,owner:!ownerId||!!document.getElementById(ownerId),loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||'')}},id)}
+          async function ready(p,client){
+            phase=`ready:${client}:goto`;
+            await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
+            phase=`ready:${client}:nav`;
+            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===9,null,{timeout:12000});
+            phase=`ready:${client}:content`;
+            await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
+            phase=`ready:${client}:data`;
+            await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
+            phase=`ready:${client}:owners`;
+            const owner=await p.evaluate(()=>({canonical:window.refGo?.__blisCanonicalClientRouter===true,ref18:!!window.__BLIS_REFERENCE_V18,stages:window.BLISSystemStructure?.stages?.map(x=>x.id)||[],branding:document.documentElement.dataset.clientBranding||''}));
+            assert(owner.canonical&&owner.ref18,`${client}: canonical router missing ${JSON.stringify(owner)}`);
+            assert(owner.stages.join(',')===pages.join(','),`${client}: wrong analytical stages ${owner.stages.join(',')}`);
+            assert(owner.branding==='local-real-v3-1',`${client}: wrong branding ${owner.branding}`);
+          }
+          async function inspect(p,id){return p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;return{id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||'')}},id)}
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
-              phase='desktop:open';const p=await browser.newPage({viewport:{width:1440,height:1000}});await ready(p,'aroma');
-              for(const [legacy,canonical] of [['signals','social'],['sources','profile'],['timeline','history']]){phase=`alias:${legacy}->${canonical}:invoke`;await p.evaluate(x=>window.refGo(x),legacy);phase=`alias:${legacy}->${canonical}:wait`;await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000})}
-              phase='client-switch:overview';await p.evaluate(()=>window.refGo('overview'));
-              phase='client-switch:click-bolyarka';await p.evaluate(()=>document.querySelector('.client-option[data-client-key="bolyarka"]')?.click());
-              phase='client-switch:wait-bolyarka';await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&document.body.dataset.blisLoading!=='true'&&(document.querySelector('.client-brand-name')?.textContent||'').includes('Болярка')&&(!window.D?.name||/боляр/i.test(window.D.name)),{timeout:12000});
-              phase='client-switch:validate';const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.client-brand-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length}));assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);assert(switched.nav===12,'client switch changed nav count');await p.close();
-              for(const client of clients){phase=`mobile:${client}:open`;const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errs=[];m.on('pageerror',e=>errs.push(e.message));m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource/i.test(x.text()))errs.push(x.text())});await ready(m,client);phase=`mobile:${client}:identity`;const id=await m.evaluate(()=>document.body.dataset.client),name=await m.evaluate(()=>document.querySelector('.client-brand-name')?.textContent||'');assert(id===client,`${client}/mobile wrong body client ${id}`);assert(name.includes(expected[client]),`${client}/mobile wrong name ${name}`);
-                for(const page of pages){phase=`mobile:${client}:${page}:invoke`;await m.evaluate(x=>window.refGo(x),page);phase=`mobile:${client}:${page}:wait`;await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:6000});await m.waitForTimeout(120);phase=`mobile:${client}:${page}:inspect`;const x=await inspect(m,page);assert(x.visible&&x.height>70&&x.text>20,`${client}/mobile/${page} blank ${JSON.stringify(x)}`);assert(x.owner,`${client}/mobile/${page} approved V15 owner missing`);assert(!x.loading,`${client}/mobile/${page} loading state remained`);assert(x.overflow<=8,`${client}/mobile/${page} overflow ${x.overflow}`)}
-                phase=`mobile:${client}:commerce-isolation`;const c=await m.evaluate(()=>{const root=document.getElementById('commerce'),cs=root?getComputedStyle(root):null;return{launcher:!!document.querySelector('[data-blis-commerce-open]'),visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'}});assert(!c.launcher&&!c.visible,`${client}/mobile owner commerce leaked ${JSON.stringify(c)}`);assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);await m.close()}
+              phase='desktop:open';
+              const p=await browser.newPage({viewport:{width:1440,height:1000}});
+              await ready(p,'aroma');
+
+              for(const [legacy,canonical] of [['signals','social'],['timeline','history'],['live','overview']]){
+                phase=`alias:${legacy}->${canonical}`;
+                await p.evaluate(x=>window.refGo(x),legacy);
+                await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000});
+              }
+
+              phase='client-switch:bolyarka';
+              await p.evaluate(()=>window.refGo('overview'));
+              await p.evaluate(()=>document.querySelector('.client-option[data-client-key="bolyarka"]')?.click());
+              await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&document.body.dataset.blisLoading!=='true'&&(document.querySelector('.bch3-name')?.textContent||'').includes('Болярка'),null,{timeout:12000});
+              const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length,logo:document.querySelector('.bch3-logo img')?.getAttribute('src')||''}));
+              assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);
+              assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);
+              assert(switched.nav===9,'client switch changed nav count');
+              assert(switched.logo.startsWith('/client-logos/'),`client switch did not load local Bolyarka logo ${switched.logo}`);
+              await p.close();
+
+              for(const client of clients){
+                phase=`mobile:${client}:open`;
+                const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+                const errs=[];
+                m.on('pageerror',e=>errs.push(e.message));
+                m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(x.text()))errs.push(x.text())});
+                await ready(m,client);
+                phase=`mobile:${client}:identity`;
+                const identity=await m.evaluate(()=>({id:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',header:!!document.querySelector('.topbar.blis-client-header')}));
+                assert(identity.id===client,`${client}/mobile wrong body client ${identity.id}`);
+                assert(identity.name.includes(expected[client]),`${client}/mobile wrong name ${identity.name}`);
+                assert(identity.header,`${client}/mobile client header missing`);
+
+                for(const page of pages){
+                  phase=`mobile:${client}:${page}:invoke`;
+                  await m.evaluate(x=>window.refGo(x),page);
+                  await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:6000});
+                  await m.waitForTimeout(180);
+                  phase=`mobile:${client}:${page}:inspect`;
+                  const x=await inspect(m,page);
+                  assert(x.visible&&x.height>70&&x.text>20,`${client}/mobile/${page} blank ${JSON.stringify(x)}`);
+                  assert(!x.loading,`${client}/mobile/${page} loading remained`);
+                  assert(x.overflow<=8,`${client}/mobile/${page} overflow ${x.overflow}`);
+                }
+
+                phase=`mobile:${client}:chrome`;
+                const chrome=await m.evaluate(()=>({nav:document.querySelectorAll('#nav button[data-page]').length,services:!!document.querySelector('[data-blis-commerce-open]'),oldNumbers:[...document.querySelectorAll('.blis-system-step .num')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length}));
+                assert(chrome.nav===9,`${client}/mobile wrong nav count ${chrome.nav}`);
+                assert(!chrome.services,`${client}/mobile Services leaked`);
+                assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);
+                await m.close();
+              }
+
               phase='done';clearTimeout(watchdog);console.log('NAVIGATOR_EXTENDED_QA_OK');
-            } finally {await browser.close()}
+            } finally {await browser.close();}
           })().catch(e=>{fs.writeFileSync('/tmp/extended-error.txt',`${phase}: ${String(e.message||e)}`);console.error(phase,e);process.exit(1)});
           NODE
           node /tmp/extended.cjs
@@ -68,5 +127,5 @@ jobs:
         with:
           script: |
             const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and client isolation passed':'Extended Navigator QA failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and 9-page isolation passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
