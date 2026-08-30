@@ -13,8 +13,10 @@ OUT = Path("/tmp/astor-logo-probe")
 OUT.mkdir(parents=True, exist_ok=True)
 
 req = Request(URL, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/pdf"})
-with urlopen(req, timeout=30) as r:
-    raw = r.read(25_000_000)
+with urlopen(req, timeout=45) as r:
+    raw = r.read(120_000_001)
+if len(raw) > 120_000_000:
+    raise ValueError("Astor official PDF exceeds diagnostic safety limit")
 
 (OUT / "source.txt").write_text(URL + "\n", encoding="utf-8")
 (OUT / "source.pdf").write_bytes(raw)
