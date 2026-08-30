@@ -1,0 +1,88 @@
+name: Dashboard EN Production Audit
+
+on:
+  push:
+    branches: [ audit/dashboard-en-production-20260830 ]
+    paths:
+      - '.github/workflows/dashboard-en-production-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Audit live production dashboard in English
+        run: |
+          cat >/tmp/dashboard-en-production-audit.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const fs=require('fs');
+          const origin='https://blis-navigator-aroma.onrender.com';
+          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
+          const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const allowed=[/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i];
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          async function scan(page){return await page.evaluate(()=>{
+            const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+            const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+            const visible=el=>{try{if(!el||!el.getBoundingClientRect)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0}catch{return false}};
+            const out=[];
+            const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TEXTAREA'].includes(p.tagName)||!visible(p))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+            while(w.nextNode()){const p=w.currentNode.parentElement;out.push({kind:'text',text:norm(w.currentNode.nodeValue),tag:p?.tagName||'',cls:p?.className?.toString?.().slice(0,180)||''});}
+            for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!visible(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v),tag:el.tagName,cls:el.className?.toString?.().slice(0,180)||''})}}
+            if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title),tag:'TITLE',cls:''});
+            const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({kind:'meta-description',text:norm(md),tag:'META',cls:''});
+            return {lang:document.documentElement.lang,residualHint:document.documentElement.dataset.blisI18nResidual||'',switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',rows:out};
+          })}
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const report={origin,generatedAt:new Date().toISOString(),summary:{},pages:[],globalPhrases:{}};
+            for(const route of routes){
+              const routePhrases=new Map();let occurrences=0;
+              for(const client of clients){
+                const page=await browser.newPage({viewport:{width:1600,height:1400}});
+                const url=`${origin}/dashboard.html?client=${encodeURIComponent(client)}&page=${encodeURIComponent(route)}&lang=en`;
+                const errors=[];let rows=[];let meta={};
+                try{
+                  await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+                  await page.waitForTimeout(3200);
+                  await page.evaluate(()=>window.BLISI18N?.apply?.(document));
+                  await page.waitForTimeout(1100);
+                  const s=await scan(page);meta={lang:s.lang,residualHint:s.residualHint,switchText:s.switchText};
+                  rows=s.rows.filter(r=>r.text&&/[А-Яа-яЁёЀ-ӿ]/.test(r.text)&&![/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i].some(x=>x.test(r.text)));
+                }catch(e){errors.push(e.message)}
+                const uniq=[];const seen=new Set();
+                for(const r of rows){const k=r.kind+'\0'+r.text;if(!seen.has(k)){seen.add(k);uniq.push(r)}occurrences++;if(!routePhrases.has(k))routePhrases.set(k,{kind:r.kind,text:r.text,count:0,clients:[]});const x=routePhrases.get(k);x.count++;if(!x.clients.includes(client))x.clients.push(client);const g=report.globalPhrases[k]||(report.globalPhrases[k]={kind:r.kind,text:r.text,count:0,routes:[],clients:[]});g.count++;if(!g.routes.includes(route))g.routes.push(route);if(!g.clients.includes(client))g.clients.push(client)}
+                report.pages.push({route,client,url,unique:uniq.length,occurrences:rows.length,meta,errors,phrases:uniq});
+                await page.close();
+              }
+              report.summary[route]={unique:routePhrases.size,occurrences,phrases:[...routePhrases.values()].sort((a,b)=>b.count-a.count||a.text.localeCompare(b.text,'bg'))};
+            }
+            report.globalPhrases=Object.values(report.globalPhrases).sort((a,b)=>b.count-a.count||a.text.localeCompare(b.text,'bg'));
+            report.totalUnique=report.globalPhrases.length;
+            report.totalOccurrences=report.globalPhrases.reduce((s,x)=>s+x.count,0);
+            fs.writeFileSync('dashboard-en-production-audit.json',JSON.stringify(report,null,2));
+            console.log('TOTAL',report.totalUnique,report.totalOccurrences);
+            for(const route of routes){const s=report.summary[route];console.log(`ROUTE ${route}: unique=${s.unique} occurrences=${s.occurrences}`);for(const p of s.phrases.slice(0,80))console.log(' ',p.count,p.kind,'|',p.text,'|',p.clients.join(','));}
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/dashboard-en-production-audit.cjs
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-en-production-audit
+          path: dashboard-en-production-audit.json
+          retention-days: 2
