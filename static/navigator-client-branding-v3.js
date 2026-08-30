@@ -1,6 +1,6 @@
-/* BLIS Navigator — canonical client branding v3.1.
+/* BLIS Navigator — canonical client branding v3.2.
    Real brand artwork only. Verified local logo bundle first, official remote artwork second.
-   No generated marks, initials, favicons or third-party logo substitutes. */
+   No generated marks, initials, favicons, app icons or third-party logo substitutes. */
 (function(){
 'use strict';
 if(window.__BLIS_CLIENT_BRANDING_V3)return;window.__BLIS_CLIENT_BRANDING_V3=true;
@@ -11,7 +11,7 @@ const P={
  'astor-garden':{name:'Astor Garden Hotel',type:'Хотелиерство',remote:[],cls:'astor'},
  'varna-towers':{name:'Varna Towers',type:'Бизнес център / недвижими имоти',remote:[],cls:'varna-towers'},
  mollox:{name:'MOLLOX България',type:'Професионална хигиена',remote:['https://mollox.bg/assets/img/logo-mollox.png'],cls:'mollox'},
- everbet:{name:'Everbet',type:'Онлайн казино и спортни залози',remote:['https://everbet.bg/assets/icons/logo-left-column-light.svg','https://everbet.bg/assets/icons/logo-left-column-dark.svg'],cls:'everbet'},
+ everbet:{name:'Everbet',type:'Онлайн казино и спортни залози',remote:['https://everbet.bg/assets/icons/everbet-logo-dark.svg','https://everbet.bg/assets/icons/everbet-logo-light.svg'],cls:'everbet'},
  wirello:{name:'Wirello Market',type:'Демо профил',remote:[],cls:'wirello'}
 };
 const OFFICIAL={
@@ -22,6 +22,7 @@ const OFFICIAL={
  mollox:['mollox.bg'],
  everbet:['everbet.bg']
 };
+const REJECT_ARTWORK=/(?:favicon|apple-touch-icon|fontawesome|fa-(?:brands|solid|regular)|\/fonts?\/|sprite|payment|partner|tenant)/i;
 let manifest={};let manifestPromise=null;
 const cache=new Map();
 const N=v=>{const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null};
@@ -31,16 +32,17 @@ function score(){return N(window.D?.blis_index)}
 function state(v){if(v==null)return['Няма достатъчно данни','neutral'];if(v>=85)return['Много силна позиция','excellent'];if(v>=70)return['Силна позиция','good'];if(v>=55)return['Стабилна позиция','stable'];if(v>=40)return['За наблюдение','watch'];return['Изисква внимание','risk']}
 function period(){return Number(window.BLISPeriod?.days)||30}
 function lastSync(){const x=document.getElementById('lastSync')?.textContent?.trim();return x&&x!=='—'?x:'днес'}
-function officialSource(k,source){if(!source)return false;try{const h=new URL(source,location.origin).hostname.toLowerCase().replace(/^www\./,'');return (OFFICIAL[k]||[]).some(d=>h===d||h.endsWith('.'+d))}catch(_){return false}}
+function officialSource(k,source){if(!source||REJECT_ARTWORK.test(source))return false;try{const h=new URL(source,location.origin).hostname.toLowerCase().replace(/^www\./,'');return (OFFICIAL[k]||[]).some(d=>h===d||h.endsWith('.'+d))}catch(_){return false}}
+function allowedPath(path){return !!path&&!REJECT_ARTWORK.test(path)}
 async function loadManifest(){
  if(manifestPromise)return manifestPromise;
- manifestPromise=fetch('/client-logos/manifest.json?v=20260830-local3',{cache:'no-store'})
+ manifestPromise=fetch('/client-logos/manifest.json?v=20260830-local5',{cache:'no-store'})
    .then(r=>r.ok?r.json():null)
-   .then(j=>{const raw=j?.logos||{};manifest={};Object.entries(raw).forEach(([k,v])=>{if(P[k]&&v?.path&&officialSource(k,v?.source))manifest[k]=v});return manifest})
+   .then(j=>{const raw=j?.logos||{};manifest={};Object.entries(raw).forEach(([k,v])=>{if(P[k]&&allowedPath(v?.path)&&officialSource(k,v?.source))manifest[k]=v});return manifest})
    .catch(()=>manifest);
  return manifestPromise;
 }
-function candidates(k){const local=manifest[k]?.path;return [local,...(P[k]?.remote||[])].filter(Boolean)}
+function candidates(k){const local=manifest[k]?.path;return [local,...(P[k]?.remote||[])].filter(u=>u&&!REJECT_ARTWORK.test(u))}
 function resolve(k){
  const key=k+'|'+candidates(k).join('|');if(cache.has(key))return cache.get(key);
  const pr=new Promise(resolve=>{const a=candidates(k);let i=0;const next=()=>{if(i>=a.length)return resolve(null);const u=a[i++],im=new Image();im.onload=()=>resolve(u);im.onerror=next;im.src=u};next()});cache.set(key,pr);return pr;
@@ -56,7 +58,7 @@ async function mount(slot,k,cls){if(!slot)return;const u=await resolve(k);if(!sl
 async function brandSmall(slot,k){if(!slot)return;const u=await resolve(k);slot.textContent='';slot.classList.remove('blis-logo-empty','blis-real-logo');if(!u){slot.classList.add('blis-logo-empty');return}const im=document.createElement('img');im.src=u;im.alt=P[k]?.name||'';im.addEventListener('error',()=>{slot.classList.remove('blis-real-logo');slot.classList.add('blis-logo-empty');slot.replaceChildren()},{once:true});slot.classList.add('blis-real-logo');slot.appendChild(im)}
 function paintHeader(){css();const k=current(),p=P[k]||P.aroma,bar=document.querySelector('.topbar');if(!bar)return;const v=score(),st=state(v);bar.classList.add('blis-client-header');let title=bar.querySelector('.title');if(!title){title=document.createElement('div');title.className='title';bar.prepend(title)}title.innerHTML=`<div class="bch3-brand"><span class="bch3-logo" data-bch3-logo></span><div class="bch3-copy"><div class="bch3-kicker">Клиентски профил</div><div class="bch3-name">${esc(p.name)}</div><div class="bch3-type">${esc(p.type)}</div></div></div>`;mount(title.querySelector('[data-bch3-logo]'),k,p.cls);let h=bar.querySelector('.bch3-health');if(!h){h=document.createElement('div');h.className='bch3-health';bar.insertBefore(h,bar.querySelector('.toptools')||null)}h.className=`bch3-health ${st[1]}`;h.innerHTML=`<strong class="bch3-index">${v==null?'—':Math.round(v)}</strong><div class="bch3-health-copy"><span>BLIS индекс</span><b>${esc(st[0])}</b></div>`;let tools=bar.querySelector('.toptools');if(!tools){tools=document.createElement('div');tools.className='toptools';bar.appendChild(tools)}const d=tools.querySelector('.datebox');if(d)d.textContent=`Последните ${period()} дни ⌄`;let u=tools.querySelector('.bch3-update');if(!u){u=document.createElement('div');u.className='bch3-update';tools.appendChild(u)}u.innerHTML=`Данни към<br><b>${esc(lastSync())}</b>`}
 function paintSwitcher(){const k=current();brandSmall(document.querySelector('.client-brand-mark'),k);document.querySelectorAll('.client-option[data-client-key]').forEach(o=>brandSmall(o.querySelector('.client-option-mark'),o.dataset.clientKey))}
-async function paint(){await loadManifest();cache.clear();paintHeader();paintSwitcher();document.documentElement.dataset.clientBranding='local-real-v3-1'}
+async function paint(){await loadManifest();cache.clear();paintHeader();paintSwitcher();document.documentElement.dataset.clientBranding='local-real-v3-2'}
 function schedule(){requestAnimationFrame(()=>requestAnimationFrame(paint))}
 ['blis:clientdata','blis:routechange','blis:periodchange','blis:intelligence','blis:production-ready'].forEach(e=>window.addEventListener(e,schedule));window.addEventListener('popstate',schedule);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.BLISClientBrandingV3={paint,profiles:P,loadManifest};
