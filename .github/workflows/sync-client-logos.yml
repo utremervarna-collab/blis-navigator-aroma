@@ -20,6 +20,30 @@ jobs:
           fetch-depth: 0
       - name: Download real brand assets
         run: python3 scripts/sync_client_logos.py
+      - name: Reject app icons and library artwork
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('static/client-logos')
+          mf = root / 'manifest.json'
+          if not mf.exists():
+              raise SystemExit('manifest missing')
+          data = json.loads(mf.read_text(encoding='utf-8'))
+          logos = data.get('logos', {})
+          blocked = ('favicon', 'apple-touch-icon', 'fontawesome', 'fa-brands', 'fa-solid', 'fa-regular', '/fonts/', 'sprite', 'payment', 'partner', 'tenant')
+          for slug, item in list(logos.items()):
+              hay = (str(item.get('source', '')) + ' ' + str(item.get('path', ''))).lower()
+              if any(x in hay for x in blocked):
+                  p = root / Path(str(item.get('path', ''))).name
+                  if p.exists():
+                      p.unlink()
+                  logos.pop(slug, None)
+                  print('REJECTED', slug, hay)
+          data['version'] = max(int(data.get('version') or 0), 5)
+          mf.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
       - name: Commit local logo bundle
         run: |
           git config user.name "github-actions[bot]"
