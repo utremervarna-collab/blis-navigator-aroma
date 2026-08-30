@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'static/blis-i18n*.js'
+      - 'static/navigator-*.js'
+      - 'static/navigator-*.css'
       - 'zz_dashboard_en_complete.go'
       - '.github/workflows/navigator-i18n-real-user-prod.yml'
   workflow_dispatch:
@@ -43,6 +45,7 @@ jobs:
               const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||skip.test(p.tagName))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
               while(w.nextNode())out.push({kind:'text',text:norm(w.currentNode.nodeValue)});
               for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]'))for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v)})}
+              for(const el of document.querySelectorAll('body *'))for(const pseudo of ['::before','::after']){try{let v=getComputedStyle(el,pseudo).content||'';if(v==='none'||v==='normal'||v==='""'||v==="''")continue;v=v.replace(/^['"]|['"]$/g,'');if(cyr.test(v))out.push({kind:'pseudo'+pseudo,text:norm(v)})}catch(_){}}
               if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title)});
               for(const t of (window.__blisCanvasTexts||[]))if(cyr.test(String(t)))out.push({kind:'canvas',text:norm(String(t))});
               return out;
