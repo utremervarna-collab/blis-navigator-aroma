@@ -1,0 +1,71 @@
+name: Dashboard EN Complete QA
+
+on:
+  push:
+    branches: [ fix/dashboard-en-complete-20260830 ]
+    paths:
+      - 'static/blis-i18n*.js'
+      - 'i18n_runtime.go'
+      - '.github/workflows/dashboard-en-complete-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate and build
+        run: |
+          set -euxo pipefail
+          for f in static/blis-i18n*.js; do node --check "$f"; done
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis-en-fix.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:10000/blis-i18n-en-dashboard-complete-v1.js >/dev/null
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Require zero Bulgarian in rendered EN Dashboard
+        run: |
+          cat >/tmp/dashboard-en-zero.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const origin='http://127.0.0.1:10000';
+          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
+          const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          async function scan(page){return page.evaluate(()=>{
+            const cyr=/[А-Яа-яЁёЀ-ӿ]/, norm=s=>(s||'').replace(/\s+/g,' ').trim();
+            const vis=el=>{try{const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0}catch{return false}};
+            const out=[];const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TEXTAREA'].includes(p.tagName)||!vis(p))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});while(w.nextNode())out.push({kind:'text',text:norm(w.currentNode.nodeValue)});
+            for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!vis(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v)})}}
+            if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title)});
+            return {lang:document.documentElement.lang,switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',rows:out};
+          })}
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});let total=0;const unique=new Map();const errors=[];
+            for(const route of routes){
+              const results=await Promise.all(clients.map(async client=>{
+                const context=await browser.newContext({viewport:{width:1600,height:1400}});await context.addInitScript(()=>localStorage.setItem('blis.language.v1','en'));const p=await context.newPage();
+                try{await p.goto(`${origin}/dashboard.html?client=${client}&page=${route}&lang=en`,{waitUntil:'domcontentloaded',timeout:25000});await p.waitForTimeout(3200);await p.evaluate(()=>window.BLISI18N?.apply?.(document));await p.waitForTimeout(1200);const s=await scan(p);return {client,route,s};}catch(e){return {client,route,error:e.message}}finally{await context.close()}
+              }));
+              for(const r of results){if(r.error){errors.push(`${r.client}:${r.route}: ${r.error}`);continue}if(r.s.lang!=='en')errors.push(`${r.client}:${r.route}: lang=${r.s.lang}`);if(r.s.switchText!=='BG')errors.push(`${r.client}:${r.route}: switch=${r.s.switchText}`);for(const row of r.s.rows){total++;const k=row.kind+'\0'+row.text;if(!unique.has(k))unique.set(k,{...row,where:[]});const x=unique.get(k);if(x.where.length<8)x.where.push(`${r.client}:${r.route}`)}}
+            }
+            await browser.close();console.log('RESIDUAL',unique.size,total);for(const x of unique.values())console.log(x.kind,'|',x.text,'|',x.where.join(','));errors.forEach(x=>console.log('ERROR',x));if(unique.size||errors.length)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/dashboard-en-zero.cjs
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/blis-en-fix.log || true
