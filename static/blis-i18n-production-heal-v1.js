@@ -31,5 +31,5 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 for(const ev of ['blis:clientdata','blis:periodchange','blis:routechange','blis:navigator-route','blis:rendered','blis:i18n-catalog'])window.addEventListener(ev,()=>arm(12000));
 window.addEventListener('popstate',()=>arm(12000));
 document.addEventListener('click',e=>{if(e.target?.closest?.('#nav,[data-page],[data-client],a[href*="dashboard"]'))arm(12000)},true);
-setInterval(()=>{if(!EN()||document.hidden)return;if(Date.now()<healUntil)directPass();else check()},180);
+setInterval(()=>{if(!EN())return;if(Date.now()<healUntil)directPass();else check()},180);
 })();
