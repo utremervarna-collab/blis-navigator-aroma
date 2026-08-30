@@ -1,3 +1,4 @@
+# Final canonical mutable-catalog validation
 name: Navigator English Coverage QA
 
 on:
@@ -43,7 +44,7 @@ jobs:
       - name: Verify injected language assets
         run: |
           set -euxo pipefail
-          for f in blis-i18n-en-v1.js blis-i18n-en-dashboard-v1.js blis-i18n-en-residual-dashboard-v1.js blis-i18n-en-dynamic-v1.js blis-i18n-v1.js; do
+          for f in blis-i18n-en-v1.js blis-i18n-en-mutable-v1.js blis-i18n-en-dashboard-v1.js blis-i18n-en-residual-dashboard-v1.js blis-i18n-en-dynamic-v1.js blis-i18n-v1.js; do
             curl -fsS "http://127.0.0.1:10000/$f" >/dev/null
           done
       - name: Install Chromium
@@ -73,12 +74,12 @@ jobs:
               for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!vis(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({text:v,kind:a})}}
               if(document.title&&cyr.test(document.title))out.push({text:document.title,kind:'title'});
               const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({text:md,kind:'meta-description'});
-              return {rows:out,lang:document.documentElement.lang,residual:document.documentElement.dataset.blisI18nResidual||'',hasSwitch:!!document.querySelector('[data-blis-language-switch]'),switchInTop:!!document.querySelector('.top .actions [data-blis-language-switch]'),probe:window.BLISI18N?.t?.('Сигнал')||''};
+              return {rows:out,lang:document.documentElement.lang,residual:document.documentElement.dataset.blisI18nResidual||'',hasSwitch:!!document.querySelector('[data-blis-language-switch]'),switchInTop:!!document.querySelector('.top .actions [data-blis-language-switch]'),probe:window.BLISI18N?.t?.('Сигнал')||'',catalogSignal:window.BLIS_EN_TRANSLATIONS?.['Сигнал']||'',catalogFrozen:Object.isFrozen(window.BLIS_EN_TRANSLATIONS||{})};
             });
             if(rows.lang!=='en')errors.push(`${where}: html lang=${rows.lang}`);
             if(!rows.hasSwitch)errors.push(`${where}: language switch missing`);
             if(where==='/'&&!rows.switchInTop)errors.push('/: language switch is not in the top actions area');
-            if(rows.probe!=='Signal')errors.push(`${where}: live catalog probe failed (${JSON.stringify(rows.probe)})`);
+            if(rows.probe!=='Signal')errors.push(`${where}: live catalog probe failed (${JSON.stringify(rows.probe)}; map=${JSON.stringify(rows.catalogSignal)}; frozen=${rows.catalogFrozen})`);
             rows.rows.forEach(r=>add(r.text,where,r.kind));
           }
           function en(path){const u=new URL(path,origin);u.searchParams.set('lang','en');return u.toString()}
