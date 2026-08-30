@@ -22,6 +22,8 @@ const R=[
 [/^Уникални източници: (\d+) · историческа дълбочина: ([\d.,]+) ч\. · нови 24 ч\.: (\d+) · предходни: (\d+)$/,'Unique sources: $1 · historical depth: $2 h · new in 24h: $3 · previous: $4'],
 [/^(\d+) сигнала · (\d+) нови · (\d+) негативни · (\d+) висок риск$/,'$1 signals · $2 new · $3 negative · $4 high risk'],
 [/^24 ч\.: (\d+) · предходни 24 ч\.: (\d+) · негативни: (\d+)$/,'24h: $1 · previous 24h: $2 · negative: $3'],
+[/^([^:]+): ([A-Za-z0-9_]+) се подобрява \((.+)\)\.$/,'$1: $2 improves ($3).'],
+[/^([^:]+): ([A-Za-z0-9_]+) се влошава \((.+)\)\.$/,'$1: $2 deteriorates ($3).'],
 [/^(.+) има много висока обща дигитална видимост \(([\d.,]+)\/100\)\. Радарът показва къде марката се открива най-ясно и къде има дефицит на измерими сигнали\.$/,'$1 has very high overall digital visibility ($2/100). The radar shows where the brand is most clearly discoverable and where measurable signals are lacking.'],
 [/^(.+) има висока обща дигитална видимост \(([\d.,]+)\/100\)\. Радарът показва къде марката се открива най-ясно и къде има дефицит на измерими сигнали\.$/,'$1 has high overall digital visibility ($2/100). The radar shows where the brand is most clearly discoverable and where measurable signals are lacking.'],
 [/^(.+) има умерена обща дигитална видимост \(([\d.,]+)\/100\)\. Радарът показва къде марката се открива най-ясно и къде има дефицит на измерими сигнали\.$/,'$1 has moderate overall digital visibility ($2/100). The radar shows where the brand is most clearly discoverable and where measurable signals are lacking.'],
