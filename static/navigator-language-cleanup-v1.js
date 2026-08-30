@@ -1,6 +1,8 @@
 /* BLIS Navigator — client-facing language and layout cleanup v1. */
 (function(){
 'use strict';
+const __blisRequestedLang=(new URLSearchParams(location.search).get('lang')||'').toLowerCase();let __blisStoredLang='';try{__blisStoredLang=(localStorage.getItem('blis.language.v1')||'').toLowerCase()}catch(_){ }
+if(__blisRequestedLang==='en'||(!__blisRequestedLang&&__blisStoredLang==='en'))return;
 if(window.__BLIS_LANGUAGE_CLEANUP_V1)return;window.__BLIS_LANGUAGE_CLEANUP_V1=true;
 const MAP=new Map([
 ['Отговорът накратко','Обобщение'],['Ключова визуализация','Основен изглед'],['BLIS индекс – траектория','BLIS индекс'],['BLIS индекс - траектория','BLIS индекс'],

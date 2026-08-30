@@ -1,0 +1,109 @@
+# Final canonical mutable-catalog validation
+name: Navigator English Coverage QA
+
+on:
+  push:
+    branches: [ feature/full-english-i18n-20260830 ]
+    paths:
+      - 'static/blis-i18n*.js'
+      - 'static/navigator-language-cleanup-v1.js'
+      - 'static/navigator-ui-terminology.js'
+      - 'i18n_assets.go'
+      - 'i18n_runtime.go'
+      - 'i18n_reports.go'
+      - 'main.go'
+      - 'auth_proxy.go'
+      - '.github/workflows/navigator-i18n-english-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  english-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate English JavaScript assets
+        run: |
+          set -euxo pipefail
+          for f in static/blis-i18n*.js; do node --check "$f"; done
+      - name: Build local bilingual Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/blis-en-server.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break; sleep 1; done
+      - name: Verify injected language assets
+        run: |
+          set -euxo pipefail
+          for f in blis-i18n-en-v1.js blis-i18n-en-mutable-v1.js blis-i18n-en-dashboard-v1.js blis-i18n-en-residual-dashboard-v1.js blis-i18n-en-dynamic-v1.js blis-i18n-v1.js; do
+            curl -fsS "http://127.0.0.1:10000/$f" >/dev/null
+          done
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Audit rendered English surfaces
+        run: |
+          cat >/tmp/i18n-en-qa.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const fs=require('fs');
+          const origin='http://127.0.0.1:10000';
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const allowed=[/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i];
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          const residual=new Map();
+          const errors=[];
+          function add(text,where,kind='text'){
+            text=norm(text);if(!text||!cyr.test(text)||allowed.some(x=>x.test(text)))return;
+            const key=kind+'\u0000'+text;if(!residual.has(key))residual.set(key,{text,kind,count:0,where:[]});const r=residual.get(key);r.count++;if(r.where.length<12&&!r.where.includes(where))r.where.push(where);
+          }
+          async function collect(page,where){
+            const rows=await page.evaluate(()=>{
+              const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+              const vis=el=>{if(!el||!el.getBoundingClientRect)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0};
+              const out=[];const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE'].includes(p.tagName)||!vis(p))return NodeFilter.FILTER_REJECT;const t=(n.nodeValue||'').replace(/\s+/g,' ').trim();return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});while(w.nextNode())out.push({text:w.currentNode.nodeValue,kind:'text'});
+              for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!vis(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({text:v,kind:a})}}
+              if(document.title&&cyr.test(document.title))out.push({text:document.title,kind:'title'});
+              const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({text:md,kind:'meta-description'});
+              return {rows:out,lang:document.documentElement.lang,residual:document.documentElement.dataset.blisI18nResidual||'',hasSwitch:!!document.querySelector('[data-blis-language-switch]'),switchInTop:!!document.querySelector('.top .actions [data-blis-language-switch]'),probe:window.BLISI18N?.t?.('Сигнал')||'',catalogSignal:window.BLIS_EN_TRANSLATIONS?.['Сигнал']||'',catalogFrozen:Object.isFrozen(window.BLIS_EN_TRANSLATIONS||{})};
+            });
+            if(rows.lang!=='en')errors.push(`${where}: html lang=${rows.lang}`);
+            if(!rows.hasSwitch)errors.push(`${where}: language switch missing`);
+            if(where==='/'&&!rows.switchInTop)errors.push('/: language switch is not in the top actions area');
+            if(rows.probe!=='Signal')errors.push(`${where}: live catalog probe failed (${JSON.stringify(rows.probe)}; map=${JSON.stringify(rows.catalogSignal)}; frozen=${rows.catalogFrozen})`);
+            rows.rows.forEach(r=>add(r.text,where,r.kind));
+          }
+          function en(path){const u=new URL(path,origin);u.searchParams.set('lang','en');return u.toString()}
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const publicPaths=['/','/about.html','/blis.html','/brand-lab.html','/clients.html','/contact.html','/methodology.html','/privacy.html','/terms.html','/services.html','/intelligence-hub.html','/intelligence-ai-search.html','/intelligence-calendar.html','/intelligence-reputation-trust.html','/intelligence-retail-bulgaria-2026.html','/demo.html','/demo-navigator.html','/demo-status.html','/mollox.html'];
+            for(const path of publicPaths){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(en(path),{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1900);await collect(p,path)}catch(e){errors.push(`${path}: ${e.message}`)}await p.close()}
+            const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+            for(const client of clients){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(`${origin}/dashboard.html?client=${client}&page=overview&lang=en`,{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1900);for(const route of routes){if(route!=='overview'){await p.evaluate(r=>window.refGo&&window.refGo(r),route);await p.waitForTimeout(850)}await collect(p,`dashboard:${client}:${route}`)}}catch(e){errors.push(`dashboard:${client}: ${e.message}`)}await p.close()}
+            for(const id of ['digital','reputation','signals','competitive','summary']){const res=await fetch(`${origin}/api/clients/aroma/reports/${id}?lang=en`);const body=await res.text();if(cyr.test(body))errors.push(`download report ${id}: Cyrillic remains`)}
+            await browser.close();
+            const phrases=[...residual.values()].sort((a,b)=>b.count-a.count||b.text.length-a.text.length||a.text.localeCompare(b.text,'bg'));const out={summary:{unique:phrases.length,occurrences:phrases.reduce((s,x)=>s+x.count,0),errors:errors.length},errors,phrases};fs.writeFileSync('i18n-english-residual.json',JSON.stringify(out,null,2));console.log(JSON.stringify(out.summary));errors.forEach(x=>console.log('ERROR',x));for(const r of phrases.slice(0,220))console.log(String(r.count).padStart(3),r.kind,'|',r.text.slice(0,260),'|',r.where.slice(0,3).join(','));
+            if(errors.length||phrases.length){process.exitCode=1}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/i18n-en-qa.cjs
+      - name: Upload English residual report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-i18n-english-residual
+          path: i18n-english-residual.json
+          if-no-files-found: ignore
+          retention-days: 2
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/blis-en-server.log || true

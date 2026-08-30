@@ -81,7 +81,7 @@ func init() {
 	authProxy = httputil.NewSingleHostReverseProxy(target)
 	authProxy.ModifyResponse = scopeDashboardResponse
 	authProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		http.Error(w, "BLIS Navigator временно се зарежда. Опитайте отново след няколко секунди.", http.StatusServiceUnavailable)
+		http.Error(w, blisLocalized(r, "BLIS Navigator временно се зарежда. Опитайте отново след няколко секунди.", "BLIS Navigator is temporarily loading. Please try again in a few seconds."), http.StatusServiceUnavailable)
 	}
 
 	go func() {
@@ -248,7 +248,7 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		clearSession(w, r)
 		s, err := newOwnerSession()
 		if err != nil {
-			http.Error(w, "Неуспешно създаване на администраторска сесия", http.StatusInternalServerError)
+			http.Error(w, blisLocalized(r, "Неуспешно създаване на администраторска сесия", "Could not create administrator session"), http.StatusInternalServerError)
 			return
 		}
 		setSessionCookie(w, r, s)
@@ -316,7 +316,7 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		a, _ := accountForSession(s)
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		json.NewEncoder(w).Encode([]map[string]string{{"slug": a.ClientSlug, "name": a.ClientName, "sector": a.Sector, "note": "Защитен клиентски профил"}})
+		json.NewEncoder(w).Encode([]map[string]string{{"slug": a.ClientSlug, "name": a.ClientName, "sector": a.Sector, "note": blisLocalized(r, "Защитен клиентски профил", "Secure client profile")}})
 		return
 	}
 
@@ -326,7 +326,7 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		if slug != "" && slug != s.ClientSlug {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(map[string]interface{}{"error": "Достъпът е ограничен до клиентския профил", "client": s.ClientSlug})
+			json.NewEncoder(w).Encode(map[string]interface{}{"error": blisLocalized(r, "Достъпът е ограничен до клиентския профил", "Access is restricted to the client profile"), "client": s.ClientSlug})
 			return
 		}
 	}
@@ -362,7 +362,7 @@ func handleClientLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	s, err := newClientSession(a)
 	if err != nil {
-		http.Error(w, "Неуспешно създаване на сесия", http.StatusInternalServerError)
+		http.Error(w, blisLocalized(r, "Неуспешно създаване на сесия", "Could not create session"), http.StatusInternalServerError)
 		return
 	}
 	setSessionCookie(w, r, s)
@@ -386,8 +386,8 @@ func serveClientLogin(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-	io.WriteString(w, `<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLIS Navigator — Клиентски вход</title><style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#17324c}body{min-height:100vh;display:grid;place-items:center;padding:28px;background:linear-gradient(135deg,#fff 0%,#f5f8fb 65%,#eef3f7 100%)}.wrap{width:min(100%,430px)}.brand{text-align:center;margin-bottom:26px}.brand strong{display:block;font:600 38px/1 Georgia,serif;color:#153652}.brand span{display:block;margin-top:8px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#708095}.card{background:#fff;border:1px solid #e0e6ec;border-radius:18px;padding:34px;box-shadow:0 24px 70px rgba(20,48,73,.12)}h1{font:500 28px/1.15 Georgia,serif;margin:0 0 8px;color:#153652}.sub{font-size:12px;line-height:1.55;color:#718196;margin:0 0 20px}.clienttag{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid #dfe7ee;background:#f7fafc;border-radius:9px;padding:11px 12px;margin:0 0 18px}.clienttag span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7b8998}.clienttag b{font-size:12px;color:#153652}.field{margin:0 0 15px}.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#52677b;margin-bottom:7px}.field input{width:100%;height:48px;border:1px solid #d7e0e8;border-radius:9px;padding:0 13px;font-size:14px;outline:none;background:#fff;color:#17324c}.field input[readonly]{background:#f5f7f9;color:#52677b}.field input:focus{border-color:#2e6f9d;box-shadow:0 0 0 3px rgba(46,111,157,.10)}button{width:100%;height:50px;border:0;border-radius:9px;background:#153652;color:#fff;font-weight:800;cursor:pointer;margin-top:4px}button:hover{background:#1d4769}.error{background:#fff1f1;border:1px solid #f0cccc;color:#a23e3e;padding:10px 12px;border-radius:8px;font-size:11px;margin-bottom:15px}.back{display:block;text-align:center;margin-top:18px;color:#60788c;font-size:11px;text-decoration:none}.lock{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:20px;color:#8593a1;font-size:9px}.lock i{width:6px;height:6px;border-radius:50%;background:#53a978}</style></head><body><div class="wrap"><div class="brand"><strong>BLIS™</strong><span>Brand Lab Intelligence System</span></div><div class="card"><h1>Клиентски вход</h1><p class="sub">Влезте в защитения профил на вашата организация в BLIS Navigator.</p>`+clientTag+errMsg+`<form method="post" action="/api/client-login" autocomplete="on"><div class="field"><label for="username">Потребителско име</label><input id="username" name="username" type="text" value="`+prefill+`" autocomplete="username" required`+readonly+`></div><div class="field"><label for="password">Парола</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus></div><button type="submit">Вход в Navigator</button></form><div class="lock"><i></i> Защитена клиентска сесия</div></div><a class="back" href="/">← Към началната страница</a></div></body></html>`)
+	_, _ = w.Write(injectBLISI18N([]byte(`<!doctype html><html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BLIS Navigator — Клиентски вход</title><style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#17324c}body{min-height:100vh;display:grid;place-items:center;padding:28px;background:linear-gradient(135deg,#fff 0%,#f5f8fb 65%,#eef3f7 100%)}.wrap{width:min(100%,430px)}.brand{text-align:center;margin-bottom:26px}.brand strong{display:block;font:600 38px/1 Georgia,serif;color:#153652}.brand span{display:block;margin-top:8px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#708095}.card{background:#fff;border:1px solid #e0e6ec;border-radius:18px;padding:34px;box-shadow:0 24px 70px rgba(20,48,73,.12)}h1{font:500 28px/1.15 Georgia,serif;margin:0 0 8px;color:#153652}.sub{font-size:12px;line-height:1.55;color:#718196;margin:0 0 20px}.clienttag{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid #dfe7ee;background:#f7fafc;border-radius:9px;padding:11px 12px;margin:0 0 18px}.clienttag span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7b8998}.clienttag b{font-size:12px;color:#153652}.field{margin:0 0 15px}.field label{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#52677b;margin-bottom:7px}.field input{width:100%;height:48px;border:1px solid #d7e0e8;border-radius:9px;padding:0 13px;font-size:14px;outline:none;background:#fff;color:#17324c}.field input[readonly]{background:#f5f7f9;color:#52677b}.field input:focus{border-color:#2e6f9d;box-shadow:0 0 0 3px rgba(46,111,157,.10)}button{width:100%;height:50px;border:0;border-radius:9px;background:#153652;color:#fff;font-weight:800;cursor:pointer;margin-top:4px}button:hover{background:#1d4769}.error{background:#fff1f1;border:1px solid #f0cccc;color:#a23e3e;padding:10px 12px;border-radius:8px;font-size:11px;margin-bottom:15px}.back{display:block;text-align:center;margin-top:18px;color:#60788c;font-size:11px;text-decoration:none}.lock{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:20px;color:#8593a1;font-size:9px}.lock i{width:6px;height:6px;border-radius:50%;background:#53a978}</style></head><body><div class="wrap"><div class="brand"><strong>BLIS™</strong><span>Brand Lab Intelligence System</span></div><div class="card"><h1>Клиентски вход</h1><p class="sub">Влезте в защитения профил на вашата организация в BLIS Navigator.</p>` + clientTag + errMsg + `<form method="post" action="/api/client-login" autocomplete="on"><div class="field"><label for="username">Потребителско име</label><input id="username" name="username" type="text" value="` + prefill + `" autocomplete="username" required` + readonly + `></div><div class="field"><label for="password">Парола</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus></div><button type="submit">Вход в Navigator</button></form><div class="lock"><i></i> Защитена клиентска сесия</div></div><a class="back" href="/">← Към началната страница</a></div></body></html>`)))
 }
 
 func scopeDashboardResponse(resp *http.Response) error {

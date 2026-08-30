@@ -1,0 +1,51 @@
+name: Navigator I18N Apply
+
+on:
+  push:
+    branches: [ feature/full-english-i18n-20260830 ]
+    paths:
+      - 'scripts/apply_i18n_go_patch.py'
+      - 'scripts/make_i18n_catalog_mutable.py'
+      - 'scripts/make_i18n_catalogs_frozen_safe.py'
+      - 'i18n_runtime.go'
+      - 'i18n_reports.go'
+      - 'static/blis-i18n-v1.js'
+      - 'static/blis-i18n-en-*.js'
+      - '.github/workflows/navigator-i18n-apply.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Make canonical English catalog extensible
+        run: python3 scripts/make_i18n_catalog_mutable.py
+      - name: Make additive English catalogs frozen-safe
+        run: python3 scripts/make_i18n_catalogs_frozen_safe.py
+      - name: Apply central i18n integration
+        run: python3 scripts/apply_i18n_go_patch.py
+      - name: Format and build
+        run: |
+          gofmt -w i18n_runtime.go i18n_reports.go main.go auth_proxy.go
+          go test ./...
+          go build -tags netgo -ldflags '-s -w' -o /tmp/blis-i18n-app .
+      - name: Commit integration patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add main.go auth_proxy.go i18n_runtime.go i18n_reports.go static/blis-i18n-en-*.js
+          if git diff --cached --quiet; then
+            echo "i18n integration already applied"
+            exit 0
+          fi
+          git commit -m "Harden additive English catalogs against frozen runtime maps"
+          git push
