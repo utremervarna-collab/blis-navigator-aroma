@@ -1,0 +1,26 @@
+name: Navigator I18N Inventory
+
+on:
+  push:
+    branches: [ feature/full-english-i18n-20260830 ]
+    paths:
+      - 'scripts/i18n_inventory.py'
+      - '.github/workflows/navigator-i18n-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract Bulgarian UI inventory
+        run: python3 scripts/i18n_inventory.py
+      - name: Upload translation inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-i18n-inventory
+          path: i18n-inventory.json
+          retention-days: 2
