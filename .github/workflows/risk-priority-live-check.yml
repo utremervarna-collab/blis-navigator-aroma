@@ -1,0 +1,58 @@
+name: Risk Priority live check
+on:
+  push:
+    branches: [ qa/risk-priority-live-20260830 ]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Compare Important Signals and Risk Priority
+        run: |
+          cat >/tmp/risk-priority.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const origin='https://blis-navigator-aroma.onrender.com';
+          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
+          const expectedBuild='20260830-risk-priority-sync-1';
+          const norm=a=>a.map(x=>String(x||'').trim()).filter(Boolean).sort();
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const errors=[];
+            for(const client of clients){
+              const ctx=await browser.newContext({viewport:{width:1440,height:1000}});
+              const page=await ctx.newPage();
+              let res=await page.goto(`${origin}/dashboard.html?client=${client}&page=social`,{waitUntil:'domcontentloaded',timeout:30000});
+              const build=res?.headers()?.['x-blis-navigator-build']||'';
+              await page.waitForTimeout(3200);
+              const sig=norm(await page.evaluate(()=>[...document.querySelectorAll('[data-router-signal],[data-sv2-sig]')].map(x=>x.getAttribute('data-router-signal')||x.getAttribute('data-sv2-sig'))));
+              await page.goto(`${origin}/dashboard.html?client=${client}&page=opportunities`,{waitUntil:'domcontentloaded',timeout:30000});
+              await page.waitForTimeout(3200);
+              const risk=norm(await page.evaluate(()=>[...document.querySelectorAll('[data-risk-priority-signal]')].map(x=>x.getAttribute('data-risk-priority-signal'))));
+              const ui=await page.evaluate(()=>({panel:!!document.querySelector('[data-blis-risk-priority]'),q2:document.querySelector('#opportunitiesBody .sv2-q.q2')?.textContent?.trim()||'',side:[...document.querySelectorAll('#opportunitiesBody .sv2-side>div span')].map(x=>x.textContent.trim())}));
+              console.log('CLIENT',client,'BUILD',build,'SIGNALS',sig.length,'RISK_PRIORITY',risk.length,'Q2',ui.q2);
+              if(build!==expectedBuild)errors.push(`${client}: build=${build}`);
+              if(!ui.panel)errors.push(`${client}: Risk Priority panel missing`);
+              if(ui.q2!=='Рисков приоритет'&&ui.q2!=='Risk priority')errors.push(`${client}: q2=${ui.q2}`);
+              if(JSON.stringify(sig)!==JSON.stringify(risk)){
+                const onlySignals=sig.filter(x=>!risk.includes(x));
+                const onlyRisk=risk.filter(x=>!sig.includes(x));
+                errors.push(`${client}: signal mismatch; onlySignals=${JSON.stringify(onlySignals)} onlyRisk=${JSON.stringify(onlyRisk)}`);
+              }
+              await ctx.close();
+            }
+            await browser.close();
+            if(errors.length){errors.forEach(e=>console.error('ERROR',e));process.exit(1)}
+            console.log('RISK_PRIORITY_SIGNAL_SYNC 7/7 OK');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/risk-priority.cjs
