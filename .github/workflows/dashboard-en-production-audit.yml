@@ -50,23 +50,26 @@ jobs:
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             const report={origin,generatedAt:new Date().toISOString(),summary:{},pages:[],globalPhrases:{}};
             for(const route of routes){
-              const routePhrases=new Map();let occurrences=0;
-              for(const client of clients){
+              const routeResults=await Promise.all(clients.map(async client=>{
                 const page=await browser.newPage({viewport:{width:1600,height:1400}});
                 const url=`${origin}/dashboard.html?client=${encodeURIComponent(client)}&page=${encodeURIComponent(route)}&lang=en`;
                 const errors=[];let rows=[];let meta={};
                 try{
                   await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-                  await page.waitForTimeout(3200);
+                  await page.waitForTimeout(3000);
                   await page.evaluate(()=>window.BLISI18N?.apply?.(document));
-                  await page.waitForTimeout(1100);
+                  await page.waitForTimeout(900);
                   const s=await scan(page);meta={lang:s.lang,residualHint:s.residualHint,switchText:s.switchText};
                   rows=s.rows.filter(r=>r.text&&/[А-Яа-яЁёЀ-ӿ]/.test(r.text)&&![/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i].some(x=>x.test(r.text)));
                 }catch(e){errors.push(e.message)}
-                const uniq=[];const seen=new Set();
-                for(const r of rows){const k=r.kind+'\0'+r.text;if(!seen.has(k)){seen.add(k);uniq.push(r)}occurrences++;if(!routePhrases.has(k))routePhrases.set(k,{kind:r.kind,text:r.text,count:0,clients:[]});const x=routePhrases.get(k);x.count++;if(!x.clients.includes(client))x.clients.push(client);const g=report.globalPhrases[k]||(report.globalPhrases[k]={kind:r.kind,text:r.text,count:0,routes:[],clients:[]});g.count++;if(!g.routes.includes(route))g.routes.push(route);if(!g.clients.includes(client))g.clients.push(client)}
-                report.pages.push({route,client,url,unique:uniq.length,occurrences:rows.length,meta,errors,phrases:uniq});
                 await page.close();
+                return {route,client,url,errors,rows,meta};
+              }));
+              const routePhrases=new Map();let occurrences=0;
+              for(const rr of routeResults){
+                const uniq=[];const seen=new Set();
+                for(const r of rr.rows){const k=r.kind+'\0'+r.text;if(!seen.has(k)){seen.add(k);uniq.push(r)}occurrences++;if(!routePhrases.has(k))routePhrases.set(k,{kind:r.kind,text:r.text,count:0,clients:[]});const x=routePhrases.get(k);x.count++;if(!x.clients.includes(rr.client))x.clients.push(rr.client);const g=report.globalPhrases[k]||(report.globalPhrases[k]={kind:r.kind,text:r.text,count:0,routes:[],clients:[]});g.count++;if(!g.routes.includes(route))g.routes.push(route);if(!g.clients.includes(rr.client))g.clients.push(rr.client)}
+                report.pages.push({route,client:rr.client,url:rr.url,unique:uniq.length,occurrences:rr.rows.length,meta:rr.meta,errors:rr.errors,phrases:uniq});
               }
               report.summary[route]={unique:routePhrases.size,occurrences,phrases:[...routePhrases.values()].sort((a,b)=>b.count-a.count||a.text.localeCompare(b.text,'bg'))};
             }
