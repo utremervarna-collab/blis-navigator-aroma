@@ -1,9 +1,9 @@
-/* BLIS Navigator — production entrypoint v35.
-   Local-first real client branding + Overview marker locked to curve + canonical visual owners. */
+/* BLIS Navigator — production entrypoint v36.
+   Hardened local-first real client branding + Overview marker locked to curve + canonical visual owners. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V35)return;window.__BLIS_PRODUCTION_ENTRY_V35=true;
-const VERSION='20260830-client-branding-local-4';
+if(window.__BLIS_PRODUCTION_ENTRY_V36)return;window.__BLIS_PRODUCTION_ENTRY_V36=true;
+const VERSION='20260830-client-branding-local-5';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -30,7 +30,7 @@ async function boot(){
  await safe('/navigator-no-page-numbers-v1.js');
  await safe('/navigator-language-cleanup-v1.js');
  window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
- document.documentElement.dataset.navigatorUi='client-branding-local-4';
+ document.documentElement.dataset.navigatorUi='client-branding-local-5';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
  setTimeout(()=>{window.BLISClientBrandingV3?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.()},100);
 }
