@@ -5,9 +5,7 @@ No generated marks, initials or favicon substitutes are created.
 from __future__ import annotations
 
 import json
-import mimetypes
 import re
-import shutil
 import sys
 from html.parser import HTMLParser
 from pathlib import Path
@@ -18,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "static" / "client-logos"
 OUT.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 BLIS-Navigator-LogoSync/1.0"
+UA = "Mozilla/5.0 BLIS-Navigator-LogoSync/1.1"
 
 BRANDS = {
     "aroma": {
@@ -35,11 +33,13 @@ BRANDS = {
         "home": "https://astorgardenhotel.com/",
         "tokens": ["astor", "garden"],
         "fallbacks": [],
+        "require_logo_hint": True,
     },
     "varna-towers": {
         "home": "https://www.varnatowers.bg/",
         "tokens": ["varna", "tower", "towers"],
         "fallbacks": [],
+        "require_logo_hint": True,
     },
     "mollox": {
         "home": "https://mollox.bg/",
@@ -53,6 +53,7 @@ BRANDS = {
             "https://everbet.bg/assets/icons/logo-left-column-light.svg",
             "https://everbet.bg/assets/icons/logo-left-column-dark.svg",
         ],
+        "require_logo_hint": True,
     },
 }
 
@@ -89,6 +90,7 @@ def score_img(img: dict[str, str], tokens: list[str]) -> int:
     if "logo" in src: score += 120
     if "logo" in cls: score += 90
     if "brand" in cls: score += 25
+    if "logo" in alt: score += 100
     if any(t in alt for t in tokens): score += 80
     if any(t in src for t in tokens): score += 45
     if all(t in hay for t in tokens[:2]): score += 20
@@ -96,7 +98,14 @@ def score_img(img: dict[str, str], tokens: list[str]) -> int:
     return score
 
 
-def discover(home: str, tokens: list[str]) -> list[str]:
+def has_logo_hint(img: dict[str, str]) -> bool:
+    hay = " ".join([
+        img.get("src", ""), img.get("alt", ""), img.get("class", ""), img.get("id", "")
+    ]).lower()
+    return "logo" in hay or "brand" in hay
+
+
+def discover(home: str, tokens: list[str], require_logo_hint: bool = False) -> list[str]:
     try:
         body, _ = fetch(home)
         text = body.decode("utf-8", "ignore")
@@ -110,11 +119,13 @@ def discover(home: str, tokens: list[str]) -> list[str]:
     for img in ranked:
         if score_img(img, tokens) < 45:
             continue
+        if require_logo_hint and not has_logo_hint(img):
+            continue
         u = urljoin(home, img["src"])
         if u.startswith("http") and u not in out:
             out.append(u)
-    # Also discover SVG/CSS logo URLs appearing directly in markup.
-    for m in re.findall(r"(?:src|href)=[\"']([^\"']*(?:logo|brand)[^\"']*\.(?:svg|png|webp|jpe?g))", text, flags=re.I):
+    # Explicit logo/brand URLs in page markup are safe candidates even in strict mode.
+    for m in re.findall(r"(?:src|href)=[\"']([^\"']*(?:logo|brand)[^\"']*\.(?:svg|png|webp|jpe?g)(?:\?[^\"']*)?)", text, flags=re.I):
         u = urljoin(home, m)
         if u.startswith("http") and u not in out:
             out.append(u)
@@ -155,18 +166,21 @@ def valid_image(data: bytes, ext: str) -> bool:
 
 
 def sync_brand(slug: str, cfg: dict) -> dict | None:
-    candidates = discover(cfg["home"], cfg["tokens"]) + list(cfg.get("fallbacks", []))
+    strict = bool(cfg.get("require_logo_hint"))
+    candidates = discover(cfg["home"], cfg["tokens"], strict) + list(cfg.get("fallbacks", []))
     seen = set()
     for url in candidates:
         if url in seen:
             continue
         seen.add(url)
+        if strict and not re.search(r"(?:logo|brand)", url, flags=re.I):
+            # Strict brands are only accepted from explicitly named logo/brand assets.
+            continue
         try:
             data, ctype = fetch(url)
             ext = ext_for(url, ctype, data)
             if not valid_image(data, ext):
                 continue
-            # Remove previous versions for this slug only after a valid replacement exists.
             for old in OUT.glob(slug + ".*"):
                 if old.name != "manifest.json":
                     old.unlink(missing_ok=True)
@@ -181,7 +195,7 @@ def sync_brand(slug: str, cfg: dict) -> dict | None:
 
 
 def main() -> int:
-    manifest = {"version": 1, "logos": {}}
+    manifest = {"version": 2, "logos": {}}
     for slug, cfg in BRANDS.items():
         item = sync_brand(slug, cfg)
         if item:
