@@ -1,0 +1,46 @@
+package main
+
+import (
+	"bytes"
+	"net/http"
+	"strings"
+)
+
+var blisI18NScripts = []byte(`<script src="/blis-i18n-en-v1.js?v=20260830-en1" data-blis-i18n-catalog="en"></script><script src="/blis-i18n-v1.js?v=20260830-en1" data-blis-i18n-runtime="1"></script>`)
+
+// injectBLISI18N adds the single presentation-language layer to HTML served by
+// the existing Navigator. It does not own routing or analytical rendering.
+func injectBLISI18N(body []byte) []byte {
+	if len(body) == 0 || bytes.Contains(body, []byte(`data-blis-i18n-runtime="1"`)) {
+		return body
+	}
+	if i := bytes.Index(bytes.ToLower(body), []byte("</head>")); i >= 0 {
+		out := make([]byte, 0, len(body)+len(blisI18NScripts))
+		out = append(out, body[:i]...)
+		out = append(out, blisI18NScripts...)
+		out = append(out, body[i:]...)
+		return out
+	}
+	if i := bytes.Index(bytes.ToLower(body), []byte("</body>")); i >= 0 {
+		out := make([]byte, 0, len(body)+len(blisI18NScripts))
+		out = append(out, body[:i]...)
+		out = append(out, blisI18NScripts...)
+		out = append(out, body[i:]...)
+		return out
+	}
+	return append(body, blisI18NScripts...)
+}
+
+func blisEnglishRequest(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("lang")), "en")
+}
+
+func blisLocalized(r *http.Request, bg, en string) string {
+	if blisEnglishRequest(r) {
+		return en
+	}
+	return bg
+}
