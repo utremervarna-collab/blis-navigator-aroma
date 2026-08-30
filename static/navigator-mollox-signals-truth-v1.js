@@ -1,14 +1,16 @@
-/* BLIS Navigator — MOLLOX signal truth guard v1.
-   MOLLOX baseline/profile facts are evidence, not current signals.
-   This layer removes static client facts and owned static web pages from
-   executive signal consumers while preserving real news, social, external,
-   competitor and measured-change events. */
+/* BLIS Navigator — MOLLOX signal truth guard v2.
+   Baseline/profile facts are evidence, not current signals.
+   Owned static web pages are source evidence, not events.
+   Current Important Signals must also fall inside the selected 30/60/90-day period.
+   Historical rows remain in storage for historical analysis. */
 (function(){
 'use strict';
-if(window.__BLIS_MOLLOX_SIGNALS_TRUTH_V1)return;
+if(window.__BLIS_MOLLOX_SIGNALS_TRUTH_V2)return;
+window.__BLIS_MOLLOX_SIGNALS_TRUTH_V2=true;
 window.__BLIS_MOLLOX_SIGNALS_TRUTH_V1=true;
 
 const A=x=>Array.isArray(x)?x:[];
+const DAY=86400000;
 const slug=()=>String(
   document.body?.dataset?.client ||
   window.D?.client ||
@@ -22,6 +24,44 @@ const baselineTitles=new Set([
   'регионална дистрибуция'
 ]);
 
+function periodDays(){
+  const live=Number(window.BLISPeriod?.days);
+  if(Number.isFinite(live)&&live>0)return live;
+  try{
+    const stored=Number(localStorage.getItem('blis_period_days'));
+    if(Number.isFinite(stored)&&stored>0)return stored;
+  }catch(_){}
+  return 30;
+}
+
+function parseTime(v){
+  if(v==null||v==='')return null;
+  const t=new Date(v).getTime();
+  return Number.isFinite(t)&&t>0?t:null;
+}
+
+// For published material, publication time is authoritative. A 2020 article
+// rediscovered today is historical evidence, not a current signal.
+function eventTime(s){
+  if(!s||typeof s!=='object')return null;
+  const published=parseTime(s.published_at||s.publishedAt||s.pub_date||s.pubDate);
+  if(published!=null)return published;
+  return parseTime(
+    s.detected_at||s.detectedAt||s.created_at||s.createdAt||
+    s.observed_at||s.observedAt||s.timestamp||s.datetime||s.date||
+    s.updated_at||s.updatedAt
+  );
+}
+
+function isOutsideCurrentPeriod(s){
+  const t=eventTime(s);
+  if(t==null)return false; // undated measured/legacy events are handled by other truth rules.
+  const days=periodDays();
+  const cutoff=Date.now()-(days*DAY);
+  // Small clock/date parsing tolerance; never enough to admit genuinely old material.
+  return t < cutoff-(6*60*60*1000);
+}
+
 function isMolloxBaselineSignal(s){
   if(!s||typeof s!=='object')return false;
   const title=String(s.title||s.text||'').trim().toLowerCase();
@@ -32,15 +72,19 @@ function isMolloxBaselineSignal(s){
 
   // Legacy dashboard signals were anonymous client facts without event time or URL.
   const id=String(s.id||'');
-  const hasEventTime=Boolean(s.published_at||s.detected_at||s.created_at||s.observed_at||s.timestamp||s.date);
+  const hasEventTime=eventTime(s)!=null;
   const hasURL=/^https?:\/\//i.test(String(s.url||''));
   if(id.startsWith('client-signal-')&&!hasEventTime&&!hasURL)return true;
   return false;
 }
 
+function isCurrentMolloxSignal(s){
+  return !isMolloxBaselineSignal(s) && !isOutsideCurrentPeriod(s);
+}
+
 function filterRows(rows){
   if(slug()!=='mollox')return A(rows);
-  return A(rows).filter(s=>!isMolloxBaselineSignal(s));
+  return A(rows).filter(isCurrentMolloxSignal);
 }
 
 function cleanClientPayload(){
@@ -53,13 +97,25 @@ function cleanClientPayload(){
 function wrapMethod(stream,name){
   if(!stream||typeof stream[name]!=='function')return false;
   const current=stream[name];
-  if(current.__molloxTruthV1)return false;
-  const base=current.bind(stream);
+  if(current.__molloxTruthV2)return false;
+  // If v1 already wrapped the method, preserve its original base where available,
+  // then apply the stricter v2 truth filter once.
+  const raw=current.__molloxTruthBase||current;
+  const base=raw.bind(stream);
   const wrapped=function(){return filterRows(base(...arguments))};
   wrapped.__molloxTruthV1=true;
-  wrapped.__molloxTruthBase=current;
+  wrapped.__molloxTruthV2=true;
+  wrapped.__molloxTruthBase=raw;
   stream[name]=wrapped;
   return true;
+}
+
+function rerenderSignals(){
+  if(slug()!=='mollox')return;
+  const active=document.querySelector('.page.active')?.id||'';
+  if(active==='social'){
+    try{window.BLISSignalsSystemV3?.render?.()}catch(_){}
+  }
 }
 
 function patch(){
@@ -68,9 +124,7 @@ function patch(){
   if(!stream)return false;
   const a=wrapMethod(stream,'getUsefulSignals');
   const b=wrapMethod(stream,'getExecutiveSignals');
-  if((a||b)&&slug()==='mollox'&&document.querySelector('.page.active')?.id==='social'){
-    setTimeout(()=>{try{window.BLISSignalsSystemV3?.render?.()}catch(_){}},0);
-  }
+  if(a||b)setTimeout(rerenderSignals,0);
   return a||b;
 }
 
@@ -81,10 +135,25 @@ const timer=setInterval(()=>{
   if(ticks>240)clearInterval(timer);
 },100);
 
-for(const ev of ['blis:clientdata','blis:intelligence','blis:executive-data','blis:routechange','blis:navigator-route','popstate']){
-  window.addEventListener(ev,()=>{setTimeout(patch,0);setTimeout(patch,80);setTimeout(patch,240)});
+for(const ev of [
+  'blis:clientdata','blis:intelligence','blis:executive-data',
+  'blis:routechange','blis:navigator-route','blis:periodchange','popstate'
+]){
+  window.addEventListener(ev,()=>{
+    setTimeout(()=>{patch();rerenderSignals()},0);
+    setTimeout(()=>{patch();rerenderSignals()},80);
+    setTimeout(()=>{patch();rerenderSignals()},240);
+  });
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch,{once:true});else patch();
 
-window.BLISMolloxSignalTruthV1={filter:filterRows,isBaseline:isMolloxBaselineSignal,patch};
+window.BLISMolloxSignalTruthV1=window.BLISMolloxSignalTruthV2={
+  filter:filterRows,
+  isBaseline:isMolloxBaselineSignal,
+  isOutsidePeriod:isOutsideCurrentPeriod,
+  isCurrent:isCurrentMolloxSignal,
+  eventTime,
+  periodDays,
+  patch
+};
 })();
