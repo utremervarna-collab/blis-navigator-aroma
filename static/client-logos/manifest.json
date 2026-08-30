@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "logos": {
+    "aroma": {
+      "path": "/client-logos/aroma.svg",
+      "source": "https://aroma.bg/cdn/shop/files/logo-aroma-dark.svg?v=1767860435&width=90"
+    },
+    "bolyarka": {
+      "path": "/client-logos/bolyarka.png",
+      "source": "http://boliarka.bg/wp-content/uploads/2019/02/logo_2019.png"
+    },
+    "astor-garden": {
+      "path": "/client-logos/astor-garden.jpg",
+      "source": "https://astorgardenhotel.com/media/image_card/images/0c76b7c13f23e1c31f0a6601cccfedb0e912517d.JPG"
+    },
+    "mollox": {
+      "path": "/client-logos/mollox.png",
+      "source": "https://mollox.bg/assets/img/logo-mollox.png"
+    }
+  }
+}
