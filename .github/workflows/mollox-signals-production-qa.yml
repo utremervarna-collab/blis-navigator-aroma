@@ -1,6 +1,12 @@
 name: MOLLOX Signals Production Truth QA
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/mollox-signals-production-qa.yml'
+      - 'static/navigator-mollox-signals-truth-v1.js'
+      - 'zzzzzzzz_mollox_signal_truth_runtime.go'
   workflow_dispatch:
 
 permissions:
