@@ -1,9 +1,9 @@
-/* BLIS Navigator — production entrypoint v30.
-   Client-profile Overview + exact marker geometry + canonical visual owners + unified client-facing language. */
+/* BLIS Navigator — production entrypoint v31.
+   Client-profile Overview + marker locked to curve + canonical visual owners + unified client-facing language. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V30)return;window.__BLIS_PRODUCTION_ENTRY_V30=true;
-const VERSION='20260830-overview-marker-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V31)return;window.__BLIS_PRODUCTION_ENTRY_V31=true;
+const VERSION='20260830-overview-marker-lock-2';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -30,7 +30,7 @@ async function boot(){
  await safe('/navigator-no-page-numbers-v1.js');
  await safe('/navigator-language-cleanup-v1.js');
  window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
- document.documentElement.dataset.navigatorUi='overview-marker-1';
+ document.documentElement.dataset.navigatorUi='overview-marker-lock-2';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
  setTimeout(()=>{window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.()},100);
 }
