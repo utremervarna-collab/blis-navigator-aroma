@@ -24,11 +24,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build and start Navigator
+      - name: Build and start Navigator through production gateway
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
-          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app > /tmp/blis-smoke-server.log 2>&1 &
+          PORT=10000 ./app > /tmp/blis-smoke-server.log 2>&1 &
           echo $! > /tmp/blis-smoke.pid
           for i in $(seq 1 40); do
             if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
