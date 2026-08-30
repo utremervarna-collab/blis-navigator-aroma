@@ -23,73 +23,32 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
-      - name: Audit live production dashboard after EN switch
+      - name: Require zero Bulgarian on live English Dashboard
         run: |
-          cat >/tmp/dashboard-en-production-audit.cjs <<'NODE'
+          cat >/tmp/live-dashboard-en-zero.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
-          const fs=require('fs');
           const origin='https://blis-navigator-aroma.onrender.com';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
           const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
-          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
-          const allowed=[/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i];
-          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
-          async function scan(page){return await page.evaluate(()=>{
-            const cyr=/[А-Яа-яЁёЀ-ӿ]/;
-            const norm=s=>(s||'').replace(/\s+/g,' ').trim();
-            const visible=el=>{try{if(!el||!el.getBoundingClientRect)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0}catch{return false}};
-            const out=[];
-            const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TEXTAREA'].includes(p.tagName)||!visible(p))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
-            while(w.nextNode()){const p=w.currentNode.parentElement;out.push({kind:'text',text:norm(w.currentNode.nodeValue),tag:p?.tagName||'',cls:p?.className?.toString?.().slice(0,180)||''});}
-            for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!visible(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v),tag:el.tagName,cls:el.className?.toString?.().slice(0,180)||''})}}
-            if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title),tag:'TITLE',cls:''});
-            const md=document.querySelector('meta[name="description"]')?.content;if(md&&cyr.test(md))out.push({kind:'meta-description',text:norm(md),tag:'META',cls:''});
+          async function scan(page){return page.evaluate(()=>{
+            const cyr=/[А-Яа-яЁёЀ-ӿ]/, norm=s=>(s||'').replace(/\s+/g,' ').trim();
+            const vis=el=>{try{const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0}catch{return false}};
+            const out=[];const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE','TEXTAREA'].includes(p.tagName)||!vis(p))return NodeFilter.FILTER_REJECT;const t=norm(n.nodeValue);return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});while(w.nextNode())out.push({kind:'text',text:norm(w.currentNode.nodeValue)});
+            for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt],input[value],button[value]')){if(!vis(el))continue;for(const a of ['title','aria-label','placeholder','alt','value']){const v=el.getAttribute(a);if(v&&cyr.test(v))out.push({kind:a,text:norm(v)})}}
+            if(document.title&&cyr.test(document.title))out.push({kind:'title',text:norm(document.title)});
             let stored='';try{stored=localStorage.getItem('blis.language.v1')||''}catch(_){}
-            return {lang:document.documentElement.lang,residualHint:document.documentElement.dataset.blisI18nResidual||'',switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',stored,href:location.href,rows:out};
+            return {lang:document.documentElement.lang,switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',stored,rows:out};
           })}
           (async()=>{
-            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-            const report={origin,generatedAt:new Date().toISOString(),scenario:'persisted EN switch',summary:{},pages:[],globalPhrases:{}};
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});let total=0;const unique=new Map();const errors=[];
             for(const route of routes){
-              const routeResults=await Promise.all(clients.map(async client=>{
-                const context=await browser.newContext({viewport:{width:1600,height:1400}});
-                await context.addInitScript(()=>{try{localStorage.setItem('blis.language.v1','en')}catch(_){}});
-                const page=await context.newPage();
-                const url=`${origin}/dashboard.html?client=${encodeURIComponent(client)}&page=${encodeURIComponent(route)}&lang=en`;
-                const errors=[];let rows=[];let meta={};
-                try{
-                  await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-                  await page.waitForTimeout(3200);
-                  await page.evaluate(()=>window.BLISI18N?.apply?.(document));
-                  await page.waitForTimeout(1000);
-                  const s=await scan(page);meta={lang:s.lang,residualHint:s.residualHint,switchText:s.switchText,stored:s.stored,href:s.href};
-                  rows=s.rows.filter(r=>r.text&&/[А-Яа-яЁёЀ-ӿ]/.test(r.text)&&![/^Болярка$/i,/^БОЛЯРКА$/,/^Болярка Светло$/i].some(x=>x.test(r.text)));
-                }catch(e){errors.push(e.message)}
-                await context.close();
-                return {route,client,url,errors,rows,meta};
+              const results=await Promise.all(clients.map(async client=>{
+                const context=await browser.newContext({viewport:{width:1600,height:1400}});await context.addInitScript(()=>localStorage.setItem('blis.language.v1','en'));const p=await context.newPage();
+                try{await p.goto(`${origin}/dashboard.html?client=${client}&page=${route}&lang=en`,{waitUntil:'domcontentloaded',timeout:30000});await p.waitForTimeout(3600);await p.evaluate(()=>window.BLISI18N?.apply?.(document));await p.waitForTimeout(1400);return {client,route,s:await scan(p)};}catch(e){return {client,route,error:e.message}}finally{await context.close()}
               }));
-              const routePhrases=new Map();let occurrences=0;
-              for(const rr of routeResults){
-                const uniq=[];const seen=new Set();
-                for(const r of rr.rows){const k=r.kind+'\0'+r.text;if(!seen.has(k)){seen.add(k);uniq.push(r)}occurrences++;if(!routePhrases.has(k))routePhrases.set(k,{kind:r.kind,text:r.text,count:0,clients:[]});const x=routePhrases.get(k);x.count++;if(!x.clients.includes(rr.client))x.clients.push(rr.client);const g=report.globalPhrases[k]||(report.globalPhrases[k]={kind:r.kind,text:r.text,count:0,routes:[],clients:[]});g.count++;if(!g.routes.includes(route))g.routes.push(route);if(!g.clients.includes(rr.client))g.clients.push(rr.client)}
-                report.pages.push({route,client:rr.client,url:rr.url,unique:uniq.length,occurrences:rr.rows.length,meta:rr.meta,errors:rr.errors,phrases:uniq});
-              }
-              report.summary[route]={unique:routePhrases.size,occurrences,phrases:[...routePhrases.values()].sort((a,b)=>b.count-a.count||a.text.localeCompare(b.text,'bg'))};
+              for(const r of results){if(r.error){errors.push(`${r.client}:${r.route}: ${r.error}`);continue}if(r.s.lang!=='en')errors.push(`${r.client}:${r.route}: lang=${r.s.lang}`);if(r.s.stored!=='en')errors.push(`${r.client}:${r.route}: stored=${r.s.stored}`);if(r.s.switchText!=='BG')errors.push(`${r.client}:${r.route}: switch=${r.s.switchText}`);for(const row of r.s.rows){total++;const k=row.kind+'\0'+row.text;if(!unique.has(k))unique.set(k,{...row,where:[]});const x=unique.get(k);if(x.where.length<8)x.where.push(`${r.client}:${r.route}`)}}
             }
-            report.globalPhrases=Object.values(report.globalPhrases).sort((a,b)=>b.count-a.count||a.text.localeCompare(b.text,'bg'));
-            report.totalUnique=report.globalPhrases.length;
-            report.totalOccurrences=report.globalPhrases.reduce((s,x)=>s+x.count,0);
-            fs.writeFileSync('dashboard-en-production-audit.json',JSON.stringify(report,null,2));
-            console.log('TOTAL',report.totalUnique,report.totalOccurrences);
-            for(const route of routes){const s=report.summary[route];console.log(`ROUTE ${route}: unique=${s.unique} occurrences=${s.occurrences}`);for(const p of s.phrases.slice(0,80))console.log(' ',p.count,p.kind,'|',p.text,'|',p.clients.join(','));}
-            console.log('META SAMPLE',JSON.stringify(report.pages.slice(0,3).map(x=>x.meta)));
-            await browser.close();
+            await browser.close();console.log('LIVE_RESIDUAL',unique.size,total);for(const x of unique.values())console.log(x.kind,'|',x.text,'|',x.where.join(','));errors.forEach(x=>console.log('ERROR',x));if(unique.size||errors.length)process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-          node /tmp/dashboard-en-production-audit.cjs
-      - name: Upload audit report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dashboard-en-production-audit
-          path: dashboard-en-production-audit.json
-          retention-days: 2
+          node /tmp/live-dashboard-en-zero.cjs
