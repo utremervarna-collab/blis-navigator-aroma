@@ -1,0 +1,33 @@
+name: Sync Client Logos
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'scripts/sync_client_logos.py'
+      - '.github/workflows/sync-client-logos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download real brand assets
+        run: python3 scripts/sync_client_logos.py
+      - name: Commit local logo bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add static/client-logos
+          if git diff --cached --quiet; then
+            echo "No logo asset changes"
+            exit 0
+          fi
+          git commit -m "Sync local client brand logos"
+          git push
