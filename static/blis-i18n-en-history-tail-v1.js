@@ -21,7 +21,13 @@ const T={
 'Значими промени':'Significant changes',
 'Подобрения':'Improvements',
 'Влошавания':'Deteriorations',
-'Исторически snapshots':'Historical snapshots'
+'Исторически snapshots':'Historical snapshots',
+'Болярка ВТ АД':'Bolyarka VT AD',
+'Пивоварна компания':'Brewery company',
+'Стабилна позиция':'Stable position',
+'Client profile · MOLLOX България':'Client profile · MOLLOX Bulgaria',
+'Стабилни измерени показатели':'Stable measured indicators',
+'Няма значима измерена промяна между последните две наблюдения.':'There is no significant measured change between the last two observations.'
 };
 window.BLIS_EN_TRANSLATIONS=Object.assign({},window.BLIS_EN_TRANSLATIONS||{},T);
 const R=[
@@ -29,7 +35,11 @@ const R=[
 [/^24 ч\. (\d+) · предходни (\d+) · (\d+) източника · avg risk ([\d.,]+) · confidence ([\d.,]+)$/,'24h $1 · previous $2 · $3 sources · avg risk $4 · confidence $5'],
 [/^Концентрация в топ източника ([\d.,]+)% · времева покриваемост ([\d.,]+)%\.$/,'Top-source concentration $1% · temporal coverage $2%.'],
 [/^([^:]+): измереният индекс\/score се подобрява \((.+)\)\.$/,'$1: measured index/score improves ($2).'],
-[/^([^:]+): измереният индекс\/score се влошава \((.+)\)\.$/,'$1: measured index/score deteriorates ($2).']
+[/^([^:]+): измереният индекс\/score се влошава \((.+)\)\.$/,'$1: measured index/score deteriorates ($2).'],
+[/^([^:]+): обемът на споменаванията се подобрява \((.+)\)\.$/,'$1: mention volume improves ($2).'],
+[/^([^:]+): обемът на споменаванията се влошава \((.+)\)\.$/,'$1: mention volume deteriorates ($2).'],
+[/^([^:]+): ([A-Za-z0-9_]+) се подобрява \((.+)\)\.$/,'$1: $2 improves ($3).'],
+[/^([^:]+): ([A-Za-z0-9_]+) се влошава \((.+)\)\.$/,'$1: $2 deteriorates ($3).']
 ];
 window.BLIS_EN_RULES=(window.BLIS_EN_RULES||[]).concat(R);
 })();
