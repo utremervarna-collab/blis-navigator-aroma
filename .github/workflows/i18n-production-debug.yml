@@ -1,0 +1,25 @@
+name: I18N Production Debug
+on:
+  push:
+    branches: [fix/dashboard-en-complete-20260830]
+    paths: [.github/workflows/i18n-production-debug.yml]
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - run: |
+          cat >/tmp/dbg.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          (async()=>{const b=await chromium.launch({headless:true,args:['--no-sandbox']});const c=await b.newContext({viewport:{width:1500,height:1200}});await c.addInitScript(()=>localStorage.setItem('blis.language.v1','en'));const p=await c.newPage();await p.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=aroma&page=overview&lang=en',{waitUntil:'domcontentloaded',timeout:30000});
+          for(const ms of [300,1200,3500,6500]){await p.waitForTimeout(ms-(global.last||0));global.last=ms;const x=await p.evaluate(()=>{const cyr=/[А-Яа-яЁёЀ-ӿ]/;const vis=el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};const vals=[];const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);while(w.nextNode()){const n=w.currentNode,p=n.parentElement,t=(n.nodeValue||'').replace(/\s+/g,' ').trim();if(t&&cyr.test(t)&&p&&vis(p))vals.push(t)}return {lang:document.documentElement.lang,switchText:document.querySelector('[data-blis-language-switch]')?.textContent||'',scripts:[...document.scripts].map(s=>s.src).filter(x=>x.includes('blis-i18n')),catalogSize:Object.keys(window.BLIS_EN_TRANSLATIONS||{}).length,hasProfile:(window.BLIS_EN_TRANSLATIONS||{})['Клиентски профил'],hasCosmetics:(window.BLIS_EN_TRANSLATIONS||{})['Козметика'],tProfile:window.BLISI18N?.t?.('Клиентски профил'),residual:[...new Set(vals)].slice(0,30)}});console.log('AT',ms,JSON.stringify(x));await p.evaluate(()=>window.BLISI18N?.apply?.(document));}
+          await p.waitForTimeout(1000);console.log('FINAL',JSON.stringify(await p.evaluate(()=>({profile:[...document.querySelectorAll('*')].find(e=>e.textContent?.trim()==='Клиентски профил')?.outerHTML||'',residual:window.BLISI18N?.scanBulgarian?.()||[]}))));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/dbg.cjs
