@@ -5,6 +5,7 @@ on:
     branches: [ feature/full-english-i18n-20260830 ]
     paths:
       - 'scripts/apply_i18n_go_patch.py'
+      - 'scripts/make_i18n_catalog_mutable.py'
       - 'i18n_runtime.go'
       - 'i18n_reports.go'
       - 'static/blis-i18n-v1.js'
@@ -25,6 +26,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
+      - name: Make canonical English catalog extensible
+        run: python3 scripts/make_i18n_catalog_mutable.py
       - name: Apply central i18n integration
         run: python3 scripts/apply_i18n_go_patch.py
       - name: Format and build
@@ -36,10 +39,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add main.go auth_proxy.go i18n_runtime.go i18n_reports.go
+          git add main.go auth_proxy.go i18n_runtime.go i18n_reports.go static/blis-i18n-en-v1.js
           if git diff --cached --quiet; then
-            echo "i18n Go integration already applied"
+            echo "i18n integration already applied"
             exit 0
           fi
-          git commit -m "Integrate English runtime across production surfaces"
+          git commit -m "Integrate mutable English catalog across production surfaces"
           git push
