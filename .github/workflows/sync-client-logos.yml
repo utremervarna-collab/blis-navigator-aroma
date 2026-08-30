@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'scripts/sync_client_logos.py'
+      - 'scripts/sync_inline_client_logos.py'
       - '.github/workflows/sync-client-logos.yml'
   workflow_dispatch:
 
@@ -20,6 +21,8 @@ jobs:
           fetch-depth: 0
       - name: Download real brand assets
         run: python3 scripts/sync_client_logos.py
+      - name: Recover official inline brand SVGs
+        run: python3 scripts/sync_inline_client_logos.py
       - name: Reject app icons and library artwork
         run: |
           python3 - <<'PY'
