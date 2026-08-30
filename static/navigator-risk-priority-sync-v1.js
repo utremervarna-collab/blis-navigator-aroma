@@ -1,9 +1,10 @@
-/* BLIS Navigator — Risk Priority sync v1.
+/* BLIS Navigator — Risk Priority sync v2.
    Uses the exact same canonical signal stream as Important Signals.
+   High-utility signals are prioritized; valid current lower-utility signals remain visible as watch items.
    No copied signal dataset: Risk Priority is a client-impact view over the same objects. */
 (function(){
 'use strict';
-if(window.__BLIS_RISK_PRIORITY_SYNC_V1)return;window.__BLIS_RISK_PRIORITY_SYNC_V1=true;
+if(window.__BLIS_RISK_PRIORITY_SYNC_V2)return;window.__BLIS_RISK_PRIORITY_SYNC_V2=true;window.__BLIS_RISK_PRIORITY_SYNC_V1=true;
 
 const A=v=>Array.isArray(v)?v:[];
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -12,12 +13,24 @@ const en=()=>String(window.BLIS_LANGUAGE||document.documentElement.lang||'').toL
 const L=(bg,enText)=>en()?enText:bg;
 const translated=s=>{s=String(s??'');if(!en())return s;try{return window.BLISI18N?.t?.(s)||s}catch(_){return s}};
 
+function truthFilter(rows){
+  const list=A(rows).filter(Boolean);
+  try{
+    const truth=window.BLISMolloxSignalTruthV3||window.BLISMolloxSignalTruthV2||window.BLISMolloxSignalTruthV1;
+    if(String(document.body?.dataset?.client||window.D?.client||'').toLowerCase()==='mollox'&&typeof truth?.filter==='function')return A(truth.filter(list)).filter(Boolean);
+  }catch(_){}
+  return list;
+}
 function canonicalSignals(){
   try{
-    const rows=window.BLISIntelligenceStreamV3?.getUsefulSignals?.();
-    if(Array.isArray(rows)&&rows.length)return rows.filter(Boolean).slice(0,18);
+    const useful=truthFilter(window.BLISIntelligenceStreamV3?.getUsefulSignals?.());
+    if(useful.length)return useful.slice(0,18);
   }catch(_){ }
-  return A(window.D?.signals).filter(Boolean).slice(0,18);
+  try{
+    const current=truthFilter(window.BLISIntelligenceStreamV3?.getSignals?.());
+    if(current.length)return current.slice(0,18);
+  }catch(_){ }
+  return truthFilter(window.D?.signals).slice(0,18);
 }
 function kind(s){
   const explicit=String(s?.client_perspective_kind||s?.kind||'').toLowerCase();
@@ -87,7 +100,7 @@ function render(){
   const section=document.createElement('section');section.className='sv2-card blis-risk-priority';section.dataset.blisRiskPriority='1';
   const sorted=rows.map((s,i)=>({s,i})).sort((a,b)=>rank(b.s)-rank(a.s)||a.i-b.i);
   const items=sorted.map(({s})=>{const k=kind(s),b=badge(k),u=utility(s),m=meta(s);return`<button type="button" class="blis-risk-priority-item ${b.cls}" data-risk-priority-signal="${E(title(s))}"><span class="rp-top"><span class="rp-tag">${E(b.text)}</span><span class="rp-score">${u?Math.round(u)+'/100':'—'}</span></span><strong>${E(translated(title(s)))}</strong>${m?`<small>${E(translated(m))}</small>`:''}</button>`}).join('');
-  section.innerHTML=`<div class="blis-risk-priority-head"><div><span>${L('СЪЩИЯТ СИГНАЛЕН ПОТОК','SAME SIGNAL STREAM')}</span><b>${L('Рисков приоритет','Risk priority')}</b></div><p>${L('Същите потвърдени сигнали от „Важни сигнали“, подредени според ефекта им за клиента.','The same confirmed signals from Important Signals, ordered by their impact on the client.')}</p></div><div class="blis-risk-priority-list">${items||`<div class="sv2-answer">${L('Няма потвърдени сигнали за текущия период.','No confirmed signals for the current period.')}</div>`}</div>`;
+  section.innerHTML=`<div class="blis-risk-priority-head"><div><span>${L('СЪЩИЯТ СИГНАЛЕН ПОТОК','SAME SIGNAL STREAM')}</span><b>${L('Рисков приоритет','Risk priority')}</b></div><p>${L('Потвърдените сигнали от „Важни сигнали“, подредени според ефекта им за клиента. Когато няма сигнал над високия праг, валидните текущи наблюдения остават видими вместо модулът да изглежда празен.','Confirmed signals from Important Signals, ordered by client impact. When nothing clears the high-priority threshold, valid current observations remain visible instead of leaving the module empty.')}</p></div><div class="blis-risk-priority-list">${items||`<div class="sv2-answer">${L('Няма потвърдени текущи събития за избрания период.','No confirmed current events for the selected period.')}</div>`}</div>`;
   const cards=parent.querySelectorAll(':scope>section.sv2-card');const anchor=cards[cards.length-1];
   if(anchor)anchor.insertAdjacentElement('afterend',section);else parent.appendChild(section);
 }
@@ -96,5 +109,5 @@ css();
 for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','blis:periodchange','blis:intelligence','blis:client-perspective-ready'])window.addEventListener(ev,burst);
 document.addEventListener('click',e=>{const b=e.target.closest?.('[data-risk-priority-signal]');if(!b)return;const note=document.querySelector('#opportunitiesBody [data-router-risk-note],#opportunitiesBody [data-sv2-risknote]');if(note)note.textContent=b.dataset.riskPrioritySignal},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',burst,{once:true});else burst();
-window.BLISRiskPrioritySyncV1={render,signals:canonicalSignals};
+window.BLISRiskPrioritySyncV1=window.BLISRiskPrioritySyncV2={render,signals:canonicalSignals};
 })();

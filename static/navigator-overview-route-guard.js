@@ -1,8 +1,17 @@
-/* BLIS Navigator — keep the canonical client-aware Overview in control. */
+/* BLIS Navigator — keep the canonical client-aware Overview in control without hijacking other routes. */
 (function(){
   'use strict';
   if(window.__BLISOverviewRouteGuard)return;
   window.__BLISOverviewRouteGuard=true;
+
+  function requestedPage(){
+    try{return String(new URLSearchParams(location.search).get('page')||'').trim().toLowerCase()}catch(_){return''}
+  }
+
+  function shouldOwnCurrentRoute(){
+    const p=requestedPage();
+    return !p||p==='overview';
+  }
 
   function activate(){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -12,6 +21,7 @@
   }
 
   function canonicalOverview(){
+    if(!shouldOwnCurrentRoute())return false;
     activate();
     try{
       if(window.BLISOverviewMaster&&typeof window.BLISOverviewMaster.render==='function'){
@@ -48,5 +58,8 @@
 
   install();
   document.addEventListener('DOMContentLoaded',install,{once:true});
-  window.addEventListener('load',()=>{install();canonicalOverview()});
+  window.addEventListener('load',()=>{
+    install();
+    if(shouldOwnCurrentRoute())canonicalOverview();
+  });
 })();

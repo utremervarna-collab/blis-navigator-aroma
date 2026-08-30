@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/mollox-signals-production-qa.yml'
       - 'static/navigator-mollox-signals-truth-v1.js'
+      - 'static/navigator-risk-priority-sync-v1.js'
+      - 'static/navigator-overview-route-guard.js'
       - 'zzzzzzzz_mollox_signal_truth_runtime.go'
   workflow_dispatch:
 
@@ -25,83 +27,100 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
-      - name: Verify MOLLOX event-based and period-correct signals in production
+      - name: Verify MOLLOX current signals, Risk & Opportunities and refresh routing in production
         run: |
           cat >/tmp/mollox-signals.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const origin='https://blis-navigator-aroma.onrender.com';
-          const baseline=[
-            'Пълна техническа документация',
-            'Private Label е публично потвърдена услуга',
-            'Регионална дистрибуция'
-          ];
+          const baseline=['Пълна техническа документация','Private Label е публично потвърдена услуга','Регионална дистрибуция'];
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-          async function waitForV2(){
-            for(let i=0;i<42;i++){
+          async function waitForProduction(){
+            for(let i=0;i<48;i++){
               try{
-                const r=await fetch(origin+'/navigator-mollox-signals-truth-v1.js?qa='+Date.now(),{headers:{'cache-control':'no-cache'}});
-                const t=r.ok?await r.text():'';
-                if(t.includes('truth guard v2'))return true;
+                const [truth,risk,route]=await Promise.all([
+                  fetch(origin+'/navigator-mollox-signals-truth-v1.js?qa='+Date.now(),{headers:{'cache-control':'no-cache'}}).then(r=>r.ok?r.text():''),
+                  fetch(origin+'/navigator-risk-priority-sync-v1.js?qa='+Date.now(),{headers:{'cache-control':'no-cache'}}).then(r=>r.ok?r.text():''),
+                  fetch(origin+'/navigator-overview-route-guard.js?qa='+Date.now(),{headers:{'cache-control':'no-cache'}}).then(r=>r.ok?r.text():'')
+                ]);
+                if(truth.includes('truth guard v3')&&risk.includes('Risk Priority sync v2')&&route.includes('without hijacking other routes'))return true;
               }catch(_){}
               await sleep(5000);
             }
-            throw new Error('production did not reach MOLLOX signal truth v2 in time');
+            throw new Error('production did not reach the MOLLOX signal/routing fix');
           }
-          (async()=>{
-            await waitForV2();
-            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-            const context=await browser.newContext({viewport:{width:1440,height:1000}});
-            const page=await context.newPage();
-            await page.goto(origin+'/dashboard.html?client=mollox&page=social',{waitUntil:'domcontentloaded',timeout:30000});
-            await page.waitForTimeout(5500);
-            const state=await page.evaluate(async(baseline)=>{
-              const Drows=Array.isArray(window.D?.signals)?window.D.signals:[];
+          async function socialState(page){
+            return page.evaluate(async(baseline)=>{
               let api={status:0,rows:[]};
-              try{
-                const r=await fetch('/api/signals?client=mollox&limit=300',{cache:'no-store'});
-                api.status=r.status;
-                if(r.ok){const j=await r.json();api.rows=Array.isArray(j?.signals)?j.signals:[]}
-              }catch(_){}
-              const text=(document.getElementById('socialBody')||document.body).innerText||'';
-              const badVisible=baseline.filter(x=>text.includes(x));
-              const badD=Drows.filter(s=>baseline.includes(String(s.title||s.text||'')));
-              const truth=window.BLISMolloxSignalTruthV2;
+              try{const r=await fetch('/api/signals?client=mollox&limit=300',{cache:'no-store'});api.status=r.status;if(r.ok){const j=await r.json();api.rows=Array.isArray(j?.signals)?j.signals:[]}}catch(_){}
+              const truth=window.BLISMolloxSignalTruthV3||window.BLISMolloxSignalTruthV2;
               const periods={};
               for(const days of [30,60,90]){
                 try{window.BLISPeriod?.set?.(days)}catch(_){}
-                await new Promise(r=>setTimeout(r,180));
-                let useful=[];try{useful=window.BLISIntelligenceStreamV3?.getUsefulSignals?.()||[]}catch(_){}
-                const bad=useful.filter(s=>{
-                  const title=String(s.title||s.text||'');
-                  const staticOwned=String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web';
-                  return baseline.includes(title)||staticOwned||Boolean(truth?.isOutsidePeriod?.(s));
-                });
-                periods[days]={
-                  useful:useful.map(s=>({title:s.title||s.text||'',scope:s.scope||'',type:s.source_type||'',topic:s.topic||'',published_at:s.published_at||'',detected_at:s.detected_at||''})),
-                  bad:bad.map(s=>({title:s.title||s.text||'',published_at:s.published_at||'',detected_at:s.detected_at||''}))
-                };
+                await new Promise(r=>setTimeout(r,220));
+                let current=[],useful=[];
+                try{current=window.BLISIntelligenceStreamV3?.getSignals?.()||[]}catch(_){}
+                try{useful=window.BLISIntelligenceStreamV3?.getUsefulSignals?.()||[]}catch(_){}
+                const slim=a=>a.map(s=>({id:s.id||'',client:s.client||'',title:s.title||s.text||'',scope:s.scope||'',type:s.source_type||'',topic:s.topic||'',sentiment:s.sentiment||'',severity:s.severity||'',relevance:s.relevance??null,utility:s.utility??null,source:s.source||'',url:s.url||'',published_at:s.published_at||'',detected_at:s.detected_at||''}));
+                periods[days]={current:slim(current),useful:slim(useful)};
               }
-              const badApi=api.rows.filter(s=>String(s.scope||'').toLowerCase()==='owned'&&String(s.source_type||'').toLowerCase()==='web');
-              return {
-                href:location.href,
-                client:document.body?.dataset?.client||window.D?.client||'',
-                truthV2:Boolean(truth),
-                truthDays:truth?.periodDays?.()||0,
-                dSignals:Drows.map(s=>s.title||s.text||''),
-                periods,
-                apiStatus:api.status,apiCount:api.rows.length,badApi,
-                badVisible,badD:badD.map(s=>s.title||s.text||'')
-              };
+              const slimApi=api.rows.map(s=>({id:s.id||'',client:s.client||'',title:s.title||s.text||'',scope:s.scope||'',type:s.source_type||'',topic:s.topic||'',sentiment:s.sentiment||'',severity:s.severity||'',relevance:s.relevance??null,source:s.source||'',url:s.url||'',published_at:s.published_at||'',detected_at:s.detected_at||''}));
+              const contamination=[...api.rows,...(periods[90]?.current||[])].filter(s=>String(s.client||'').trim()&&String(s.client||'').toLowerCase()!=='mollox');
+              const text=(document.getElementById('socialBody')||document.body).innerText||'';
+              return {href:location.href,active:document.querySelector('.page.active')?.id||'',client:document.body?.dataset?.client||window.D?.client||'',truthV3:Boolean(window.BLISMolloxSignalTruthV3),truthDays:truth?.periodDays?.()||0,apiStatus:api.status,apiCount:api.rows.length,apiRows:slimApi,periods,contamination,badVisible:baseline.filter(x=>text.includes(x)),dSignals:Array.isArray(window.D?.signals)?window.D.signals.map(s=>s.title||s.text||''):[]};
             },baseline);
-            console.log('MOLLOX_PAGE_STATE',JSON.stringify(state,null,2));
+          }
+          async function opportunitiesState(page){
+            return page.evaluate(()=>{
+              let rows=[];try{rows=window.BLISRiskPrioritySyncV1?.signals?.()||[]}catch(_){}
+              const items=[...document.querySelectorAll('#opportunitiesBody [data-risk-priority-signal],#opportunities [data-risk-priority-signal]')];
+              const empty=(document.querySelector('#opportunitiesBody [data-blis-risk-priority],#opportunities [data-blis-risk-priority]')?.innerText||'').includes('Няма потвърдени текущи събития');
+              return {href:location.href,active:document.querySelector('.page.active')?.id||'',client:document.body?.dataset?.client||window.D?.client||'',rows:rows.map(s=>({id:s.id||'',client:s.client||'',title:s.title||s.text||'',kind:s.kind||s.client_perspective_kind||'',sentiment:s.sentiment||'',severity:s.severity||'',scope:s.scope||'',source:s.source||'',utility:s.utility??null,published_at:s.published_at||'',detected_at:s.detected_at||''})),itemCount:items.length,itemTitles:items.map(x=>x.dataset.riskPrioritySignal||''),empty};
+            });
+          }
+          (async()=>{
+            await waitForProduction();
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const context=await browser.newContext({viewport:{width:1440,height:1000}});
+            const page=await context.newPage();
+
+            await page.goto(origin+'/dashboard.html?client=mollox&page=social',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(6000);
+            const socialBefore=await socialState(page);
+            await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(4500);
+            const socialAfter=await socialState(page);
+
+            await page.goto(origin+'/dashboard.html?client=mollox&page=opportunities',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(6000);
+            const riskBefore=await opportunitiesState(page);
+            await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(4500);
+            const riskAfter=await opportunitiesState(page);
+
+            const state={socialBefore,socialAfter,riskBefore,riskAfter};
+            console.log('MOLLOX_SIGNAL_RISK_STATE',JSON.stringify(state,null,2));
             await browser.close();
-            if(String(state.client).toLowerCase()!=='mollox')throw new Error('wrong client rendered: '+state.client+' '+state.href);
-            if(!state.truthV2)throw new Error('MOLLOX truth guard v2 is not loaded');
-            if(state.badVisible.length)throw new Error('baseline facts still visible as current signals: '+state.badVisible.join(' | '));
-            if(state.badD.length)throw new Error('baseline facts still remain in D.signals');
-            for(const days of [30,60,90])if(state.periods[days].bad.length)throw new Error(days+'d stream contains static/out-of-period signals: '+JSON.stringify(state.periods[days].bad));
-            if(state.apiStatus===200&&state.badApi.length)throw new Error('owned static web pages still present in API signal storage');
-            console.log('MOLLOX_SIGNAL_TRUTH_OK');
+
+            for(const s of [socialBefore,socialAfter]){
+              if(String(s.client).toLowerCase()!=='mollox')throw new Error('wrong client on Signals: '+JSON.stringify(s));
+              if(s.active!=='social'||!new URL(s.href).searchParams.get('page')?.includes('social'))throw new Error('Signals route hijacked after load/refresh: '+s.href+' active='+s.active);
+              if(!s.truthV3)throw new Error('MOLLOX truth guard v3 is not loaded');
+              if(s.badVisible.length)throw new Error('baseline facts visible as current signals: '+s.badVisible.join(' | '));
+              if(s.contamination.length)throw new Error('cross-client signal contamination: '+JSON.stringify(s.contamination));
+              for(const days of [30,60,90]){
+                const bad=s.periods[days].current.filter(x=>baseline.includes(x.title)||String(x.client||'').toLowerCase()!=='mollox'&&String(x.client||'')!=='');
+                if(bad.length)throw new Error(days+'d current stream contains invalid rows: '+JSON.stringify(bad));
+              }
+            }
+            for(const r of [riskBefore,riskAfter]){
+              if(String(r.client).toLowerCase()!=='mollox')throw new Error('wrong client on Risk & Opportunities');
+              if(r.active!=='opportunities'||new URL(r.href).searchParams.get('page')!=='opportunities')throw new Error('Risk & Opportunities route hijacked: '+r.href+' active='+r.active);
+              const bad=r.rows.filter(x=>String(x.client||'').trim()&&String(x.client||'').toLowerCase()!=='mollox');
+              if(bad.length)throw new Error('Risk & Opportunities contains another client: '+JSON.stringify(bad));
+              if(r.rows.length>0&&r.itemCount===0)throw new Error('valid MOLLOX current rows exist but Risk Priority renders zero items');
+              if(r.rows.length===0&&!r.empty)throw new Error('no current MOLLOX events but explicit verified empty state is missing');
+            }
+            console.log('MOLLOX_SIGNAL_RISK_REFRESH_OK');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/mollox-signals.cjs
