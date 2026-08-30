@@ -19,6 +19,50 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Resolve Varna Towers official host safely
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          hosts = ['varnatowers.bg', 'www.varnatowers.bg']
+          rows = []
+          for host in hosts:
+              endpoints = [
+                  ('https://dns.google/resolve?' + urlencode({'name': host, 'type': 'A'}), {}),
+                  ('https://cloudflare-dns.com/dns-query?' + urlencode({'name': host, 'type': 'A'}), {'Accept': 'application/dns-json'}),
+              ]
+              ip = ''
+              for url, extra in endpoints:
+                  try:
+                      req = Request(url, headers={'User-Agent': 'Mozilla/5.0', **extra})
+                      with urlopen(req, timeout=12) as r:
+                          data = json.loads(r.read().decode('utf-8', 'ignore'))
+                      for answer in data.get('Answer', []) or []:
+                          if int(answer.get('type') or 0) == 1:
+                              candidate = str(answer.get('data') or '').strip()
+                              if candidate.count('.') == 3:
+                                  ip = candidate
+                                  break
+                      if ip:
+                          break
+                  except Exception as exc:
+                      print(f'DOH WARN {host}: {exc}')
+              if ip:
+                  rows.append(f'{ip} {host}')
+                  print(f'DOH OK {host}: {ip}')
+              else:
+                  print(f'DOH no A record for {host}')
+          Path('/tmp/varna-towers-hosts').write_text('\n'.join(rows) + ('\n' if rows else ''), encoding='utf-8')
+          PY
+          if [ -s /tmp/varna-towers-hosts ]; then
+            cat /tmp/varna-towers-hosts | sudo tee -a /etc/hosts >/dev/null
+            echo "Installed first-party Varna Towers host fallback"
+          else
+            echo "No DNS fallback installed; scanner will retain safe text-only fallback"
+          fi
       - name: Download real brand assets
         run: python3 scripts/sync_client_logos.py
       - name: Recover official inline brand SVGs
