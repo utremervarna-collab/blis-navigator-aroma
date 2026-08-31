@@ -58,7 +58,7 @@ jobs:
             market:'svg,.pm-map,.perception-map,[data-perception-map]',
             digital:'svg,.digital-radar,.radar,[data-digital-radar]',
             reputation:'.sv2-rep,.sv2-reputation,.rep47-chart,svg',
-            competition:'.cmpv11-matrix,.cmpv10-layout,.cmpv12-static-flow,.xv2-ladder,.vs-competition,.sv2-competition,[data-competition-visual]',
+            competition:'.vs-comp-core,.vs-comp-axis,.vs-comp-row,.cmpv11-matrix,.cmpv10-layout,.cmpv12-static-flow,[data-competition-visual]',
             opportunities:'.sv2-riskmap',
             history:'.xv2-timeline,.vs-history,.sv2-history,[data-history-visual]',
             reports:'.xv2-report,.vs-report,.report-wheel,[data-report-visual]'
