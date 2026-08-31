@@ -11,7 +11,7 @@ window.__BLIS_CLIENT_BRANDING_V5=true;
 
 const P={
   aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care',descBg:'Козметика, грижа за кожата и лична грижа',descEn:'Beauty, skincare & personal care solutions',mark:'A',accent:'#d73578',logo:'/client-logos/aroma.svg'},
-  bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',descBg:'Пивоварна индустрия, напитки и потребителско търсене',descEn:'Brewery, beverages & consumer demand intelligence',mark:'Б',accent:'#c88918',logo:'/client-logos/bolyarka.png'},
+  bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',descBg:'Пивоварна индустрия, напитки и потребителско търсене',descEn:'Brewery, beverages & consumer demand intelligence',mark:'B',accent:'#c88918',logo:'/client-logos/bolyarka.png'},
   'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',descBg:'Хотелиерство, гостоприемство и репутация',descEn:'Hospitality, guest experience & reputation intelligence',mark:'A',accent:'#17664f',logo:''},
   'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',descBg:'Недвижими имоти, локационна среда и проектна видимост',descEn:'Real estate, location perception & project visibility',mark:'V',accent:'#0f6278',logo:''},
   mollox:{bg:'MOLLOX България',en:'MOLLOX Bulgaria',typeBg:'Професионална хигиена',typeEn:'Professional hygiene',descBg:'Професионална хигиена и индустриални решения',descEn:'Professional Hygiene & Industrial Solutions',mark:'M',accent:'#17664f',logo:'/client-logos/mollox.png'},
@@ -72,9 +72,14 @@ function removeLegacy(){
   document.querySelectorAll('.bch3-chip').forEach(n=>n.remove());
   document.querySelectorAll('.bch5-brand,.bch4-brand,.bch-brand').forEach(n=>{if(!n.closest('.bch3-brand'))n.remove()});
 }
-function logoHTML(p,name){
-  const img=p.logo?`<img src="${esc(p.logo)}" alt="${esc(name)}" onerror="this.classList.add('failed')">`:'';
-  return `<span class="bch3-logo" style="--bch-accent:${p.accent}" aria-hidden="true"><span class="bch3-mark">${esc(p.mark)}</span>${img}</span>`;
+function logoHTML(p,key){
+  return `<span class="bch3-logo" data-client-key="${esc(key)}" style="--bch-accent:${p.accent}" aria-hidden="true"><span class="bch3-mark">${esc(p.mark)}</span></span>`;
+}
+function mountLogo(root,p,key,name){
+  if(!p.logo)return;const slot=root.querySelector('.bch3-logo');if(!slot)return;
+  const img=new Image();img.alt=name;img.decoding='async';
+  img.onload=()=>{if(slot.isConnected&&slot.dataset.clientKey===key&&!slot.querySelector('img'))slot.appendChild(img)};
+  img.onerror=()=>{};img.src=p.logo;
 }
 function contextPair(r,en){const c=CONTEXT[r]||CONTEXT.overview;return en?c.en:c.bg}
 function render(){
@@ -85,7 +90,8 @@ function render(){
     const bar=document.querySelector('.topbar');if(!bar)return;
     bar.classList.add('blis-client-header','blis-universal-client-header');bar.style.setProperty('--bch-accent',p.accent);
     let title=bar.querySelector('.title');if(!title){title=document.createElement('div');title.className='title';bar.prepend(title)}
-    title.innerHTML=`<div class="bch3-brand" data-client-key="${esc(key)}">${logoHTML(p,name)}<div class="bch3-copy"><div class="bch3-kicker">${en?'Client profile':'Клиентски профил'}</div><div class="bch3-name">${esc(name)}</div><div class="bch3-desc">${esc(clientDesc(p,en))}</div></div></div>`;
+    title.innerHTML=`<div class="bch3-brand" data-client-key="${esc(key)}">${logoHTML(p,key)}<div class="bch3-copy"><div class="bch3-kicker">${en?'Client profile':'Клиентски профил'}</div><div class="bch3-name">${esc(name)}</div><div class="bch3-desc">${esc(clientDesc(p,en))}</div></div></div>`;
+    mountLogo(title,p,key,name);
     let tools=bar.querySelector('.toptools');if(!tools){tools=document.createElement('div');tools.className='toptools';bar.appendChild(tools)}
     tools.querySelectorAll('.bch3-chip').forEach(n=>n.remove());
     const date=tools.querySelector('.datebox');if(date)date.textContent=en?`${period()} days ⌄`:`Последните ${period()} дни ⌄`;
