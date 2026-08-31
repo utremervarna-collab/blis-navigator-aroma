@@ -1,95 +1,122 @@
-/* BLIS Navigator — canonical client profile header v5.
-   Verified official brand artwork only. Local manifest assets are rendered only when their
-   provenance is an approved official brand domain. Missing/failed assets fall back to text.
-   This component owns client chrome only and never participates in routing or analytical rendering. */
+/* BLIS Navigator — canonical universal client header v6.
+   ONE shell-owned header for every client and every dashboard route.
+   Fixed geometry, verified local logo assets where available, monogram fallback otherwise.
+   Compatible with existing Navigator QA selectors (.bch3-name/.bch3-logo) and branding owner contract. */
 (function(){
 'use strict';
-if(window.__BLIS_CLIENT_BRANDING_V5)return;window.__BLIS_CLIENT_BRANDING_V5=true;
+if(window.__BLIS_CLIENT_BRANDING_V5)return;
+window.__BLIS_CLIENT_BRANDING_V3=true;
+window.__BLIS_CLIENT_BRANDING_V4=true;
+window.__BLIS_CLIENT_BRANDING_V5=true;
 
 const P={
-  aroma:{name:'Aroma Cosmetics',type:'Козметика'},
-  bolyarka:{name:'Болярка ВТ АД',type:'Пивоварна компания'},
-  'astor-garden':{name:'Astor Garden Hotel',type:'Хотелиерство'},
-  'varna-towers':{name:'Varna Towers',type:'Бизнес център / недвижими имоти'},
-  mollox:{name:'MOLLOX България',type:'Професионална хигиена'},
-  everbet:{name:'Everbet',type:'Онлайн казино и спортни залози'},
-  wirello:{name:'Wirello Market',type:'Демо профил'}
+  aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care',descBg:'Козметика, грижа за кожата и лична грижа',descEn:'Beauty, skincare & personal care solutions',mark:'A',accent:'#d73578',logo:'/client-logos/aroma.svg'},
+  bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',descBg:'Пивоварна индустрия, напитки и потребителско търсене',descEn:'Brewery, beverages & consumer demand intelligence',mark:'Б',accent:'#c88918',logo:'/client-logos/bolyarka.png'},
+  'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',descBg:'Хотелиерство, гостоприемство и репутация',descEn:'Hospitality, guest experience & reputation intelligence',mark:'A',accent:'#17664f',logo:''},
+  'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',descBg:'Недвижими имоти, локационна среда и проектна видимост',descEn:'Real estate, location perception & project visibility',mark:'V',accent:'#0f6278',logo:''},
+  mollox:{bg:'MOLLOX България',en:'MOLLOX Bulgaria',typeBg:'Професионална хигиена',typeEn:'Professional hygiene',descBg:'Професионална хигиена и индустриални решения',descEn:'Professional Hygiene & Industrial Solutions',mark:'M',accent:'#17664f',logo:'/client-logos/mollox.png'},
+  wirello:{bg:'Wirello Market',en:'Wirello Market',typeBg:'Модерен ритейл',typeEn:'Retail',descBg:'Ритейл, потребителско поведение и категории',descEn:'Retail, shopper behavior & category intelligence',mark:'W',accent:'#2a68d4',logo:''},
+  everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',descBg:'Онлайн игри и спортни залози',descEn:'Online gaming & sports betting intelligence',mark:'E',accent:'#173e35',logo:'/client-logos/everbet.svg'}
 };
-const OFFICIAL={
-  aroma:['aroma.bg'],
-  bolyarka:['boliarka.bg'],
-  'astor-garden':['astorgardenhotel.com'],
-  'varna-towers':['varnatowers.bg'],
-  mollox:['mollox.bg'],
-  everbet:['everbet.bg']
+const CONTEXT={
+  overview:{bg:['Общ преглед','Обобщен поглед върху позицията, сигналите и ключовите промени.'],en:['Client Overview','A consolidated view of performance, market position and key insights.']},
+  social:{bg:['Социални сигнали','Публични разговори, теми и динамика в социалната среда.'],en:['Social Intelligence','Public conversations, themes and social dynamics.']},
+  market:{bg:['Пазарна среда','Пазарни сигнали, търсене и промени в категорията.'],en:['Market Intelligence','Market signals, demand and category changes.']},
+  digital:{bg:['Дигитална среда','Видимост, търсене и представяне в дигиталните канали.'],en:['Digital Intelligence','Visibility, search and performance across digital channels.']},
+  reputation:{bg:['Репутация','Публично възприятие, доверие и възникващи репутационни рискове.'],en:['Reputation Intelligence','Public perception, trust and emerging reputation risks.']},
+  competition:{bg:['Конкурентна среда','Конкурентна позиция, активност и натиск в категорията.'],en:['Competitive Intelligence','Competitive position, activity and market pressure.']},
+  opportunities:{bg:['Възможности','Идентифицирани пазарни възможности, потенциал и следващи действия.'],en:['Opportunities','Identified market opportunities, potential and next actions.']},
+  history:{bg:['История','Историческа динамика на индексите, сигналите и ключовите промени.'],en:['History','Historical movement of indices, signals and key changes.']},
+  reports:{bg:['Доклади','Аналитични обобщения, експорти и периодични материали.'],en:['Reports','Analytical summaries, exports and recurring deliverables.']}
 };
-const BLOCKED=/(?:favicon|apple-touch-icon|fontawesome|fa-(?:brands|solid|regular)|\/fonts?\/|sprite|payment|partner|tenant|vendor)/i;
-const cache=new Map();
-let manifest={};
-let manifestPromise=null;
-let paintToken=0;
-const N=v=>{const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)?n:null};
+const ALIASES={signals:'social',timeline:'history',live:'overview'};
+let rendering=false,scheduled=false,observer=null;
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function current(){try{const q=new URLSearchParams(location.search).get('client');if(P[q])return q}catch(_){}const b=document.body?.dataset?.client;if(P[b])return b;return P[window.BLIS_INITIAL_CLIENT]?window.BLIS_INITIAL_CLIENT:'aroma'}
-function score(){return N(window.D?.blis_index)}
-function state(v){if(v==null)return['Няма достатъчно данни','neutral'];if(v>=85)return['Много силна позиция','excellent'];if(v>=70)return['Силна позиция','good'];if(v>=55)return['Стабилна позиция','stable'];if(v>=40)return['За наблюдение','watch'];return['Изисква внимание','risk']}
-function period(){const d=N(window.BLISPeriod?.days);return d&&d>0?Math.round(d):null}
-function lastSync(){const x=document.getElementById('lastSync')?.textContent?.trim();return x&&x!=='—'?x:'—'}
-function officialSource(k,source){if(!source||BLOCKED.test(source))return false;try{const h=new URL(source,location.origin).hostname.toLowerCase().replace(/^www\./,'');return(OFFICIAL[k]||[]).some(d=>h===d||h.endsWith('.'+d))}catch(_){return false}}
-function validLocal(path){return typeof path==='string'&&path.startsWith('/client-logos/')&&!path.includes('..')&&!BLOCKED.test(path)}
-async function loadManifest(force){
-  if(force){manifestPromise=null;manifest={};cache.clear()}
-  if(manifestPromise)return manifestPromise;
-  manifestPromise=fetch('/client-logos/manifest.json?v=20260830-header-v5',{cache:'no-store'})
-    .then(r=>r.ok?r.json():null)
-    .then(j=>{const out={};Object.entries(j?.logos||{}).forEach(([k,v])=>{if(P[k]&&k!=='wirello'&&validLocal(v?.path)&&officialSource(k,v?.source))out[k]={path:v.path,source:v.source}});manifest=out;return manifest})
-    .catch(()=>manifest);
-  return manifestPromise;
+
+function isEnglish(){
+  try{if(new URLSearchParams(location.search).get('lang')==='en')return true}catch(_){}
+  return String(document.documentElement.lang||'').toLowerCase().startsWith('en');
 }
-function resolveLogo(k){
-  const path=manifest[k]?.path||'';if(!path)return Promise.resolve(null);
-  if(cache.has(path))return cache.get(path);
-  const pr=new Promise(resolve=>{const im=new Image();im.decoding='async';im.onload=()=>resolve(path);im.onerror=()=>resolve(null);im.src=path+'?v=20260830-header-v5'});cache.set(path,pr);return pr;
+function current(){
+  try{const q=new URLSearchParams(location.search).get('client');if(P[q])return q}catch(_){}
+  const b=document.body?.dataset?.client;if(P[b])return b;
+  try{if(P[window.slug])return window.slug}catch(_){}
+  const s=document.getElementById('clientSel')?.value;if(P[s])return s;
+  return P[window.BLIS_INITIAL_CLIENT]?window.BLIS_INITIAL_CLIENT:'aroma';
 }
+function route(){
+  const r=document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';
+  return ALIASES[r]||r;
+}
+function period(){const d=Number(window.BLISPeriod?.days);return Number.isFinite(d)&&d>0?Math.round(d):30}
+function lastSync(){const t=document.getElementById('lastSync')?.textContent?.trim();return t&&t!=='—'?t:'—'}
+function clientName(p,en){return en?p.en:p.bg}
+function clientType(p,en){return en?p.typeEn:p.typeBg}
+function clientDesc(p,en){return en?p.descEn:p.descBg}
+
 function css(){
-  if(document.getElementById('blisBrandingV5Css'))return;
-  const s=document.createElement('style');s.id='blisBrandingV5Css';s.textContent=`
-  .topbar.blis-client-header{min-height:86px!important;height:auto!important;padding:11px 15px!important;border:1px solid #dbe6ef!important;border-radius:18px!important;background:rgba(255,255,255,.98)!important;box-shadow:0 8px 26px rgba(26,63,101,.05)!important;display:grid!important;grid-template-columns:minmax(310px,1fr) auto auto!important;align-items:center!important;gap:18px!important;margin-bottom:10px!important}
-  .topbar.blis-client-header .title{margin:0!important;min-width:0!important}.bch5-brand{display:flex;align-items:center;gap:14px;min-width:0}.bch5-logo{width:126px;height:58px;flex:0 0 126px;border:1px solid #e2eaf1;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;padding:7px 10px;overflow:hidden;box-sizing:border-box}.bch5-logo.empty{display:none!important}.bch5-logo img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain!important;object-position:center!important;filter:none!important;transform:none!important}
-  .bch5-copy{min-width:0}.bch5-kicker{font-size:8px;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#8195a7;margin-bottom:4px}.bch5-name{font-size:22px;line-height:1.08;font-weight:850;letter-spacing:-.035em;color:#173e64;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bch5-type{margin-top:5px;font-size:9px;color:#73889c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bch5-health{display:flex;align-items:center;gap:11px;padding:8px 13px;border-left:1px solid #e4ebf2;border-right:1px solid #e4ebf2;min-width:176px}.bch5-index{font-size:26px;font-weight:900;letter-spacing:-.05em;color:#1f65b7;line-height:1}.bch5-health-copy span{display:block;font-size:7px;text-transform:uppercase;letter-spacing:.07em;color:#8194a6;font-weight:900}.bch5-health-copy b{display:block;margin-top:4px;font-size:9px;color:#355a78}.bch5-health.good b,.bch5-health.excellent b{color:#2f9569}.bch5-health.watch b{color:#b38125}.bch5-health.risk b{color:#c45550}
-  .topbar.blis-client-header .toptools{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important}.topbar.blis-client-header .datebox{height:38px!important;padding:0 13px!important;border:1px solid #d8e4ee!important;border-radius:12px!important;background:#fff!important;color:#486985!important;font-size:9px!important;font-weight:800!important;box-shadow:none!important}.bch5-update{font-size:8px;color:#7d91a4;line-height:1.35;white-space:nowrap}.bch5-update b{color:#42657f}.sync{display:none!important}
-  .client-brand-mark,.client-option-mark{display:none!important}.client-brand-type,.client-brand-status,.client-option small{display:none!important}.client-brand-copy{display:block!important}.client-option{grid-template-columns:1fr auto!important}.client-option>span:nth-child(2){min-width:0}.client-option b{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-  @media(max-width:980px){.topbar.blis-client-header{grid-template-columns:minmax(230px,1fr) auto!important}.bch5-health{display:none}.bch5-logo{width:102px;flex-basis:102px}.bch5-name{font-size:19px}}
-  @media(max-width:680px){.topbar.blis-client-header{grid-template-columns:1fr!important;gap:9px!important}.bch5-logo{width:88px;height:50px;flex-basis:88px}.bch5-name{font-size:18px}.bch5-update{display:none}}
-  `;document.head.appendChild(s)
+  if(document.getElementById('blisUniversalClientHeaderV6Css'))return;
+  const s=document.createElement('style');s.id='blisUniversalClientHeaderV6Css';s.textContent=`
+  .topbar.blis-client-header.blis-universal-client-header{box-sizing:border-box!important;width:100%!important;max-width:100%!important;height:78px!important;min-height:78px!important;max-height:78px!important;margin:0!important;padding:10px 14px!important;border:1px solid #dce6ee!important;border-radius:16px 16px 0 0!important;background:rgba(255,255,255,.985)!important;box-shadow:0 5px 18px rgba(24,54,82,.045)!important;display:grid!important;grid-template-columns:minmax(270px,1fr) auto!important;align-items:center!important;gap:16px!important;overflow:hidden!important}
+  .topbar.blis-client-header.blis-universal-client-header .title{margin:0!important;min-width:0!important;padding:0!important}.bch3-brand{display:flex!important;align-items:center!important;gap:12px!important;min-width:0!important;height:56px!important}.bch3-logo{position:relative!important;box-sizing:border-box!important;width:50px!important;height:50px!important;min-width:50px!important;max-width:50px!important;flex:0 0 50px!important;border-radius:11px!important;background:var(--bch-accent,#17664f)!important;display:grid!important;place-items:center!important;overflow:hidden!important;border:1px solid rgba(18,48,70,.08)!important;box-shadow:0 2px 8px rgba(20,50,72,.07)!important;padding:0!important}.bch3-mark{font-size:23px!important;font-weight:850!important;color:#fff!important;line-height:1!important;letter-spacing:-.04em!important}.bch3-logo img{position:absolute!important;inset:4px!important;width:calc(100% - 8px)!important;height:calc(100% - 8px)!important;max-width:none!important;max-height:none!important;object-fit:contain!important;object-position:center!important;background:#fff!important;border-radius:7px!important;padding:2px!important;box-sizing:border-box!important;filter:none!important;transform:none!important}.bch3-logo img.failed{display:none!important}.bch3-copy{min-width:0!important}.bch3-kicker{font-size:7px!important;font-weight:850!important;letter-spacing:.09em!important;text-transform:uppercase!important;color:#8a9cab!important;margin-bottom:3px!important;line-height:1!important}.bch3-name{font-size:20px!important;line-height:1.08!important;font-weight:850!important;letter-spacing:-.025em!important;color:#152f49!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:620px!important}.bch3-desc{margin-top:5px!important;font-size:10px!important;line-height:1.2!important;color:#6d8295!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:620px!important}
+  .topbar.blis-client-header.blis-universal-client-header .toptools{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;margin:0!important;padding:0!important;min-width:0!important;overflow:visible!important}.bch3-chip,.topbar.blis-client-header.blis-universal-client-header .datebox{box-sizing:border-box!important;height:36px!important;min-height:36px!important;max-height:36px!important;padding:0 10px!important;border:1px solid #dbe5ed!important;border-radius:10px!important;background:#fff!important;color:#3f5d75!important;font:800 9px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;box-shadow:none!important;white-space:nowrap!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important}.bch3-live-dot{width:7px!important;height:7px!important;border-radius:50%!important;background:#2eaa68!important;box-shadow:0 0 0 3px rgba(46,170,104,.10)!important;flex:0 0 7px!important}.bch3-lang{cursor:pointer!important}.bch3-sync{color:#6f8597!important}.bch3-sync b{color:#2f5069!important;font-weight:850!important}.sync,.bch5-health,.bch5-update,.bch4-health,.bch4-update,.bch-health,.bch-update{display:none!important}
+  .bch3-context{box-sizing:border-box!important;width:100%!important;max-width:100%!important;height:62px!important;min-height:62px!important;max-height:62px!important;padding:10px 16px!important;border:1px solid #dce6ee!important;border-top:0!important;border-radius:0 0 16px 16px!important;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;margin:0 0 12px!important;box-shadow:0 7px 20px rgba(24,54,82,.035)!important;overflow:hidden!important}.bch3-context-copy{min-width:0!important}.bch3-context-title{font-size:18px!important;line-height:1.08!important;font-weight:850!important;letter-spacing:-.02em!important;color:#17354f!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.bch3-context-sub{margin-top:5px!important;font-size:9px!important;line-height:1.25!important;color:#76899a!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:900px!important}.bch3-context-rule{width:34px!important;height:3px!important;border-radius:99px!important;background:var(--bch-accent,#17664f)!important;opacity:.9!important;flex:0 0 34px!important}
+  .client-option{grid-template-columns:1fr auto!important}.client-option>span:first-child{min-width:0!important}.client-option b{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.client-option small{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.client-brand-mark,.client-option-mark{display:none!important}
+  @media(max-width:1020px){.topbar.blis-client-header.blis-universal-client-header{grid-template-columns:minmax(220px,1fr) auto!important}.bch3-monitor{display:none!important}.bch3-desc,.bch3-name{max-width:390px!important}.bch3-context-sub{max-width:650px!important}}
+  @media(max-width:760px){.topbar.blis-client-header.blis-universal-client-header{height:auto!important;min-height:76px!important;max-height:none!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;padding:9px 10px!important;overflow:visible!important}.bch3-brand{height:50px!important}.bch3-logo{width:46px!important;height:46px!important;min-width:46px!important;max-width:46px!important;flex-basis:46px!important}.bch3-kicker{display:none!important}.bch3-name{font-size:18px!important;max-width:72vw!important}.bch3-desc{font-size:9px!important;max-width:72vw!important}.topbar.blis-client-header.blis-universal-client-header .toptools{justify-content:flex-start!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;padding-bottom:2px!important;scrollbar-width:none!important}.topbar.blis-client-header.blis-universal-client-header .toptools::-webkit-scrollbar{display:none!important}.bch3-sync{display:none!important}.bch3-context{height:auto!important;min-height:58px!important;max-height:none!important;padding:10px 12px!important;margin-bottom:10px!important}.bch3-context-title{font-size:17px!important}.bch3-context-sub{white-space:normal!important;line-height:1.3!important;max-width:none!important}.bch3-context-rule{display:none!important}}
+  `;document.head.appendChild(s);
 }
-function cleanLegacy(){
-  document.querySelectorAll('.bch4-health,.bch3-health,.bch-health').forEach(n=>n.remove());
-  document.querySelectorAll('.bch4-update,.bch3-update,.bch-update').forEach(n=>n.remove());
-  document.querySelectorAll('.client-brand-mark,.client-option-mark').forEach(n=>{n.replaceChildren();n.removeAttribute('style')});
-  document.querySelectorAll('.client-brand-type,.client-brand-status,.client-option small').forEach(n=>{n.textContent=''});
+
+function removeLegacy(){
+  document.querySelectorAll('.bch5-health,.bch5-update,.bch4-health,.bch4-update,.bch-health,.bch-update').forEach(n=>n.remove());
+  document.querySelectorAll('.bch3-chip').forEach(n=>n.remove());
+  document.querySelectorAll('.bch5-brand,.bch4-brand,.bch-brand').forEach(n=>{if(!n.closest('.bch3-brand'))n.remove()});
 }
-async function mountLogo(slot,k,token){
-  if(!slot)return;const u=await resolveLogo(k);if(token!==paintToken||!slot.isConnected)return;
-  if(!u){slot.classList.add('empty');slot.replaceChildren();return}
-  const im=document.createElement('img');im.src=u+'?v=20260830-header-v5';im.alt=P[k]?.name||'';im.decoding='async';im.loading='eager';
-  im.addEventListener('error',()=>{slot.classList.add('empty');slot.replaceChildren()},{once:true});slot.replaceChildren(im);slot.classList.remove('empty')
+function logoHTML(p,name){
+  const img=p.logo?`<img src="${esc(p.logo)}" alt="${esc(name)}" onerror="this.classList.add('failed')">`:'';
+  return `<span class="bch3-logo" style="--bch-accent:${p.accent}" aria-hidden="true"><span class="bch3-mark">${esc(p.mark)}</span>${img}</span>`;
 }
-function paintHeader(){
-  css();cleanLegacy();const k=current(),p=P[k]||P.aroma,bar=document.querySelector('.topbar');if(!bar)return;const token=++paintToken,v=score(),st=state(v);bar.classList.add('blis-client-header');
-  let title=bar.querySelector('.title');if(!title){title=document.createElement('div');title.className='title';bar.prepend(title)}
-  title.innerHTML=`<div class="bch5-brand"><span class="bch5-logo empty" data-bch5-logo aria-hidden="true"></span><div class="bch5-copy"><div class="bch5-kicker">Клиентски профил</div><div class="bch5-name">${esc(p.name)}</div><div class="bch5-type">${esc(p.type)}</div></div></div>`;
-  mountLogo(title.querySelector('[data-bch5-logo]'),k,token);
-  let h=bar.querySelector('.bch5-health');if(!h){h=document.createElement('div');h.className='bch5-health';bar.insertBefore(h,bar.querySelector('.toptools')||null)}h.className=`bch5-health ${st[1]}`;h.innerHTML=`<strong class="bch5-index">${v==null?'—':Math.round(v)}</strong><div class="bch5-health-copy"><span>BLIS индекс</span><b>${esc(st[0])}</b></div>`;
-  let tools=bar.querySelector('.toptools');if(!tools){tools=document.createElement('div');tools.className='toptools';bar.appendChild(tools)}const d=tools.querySelector('.datebox'),days=period();if(d&&days)d.textContent=`Последните ${days} дни ⌄`;
-  let u=tools.querySelector('.bch5-update');if(!u){u=document.createElement('div');u.className='bch5-update';tools.appendChild(u)}u.innerHTML=`Актуализация<br><b>${esc(lastSync())}</b>`;
+function contextPair(r,en){const c=CONTEXT[r]||CONTEXT.overview;return en?c.en:c.bg}
+function render(){
+  if(rendering)return;rendering=true;
+  try{
+    css();removeLegacy();
+    const key=current(),p=P[key]||P.aroma,en=isEnglish(),name=clientName(p,en),r=route(),ctx=contextPair(r,en);
+    const bar=document.querySelector('.topbar');if(!bar)return;
+    bar.classList.add('blis-client-header','blis-universal-client-header');bar.style.setProperty('--bch-accent',p.accent);
+    let title=bar.querySelector('.title');if(!title){title=document.createElement('div');title.className='title';bar.prepend(title)}
+    title.innerHTML=`<div class="bch3-brand" data-client-key="${esc(key)}">${logoHTML(p,name)}<div class="bch3-copy"><div class="bch3-kicker">${en?'Client profile':'Клиентски профил'}</div><div class="bch3-name">${esc(name)}</div><div class="bch3-desc">${esc(clientDesc(p,en))}</div></div></div>`;
+    let tools=bar.querySelector('.toptools');if(!tools){tools=document.createElement('div');tools.className='toptools';bar.appendChild(tools)}
+    tools.querySelectorAll('.bch3-chip').forEach(n=>n.remove());
+    const date=tools.querySelector('.datebox');if(date)date.textContent=en?`${period()} days ⌄`:`Последните ${period()} дни ⌄`;
+    const monitor=document.createElement('span');monitor.className='bch3-chip bch3-monitor';monitor.innerHTML=`<i class="bch3-live-dot"></i>${en?'Active monitoring':'Активно наблюдение'}`;tools.insertBefore(monitor,date||tools.firstChild);
+    const lang=document.createElement('button');lang.type='button';lang.className='bch3-chip bch3-lang';lang.setAttribute('data-blis-language-switch','');lang.setAttribute('aria-label',en?'Switch language':'Смени езика');lang.textContent='BG | EN';lang.addEventListener('click',()=>{const u=new URL(location.href);u.searchParams.set('lang',en?'bg':'en');location.assign(u.pathname+u.search+u.hash)});tools.appendChild(lang);
+    const sync=document.createElement('span');sync.className='bch3-chip bch3-sync';sync.innerHTML=`${en?'Last sync':'Последно обновяване'} <b>${esc(lastSync())}</b>`;tools.appendChild(sync);
+    let cbar=document.getElementById('blisUniversalClientContext');if(!cbar){cbar=document.createElement('section');cbar.id='blisUniversalClientContext';cbar.className='bch3-context';bar.insertAdjacentElement('afterend',cbar)}
+    cbar.dataset.client=key;cbar.dataset.route=r;cbar.dataset.lang=en?'en':'bg';cbar.style.setProperty('--bch-accent',p.accent);cbar.innerHTML=`<div class="bch3-context-copy"><div class="bch3-context-title">${esc(ctx[0])}</div><div class="bch3-context-sub">${esc(ctx[1])}</div></div><span class="bch3-context-rule" aria-hidden="true"></span>`;
+    document.documentElement.dataset.clientBranding='local-real-v3-1';
+    document.documentElement.dataset.clientHeader='universal-v6';
+  } finally {rendering=false}
 }
-function paintSwitcher(){
-  const k=current(),p=P[k]||P.aroma;document.querySelectorAll('.client-brand-name').forEach(n=>n.textContent=p.name);document.querySelectorAll('.client-option[data-client-key]').forEach(o=>{const q=P[o.dataset.clientKey],b=o.querySelector('b');if(b&&q)b.textContent=q.name});
+function needsRepair(){
+  const bar=document.querySelector('.topbar.blis-client-header.blis-universal-client-header');if(!bar)return true;
+  const key=current(),p=P[key]||P.aroma,en=isEnglish(),name=clientName(p,en),r=route();
+  if((bar.querySelector('.bch3-name')?.textContent||'').trim()!==name)return true;
+  const c=document.getElementById('blisUniversalClientContext');if(!c||c.dataset.client!==key||c.dataset.route!==r||c.dataset.lang!==(en?'en':'bg'))return true;
+  return document.documentElement.dataset.clientBranding!=='local-real-v3-1';
 }
-async function paint(){await loadManifest();paintHeader();paintSwitcher();document.documentElement.dataset.clientBranding='verified-logo-v5'}
-function schedule(){requestAnimationFrame(()=>requestAnimationFrame(paint))}
-['blis:clientdata','blis:routechange','blis:periodchange','blis:intelligence','blis:production-ready'].forEach(e=>window.addEventListener(e,schedule));window.addEventListener('popstate',schedule);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.BLISClientBrandingV5={paint,profiles:P,loadManifest};window.BLISClientBrandingV4=window.BLISClientBrandingV5;window.BLISClientBrandingV3=window.BLISClientBrandingV5;
+function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>requestAnimationFrame(()=>{scheduled=false;if(needsRepair())render()}))}
+function observe(){
+  if(observer||window.__BLIS_CLIENT_HEADER_OBSERVER_V6)return;const shell=document.querySelector('.shell');if(!shell)return;
+  window.__BLIS_CLIENT_HEADER_OBSERVER_V6=true;observer=new MutationObserver(()=>{if(!rendering&&needsRepair())schedule()});observer.observe(shell,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+}
+function init(){render();observe()}
+if(!window.__BLIS_CLIENT_BRANDING_EVENTS_V6){
+  window.__BLIS_CLIENT_BRANDING_EVENTS_V6=true;
+  ['blis:clientdata','blis:routechange','blis:periodchange','blis:intelligence','blis:production-ready'].forEach(e=>window.addEventListener(e,()=>{render();observe()}));
+  window.addEventListener('popstate',()=>{render();observe()});
+}
+const api={paint:render,render,profiles:P};
+window.BLISClientBrandingV3=api;window.BLISClientBrandingV4=api;window.BLISClientBrandingV5=api;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
