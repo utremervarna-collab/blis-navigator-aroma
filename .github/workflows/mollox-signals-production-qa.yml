@@ -8,11 +8,13 @@ on:
       - 'static/navigator-mollox-signals-truth-v1.js'
       - 'static/navigator-risk-priority-sync-v1.js'
       - 'static/navigator-overview-route-guard.js'
+      - 'static/navigator-production-entry-v1.js'
       - 'zzzzzzzz_mollox_signal_truth_runtime.go'
   workflow_dispatch:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   mollox-signals:
@@ -31,6 +33,7 @@ jobs:
         run: |
           cat >/tmp/mollox-signals.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const fs=require('fs');
           const origin='https://blis-navigator-aroma.onrender.com';
           const baseline=['Пълна техническа документация','Private Label е публично потвърдена услуга','Регионална дистрибуция'];
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -125,6 +128,17 @@ jobs:
               if(r.rows.length===0&&!r.empty)throw new Error('no current MOLLOX events but explicit verified empty state is missing');
             }
             console.log('MOLLOX_SIGNAL_RISK_REFRESH_OK');
-          })().catch(e=>{console.error(e);process.exit(1)});
+          })().catch(e=>{try{fs.writeFileSync('/tmp/mollox-signals-error.txt',String(e.message||e))}catch(_){};console.error(e);process.exit(1)});
           NODE
           node /tmp/mollox-signals.cjs
+      - name: Publish MOLLOX truth status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require('fs');
+            const state='${{ job.status }}'==='success'?'success':'failure';
+            let detail='';
+            try{detail=fs.readFileSync('/tmp/mollox-signals-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'mollox-signal-truth-qa',description:state==='success'?'MOLLOX signal truth, visuals and refresh passed':'MOLLOX signal truth QA failed'});
+            if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`mollox-truth:${detail}`,description:'First MOLLOX truth QA failure'});}
