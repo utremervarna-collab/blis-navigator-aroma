@@ -10,7 +10,7 @@ window.__BLIS_CLIENT_BRANDING_V4=true;
 window.__BLIS_CLIENT_BRANDING_V5=true;
 
 const P={
-  aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care',descBg:'Козметика, грижа за кожата и лична грижа',descEn:'Beauty, skincare & personal care solutions',mark:'A',accent:'#d73578',logo:'/client-logos/aroma.svg'},
+  aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care',descBg:'Козметика, грижа за кожата и лична грижа',descEn:'Beauty, skincare & personal care solutions',mark:'A',accent:'#d73578',logo:'/client-logos/aroma.png'},
   bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',descBg:'Пивоварна индустрия, напитки и потребителско търсене',descEn:'Brewery, beverages & consumer demand intelligence',mark:'B',accent:'#c88918',logo:'/client-logos/bolyarka.png'},
   'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',descBg:'Хотелиерство, гостоприемство и репутация',descEn:'Hospitality, guest experience & reputation intelligence',mark:'A',accent:'#17664f',logo:''},
   'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',descBg:'Недвижими имоти, локационна среда и проектна видимост',descEn:'Real estate, location perception & project visibility',mark:'V',accent:'#0f6278',logo:''},
