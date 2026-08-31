@@ -28,6 +28,21 @@ func validNavigatorClient(slug string) bool {
 	}
 }
 
+func canonicalNavigatorPage(page string) string {
+	switch strings.TrimSpace(strings.ToLower(page)) {
+	case "overview", "social", "market", "digital", "reputation", "competition", "opportunities", "history", "reports":
+		return strings.TrimSpace(strings.ToLower(page))
+	case "signals":
+		return "social"
+	case "timeline":
+		return "history"
+	case "live":
+		return "overview"
+	default:
+		return "overview"
+	}
+}
+
 func navigatorDashboardTarget(r *http.Request) string {
 	slug := strings.TrimSpace(r.URL.Query().Get("client"))
 	if !validNavigatorClient(slug) {
@@ -38,7 +53,17 @@ func navigatorDashboardTarget(r *http.Request) string {
 	if !validNavigatorClient(slug) {
 		slug = "aroma"
 	}
-	return "/dashboard.html?client=" + url.QueryEscape(slug) + "&page=overview"
+
+	// A session bootstrap must never change the page the user requested. The
+	// gateway used to redirect every fresh dashboard session to overview, which
+	// made direct links such as ?page=social appear to be hijacked after load.
+	q := url.Values{}
+	q.Set("client", slug)
+	q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("lang")), "en") {
+		q.Set("lang", "en")
+	}
+	return "/dashboard.html?" + q.Encode()
 }
 
 func commerceOwnerOnlyPath(path string) bool {
