@@ -1,4 +1,4 @@
-/* BLIS Navigator — client switcher v5.
+/* BLIS Navigator — client switcher v6.
    Single responsibility: client selection and atomic hand-off to the canonical data loader.
    Header/chrome is owned by navigator-client-branding-v3.js.
    Everbet remains directly addressable but is intentionally hidden from the dashboard client switcher. */
@@ -51,8 +51,12 @@ function ensureMenu(){
   const active=current();
   menu.innerHTML=visibleOrder.map(k=>`<button type="button" class="client-option${k===active?' active':''}" data-client-key="${k}" role="option" aria-selected="${k===active?'true':'false'}"><span><b>${esc(label(k))}</b><small>${esc(type(k))}</small></span><span class="client-option-check" aria-hidden="true">${k===active?'✓':''}</span></button>`).join('');
 }
+function removeLegacyIdentity(){
+  document.querySelectorAll('.client-brand-mark,.client-option-mark').forEach(n=>n.remove());
+}
 function paint(key=current()){
   if(!valid(key))key='aroma';
+  removeLegacyIdentity();
   if(document.body)document.body.dataset.client=key;
   document.querySelectorAll('.client-brand-name').forEach(n=>n.textContent=label(key));
   document.querySelectorAll('.client-brand-type').forEach(n=>n.textContent=type(key));
