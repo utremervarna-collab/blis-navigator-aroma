@@ -59,9 +59,9 @@ jobs:
             digital:'svg,.digital-radar,.radar,[data-digital-radar]',
             reputation:'.sv2-rep,.sv2-reputation,.rep47-chart,svg',
             competition:'.vs-comp-core,.vs-comp-axis,.vs-comp-row,.cmpv11-matrix,.cmpv10-layout,.cmpv12-static-flow,[data-competition-visual]',
-            opportunities:'.sv2-riskmap',
-            history:'.xv2-timeline,.vs-history,.sv2-history,[data-history-visual]',
-            reports:'.xv2-report,.vs-report,.report-wheel,[data-report-visual]'
+            opportunities:'.vs-matrix-wrap,.vs-matrix,.sv2-riskmap,[data-opportunities-visual]',
+            history:'.vs-history-core,.vs-history-board,.vs-hevents,.xv2-timeline,.sv2-history,[data-history-visual]',
+            reports:'.vs-report-core,.vs-wheel,.exec-report,.xv2-report,.report-wheel,[data-report-visual]'
           };
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
