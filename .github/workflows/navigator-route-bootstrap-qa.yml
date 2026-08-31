@@ -1,0 +1,111 @@
+name: Navigator Route Bootstrap QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/navigator-route-bootstrap-qa.yml'
+      - '000_auth_gateway_resilient.go'
+      - 'auth_proxy.go'
+      - 'static/navigator-reference.js'
+      - 'static/navigator-production-entry-v1.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  route-bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build and start Navigator gateway
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/blis-route-server.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:10000/api/health >/dev/null
+
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Verify fresh-session direct routes
+        run: |
+          cat >/tmp/route-bootstrap.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const fs=require('fs');
+          const origin='http://127.0.0.1:10000';
+          const clients=['aroma','bolyarka','mollox','wirello','varna-towers','astor-garden','everbet'];
+          const pages=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const fail=msg=>{try{fs.writeFileSync('/tmp/route-bootstrap-error.txt',msg)}catch(_){};throw new Error(msg)};
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const client of clients){
+                for(const route of pages){
+                  const context=await browser.newContext({viewport:{width:1280,height:800}});
+                  const page=await context.newPage();
+                  const requested=`${origin}/dashboard.html?client=${client}&page=${route}`;
+                  await page.goto(requested,{waitUntil:'domcontentloaded',timeout:25000});
+                  await page.waitForFunction(({client,route})=>document.body?.dataset?.client===client&&document.querySelector('.page.active')?.id===route,{client,route},{timeout:15000});
+                  let state=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||''}));
+                  let u=new URL(state.href);
+                  if(state.client!==client||state.active!==route||u.searchParams.get('client')!==client||u.searchParams.get('page')!==route)fail(`fresh route changed ${client}/${route}: ${JSON.stringify(state)}`);
+                  const session=await page.evaluate(async()=>{const r=await fetch('/api/client-session',{cache:'no-store'});return {status:r.status,body:await r.json().catch(()=>({}))}});
+                  if(session.status!==200||session.body?.authenticated!==true||session.body?.admin!==true)fail(`owner session missing ${client}/${route}: ${JSON.stringify(session)}`);
+                  await page.reload({waitUntil:'domcontentloaded',timeout:25000});
+                  await page.waitForFunction(route=>document.querySelector('.page.active')?.id===route,route,{timeout:12000});
+                  state=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||''}));
+                  u=new URL(state.href);
+                  if(state.client!==client||state.active!==route||u.searchParams.get('client')!==client||u.searchParams.get('page')!==route)fail(`reload route changed ${client}/${route}: ${JSON.stringify(state)}`);
+                  await context.close();
+                }
+              }
+              const aliases=[['signals','social'],['timeline','history'],['live','overview']];
+              for(const [alias,expected] of aliases){
+                const context=await browser.newContext();const page=await context.newPage();
+                await page.goto(`${origin}/dashboard.html?client=mollox&page=${alias}&lang=en`,{waitUntil:'domcontentloaded',timeout:25000});
+                await page.waitForFunction(expected=>document.querySelector('.page.active')?.id===expected,expected,{timeout:12000});
+                const state=await page.evaluate(()=>({href:location.href,active:document.querySelector('.page.active')?.id||'',lang:document.documentElement.lang||''}));
+                const u=new URL(state.href);
+                if(state.active!==expected||u.searchParams.get('page')!==expected||u.searchParams.get('lang')!=='en')fail(`alias/lang bootstrap failed ${alias}: ${JSON.stringify(state)}`);
+                await context.close();
+              }
+              console.log('NAVIGATOR_ROUTE_BOOTSTRAP_OK');
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/route-bootstrap.cjs
+
+      - name: Show diagnostics on failure
+        if: failure()
+        run: |
+          cat /tmp/route-bootstrap-error.txt || true
+          tail -n 200 /tmp/blis-route-server.log || true
+
+      - name: Publish route bootstrap status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require('fs');
+            const state='${{ job.status }}'==='success'?'success':'failure';
+            let detail='';
+            try{detail=fs.readFileSync('/tmp/route-bootstrap-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-route-bootstrap',description:state==='success'?'fresh-session routes and reloads passed':'Navigator route bootstrap failed'});
+            if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`route-bootstrap:${detail}`,description:'First direct-route bootstrap failure'});}
