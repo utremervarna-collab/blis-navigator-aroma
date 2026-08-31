@@ -1,8 +1,8 @@
 {
-  "version": 5,
+  "version": 6,
   "logos": {
     "aroma": {
-      "path": "/client-logos/aroma.svg",
+      "path": "/client-logos/aroma.png",
       "source": "https://aroma.bg/cdn/shop/files/logo-aroma-dark.svg?v=1767860435&width=90"
     },
     "bolyarka": {
