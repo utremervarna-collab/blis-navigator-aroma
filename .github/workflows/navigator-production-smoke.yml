@@ -54,10 +54,10 @@ jobs:
           const localLogoClients=new Set(['aroma','bolyarka','mollox']);
           const visualSelector={
             overview:'.ovh-gauge,.ovh-visual,.ovh-main',
-            social:'.sv2-sigboard',
+            social:'.sv2-sigboard,.vs-signal-core,.vs-signal-board',
             market:'svg,.pm-map,.perception-map,[data-perception-map]',
             digital:'svg,.digital-radar,.radar,[data-digital-radar]',
-            reputation:'.sv2-rep,.sv2-reputation,.rep47-chart,svg',
+            reputation:'.sv2-rep,.sv2-reputation,.rep47-chart,svg,.vs-rep-core,.vs-rep-board',
             competition:'.vs-comp-core,.vs-comp-axis,.vs-comp-row,.cmpv11-matrix,.cmpv10-layout,.cmpv12-static-flow,[data-competition-visual]',
             opportunities:'.vs-matrix-wrap,.vs-matrix,.sv2-riskmap,[data-opportunities-visual]',
             history:'.vs-history-core,.vs-history-board,.vs-hevents,.xv2-timeline,.sv2-history,[data-history-visual]',
@@ -128,7 +128,8 @@ jobs:
                   await p.waitForTimeout(300);
                   const x=await p.evaluate(({id,sel})=>{
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-                    const visuals=root?[...root.querySelectorAll(sel)]:[];
+                    const visualQuery=[sel,'.vs-visual','[data-blis-visual]'].filter(Boolean).join(',');
+                    const visuals=root?[...root.querySelectorAll(visualQuery)]:[];
                     const visual=visuals.find(v=>{const q=v.getBoundingClientRect(),s=getComputedStyle(v);return q.width>70&&q.height>30&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.01})||visuals[0];
                     const vr=visual?.getBoundingClientRect();
                     return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),visual:!!visual,visualW:vr?.width||0,visualH:vr?.height||0};
