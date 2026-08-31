@@ -1,5 +1,6 @@
-/* BLIS Navigator — client switcher v4.
-   Single responsibility: client selection only. Header/chrome is owned by navigator-client-branding-v3.js.
+/* BLIS Navigator — client switcher v5.
+   Single responsibility: client selection and atomic hand-off to the canonical data loader.
+   Header/chrome is owned by navigator-client-branding-v3.js.
    Everbet remains directly addressable but is intentionally hidden from the dashboard client switcher. */
 (function(){
 'use strict';
@@ -17,7 +18,8 @@ const clients={
 };
 const visibleOrder=['mollox','aroma','bolyarka','wirello','varna-towers','astor-garden'];
 const valid=k=>!!clients[k];
-let wired=!!window.__BLIS_CLIENT_SWITCH_WIRED_V4;
+let wired=!!window.__BLIS_CLIENT_SWITCH_WIRED_V5;
+let switchToken=0;
 
 function isEnglish(){
   try{if(new URLSearchParams(location.search).get('lang')==='en')return true}catch(_){}
@@ -34,7 +36,7 @@ function current(){
   return 'aroma';
 }
 function activePage(){return document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview'}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]))}
 
 function ensureSelect(){
   const sel=document.getElementById('clientSel');if(!sel)return;
@@ -68,22 +70,49 @@ function toggle(){
   const w=document.querySelector('.client-switch'),b=document.querySelector('.client-switch-button');if(!w||!b)return;
   const on=!w.classList.contains('open');w.classList.toggle('open',on);b.setAttribute('aria-expanded',on?'true':'false');
 }
-function select(key){
-  if(!valid(key))return;close();
-  try{localStorage.setItem('blis-client-ui',key)}catch(_){}
+async function handoffData(key,sel,token){
+  const dashboard=fetch(`/api/clients/${encodeURIComponent(key)}/dashboard`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`dashboard ${r.status}`);return r.json()});
+  let appLoad=Promise.resolve();
+  if(sel&&typeof sel.onchange==='function'){
+    appLoad=Promise.resolve(sel.onchange.call(sel,{target:sel,currentTarget:sel,type:'change'}));
+  }else if(sel){
+    sel.dispatchEvent(new Event('change',{bubbles:true}));
+    appLoad=new Promise(resolve=>setTimeout(resolve,350));
+  }else if(typeof window.load==='function'){
+    appLoad=Promise.resolve(window.load());
+  }
+  const [dashResult,loadResult]=await Promise.allSettled([dashboard,appLoad]);
+  if(token!==switchToken)return false;
+  if(loadResult.status==='rejected')throw loadResult.reason;
+  if(dashResult.status==='rejected')throw dashResult.reason;
+  window.D=dashResult.value;
+  return true;
+}
+async function select(key){
+  if(!valid(key))return;close();const token=++switchToken;
+  if(document.body)document.body.dataset.blisLoading='true';
+  try{
+    localStorage.setItem('blis-client-ui',key);
+  }catch(_){}
   try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(_){}
   const page=activePage();const u=new URL(location.href);u.pathname='/dashboard.html';u.searchParams.set('client',key);u.searchParams.set('page',page);
   history.replaceState({client:key,page},'',u.pathname+u.search+u.hash);
   window.BLIS_INITIAL_CLIENT=key;try{window.slug=key}catch(_){}
   const sel=document.getElementById('clientSel');if(sel)sel.value=key;
   paint(key);
-  window.BLISClientBrandingV5?.paint?.();
-  window.BLISClientBrandingV4?.paint?.();
-  window.BLISClientBrandingV3?.paint?.();
-  if(sel)sel.dispatchEvent(new Event('change',{bubbles:true}));else if(typeof window.load==='function')window.load();
+  (window.BLISClientBrandingV5||window.BLISClientBrandingV4||window.BLISClientBrandingV3)?.paint?.();
+  try{
+    const ok=await handoffData(key,sel,token);if(!ok)return;
+    if(document.body)document.body.dataset.client=key;
+    window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:key,data:window.D}}));
+  }catch(err){
+    console.error('BLIS client switch failed',err);
+  }finally{
+    if(token===switchToken&&document.body)document.body.dataset.blisLoading='false';
+  }
 }
 function click(e){
-  const o=e.target.closest?.('.client-option[data-client-key]');if(o){e.preventDefault();e.stopPropagation();select(o.dataset.clientKey);return}
+  const o=e.target.closest?.('.client-option[data-client-key]');if(o){e.preventDefault();e.stopPropagation();void select(o.dataset.clientKey);return}
   const b=e.target.closest?.('.client-switch-button');if(b){e.preventDefault();e.stopPropagation();toggle();return}
   const w=document.querySelector('.client-switch');if(w&&!w.contains(e.target))close();
 }
@@ -93,14 +122,15 @@ function init(){
   const wrap=document.querySelector('.client-switch');if(wrap){wrap.style.position='relative';wrap.style.zIndex='200'}
   const menu=document.querySelector('.client-switch-menu');if(menu)menu.style.zIndex='1000';
   if(!wired){
-    wired=true;window.__BLIS_CLIENT_SWITCH_WIRED_V4=true;
+    wired=true;window.__BLIS_CLIENT_SWITCH_WIRED_V5=true;
     document.addEventListener('click',click,true);
     document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
     window.addEventListener('popstate',()=>{ensureMenu();paint(current())});
     ['blis:clientdata','blis:production-ready'].forEach(ev=>window.addEventListener(ev,()=>{ensureMenu();paint(current())}));
   }
 }
-window.BLISClientUIV4={select,paint,current,visibleClients:[...visibleOrder],clients};
-window.BLISClientUIV3=window.BLISClientUIV4;
+window.BLISClientUIV5={select,paint,current,visibleClients:[...visibleOrder],clients};
+window.BLISClientUIV4=window.BLISClientUIV5;
+window.BLISClientUIV3=window.BLISClientUIV5;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
