@@ -31,6 +31,7 @@ const CONTEXT={
 };
 const ALIASES={signals:'social',timeline:'history',live:'overview'};
 let rendering=false,scheduled=false,observer=null;
+const logoCache=new Map();
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 function isEnglish(){
@@ -75,12 +76,24 @@ function removeLegacy(){
 function logoHTML(p,key){
   return `<span class="bch3-logo" data-client-key="${esc(key)}" style="--bch-accent:${p.accent}" aria-hidden="true"><span class="bch3-mark">${esc(p.mark)}</span></span>`;
 }
-function mountLogo(root,p,key,name){
-  if(!p.logo)return;const slot=root.querySelector('.bch3-logo');if(!slot)return;
-  const img=new Image();img.alt=name;img.decoding='async';
-  img.onload=()=>{if(slot.isConnected&&slot.dataset.clientKey===key&&!slot.querySelector('img'))slot.appendChild(img)};
-  img.onerror=()=>{};img.src=p.logo;
+function preloadLogo(path){
+  if(!path)return null;if(logoCache.has(path))return logoCache.get(path);
+  const img=new Image();const rec={img,ready:false,failed:false,waiters:new Set()};logoCache.set(path,rec);
+  img.decoding='async';img.loading='eager';
+  img.onload=()=>{rec.ready=img.naturalWidth>0;for(const fn of [...rec.waiters]){try{fn()}catch(_){}}rec.waiters.clear()};
+  img.onerror=()=>{rec.failed=true;rec.waiters.clear()};
+  img.src=path+'?v=20260831-universal-v6';return rec;
 }
+function mountLogo(root,p,key,name){
+  if(!p.logo)return;const rec=preloadLogo(p.logo);if(!rec)return;
+  const mount=()=>{
+    if(!rec.ready||rec.failed)return;
+    const slot=document.querySelector(`.bch3-logo[data-client-key="${key}"]`);if(!slot||slot.querySelector('img'))return;
+    rec.img.alt=name;slot.appendChild(rec.img);
+  };
+  if(rec.ready)mount();else if(!rec.failed)rec.waiters.add(mount);
+}
+Object.values(P).forEach(p=>{if(p.logo)preloadLogo(p.logo)});
 function contextPair(r,en){const c=CONTEXT[r]||CONTEXT.overview;return en?c.en:c.bg}
 function render(){
   if(rendering)return;rendering=true;
