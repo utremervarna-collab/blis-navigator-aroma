@@ -128,7 +128,9 @@ jobs:
                   await p.waitForTimeout(300);
                   const x=await p.evaluate(({id,sel})=>{
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-                    const visual=root?.querySelector(sel);const vr=visual?.getBoundingClientRect();
+                    const visuals=root?[...root.querySelectorAll(sel)]:[];
+                    const visual=visuals.find(v=>{const q=v.getBoundingClientRect(),s=getComputedStyle(v);return q.width>70&&q.height>30&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.01})||visuals[0];
+                    const vr=visual?.getBoundingClientRect();
                     return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),visual:!!visual,visualW:vr?.width||0,visualH:vr?.height||0};
                   },{id,sel:visualSelector[id]});
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
