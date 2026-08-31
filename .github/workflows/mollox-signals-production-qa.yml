@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/mollox-signals-production-qa.yml'
+      - '000_auth_gateway_resilient.go'
+      - 'zzzzzzzz_intelligence_runtime_v3.go'
       - 'static/navigator-mollox-signals-truth-v1.js'
       - 'static/navigator-risk-priority-sync-v1.js'
       - 'static/navigator-overview-route-guard.js'
