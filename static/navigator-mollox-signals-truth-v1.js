@@ -1,11 +1,13 @@
-/* BLIS Navigator — MOLLOX signal truth guard v3.
+/* BLIS Navigator — MOLLOX signal truth guard v4.
    Baseline/profile facts are evidence, not current signals.
    Owned static web pages are source evidence, not events.
    Current signals must fall inside the selected 30/60/90-day period.
-   Historical rows remain in storage for historical analysis. */
+   Historical rows remain in storage for historical analysis.
+   Truth filtering must not replace the canonical visual-first page owner. */
 (function(){
 'use strict';
-if(window.__BLIS_MOLLOX_SIGNALS_TRUTH_V3)return;
+if(window.__BLIS_MOLLOX_SIGNALS_TRUTH_V4)return;
+window.__BLIS_MOLLOX_SIGNALS_TRUTH_V4=true;
 window.__BLIS_MOLLOX_SIGNALS_TRUTH_V3=true;
 window.__BLIS_MOLLOX_SIGNALS_TRUTH_V2=true;
 window.__BLIS_MOLLOX_SIGNALS_TRUTH_V1=true;
@@ -96,28 +98,50 @@ function cleanClientPayload(){
 function wrapMethod(stream,name){
   if(!stream||typeof stream[name]!=='function')return false;
   const current=stream[name];
-  if(current.__molloxTruthV3)return false;
+  if(current.__molloxTruthV4)return false;
   const raw=current.__molloxTruthBase||current;
   const base=raw.bind(stream);
   const wrapped=function(){return filterRows(base(...arguments))};
   wrapped.__molloxTruthV1=true;
   wrapped.__molloxTruthV2=true;
   wrapped.__molloxTruthV3=true;
+  wrapped.__molloxTruthV4=true;
   wrapped.__molloxTruthBase=raw;
   stream[name]=wrapped;
   return true;
+}
+
+function renderCanonicalVisual(id){
+  try{
+    if(typeof window.BLISVisualSpecialV2?.render==='function'){
+      window.BLISVisualSpecialV2.render(id);
+      return true;
+    }
+  }catch(_){}
+  try{
+    if(typeof window.BLISVisualSuiteV1?.render==='function'){
+      window.BLISVisualSuiteV1.render(id);
+      return true;
+    }
+  }catch(_){}
+  return false;
 }
 
 function rerenderCurrent(){
   if(slug()!=='mollox')return;
   const active=document.querySelector('.page.active')?.id||'';
   if(active==='social'){
-    try{window.BLISSignalsSystemV3?.render?.()}catch(_){}
-    try{window.BLISIntelligenceStreamV3?.renderSignals?.()}catch(_){}
+    const canonical=renderCanonicalVisual('social');
+    if(!canonical){
+      try{window.BLISSignalsSystemV3?.render?.()}catch(_){}
+      if(!window.BLISSignalsSystemV3)try{window.BLISIntelligenceStreamV3?.renderSignals?.()}catch(_){}
+    }
   }
   if(active==='opportunities'){
-    try{window.BLISIntelligenceStreamV3?.renderOpportunities?.()}catch(_){}
+    const canonical=renderCanonicalVisual('opportunities');
+    if(!canonical)try{window.BLISIntelligenceStreamV3?.renderOpportunities?.()}catch(_){}
     try{window.BLISRiskPrioritySyncV1?.render?.()}catch(_){}
+    setTimeout(()=>{try{window.BLISRiskPrioritySyncV1?.render?.()}catch(_){}},60);
   }
 }
 
@@ -151,7 +175,7 @@ for(const ev of [
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',patch,{once:true});else patch();
 
-window.BLISMolloxSignalTruthV1=window.BLISMolloxSignalTruthV2=window.BLISMolloxSignalTruthV3={
+window.BLISMolloxSignalTruthV1=window.BLISMolloxSignalTruthV2=window.BLISMolloxSignalTruthV3=window.BLISMolloxSignalTruthV4={
   filter:filterRows,
   isBaseline:isMolloxBaselineSignal,
   isCrossClient:isCrossClientSignal,
@@ -159,6 +183,7 @@ window.BLISMolloxSignalTruthV1=window.BLISMolloxSignalTruthV2=window.BLISMolloxS
   isCurrent:isCurrentMolloxSignal,
   eventTime,
   periodDays,
-  patch
+  patch,
+  rerender:rerenderCurrent
 };
 })();
