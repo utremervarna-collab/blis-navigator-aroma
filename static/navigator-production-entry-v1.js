@@ -1,9 +1,9 @@
-/* BLIS Navigator — production entrypoint v40.
+/* BLIS Navigator — production entrypoint v41.
    Verified client-logo header + client-perspective signal classification + shared Risk Priority signal view + canonical visual owners. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V40)return;window.__BLIS_PRODUCTION_ENTRY_V40=true;
-const VERSION='20260830-risk-priority-sync-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V41)return;window.__BLIS_PRODUCTION_ENTRY_V41=true;
+const VERSION='20260831-canonical-visual-contract-1';
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -14,6 +14,15 @@ function loadStyle(src){return new Promise((resolve,reject)=>{const l=document.c
 function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('JS: '+src));document.body.appendChild(s)})}
 async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}
 async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
+function markCanonicalVisuals(){
+  const digital=document.querySelector('#digitalBody .dv-radar-wrap,#digital .dv-radar-wrap');
+  if(digital){digital.setAttribute('data-digital-radar','1');digital.setAttribute('data-blis-visual','digital')}
+}
+function scheduleVisualContract(){
+  markCanonicalVisuals();
+  setTimeout(markCanonicalVisuals,50);
+  setTimeout(markCanonicalVisuals,180);
+}
 async function boot(){
  for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
  await safe('/navigator-system-structure-v1.js');
@@ -32,10 +41,11 @@ async function boot(){
  await safe('/navigator-color-system-v1.js');
  await safe('/navigator-no-page-numbers-v1.js');
  await safe('/navigator-language-cleanup-v1.js');
- window.addEventListener('blis:intelligence',()=>setTimeout(()=>window.BLISCanonicalRenderActive?.(),50));
- document.documentElement.dataset.navigatorUi='risk-priority-sync-1';
+ window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});
+ for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
+ document.documentElement.dataset.navigatorUi='canonical-visual-contract-1';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
- setTimeout(()=>{window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.()},100);
+ setTimeout(()=>{window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();scheduleVisualContract()},100);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
