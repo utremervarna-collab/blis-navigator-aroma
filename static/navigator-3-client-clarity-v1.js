@@ -6,10 +6,10 @@ if(window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1)return;
 window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1=true;
 
 const STORY={
- overview:{label:'Общ изглед',question:'Как е брандът ми сега?',copy:'Виждате общото състояние, последната посока и факторите, които най-силно движат картината.'},
+ overview:{label:'Общ преглед',question:'Как е брандът ми сега?',copy:'Виждате общото състояние, последната посока и факторите, които най-силно движат картината.'},
  social:{label:'Мониторинг',question:'Какво се случва в момента?',copy:'Радарът събира значимите сигнали, видимостта, рисковете и възможностите и показва къде се проявява всяка промяна.'},
  market:{label:'Среда',question:'Какво се случва около бранда и как се възприема?',copy:'Пазарните теми и публичното възприятие се четат заедно, за да се вижда връзката между средата и репутационния ефект.'},
- competition:{label:'Конкуренти',question:'Как се движим спрямо останалите?',copy:'Сравнението показва текущата позиция, движението на конкурентите и конкретните сигнали зад промяната.'},
+ competition:{label:'Конкуренция',question:'Как се движим спрямо останалите?',copy:'Сравнението показва текущата позиция, движението на конкурентите и конкретните сигнали зад промяната.'},
  history:{label:'Развитие/Доклади',question:'Как се развива картината във времето?',copy:'Траекторията на BLIS индекса се свързва с ключовите събития и с реално публикуваните клиентски доклади.'},
  hub:{label:'Intelligence HUB',question:'Какво публикуваме и кога?',copy:'Редакционно и аналитично съдържание.'},
  calendar:{label:'Календар',question:'Какво предстои?',copy:'Събития и ключови дати.'}
@@ -38,7 +38,7 @@ function installBulgarianLockCss(){
   style.textContent=`
   .bch3-lang,[data-blis-language-switch],.n3-language-switch-disabled{display:none!important}
   .n3-radar-legend{width:min(760px,100%);box-sizing:border-box;margin:9px auto 3px;padding:9px 11px;border:1px solid #dfe7ef;border-radius:11px;background:#fff;box-shadow:0 6px 18px rgba(20,47,80,.045)}
-  .n3-radar-legend-title{margin-bottom:7px;color:#46617a;font-size:8px;font-weight:900;letter-spacing:.02em}
+  .n3-radar-legend-title{margin-bottom:7px;color:#46617a;font-size:8px;font-weight:900;letter-spacing:.02em;text-align:center}
   .n3-radar-legend-items{display:flex;align-items:center;justify-content:center;gap:10px 14px;flex-wrap:wrap}
   .n3-radar-legend-item{display:inline-flex;align-items:center;gap:5px;color:#5e7387;font-size:8px;white-space:nowrap}
   .n3-radar-legend-item i{width:9px;height:9px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1px rgba(31,67,97,.12);background:var(--legend-color);flex:0 0 9px}
@@ -92,7 +92,7 @@ function radarCounts(){const root=document.querySelector('#social .dv-radar-grid
 function ensureRadarLegend(){
   const col=document.querySelector('#social .dv-radar-column'),radar=col?.querySelector('.dv-radar-wrap');if(!col||!radar)return;
   let legend=col.querySelector('[data-n3-radar-legend]');
-  if(!legend){legend=document.createElement('div');legend.className='n3-radar-legend';legend.dataset.n3RadarLegend='1';legend.innerHTML=`<div class="n3-radar-legend-title">Как се четат точките на радара</div><div class="n3-radar-legend-items"><span class="n3-radar-legend-item" data-legend="source" style="--legend-color:#69fff3"><i></i>Наблюдаван източник <b></b></span><span class="n3-radar-legend-item" data-legend="risk" style="--legend-color:#d45c55"><i></i>Риск <b></b></span><span class="n3-radar-legend-item" data-legend="good" style="--legend-color:#35a873"><i></i>Възможност / позитивна промяна <b></b></span><span class="n3-radar-legend-item" data-legend="comp" style="--legend-color:#8061cc"><i></i>Конкурент <b></b></span><span class="n3-radar-legend-item" data-legend="market" style="--legend-color:#d39a32"><i></i>Пазарна промяна <b></b></span><span class="n3-radar-legend-item" data-legend="info" style="--legend-color:#4a86ba"><i></i>Друг значим сигнал <b></b></span></div><small class="n3-radar-legend-note">По-голяма точка = по-висока значимост · Пулсираща точка = нов сигнал</small>`;radar.insertAdjacentElement('afterend',legend)}
+  if(!legend){legend=document.createElement('div');legend.className='n3-radar-legend';legend.dataset.n3RadarLegend='1';legend.innerHTML=`<div class="n3-radar-legend-title">Легенда на точките</div><div class="n3-radar-legend-items"><span class="n3-radar-legend-item" data-legend="source" style="--legend-color:#69fff3"><i></i>Наблюдаван източник <b></b></span><span class="n3-radar-legend-item" data-legend="risk" style="--legend-color:#d45c55"><i></i>Риск <b></b></span><span class="n3-radar-legend-item" data-legend="good" style="--legend-color:#35a873"><i></i>Възможност / позитивна промяна <b></b></span><span class="n3-radar-legend-item" data-legend="comp" style="--legend-color:#8061cc"><i></i>Конкурент <b></b></span><span class="n3-radar-legend-item" data-legend="market" style="--legend-color:#d39a32"><i></i>Пазарна промяна <b></b></span><span class="n3-radar-legend-item" data-legend="info" style="--legend-color:#4a86ba"><i></i>Друг значим сигнал <b></b></span></div><small class="n3-radar-legend-note">По-голяма точка = по-висока значимост · Пулсираща точка = нов сигнал</small>`;radar.insertAdjacentElement('afterend',legend)}
   const counts=radarCounts();for(const [k,v] of Object.entries(counts))setText(legend.querySelector(`[data-legend="${k}"] b`),String(v));
 }
 let normalizeTimer=0,uiTimer=0,copyObserver=null;
@@ -126,7 +126,7 @@ function decorate(){
   if(page)normalizeBulgarianCopy(page);
   normalizeRouteLabels();ensureRadarLegend();
   scheduleNormalization(90);scheduleNormalization(260);scheduleClientUI(110);scheduleClientUI(280);
-  document.documentElement.dataset.navigatorClarity='simplified-client-clarity-v5-short-labels-radar-legend';
+  document.documentElement.dataset.navigatorClarity='simplified-client-clarity-v5-final-labels-radar-legend';
   document.documentElement.dataset.navigatorCopyOwner='source-localized-v5';
 }
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(decorate,35)}
