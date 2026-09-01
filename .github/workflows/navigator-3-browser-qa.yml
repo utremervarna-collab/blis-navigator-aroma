@@ -61,8 +61,8 @@ jobs:
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
-          const labels=['Общ изглед','Мониторинг','Среда','Конкуренти','Развитие/Доклади','Intelligence HUB','Календар'];
-          const context={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
+          const labels=['Общ преглед','Мониторинг','Среда','Конкуренция','Развитие/Доклади','Intelligence HUB','Календар'];
+          const context={overview:'Общ преглед',social:'Мониторинг',market:'Среда',competition:'Конкуренция',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
           const reviewClients=new Set(['aroma','mollox']);
 
           async function visibleBox(p,selector,label){
@@ -129,7 +129,10 @@ jobs:
                   if(id==='social'){
                     await p.waitForFunction(()=>!!document.querySelector('#social .dv-radar-grid')&&!!document.querySelector('#social [data-n3-radar-legend]'),null,{timeout:9000});
                     const radarBox=await visibleBox(p,'#social .dv-radar-wrap',`${client}/social`);
+                    const legendBox=await visibleBox(p,'#social [data-n3-radar-legend]',`${client}/social legend`);
                     assert(radarBox.width>=320&&radarBox.width<=620&&radarBox.height>=320&&radarBox.height<=620,`${client}/social: radar geometry broken ${JSON.stringify(radarBox)}`);
+                    assert(legendBox.y>=radarBox.y+radarBox.height-2,`${client}/social: legend is not below radar ${JSON.stringify({radarBox,legendBox})}`);
+                    assert(Math.abs((legendBox.x+legendBox.width/2)-(radarBox.x+radarBox.width/2))<90,`${client}/social: legend not centered under radar ${JSON.stringify({radarBox,legendBox})}`);
                     const radar=await p.evaluate(()=>{
                       const grid=document.querySelector('#social .dv-radar-grid'),stage=document.querySelector('#social .dv-stage'),icon=document.querySelector('#social .dv-radar-sector svg'),legend=document.querySelector('#social [data-n3-radar-legend]');
                       const g=getComputedStyle(grid),st=getComputedStyle(stage),ic=getComputedStyle(icon);
@@ -140,7 +143,7 @@ jobs:
                     });
                     assert(radar.background!=='none'&&radar.stage==='grid',`${client}/social: original radar CSS lost ${JSON.stringify(radar)}`);
                     assert(radar.iconW>0&&radar.iconW<=24&&radar.iconH>0&&radar.iconH<=24,`${client}/social: SVG sizing broken ${JSON.stringify(radar)}`);
-                    assert(/Наблюдаван източник/.test(radar.text)&&/Риск/.test(radar.text)&&/Възможност/.test(radar.text)&&/Конкурент/.test(radar.text)&&/Пазарна промяна/.test(radar.text)&&/Друг значим сигнал/.test(radar.text),`${client}/social: radar legend incomplete ${radar.text}`);
+                    assert(/Легенда на точките/.test(radar.text)&&/Наблюдаван източник/.test(radar.text)&&/Риск/.test(radar.text)&&/Възможност/.test(radar.text)&&/Конкурент/.test(radar.text)&&/Пазарна промяна/.test(radar.text)&&/Друг значим сигнал/.test(radar.text),`${client}/social: radar legend incomplete ${radar.text}`);
                     assert(JSON.stringify(radar.shown)===JSON.stringify(radar.actual),`${client}/social: radar legend counts mismatch ${JSON.stringify(radar)}`);
                   }
                   if(id==='market'){
@@ -168,7 +171,7 @@ jobs:
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
-              console.log('NAVIGATOR_3_SHORT_LABELS_RADAR_LEGEND_HOME_QA_OK');
+              console.log('NAVIGATOR_3_FINAL_LABELS_RADAR_LEGEND_HOME_QA_OK');
             } finally {await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
