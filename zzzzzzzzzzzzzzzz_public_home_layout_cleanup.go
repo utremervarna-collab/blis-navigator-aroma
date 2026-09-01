@@ -14,11 +14,11 @@ func init() {
 	if start := strings.Index(indexHTML, abstractStart); start >= 0 {
 		if facts := strings.Index(indexHTML[start:], factsStart); facts >= 0 {
 			facts += start
-			replacement := `<div class="heroSnapshot" aria-label="BLIS Intelligence Snapshot"><div class="floatCard"><div class="floatTop"><b>BLIS Intelligence Snapshot</b><span class="live">● Активно наблюдение</span></div><div class="snapshot"><div class="dial"><div class="dialin"><div><strong>72</strong><br><small>/100</small></div></div></div><div class="spark"><svg viewBox="0 0 250 100" aria-hidden="true"><path d="M6 83L37 68L67 71L96 55L126 61L157 40L187 45L216 25L244 18" fill="none" stroke="#2466dc" stroke-width="3"/><path d="M6 83L37 68L67 71L96 55L126 61L157 40L187 45L216 25L244 18L244 98L6 98Z" fill="#eaf2ff"/><circle cx="244" cy="18" r="4" fill="#2ba769"/></svg></div></div><div class="miniStats"><div class="miniStat"><small>Пазарна среда</small><b>↗</b></div><div class="miniStat"><small>Репутация</small><b>68</b></div><div class="miniStat"><small>Активни сигнали</small><b>4</b></div></div></div></div></section>`
+			replacement := `<div class="heroSnapshot" aria-label="BLIS Intelligence Snapshot"><div class="floatCard"><div class="floatTop"><b>BLIS Intelligence Snapshot</b><span class="live">● Активно наблюдение</span></div><div class="snapshot"><div class="dial"><div class="dialin"><div><strong>72</strong><br><small>/100</small></div></div></div><div class="spark"><svg viewBox="0 0 250 100" aria-hidden="true"><path d="M6 83L37 68L67 71L96 55L126 61L157 40L187 45L216 25L244 18" fill="none" stroke="#2466dc" stroke-width="3"/><path d="M6 83L37 68L67 71L96 55L126 61L157 40L187 45L216 25L244 18L244 98L6 98Z" fill="#eaf2ff"/><circle cx="244" cy="18" r="4" fill="#2ba769"/></svg></div></div><div class="miniStats"><div class="miniStat"><small>Пазарна среда</small><b>↗</b></div><div class="miniStat"><small>Репутация</small><b>68</b></div><div class="miniStat"><small>Активни сигнали</small><b>4</b></div></div></div></div></div></section>`
 
-			// `start:facts` contains the old abstract column plus the closing
-			// wrappers of heroInner/hero. Rebuild those wrappers explicitly.
-			indexHTML = indexHTML[:start] + replacement + indexHTML[facts+len(factsStart):]
+			// Preserve the next section's opening tag. `start:facts` contains
+			// the old abstract column plus the closing wrappers of heroInner/hero.
+			indexHTML = indexHTML[:start] + replacement + indexHTML[facts:]
 		}
 	}
 
