@@ -11,7 +11,9 @@ on:
       - 'static/navigator-3-visual-preservation-v1.js'
       - 'static/navigator-3-client-proof-v1.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/home-hub-dropdown.js'
       - 'zzz_home_intelligence_hub_patch.go'
+      - 'zzzz_home_hub_dropdown_loader.go'
       - '.github/workflows/navigator-page-contract-qa.yml'
   workflow_dispatch:
 
