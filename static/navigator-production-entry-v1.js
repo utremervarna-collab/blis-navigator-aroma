@@ -41,11 +41,12 @@ async function boot(){
  await safe('/navigator-color-system-v1.js');
  await safe('/navigator-no-page-numbers-v1.js');
  await safe('/navigator-language-cleanup-v1.js');
+ await safe('/navigator-3-client-clarity-v1.js');
  window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});
  for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
  document.documentElement.dataset.navigatorUi='canonical-visual-contract-1';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
- setTimeout(()=>{window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();scheduleVisualContract()},100);
+ setTimeout(()=>{window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.schedule?.();scheduleVisualContract()},100);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
