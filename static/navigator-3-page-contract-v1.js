@@ -15,6 +15,7 @@ const COPY={
   hub:{title:'Intelligence HUB',sub:'Аналитични материали, знания и съдържание на едно място.'},
   calendar:{title:'Календар',sub:'Събития, срокове и важни дати за наблюдение.'}
 };
+const CORE=new Set(['overview','social','market','competition','history']);
 const ALIAS={digital:'social',opportunities:'social',live:'social',signals:'social',reputation:'market',reports:'history',timeline:'history'};
 let timer=0;
 
@@ -34,6 +35,7 @@ function installCss(){
   /* One page title only: the shell context bar. */
   .blis-system-bar{display:none!important}
   #overview .n3-page-head,#social .n3-page-head,#market .n3-page-head,#competition .n3-page-head,#history .n3-page-head,#hub .n3-page-head,#calendar .n3-page-head{display:none!important}
+  [data-n3-duplicate-route-title],[data-n3-duplicate-route-copy]{display:none!important}
 
   /* Canonical owners that still render an old route-level header. */
   #overview .vs-head,#competition .vs-head,#history .vs-head{display:none!important}
@@ -81,6 +83,20 @@ function normalizeVisualCopy(id){
   });
 }
 
+function suppressExactRouteTitle(id){
+  if(!CORE.has(id))return;
+  const root=document.getElementById(id),c=COPY[id];if(!root||!c)return;
+  root.querySelectorAll('h1,h2,h3').forEach(h=>{
+    if(h.textContent.trim()!==c.title)return;
+    const known=h.closest('.n3-page-head,.vs-head,.ref-title,.pm-hero');
+    if(known){hide(known);return}
+    h.dataset.n3DuplicateRouteTitle='1';hide(h);
+    const parent=h.parentElement;
+    const p=(h.nextElementSibling?.matches?.('p')?h.nextElementSibling:parent?.querySelector?.(':scope > p'))||null;
+    if(p){p.dataset.n3DuplicateRouteCopy='1';hide(p)}
+  });
+}
+
 function removeDuplicateBodyTitles(id){
   document.querySelectorAll('.blis-system-bar').forEach(hide);
   document.querySelectorAll(`#${id} .n3-page-head`).forEach(hide);
@@ -91,6 +107,7 @@ function removeDuplicateBodyTitles(id){
     document.querySelectorAll('#social .dv-title p,#social .dv-summary').forEach(hide);
     const title=document.querySelector('#social .dv-title');if(title)show(title);
   }
+  suppressExactRouteTitle(id);
 }
 
 function apply(){
@@ -101,6 +118,7 @@ function apply(){
   syncShell(id);
   removeDuplicateBodyTitles(id);
   normalizeVisualCopy(id);
+  suppressExactRouteTitle(id);
 }
 
 function schedule(){
