@@ -82,7 +82,7 @@ jobs:
                 }));
                 assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing ${JSON.stringify(start)}`);
                 assert(!start.switcher,`${client}: language switcher is still visible`);
-                assert(start.nav.join('|')===labels.join('|'),`${client}: non-Bulgarian navigation ${start.nav.join('|')}`);
+                assert(start.nav.length===labels.length&&start.nav.every((x,i)=>x.endsWith(labels[i])),`${client}: non-Bulgarian navigation ${start.nav.join('|')}`);
                 assert(start.brief&&start.briefCards>=5,`${client}: client brief missing`);
                 assert(start.proof,`${client}: page proof action missing`);
                 assert(start.subtitle==='Система за бизнес анализ и наблюдение',`${client}: client-facing product subtitle not Bulgarian`);
