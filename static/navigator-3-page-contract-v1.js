@@ -35,8 +35,9 @@ function installCss(){
   .blis-system-bar{display:none!important}
   #overview .n3-page-head,#social .n3-page-head,#market .n3-page-head,#competition .n3-page-head,#history .n3-page-head,#hub .n3-page-head,#calendar .n3-page-head{display:none!important}
 
-  /* Canonical owners that still render their old route heading. */
+  /* Canonical owners that still render an old route-level header. */
   #overview .vs-head,#competition .vs-head,#history .vs-head{display:none!important}
+  #overview .ref-title,#market .ref-title,#competition .ref-title,#history .ref-title{display:none!important}
   #market .pm-hero{display:none!important}
 
   /* Radar: keep the visual title, remove a second page description and repeated summary sentence. */
@@ -62,8 +63,8 @@ function normalizeVisualCopy(id){
     text(document.querySelector('#overview .vs-vhead b'),'BLIS индекс');
   }else if(id==='social'){
     text(document.querySelector('#social .dv-title h2'),'Интелигентен радар');
-    document.querySelectorAll('#social .n3-live-head span').forEach(el=>text(el,'Текущо наблюдение'));
-    document.querySelectorAll('#social .n3-live-head b').forEach(el=>text(el,'Какво се случва сега'));
+    document.querySelectorAll('#social .n3-live-strip-head span').forEach(el=>text(el,'Текущо наблюдение'));
+    document.querySelectorAll('#social .n3-live-strip-head b').forEach(el=>text(el,'Какво се случва сега'));
   }else if(id==='market'){
     text(document.querySelector('#market .pm-maphead b'),'Мрежа на пазарни и репутационни фактори');
   }else if(id==='competition'){
@@ -83,6 +84,7 @@ function normalizeVisualCopy(id){
 function removeDuplicateBodyTitles(id){
   document.querySelectorAll('.blis-system-bar').forEach(hide);
   document.querySelectorAll(`#${id} .n3-page-head`).forEach(hide);
+  if(['overview','market','competition','history'].includes(id))document.querySelectorAll(`#${id} .ref-title`).forEach(hide);
   if(['overview','competition','history'].includes(id))document.querySelectorAll(`#${id} .vs-head`).forEach(hide);
   if(id==='market')document.querySelectorAll('#market .pm-hero').forEach(hide);
   if(id==='social'){
