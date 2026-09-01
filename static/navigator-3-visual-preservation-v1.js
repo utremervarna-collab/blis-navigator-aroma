@@ -1,4 +1,4 @@
-/* BLIS Navigator 3.0 — canonical visual preservation layer v2.
+/* BLIS Navigator 3.0 — canonical visual preservation layer v3.
    Never draws replacement charts. It restores only the approved canonical visual owners
    after the 5+2 information architecture reorganizes page ownership. */
 (function(){
@@ -9,8 +9,9 @@ let repairing=false,radarTimer=0;
 const active=()=>window.BLISRouteAlias?.(document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview')||'overview';
 
 function css(){
- if(document.getElementById('navigator3VisualPreservationV2Css'))return;
- const s=document.createElement('style');s.id='navigator3VisualPreservationV2Css';s.textContent=`
+ if(document.getElementById('navigator3VisualPreservationV3Css'))return;
+ const s=document.createElement('style');s.id='navigator3VisualPreservationV3Css';s.textContent=`
+ html[data-navigator-version="3.0-preserved-visuals-5plus2"] .page.active{visibility:visible!important}
  html[data-navigator-version="3.0-preserved-visuals-5plus2"] #overview > #overviewBody{display:none!important}
  html[data-navigator-version="3.0-preserved-visuals-5plus2"] [data-blis-language-switch],
  html[data-navigator-version="3.0-preserved-visuals-5plus2"] .bch3-lang,
@@ -19,13 +20,19 @@ function css(){
  html[data-navigator-version="3.0-preserved-visuals-5plus2"] .language-toggle{display:none!important}
  `;document.head.appendChild(s)
 }
+function reveal(){
+ const guard=document.getElementById('blisPrepaintGuard');if(guard)guard.remove();
+ document.querySelectorAll('.page').forEach(p=>{p.style.visibility=p.classList.contains('active')?'visible':''});
+ if(active()==='competition')document.body?.classList.add('blis-competition-ready');
+ document.documentElement.dataset.navigatorReveal='ready';
+}
 function forceBulgarian(){
  document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';
  document.querySelectorAll('[data-blis-language-switch],.bch3-lang,#langToggle,.lang-toggle,.language-toggle').forEach(n=>n.remove());
  document.querySelectorAll('.topbar button,.topbar a').forEach(n=>{const t=(n.textContent||'').replace(/\s+/g,' ').trim().toUpperCase();if(t==='EN'||t==='BG | EN'||t==='BG/EN')n.remove()});
 }
 function paintChrome(){
- forceBulgarian();
+ forceBulgarian();reveal();
  try{window.BLISColorSystemV1?.decorate?.()}catch(_){}
  try{window.BLISOverviewMarkerFixV1?.align?.()}catch(_){}
  try{window.BLISNoPageNumbersV1?.clean?.()}catch(_){}
@@ -47,11 +54,12 @@ function mark(){
  if(market)market.dataset.blisVisual='market-network-canonical';
  if(comp)comp.dataset.blisVisual='competition-bar-canonical';
  if(history)history.dataset.blisVisual='history-canonical';
- document.documentElement.dataset.navigatorVisualOwner='canonical-preserved-v2';
+ document.documentElement.dataset.navigatorVisualOwner='canonical-preserved-v3';
 }
 function cleanOverview(){
  const legacy=document.getElementById('overviewBody');if(legacy)legacy.setAttribute('aria-hidden','true');
  const premium=document.getElementById('overviewPremium');if(premium&&hasOverview())premium.dataset.n3VisualOwner='overview-client-home-v1';
+ reveal();
 }
 function socialHost(){return document.getElementById('socialBody')||document.getElementById('social')}
 function ensureRadarMount(){
@@ -77,7 +85,11 @@ function repair(id=active()){
  try{
   css();paintChrome();
   if(id==='overview'){
-   if(!hasOverview())window.BLISVisualSuiteV1?.render?.('overview');
+   if(!hasOverview()){
+    if(window.BLISOverviewClientHomeV1?.render)window.BLISOverviewClientHomeV1.render();
+    else if(window.BLISOverviewSystemV4?.render)window.BLISOverviewSystemV4.render();
+    else window.BLISVisualSuiteV1?.render?.('overview');
+   }
    cleanOverview();
   }
   if(id==='social')repairRadar(0);
@@ -87,13 +99,13 @@ function repair(id=active()){
   }
   if(id==='competition'&&!hasCompetition())window.BLISVisualSuiteV1?.render?.('competition');
   if(id==='history'&&!hasHistory())window.BLISVisualSuiteV1?.render?.('history');
-  mark();
+  reveal();mark();
  }catch(e){console.error('Navigator 3 canonical visual restore error',id,e)}finally{repairing=false}
 }
 function schedule(id=active()){[0,60,180,420].forEach(ms=>setTimeout(()=>repair(id),ms))}
 for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','blis:intelligence','blis:periodchange','blis:production-ready'])window.addEventListener(ev,e=>schedule(e?.detail?.page||active()));
 window.addEventListener('popstate',()=>schedule(active()));
-const observer=new MutationObserver(()=>{forceBulgarian();if(active()==='overview')cleanOverview()});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{css();observer.observe(document.body,{childList:true,subtree:true});schedule()},{once:true});else{css();observer.observe(document.body,{childList:true,subtree:true});schedule()}
-window.BLISNavigator3VisualPreservationV1={repair,schedule,mark,repairRadar,cleanOverview,forceBulgarian};
+const observer=new MutationObserver(()=>{forceBulgarian();reveal();if(active()==='overview')cleanOverview()});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{css();reveal();observer.observe(document.body,{childList:true,subtree:true});schedule()},{once:true});else{css();reveal();observer.observe(document.body,{childList:true,subtree:true});schedule()}
+window.BLISNavigator3VisualPreservationV1={repair,schedule,mark,repairRadar,cleanOverview,forceBulgarian,reveal};
 })();
