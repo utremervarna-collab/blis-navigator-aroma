@@ -8,6 +8,8 @@ on:
       - main
     paths:
       - 'static/navigator-3-page-contract-v1.js'
+      - 'static/navigator-3-visual-preservation-v1.js'
+      - 'static/navigator-3-client-proof-v1.js'
       - 'static/navigator-production-entry-v1.js'
       - 'zzz_home_intelligence_hub_patch.go'
       - '.github/workflows/navigator-page-contract-qa.yml'

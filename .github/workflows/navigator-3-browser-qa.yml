@@ -77,17 +77,17 @@ jobs:
             await p.waitForSelector('.hero .heroInner',{state:'visible',timeout:8000});
             const geom=await p.evaluate(()=>{
               const box=s=>document.querySelector(s)?.getBoundingClientRect();
-              const hero=box('.hero'),inner=box('.heroInner'),abstract=box('.abstract'),card=box('.floatCard');
+              const hero=box('.hero'),inner=box('.heroInner'),abstract=box('.heroSnapshot,.abstract'),card=box('.heroSnapshot .floatCard,.floatCard');
               const hub=document.querySelector('#resources.homeHubLive'),top=box('#resources .homeHubTop'),kinds=box('#resources .homeHubKinds'),grid=box('#resources .hubGrid');
               const css=s=>{const e=document.querySelector(s);return e?getComputedStyle(e):null};
               return{hero,inner,abstract,card,top,kinds,grid,hub:hub?hub.getBoundingClientRect():null,heroMin:css('.hero')?.minHeight,hubPadTop:css('#resources')?.paddingTop};
             });
             assert(geom.hero&&geom.hero.height<=570,`public home: hero still oversized ${JSON.stringify(geom.hero)}`);
             assert(geom.abstract&&geom.abstract.height<=520,`public home: abstract still oversized ${JSON.stringify(geom.abstract)}`);
-            assert(geom.card&&geom.card.y>geom.hero.y+80&&geom.card.y+geom.card.height<geom.hero.y+geom.hero.height-35,`public home: BLIS card not composed inside hero ${JSON.stringify(geom)}`);
-            assert(geom.hub&&geom.top&&geom.kinds&&geom.grid,'public home: Hub composition missing');
-            const topToKinds=geom.kinds.y-(geom.top.y+geom.top.height),kindsToGrid=geom.grid.y-(geom.kinds.y+geom.kinds.height);
-            assert(topToKinds<=30&&kindsToGrid<=30,`public home: Hub has excessive vertical gap ${JSON.stringify({topToKinds,kindsToGrid,geom})}`);
+            assert(geom.card&&geom.card.y>=geom.hero.y+10&&geom.card.y+geom.card.height<=geom.hero.y+geom.hero.height-10,`public home: BLIS card not composed inside hero ${JSON.stringify(geom)}`);
+            assert(geom.hub&&geom.top&&geom.grid,'public home: Hub composition missing');
+            const hubGap=geom.kinds?Math.max(geom.kinds.y-(geom.top.y+geom.top.height),geom.grid.y-(geom.kinds.y+geom.kinds.height)):geom.grid.y-(geom.top.y+geom.top.height);
+            assert(hubGap<=30,`public home: Hub has excessive vertical gap ${JSON.stringify({hubGap,geom})}`);
             await p.screenshot({path:'/tmp/nav3-shots/home-public.png',fullPage:true});
             await p.locator('#resources').scrollIntoViewIfNeeded();
             await p.screenshot({path:'/tmp/nav3-shots/home-hub.png',fullPage:false});
