@@ -9,6 +9,7 @@ on:
       - 'static/navigator-3-*.js'
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-system-structure-v1.js'
+      - 'static/navigator-market-system-v1.js'
       - '.github/workflows/navigator-3-browser-qa.yml'
   workflow_dispatch:
 
@@ -136,7 +137,10 @@ jobs:
                   }
                   if(id==='market'){
                     await p.waitForFunction(()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-summary]'),null,{timeout:9000});
+                    await p.waitForFunction(()=>document.querySelector('#market .market1-head h2')?.textContent?.trim()==='Пазар и репутация',null,{timeout:5000});
                     await visibleBox(p,'#market .pm-stage,#market .pm-canvas',`${client}/market`);
+                    const marketOldTitle=await p.evaluate(()=>[...document.querySelectorAll('#market h1,#market h2,#market h3')].some(x=>/Пазар и нагласи/i.test(x.textContent||'')));
+                    assert(!marketOldTitle,`${client}/market: legacy title Пазар и нагласи remains visible`);
                     const kpisHidden=await p.evaluate(()=>{const el=document.querySelector('#market .pm-kpis');return !el||getComputedStyle(el).display==='none'});
                     assert(kpisHidden,`${client}/market: old KPI wall is still visible`);
                   }
