@@ -110,7 +110,7 @@ jobs:
                     if(id==='social'||id==='history')assert(count<=3,`${client}/${id}: too many primary summary cards ${count}`);
                   }
                   if(id==='market'){
-                    const hidden=await p.locator('#market .pm-kpis').evaluate(el=>getComputedStyle(el).display==='none').catch(()=>true);
+                    const hidden=await p.evaluate(()=>{const el=document.querySelector('#market .pm-kpis');return !el||getComputedStyle(el).display==='none'});
                     assert(hidden,`${client}/market: old KPI wall remains visible`);
                   }
                   const english=await p.evaluate(()=>[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em,.page.active .pm-client-badge i')].some(x=>/\bLIVE\b/i.test(x.textContent.trim())));
@@ -131,6 +131,7 @@ jobs:
                 const proofState=await p.evaluate(()=>{const d=document.getElementById('n3pDrawer');return{owner:d?.dataset?.n3pOwner||'',proofOwner:document.documentElement.dataset.navigatorProof||'',openOwner:document.documentElement.dataset.navigatorProofOpen||'',html:(d?.innerHTML||'').slice(0,500)}});
                 assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete text=${JSON.stringify(proof.slice(0,500))} state=${JSON.stringify(proofState)}`);
                 await p.locator('[data-n3p-close]').click();
+                await p.waitForFunction(()=>!document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:3000});
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
