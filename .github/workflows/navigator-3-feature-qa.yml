@@ -1,0 +1,80 @@
+name: Navigator 3 Feature QA
+
+on:
+  push:
+    branches:
+      - feature/navigator-3-bg-client-clarity
+  workflow_dispatch:
+
+jobs:
+  nav3-feature-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build application
+        run: go build -tags netgo -ldflags '-s -w' -o app .
+
+      - name: Check canonical JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check static/navigator-production-entry-v1.js
+          node --check static/navigator-reference.js
+          node --check static/navigator-system-structure-v1.js
+          node --check static/navigator-3-client-clarity-v1.js
+
+      - name: Validate Navigator 3 Bulgarian client contract
+        run: |
+          set -euo pipefail
+          clarity=static/navigator-3-client-clarity-v1.js
+          structure=static/navigator-system-structure-v1.js
+          entry=static/navigator-production-entry-v1.js
+
+          grep -q "navigator-3-client-clarity-v1.js" "$entry"
+          grep -q "navigatorVersion='3.0-client-clarity-bg'" "$clarity"
+          grep -q "document.documentElement.lang='bg'" "$clarity"
+          grep -q "Какво е текущото състояние на марката?" "$clarity"
+          grep -q "Какво се промени?" "$clarity"
+          grep -q "Какъв контекст обяснява промяната?" "$clarity"
+          grep -q "Къде се вижда ефектът онлайн?" "$clarity"
+          grep -q "Как това влияе върху доверието?" "$clarity"
+          grep -q "Как се променя позицията спрямо конкурентите?" "$clarity"
+          grep -q "Какво означава това за решенията?" "$clarity"
+          grep -q "Как стигнахме до текущото състояние?" "$clarity"
+          grep -q "Какво излиза като клиентски резултат?" "$clarity"
+          grep -q "BLIS индекс" "$clarity"
+          grep -q "Конкурентна позиция" "$clarity"
+          grep -q "Готовност на анализа" "$clarity"
+          grep -q "version:'3.0-bg-client-journey'" "$structure"
+
+          ! grep -q "questionEn" "$structure"
+          ! grep -q "labelEn" "$structure"
+          ! grep -q "shortEn" "$structure"
+
+      - name: Verify feature branch does not change Render configuration
+        run: |
+          set -euo pipefail
+          git diff origin/main...HEAD -- render.yaml >/tmp/render-diff || true
+          test ! -s /tmp/render-diff
+
+      - name: Start embedded server and verify Navigator 3 assets
+        run: |
+          set -euo pipefail
+          PORT=10000 ./app >/tmp/nav3-server.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 25); do
+            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:10000/navigator-3-client-clarity-v1.js | grep -q "BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1"
+          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=mollox&page=overview' | grep -q "navigator-production-entry-v1.js"
