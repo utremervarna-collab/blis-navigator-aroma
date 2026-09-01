@@ -1,9 +1,16 @@
-/* BLIS Navigator — production entrypoint v41.
-   Verified client-logo header + client-perspective signal classification + shared Risk Priority signal view + canonical visual owners. */
+/* BLIS Navigator 3.0 — canonical production entrypoint.
+   Български клиентски интерфейс, свързан аналитичен път, доказателства и canonical visual owners. */
 (function(){
 'use strict';
 if(window.__BLIS_PRODUCTION_ENTRY_V41)return;window.__BLIS_PRODUCTION_ENTRY_V41=true;
-const VERSION='20260831-canonical-visual-contract-1';
+const VERSION='20260901-navigator3-bg-evidence-1';
+function forceBulgarianEarly(){
+  document.documentElement.lang='bg';
+  document.documentElement.dataset.navigatorLanguage='bg-only';
+  window.BLIS_LANGUAGE='bg';
+  try{const u=new URL(location.href);if(u.searchParams.has('lang')){u.searchParams.delete('lang');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}}catch(_){}
+}
+forceBulgarianEarly();
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}
@@ -24,6 +31,7 @@ function scheduleVisualContract(){
   setTimeout(markCanonicalVisuals,180);
 }
 async function boot(){
+ forceBulgarianEarly();
  for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
  await safe('/navigator-system-structure-v1.js');
  await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
@@ -41,13 +49,14 @@ async function boot(){
  await safe('/navigator-color-system-v1.js');
  await safe('/navigator-no-page-numbers-v1.js');
  await safe('/navigator-language-cleanup-v1.js');
+ forceBulgarianEarly();
  await safe('/navigator-3-client-clarity-v1.js');
  await safe('/navigator-3-evidence-v1.js');
  window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});
  for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
- document.documentElement.dataset.navigatorUi='canonical-visual-contract-1';
+ document.documentElement.dataset.navigatorUi='navigator3-bg-client-evidence';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:new URLSearchParams(location.search).get('page')||'overview',version:VERSION}}));
- setTimeout(()=>{window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.schedule?.();window.BLISNavigator3EvidenceV1?.decorate?.();scheduleVisualContract()},100);
+ setTimeout(()=>{forceBulgarianEarly();window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISRiskPrioritySyncV1?.render?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.schedule?.();window.BLISNavigator3EvidenceV1?.decorate?.();scheduleVisualContract()},100);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
