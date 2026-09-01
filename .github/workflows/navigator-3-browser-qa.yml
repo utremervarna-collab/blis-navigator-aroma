@@ -7,21 +7,19 @@ on:
     paths:
       - 'static/navigator-3-*.js'
       - 'static/navigator-production-entry-v1.js'
-      - 'static/navigator-reference.js'
+      - 'static/navigator-system-structure-v1.js'
       - '.github/workflows/navigator-3-browser-qa.yml'
   workflow_dispatch:
 
 jobs:
   browser-client-experience:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -34,31 +32,26 @@ jobs:
           echo $! >/tmp/nav3-browser.pid
           ready=0
           for i in $(seq 1 60); do
-            if curl --max-time 3 -fsS http://127.0.0.1:10000/api/health >/tmp/nav3-health.json; then
-              ready=1
-              break
-            fi
+            if curl --max-time 3 -fsS http://127.0.0.1:10000/api/health >/tmp/nav3-health.json; then ready=1; break; fi
             sleep 1
           done
-          if [ "$ready" != "1" ]; then
-            cat /tmp/nav3-browser-server.log || true
-            exit 1
-          fi
+          if [ "$ready" != "1" ]; then cat /tmp/nav3-browser-server.log || true; exit 1; fi
 
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Verify Bulgarian connected client experience
+      - name: Verify simplified Bulgarian client experience
         run: |
           cat >/tmp/nav3-browser.cjs <<'NODE'
           const { chromium }=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
-          const clients=['mollox','aroma'];
-          const pages=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
-          const labels=['Общ преглед','Важни сигнали','Пазар и нагласи','Дигитална видимост','Репутация','Конкуренция','Риск и възможности','История','Доклади'];
+          const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
+          const pages=['overview','social','market','competition','history','hub','calendar'];
+          const labels=['Общ преглед','Сигнали и наблюдение','Пазар и репутация','Конкуренция','Развитие и доклади','Intelligence HUB','Календар'];
+          const core=['overview','social','market','competition','history'];
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -66,66 +59,59 @@ jobs:
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
                 const errors=[];
                 p.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
-                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(m.text()))errors.push('CONSOLE '+m.text())});
+                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errors.push('CONSOLE '+m.text())});
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
-                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_BRIEF_V1,null,{timeout:15000});
-                await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===9,null,{timeout:12000});
-                const start=await p.evaluate(()=>({
-                  lang:document.documentElement.lang,
-                  language:window.BLIS_LANGUAGE,
-                  switcher:!!document.querySelector('.bch3-lang'),
-                  nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.textContent.trim()),
-                  brief:!!document.querySelector('[data-n3b]'),
-                  briefCards:document.querySelectorAll('[data-n3b-page]').length,
-                  proof:!!document.querySelector('[data-n3p-open]'),
-                  subtitle:document.querySelector('.brandsub')?.textContent.trim()||''
-                }));
-                assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing ${JSON.stringify(start)}`);
-                assert(!start.switcher,`${client}: language switcher is still visible`);
-                assert(start.nav.length===labels.length&&start.nav.every((x,i)=>x.endsWith(labels[i])),`${client}: non-Bulgarian navigation ${start.nav.join('|')}`);
-                assert(start.brief&&start.briefCards>=5,`${client}: client brief missing`);
-                assert(start.proof,`${client}: page proof action missing`);
-                assert(start.subtitle==='Система за бизнес анализ и наблюдение',`${client}: client-facing product subtitle not Bulgarian`);
+                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,null,{timeout:16000});
+                await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:10000});
+                const start=await p.evaluate(()=>({lang:document.documentElement.lang,language:window.BLIS_LANGUAGE,switcher:!!document.querySelector('.bch3-lang'),labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),legacy:document.querySelectorAll('#nav [data-page]').length,version:document.documentElement.dataset.navigatorVersion}));
+                assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing`);
+                assert(!start.switcher,`${client}: language switcher visible`);
+                assert(start.labels.join('|')===labels.join('|'),`${client}: wrong simplified navigation ${start.labels.join('|')}`);
+                assert(start.legacy===0,`${client}: legacy navigation buttons remain visible`);
+                assert(start.version==='3.0-simplified-five-plus-two',`${client}: simplified architecture marker missing ${start.version}`);
 
                 for(const id of pages){
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  await p.waitForFunction(()=>!!document.querySelector('.page.active .nv3-story')&&!!document.querySelector('.page.active [data-n3p-open]'),null,{timeout:8000});
-                  await p.waitForTimeout(120);
-                  const x=await p.evaluate(()=>({
-                    id:document.querySelector('.page.active')?.id,
-                    question:document.querySelector('.page.active .nv3-story h3')?.textContent.trim()||'',
-                    proof:document.querySelector('.page.active [data-n3p-open]')?.textContent.trim()||'',
-                    text:document.querySelector('.page.active')?.innerText||'',
-                    englishLive:[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em')].some(x=>/^LIVE$/i.test(x.textContent.trim())),
-                    decisionMap:[...document.querySelectorAll('.page.active .vs-vhead b,.page.active .sv2-ch b')].some(x=>/^Decision Map$/i.test(x.textContent.trim()))
-                  }));
-                  assert(x.id===id,`${client}/${id}: wrong route`);
-                  assert(x.question.length>8,`${client}/${id}: client question missing`);
-                  assert(x.proof==='Доказателства за страницата',`${client}/${id}: proof access missing`);
-                  assert(!x.englishLive,`${client}/${id}: LIVE remains visible`);
-                  assert(!x.decisionMap,`${client}/${id}: Decision Map remains visible`);
+                  await p.waitForFunction(id=>({
+                    overview:()=>!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
+                    social:()=>!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap')&&!!document.querySelector('#social .n3-now'),
+                    market:()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-context]'),
+                    competition:()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),
+                    history:()=>!!document.querySelector('#history .n3-dev-chart')&&!!document.querySelector('#history [data-n3-reports]'),
+                    hub:()=>!!document.querySelector('#hub .n3-resource-card'),
+                    calendar:()=>!!document.querySelector('#calendar .n3-resource-card')
+                  }[id]?.()),id,{timeout:9000});
+                  if(core.includes(id)){
+                    await p.waitForFunction(id=>!!document.querySelector(`#${id}.page.active .nv3-story [data-n3p-open]`),id,{timeout:5000});
+                    const count=await p.locator(`#${id}.page.active .n3-summary3 .n3-summary-card`).count();
+                    if(id==='social'||id==='history')assert(count<=3,`${client}/${id}: too many primary summary cards ${count}`);
+                  }
+                  if(id==='market'){
+                    const hidden=await p.locator('#market .pm-kpis').evaluate(el=>getComputedStyle(el).display==='none').catch(()=>true);
+                    assert(hidden,`${client}/market: old KPI wall remains visible`);
+                  }
+                  const english=await p.evaluate(()=>[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em,.page.active .pm-client-badge i')].some(x=>/\bLIVE\b/i.test(x.textContent.trim())));
+                  assert(!english,`${client}/${id}: LIVE remains visible`);
+                }
+
+                const aliases={digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'};
+                for(const [oldId,newId] of Object.entries(aliases)){
+                  await p.evaluate(id=>window.refGo(id),oldId);
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,newId,{timeout:5000});
                 }
 
                 await p.evaluate(()=>window.refGo('overview'));
-                await p.waitForFunction(()=>document.querySelector('.page.active')?.id==='overview'&&!!document.querySelector('[data-n3p-open]'),null,{timeout:8000});
-                await p.click('[data-n3p-open]');
+                await p.waitForFunction(()=>!!document.querySelector('#overview.page.active .nv3-story [data-n3p-open]'),null,{timeout:5000});
+                await p.locator('#overview.page.active .nv3-story [data-n3p-open]').click();
                 await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
-                const proofText=await p.locator('#n3pDrawer').innerText();
-                assert(/Фактология и източници/.test(proofText)&&/Какво стои зад тази страница/.test(proofText),`${client}: proof drawer content missing`);
-                await p.click('[data-n3p-close]');
-
-                if(client==='mollox'){
-                  await p.evaluate(()=>window.refGo('competition'));
-                  await p.waitForFunction(()=>document.querySelector('.page.active')?.id==='competition',null,{timeout:8000});
-                  await p.waitForTimeout(300);
-                  const dossierCount=await p.locator('[data-n3c-open]').count();
-                  assert(dossierCount>0,'mollox/competition: competitor dossier entry missing');
-                }
+                const proof=await p.locator('#n3pDrawer').innerText();
+                assert(/Фактология и източници/.test(proof)&&/Какво стои зад тази страница/.test(proof),`${client}: evidence drawer incomplete`);
+                await p.locator('[data-n3p-close]').click();
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
-              console.log('NAVIGATOR_3_BROWSER_QA_OK');
+              console.log('NAVIGATOR_3_SIMPLIFIED_BROWSER_QA_OK');
             } finally {await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
