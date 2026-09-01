@@ -10,6 +10,9 @@ on:
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-system-structure-v1.js'
       - 'static/navigator-market-system-v1.js'
+      - 'static/navigator-intelligence-analysis-v3.js'
+      - 'static/navigator-deep-analytics-v31.js'
+      - 'static/navigator-metric-intelligence-v33.js'
       - '.github/workflows/navigator-3-browser-qa.yml'
   workflow_dispatch:
 
