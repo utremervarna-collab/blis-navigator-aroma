@@ -56,9 +56,23 @@ jobs:
                 for(const id of pages){
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:7000});
-                  await p.waitForTimeout(180);
+                  await p.waitForTimeout(350);
                   const text=await p.locator('.page.active').innerText();
                   const hits=forbidden.filter(term=>text.includes(term));
+                  if(hits.length){
+                    const detail=await p.evaluate(terms=>{
+                      const out=[];
+                      const walker=document.createTreeWalker(document.querySelector('.page.active'),NodeFilter.SHOW_TEXT);
+                      while(walker.nextNode()){
+                        const raw=(walker.currentNode.nodeValue||'').trim();
+                        const hit=terms.find(t=>raw.includes(t));if(!hit)continue;
+                        const el=walker.currentNode.parentElement;
+                        out.push({term:hit,text:raw,tag:el?.tagName||'',id:el?.id||'',cls:el?.className||'',parent:el?.parentElement?.className||'',html:(el?.outerHTML||'').slice(0,900)});
+                      }
+                      return out;
+                    },hits);
+                    console.error('BG_COPY_DIAG',client,id,JSON.stringify(detail));
+                  }
                   assert(hits.length===0,`${client}/${id}: client-facing English remains: ${hits.join(', ')}`);
                 }
                 await p.close();
