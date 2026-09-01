@@ -1,5 +1,6 @@
-/* BLIS Navigator 3.0 — simplified analytical journey registry v6.
-   Five client questions form the core journey. Intelligence HUB and Calendar are resources. */
+/* BLIS Navigator 3.0 — simplified analytical journey registry v6.1.
+   Five client questions form the core journey. Intelligence HUB and Calendar are resources.
+   Labels are shared with the canonical client header owner. */
 (function(){
 'use strict';
 if(window.__BLIS_SYSTEM_STRUCTURE_V6)return;
@@ -25,5 +26,5 @@ function context(){return''}
 function next(){return''}
 function decorate(){}
 function bind(){}
-window.BLISSystemStructure={stages:STAGES,stage,previous,following,indexOf,canonical,rail,context,next,decorate,bind,version:'3.0-short-label-five-page-journey'};
+window.BLISSystemStructure={stages:STAGES,stage,previous,following,indexOf,canonical,rail,context,next,decorate,bind,version:'3.0-short-label-five-page-journey-v2'};
 })();
