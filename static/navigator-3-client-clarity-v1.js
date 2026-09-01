@@ -77,7 +77,7 @@ function normalizeRouteLabels(){
   const page=document.getElementById(id);if(!page)return;
   if(id==='overview')page.querySelectorAll('.ref-title h2,.vs-head h2,.vs-vhead h2').forEach(x=>setText(x,m.label));
   if(id==='social')setText(page.querySelector('.n3-page-head h2'),m.label);
-  if(id==='market'){setText(page.querySelector('.pm-hero h2,.ref-title h2'),m.label);const p=page.querySelector('.pm-hero p,.ref-title p');if(p)setText(p,'Пазарни теми, публично възприятие и връзките между тях.')}
+  if(id==='market'){page.querySelectorAll('.pm-hero h2,.ref-title h2,.market1-head h2').forEach(x=>setText(x,m.label));const p=page.querySelector('.pm-hero p,.ref-title p,.market1-head p');if(p)setText(p,'Пазарни теми, публично възприятие и връзките между тях.')}
   if(id==='competition')page.querySelectorAll('.ref-title h2,.vs-head h2,.vs-vhead h2').forEach(x=>setText(x,m.label));
   if(id==='history')page.querySelectorAll('.ref-title h2,.vs-head h2,.vs-vhead h2').forEach(x=>setText(x,m.label));
 }
