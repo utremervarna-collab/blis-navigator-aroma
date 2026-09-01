@@ -69,10 +69,10 @@ jobs:
           ! grep -q "n3-native" "$preserve"
 
           grep -q "Общ преглед" "$arch"
-          grep -q "Сигнали и наблюдение" "$arch"
-          grep -q "Пазар и репутация" "$arch"
+          grep -q "Мониторинг" "$arch"
+          grep -q "Среда" "$arch"
           grep -q "Конкуренция" "$arch"
-          grep -q "Развитие и доклади" "$arch"
+          grep -q "Развитие/Доклади" "$arch"
           grep -q "Intelligence HUB" "$arch"
           grep -q "Календар" "$arch"
 
@@ -92,12 +92,15 @@ jobs:
           grep -q "n3-canonical-digital-scope" "$preserve"
           grep -q "digital-master-css-scope" "$preserve"
           grep -q "ТЕКУЩО НАБЛЮДЕНИЕ" "$preserve"
-          grep -q "Сигнали и наблюдение" "$preserve"
-          grep -q "Пазар и репутация" "$preserve"
-          grep -q "Развитие и доклади" "$preserve"
           grep -q "Пазар и репутация" "$market"
           ! grep -q "Пазар и нагласи" "$market"
 
+          grep -q "label:'Общ преглед'" "$clarity"
+          grep -q "label:'Мониторинг'" "$clarity"
+          grep -q "label:'Среда'" "$clarity"
+          grep -q "label:'Конкуренция'" "$clarity"
+          grep -q "label:'Развитие/Доклади'" "$clarity"
+          grep -q "Легенда на точките" "$clarity"
           grep -q "Как е брандът ми сега?" "$clarity"
           grep -q "Какво се случва в момента?" "$clarity"
           grep -q "Какво се случва около бранда и как се възприема?" "$clarity"
@@ -119,7 +122,7 @@ jobs:
           if(proof<0||owner<0||preservation<0||owner<proof||preservation<owner)throw new Error('Navigator 3 owner/preservation load order is invalid');
           if(/navigator-3-stability-v1\.js/.test(entry))throw new Error('Replacement visual stability layer must not load');
           if(/n3-native/.test(preserve))throw new Error('Preservation layer must not draw replacement visuals');
-          console.log('NAVIGATOR_3_PRESERVED_VISUAL_ARCHITECTURE_OK');
+          console.log('NAVIGATOR_3_FINAL_LABELS_PRESERVED_VISUAL_ARCHITECTURE_OK');
           NODE
 
       - name: Verify feature branch does not change Render configuration
