@@ -40,17 +40,20 @@ jobs:
           node --check static/navigator-3-competitor-dossier-v1.js
           node --check static/navigator-3-architecture-v1.js
 
-      - name: Validate simplified client architecture
+      - name: Validate preserved canonical visual architecture
         run: |
           set -euo pipefail
           arch=static/navigator-3-architecture-v1.js
           entry=static/navigator-production-entry-v1.js
-          structure=static/navigator-system-structure-v1.js
           clarity=static/navigator-3-client-clarity-v1.js
           proof=static/navigator-3-client-proof-v1.js
 
           grep -q "navigator-3-architecture-v1.js" "$entry"
+          ! grep -q "navigator-3-stability-v1.js" "$entry"
           ! grep -q "navigator-3-client-brief-v1.js" "$entry"
+          ! grep -q "n3-native" "$entry"
+          ! grep -q "n3-native" "$arch"
+
           grep -q "Общ преглед" "$arch"
           grep -q "Сигнали и наблюдение" "$arch"
           grep -q "Пазар и репутация" "$arch"
@@ -58,15 +61,20 @@ jobs:
           grep -q "Развитие и доклади" "$arch"
           grep -q "Intelligence HUB" "$arch"
           grep -q "Календар" "$arch"
-          grep -q "Интелигентен радар" "$arch"
-          grep -q "Какво се случва около бранда" "$arch"
-          grep -q "BLIS индекс във времето" "$arch"
-          grep -q "Какво се промени при конкурентите" "$arch"
+
           grep -q "digital:'social'" "$arch"
           grep -q "opportunities:'social'" "$arch"
           grep -q "reputation:'market'" "$arch"
           grep -q "reports:'history'" "$arch"
-          grep -q "3.0-simplified-five-page-journey" "$structure"
+
+          grep -q "BLISVisualSuiteV1?.render?.('overview')" "$arch"
+          grep -q "BLISDigitalRadar?.render?.()" "$arch"
+          grep -q "BLISMarketSystemV1?.mount?.()" "$arch"
+          grep -q "BLISVisualSuiteV1?.render?.('competition')" "$arch"
+          grep -q "BLISVisualSuiteV1?.render?.('history')" "$arch"
+          grep -q "3.0-preserved-visuals-5plus2" "$arch"
+          grep -q "navigator3-preserved-canonical-visuals" "$entry"
+
           grep -q "Как е брандът ми сега?" "$clarity"
           grep -q "Какво се случва в момента?" "$clarity"
           grep -q "Какво се случва около бранда и как се възприема?" "$clarity"
@@ -77,16 +85,15 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const arch=fs.readFileSync('static/navigator-3-architecture-v1.js','utf8');
-          const structure=fs.readFileSync('static/navigator-system-structure-v1.js','utf8');
           const entry=fs.readFileSync('static/navigator-production-entry-v1.js','utf8');
-          const core=[...structure.matchAll(/\{id:'(overview|social|market|competition|history)'/g)].map(x=>x[1]);
-          if(core.join('|')!=='overview|social|market|competition|history')throw new Error('Core journey is not exactly five pages: '+core.join('|'));
-          for(const id of ['overview','social','market','competition','history','hub','calendar'])if(!arch.includes(`id:'${id}'`))throw new Error('Missing visible route '+id);
-          const load=entry.indexOf("/navigator-3-architecture-v1.js");
+          const ids=[...arch.matchAll(/\{id:'(overview|social|market|competition|history|hub|calendar)'/g)].map(x=>x[1]);
+          const unique=[...new Set(ids)];
+          if(unique.join('|')!=='overview|social|market|competition|history|hub|calendar')throw new Error('Visible 5+2 routes changed: '+unique.join('|'));
           const proof=entry.indexOf("/navigator-3-client-proof-v1.js");
-          if(load<0||proof<0||load<proof)throw new Error('Architecture owner must load after client proof');
-          if(!arch.includes('window.BLISCanonicalRenderActive=()=>renderRoute(active())'))throw new Error('Simplified architecture is not the final canonical render owner');
-          console.log('NAVIGATOR_3_SIMPLIFIED_ARCHITECTURE_OK');
+          const owner=entry.indexOf("/navigator-3-architecture-v1.js");
+          if(proof<0||owner<0||owner<proof)throw new Error('Navigator 3 architecture must load after client proof');
+          if(/navigator-3-stability-v1\.js/.test(entry))throw new Error('Replacement visual stability layer must not load');
+          console.log('NAVIGATOR_3_PRESERVED_VISUAL_ARCHITECTURE_OK');
           NODE
 
       - name: Verify feature branch does not change Render configuration
