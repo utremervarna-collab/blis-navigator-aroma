@@ -1,34 +1,28 @@
-/* BLIS Navigator — единен аналитичен процес v3: всяка страница надгражда предходната */
+/* BLIS Navigator 3.0 — simplified analytical journey registry v5.
+   Five client questions form the core journey. Intelligence HUB and Calendar are resources. */
 (function(){
 'use strict';
-if(window.__BLIS_SYSTEM_STRUCTURE_V3)return;window.__BLIS_SYSTEM_STRUCTURE_V3=true;
-const EN=()=>document.documentElement.lang==='en'||window.BLIS_LANGUAGE==='en';
-const L=(bg,en)=>EN()?en:bg;
+if(window.__BLIS_SYSTEM_STRUCTURE_V5)return;
+window.__BLIS_SYSTEM_STRUCTURE_V3=true;
+window.__BLIS_SYSTEM_STRUCTURE_V4=true;
+window.__BLIS_SYSTEM_STRUCTURE_V5=true;
 const STAGES=[
- {id:'overview',step:'01',short:'Състояние',shortEn:'Status',label:'Общ преглед',labelEn:'Overview',question:'Как сме сега?',questionEn:'Where do we stand now?'},
- {id:'social',step:'02',short:'Промяна',shortEn:'Change',label:'Важни сигнали',labelEn:'Important Signals',question:'Какво точно се промени?',questionEn:'What exactly changed?'},
- {id:'market',step:'03',short:'Среда',shortEn:'Environment',label:'Пазар и нагласи',labelEn:'Market & Sentiment',question:'Каква среда стои зад промяната?',questionEn:'What environment is driving the change?'},
- {id:'digital',step:'04',short:'Проява',shortEn:'Manifestation',label:'Дигитална видимост',labelEn:'Digital Visibility',question:'Къде се проявява това онлайн?',questionEn:'Where does this appear online?'},
- {id:'reputation',step:'05',short:'Ефект',shortEn:'Effect',label:'Репутация',labelEn:'Reputation',question:'Как влияе върху възприятието за бранда?',questionEn:'How does this affect brand perception?'},
- {id:'competition',step:'06',short:'Сравнение',shortEn:'Comparison',label:'Конкуренция',labelEn:'Competition',question:'Как изглеждаме спрямо конкурентите?',questionEn:'How do we compare with competitors?'},
- {id:'opportunities',step:'07',short:'Решение',shortEn:'Decision',label:'Риск и възможности',labelEn:'Risks & Opportunities',question:'Кое изисква внимание и къде има потенциал?',questionEn:'What requires attention and where is the potential?'},
- {id:'history',step:'08',short:'История',shortEn:'History',label:'История',labelEn:'History',question:'Как стигнахме дотук?',questionEn:'How did we get here?'},
- {id:'reports',step:'09',short:'Изход',shortEn:'Output',label:'Доклади',labelEn:'Reports',question:'Как превръщаме анализа в резултат?',questionEn:'How do we turn analysis into results?'}
+ {id:'overview',step:'01',short:'Състояние',label:'Общ преглед',question:'Как е брандът ми сега?'},
+ {id:'social',step:'02',short:'Сега',label:'Сигнали и наблюдение',question:'Какво се случва в момента?'},
+ {id:'market',step:'03',short:'Контекст',label:'Пазар и репутация',question:'Какво се случва около бранда и как се възприема?'},
+ {id:'competition',step:'04',short:'Сравнение',label:'Конкуренция',question:'Как се движим спрямо останалите?'},
+ {id:'history',step:'05',short:'Развитие',label:'Развитие и доклади',question:'Как се развива картината във времето?'}
 ];
-const S=x=>EN()?x.shortEn:x.short;
-const LABEL=x=>EN()?x.labelEn:x.label;
-const Q=x=>EN()?x.questionEn:x.question;
-const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
-function css(){if(document.getElementById('blisSystemStructureCss'))return;const s=document.createElement('style');s.id='blisSystemStructureCss';s.textContent=`
-.blis-system-rail{margin:0 0 14px;padding:9px 10px;border:1px solid #e1e7ee;border-radius:14px;background:linear-gradient(180deg,#fbfcfe,#f7fafe);box-shadow:0 6px 20px rgba(31,56,89,.035);overflow:auto;scrollbar-width:thin}.blis-system-rail-track{display:flex;align-items:center;gap:2px;min-width:max-content}.blis-system-step{position:relative;display:flex;align-items:center;gap:6px;border:0;border-radius:10px;background:transparent;color:#8493a4;padding:6px 8px;font:inherit;cursor:pointer;transition:.15s ease}.blis-system-step:not(:last-child):after{content:'›';margin-left:2px;color:#c2ccd7;font-size:12px}.blis-system-step:hover{background:#f1f6fb;color:#456783}.blis-system-step .num{display:grid;place-items:center;width:22px;height:22px;border:1px solid #dce4ed;border-radius:7px;background:#fff;color:#73869a;font-size:7px;font-weight:900}.blis-system-step .txt{display:flex;flex-direction:column;text-align:left}.blis-system-step .txt b{font-size:8px;color:inherit;line-height:1.1;white-space:nowrap}.blis-system-step .txt small{display:none}.blis-system-step.done{color:#5f7690}.blis-system-step.done .num{background:#edf4fa;border-color:#d3e0ec;color:#315f88}.blis-system-step.active{background:#eaf3fd;color:#174f88}.blis-system-step.active .num{background:#1f66b5;border-color:#1f66b5;color:#fff}.blis-stage-context{display:grid;grid-template-columns:minmax(260px,.72fr) minmax(0,1.28fr);gap:14px;align-items:center;margin:0 0 16px;padding:11px 13px;border:1px solid #e4eaf1;border-left:3px solid #2c6fbb;background:#f8fbfe;border-radius:0 12px 12px 0}.blis-stage-context-main span{display:block;color:#66809a;font-size:7px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.blis-stage-context-main b{display:block;margin-top:4px;color:#203f60;font-size:11px;line-height:1.35}.blis-stage-bridge{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}.blis-stage-node{min-width:0;border:0;background:transparent;padding:4px 6px;border-radius:8px;text-align:left;color:#718399;font:inherit}.blis-stage-node[data-system-page]{cursor:pointer}.blis-stage-node[data-system-page]:hover{background:#eef4fa}.blis-stage-node small{display:block;color:#9aa6b3;font-size:6.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.blis-stage-node strong{display:block;margin-top:2px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#526b83;font-size:8px}.blis-stage-node.current{background:#edf5fd}.blis-stage-node.current strong{color:#1f568c}.blis-stage-arrow{color:#aebbc8;font-size:11px}.blis-next-step{margin-top:16px;padding:13px 15px;border:1px solid #dfe7ef;border-radius:13px;background:linear-gradient(135deg,#f9fbfd,#f2f7fc);display:flex;align-items:center;justify-content:space-between;gap:14px}.blis-next-step span{display:block;color:#8795a6;font-size:7px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}.blis-next-step b{display:block;margin-top:4px;color:#254664;font-size:10px;line-height:1.35}.blis-next-step button{border:0;border-radius:9px;background:#1f65b7;color:#fff;padding:9px 11px;font-size:8px;font-weight:900;cursor:pointer;white-space:nowrap;box-shadow:0 5px 14px rgba(31,101,183,.16)}@media(max-width:900px){.blis-stage-context{grid-template-columns:1fr}.blis-stage-bridge{justify-content:flex-start;overflow:auto}.blis-system-step .txt{display:none}.blis-system-step{padding:5px}.blis-stage-node strong{max-width:120px}}@media(max-width:620px){.blis-stage-bridge{display:none}.blis-next-step{align-items:flex-start;flex-direction:column}}
-`;document.head.appendChild(s)}
-function stage(id){return STAGES.find(x=>x.id===id)||STAGES[0]}
-function indexOf(id){return Math.max(0,STAGES.findIndex(x=>x.id===id))}
-function rail(id){const at=indexOf(id);return `<div class="blis-system-rail" data-system-rail aria-label="${E(L('Аналитичен път','Analytical path'))}"><div class="blis-system-rail-track">${STAGES.map((x,i)=>`<button class="blis-system-step ${i<at?'done':''} ${i===at?'active':''}" type="button" data-system-page="${x.id}" title="${E(LABEL(x))} · ${E(Q(x))}"><span class="num">${x.step}</span><span class="txt"><b>${E(S(x))}</b><small>${E(LABEL(x))}</small></span></button>`).join('')}</div></div>`}
-function context(id){const i=indexOf(id),x=STAGES[i],p=STAGES[i-1],n=STAGES[i+1];return `<div class="blis-stage-context"><div class="blis-stage-context-main"><span>${E(L('Аналитична стъпка','Analytical step'))} ${x.step} ${E(L('от','of'))} ${String(STAGES.length).padStart(2,'0')} · ${E(S(x))}</span><b>${E(Q(x))}</b></div><div class="blis-stage-bridge">${p?`<button type="button" class="blis-stage-node" data-system-page="${p.id}"><small>${E(L('Изхождаме от','Based on'))}</small><strong>${E(LABEL(p))}</strong></button><i class="blis-stage-arrow">→</i>`:''}<span class="blis-stage-node current"><small>${E(L('Сега','Now'))}</small><strong>${E(LABEL(x))}</strong></span>${n?`<i class="blis-stage-arrow">→</i><button type="button" class="blis-stage-node" data-system-page="${n.id}"><small>${E(L('Следва','Next'))}</small><strong>${E(LABEL(n))}</strong></button>`:''}</div></div>`}
-function next(id){const i=STAGES.findIndex(x=>x.id===id);if(i<0||i>=STAGES.length-1)return'';const n=STAGES[i+1];return `<div class="blis-next-step" data-system-next><div><span>${E(L('Следващ аналитичен въпрос','Next analytical question'))}</span><b>${E(Q(n))}</b></div><button type="button" data-system-page="${n.id}">${E(LABEL(n))} →</button></div>`}
+const ALIAS={signals:'social',live:'social',digital:'social',opportunities:'social',reputation:'market',reports:'history',timeline:'history',development:'history'};
+const canonical=id=>ALIAS[String(id||'')]||String(id||'');
+function stage(id){id=canonical(id);return STAGES.find(x=>x.id===id)||STAGES[0]}
+function indexOf(id){id=canonical(id);const i=STAGES.findIndex(x=>x.id===id);return i<0?0:i}
+function previous(id){const i=indexOf(id);return i>0?STAGES[i-1]:null}
+function following(id){const i=indexOf(id);return i<STAGES.length-1?STAGES[i+1]:null}
+function rail(){return''}
+function context(){return''}
+function next(){return''}
+function decorate(){}
 function bind(){}
-function decorate(id,opts={}){css();const host=opts.host||document.getElementById(id+'Body')||(id==='overview'?document.getElementById('overviewPremium'):document.getElementById(id));if(!host)return;const hasRail=!!host.querySelector('[data-system-rail]'),hasContext=!!host.querySelector('.blis-stage-context'),hasNext=!!host.querySelector('[data-system-next]');if(opts.rail!==false&&!hasRail){const lead=rail(id)+(opts.context===false||hasContext?'':context(id));host.insertAdjacentHTML('afterbegin',lead)}else if(opts.context!==false&&!hasContext&&!hasRail){host.insertAdjacentHTML('afterbegin',context(id))}if(opts.next!==false&&id!=='reports'&&!hasNext)host.insertAdjacentHTML('beforeend',next(id))}
-function observe(){document.addEventListener('click',e=>{const b=e.target.closest?.('[data-system-page]');if(!b)return;e.preventDefault();e.stopPropagation();window.refGo?.(b.dataset.systemPage)},true);window.addEventListener('blis:routechange',e=>{const id=e.detail?.page;setTimeout(()=>decorate(id),60);setTimeout(()=>decorate(id),260)});window.addEventListener('blis:clientdata',()=>{const id=document.querySelector('.page.active')?.id;setTimeout(()=>decorate(id),120)})}
-css();observe();window.BLISSystemStructure={stages:STAGES,stage,rail,context,next,decorate,bind};
+window.BLISSystemStructure={stages:STAGES,stage,previous,following,indexOf,canonical,rail,context,next,decorate,bind,version:'3.0-simplified-five-page-journey'};
 })();

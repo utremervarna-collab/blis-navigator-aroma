@@ -1,0 +1,90 @@
+name: Navigator 3 BG Copy QA
+
+on:
+  push:
+    branches:
+      - feature/navigator-3-bg-client-clarity
+      - release/navigator-3-production
+    paths:
+      - 'static/navigator-3-*.js'
+      - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-intelligence-analysis-v3.js'
+      - 'static/navigator-deep-analytics-v31.js'
+      - 'static/navigator-metric-intelligence-v33.js'
+      - '.github/workflows/navigator-3-bg-copy-qa.yml'
+  workflow_dispatch:
+
+jobs:
+  bg-copy-browser-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and start Navigator
+        run: |
+          set -euo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/nav3-bg-server.log 2>&1 &
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --max-time 3 -fsS http://127.0.0.1:10000/api/health >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = "1"
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Reject client-facing English analytical labels
+        run: |
+          cat >/tmp/nav3-bg-copy.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
+          const pages=['overview','social','market','competition','history'];
+          const forbidden=['Analytical Intelligence','Deep Analytics','Early Warning','Narrative Intelligence','Metric Intelligence','Share of Voice','Momentum','Opportunity','Confidence','Live monitoring','· velocity ','avg risk ','Historical snapshots','· importance ','Pressure ','share ','impact '];
+          const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const client of clients){
+                const p=await browser.newPage({viewport:{width:1440,height:1000}});
+                await p.goto(`http://127.0.0.1:10000/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
+                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1,null,{timeout:16000});
+                for(const id of pages){
+                  await p.evaluate(id=>window.refGo(id),id);
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:7000});
+                  await p.waitForTimeout(350);
+                  const text=await p.locator('.page.active').innerText();
+                  const hits=forbidden.filter(term=>text.includes(term));
+                  if(hits.length){
+                    const detail=await p.evaluate(terms=>{
+                      const out=[];
+                      const walker=document.createTreeWalker(document.querySelector('.page.active'),NodeFilter.SHOW_TEXT);
+                      while(walker.nextNode()){
+                        const raw=(walker.currentNode.nodeValue||'').trim();
+                        const hit=terms.find(t=>raw.includes(t));if(!hit)continue;
+                        const el=walker.currentNode.parentElement;
+                        out.push({term:hit,text:raw,tag:el?.tagName||'',id:el?.id||'',cls:el?.className||'',parent:el?.parentElement?.className||'',html:(el?.outerHTML||'').slice(0,900)});
+                      }
+                      return out;
+                    },hits);
+                    console.error('BG_COPY_DIAG',client,id,JSON.stringify(detail));
+                  }
+                  assert(hits.length===0,`${client}/${id}: client-facing English remains: ${hits.join(', ')}`);
+                }
+                await p.close();
+              }
+              console.log('NAVIGATOR_3_BG_COPY_QA_OK');
+            } finally {await browser.close()}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/nav3-bg-copy.cjs
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/nav3-bg-server.log || true
