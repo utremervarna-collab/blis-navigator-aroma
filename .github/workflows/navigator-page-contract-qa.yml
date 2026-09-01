@@ -4,11 +4,16 @@ on:
   push:
     branches:
       - fix/navigator-dedup-hub-link-2026-09-01
+      - feature/navigator-3-bg-client-clarity
       - main
     paths:
       - 'static/navigator-3-page-contract-v1.js'
+      - 'static/navigator-3-visual-preservation-v1.js'
+      - 'static/navigator-3-client-proof-v1.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/home-hub-dropdown.js'
       - 'zzz_home_intelligence_hub_patch.go'
+      - 'zzzz_home_hub_dropdown_loader.go'
       - '.github/workflows/navigator-page-contract-qa.yml'
   workflow_dispatch:
 
@@ -52,11 +57,11 @@ jobs:
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages={
-            overview:'Общ преглед',
-            social:'Сигнали и наблюдение',
-            market:'Пазар и репутация',
-            competition:'Конкуренция',
-            history:'Развитие и доклади',
+            overview:'Общ изглед',
+            social:'Мониторинг',
+            market:'Среда',
+            competition:'Конкуренти',
+            history:'Развитие/Доклади',
             hub:'Intelligence HUB',
             calendar:'Календар'
           };
@@ -120,10 +125,12 @@ jobs:
 
               const home=await browser.newPage({viewport:{width:1440,height:1000}});
               await home.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
-              await home.waitForSelector('.hubNav .hubNavLink',{timeout:10000});
-              const href=await home.locator('.hubNav .hubNavLink').getAttribute('href');
+              await home.waitForSelector('.hubNav .hubNavTrigger',{timeout:10000});
+              await home.locator('.hubNav .hubNavTrigger').click();
+              await home.waitForSelector('.hubNav.is-open .hubNavAll',{timeout:10000});
+              const href=await home.locator('.hubNav .hubNavAll').getAttribute('href');
               assert(href==='/intelligence-hub.html',`Home Hub direct href is ${href}`);
-              await home.locator('.hubNav .hubNavLink').click();
+              await home.locator('.hubNav .hubNavAll').click();
               await home.waitForURL(/\/intelligence-hub\.html(?:[?#].*)?$/,{timeout:10000});
               assert(/intelligence-hub\.html/.test(home.url()),`Home Hub click did not navigate: ${home.url()}`);
               await home.screenshot({path:'/tmp/page-contract-shots/home-hub.png',fullPage:false});

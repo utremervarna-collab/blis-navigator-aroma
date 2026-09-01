@@ -36,7 +36,7 @@ func init() {
 
 	const css = `<style id="blis-public-home-layout-cleanup-20260901-v2">
 /* Compact homepage hero: useful content only, no hidden/reserved decorative canvas. */
-.hero{min-height:0!important;padding:46px 0 52px!important;overflow:visible!important}
+.hero{min-height:0!important;padding:28px 0 34px!important;overflow:visible!important}
 .heroInner{min-height:0!important;grid-template-columns:minmax(0,1.08fr) minmax(360px,.78fr)!important;gap:46px!important;align-items:center!important}
 .heroSnapshot{min-width:0;display:flex;align-items:center;justify-content:center}
 .heroSnapshot .floatCard{position:relative!important;right:auto!important;bottom:auto!important;width:min(100%,430px)!important;margin:0!important;padding:20px!important}

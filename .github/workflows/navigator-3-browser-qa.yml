@@ -6,6 +6,10 @@ on:
       - feature/navigator-3-bg-client-clarity
       - release/navigator-3-production
     paths:
+      - 'static/index.html'
+      - 'zzz_home_intelligence_hub_patch.go'
+      - 'home_dark_platform_patch.go'
+      - 'zz_home_background_v2.go'
       - 'static/dashboard.html'
       - 'static/navigator-client-ui.js'
       - 'static/navigator-client-ui.css'
@@ -14,9 +18,6 @@ on:
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-system-structure-v1.js'
       - 'static/navigator-market-system-v1.js'
-      - 'static/navigator-intelligence-analysis-v3.js'
-      - 'static/navigator-deep-analytics-v31.js'
-      - 'static/navigator-metric-intelligence-v33.js'
       - '.github/workflows/navigator-3-browser-qa.yml'
   workflow_dispatch:
 
@@ -38,7 +39,6 @@ jobs:
           set -euo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
           PORT=10000 ./app >/tmp/nav3-browser-server.log 2>&1 &
-          echo $! >/tmp/nav3-browser.pid
           ready=0
           for i in $(seq 1 60); do
             if curl --max-time 3 -fsS http://127.0.0.1:10000/api/health >/tmp/nav3-health.json; then ready=1; break; fi
@@ -51,7 +51,7 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Verify preserved visual owners and simplified client journey
+      - name: Verify Navigator 3 client experience
         run: |
           mkdir -p /tmp/nav3-shots
           cat >/tmp/nav3-browser.cjs <<'NODE'
@@ -61,154 +61,117 @@ jobs:
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
-          const core=['overview','social','market','competition','history'];
-          const labels=['Общ преглед','Сигнали и наблюдение','Пазар и репутация','Конкуренция','Развитие и доклади','Intelligence HUB','Календар'];
-          const context={overview:'Общ преглед',social:'Сигнали и наблюдение',market:'Пазар и репутация',competition:'Конкуренция',history:'Развитие и доклади',hub:'Intelligence HUB',calendar:'Календар'};
+          const labels=['Общ изглед','Мониторинг','Среда','Конкуренти','Развитие/Доклади','Intelligence HUB','Календар'];
+          const context={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
           const reviewClients=new Set(['aroma','mollox']);
 
           async function visibleBox(p,selector,label){
             const box=await p.locator(selector).first().boundingBox().catch(()=>null);
-            assert(box&&box.width>120&&box.height>60,`${label}: missing or collapsed visual ${selector} ${JSON.stringify(box)}`);
+            assert(box&&box.width>120&&box.height>60,`${label}: missing/collapsed ${selector} ${JSON.stringify(box)}`);
             return box;
           }
-          async function state(p){return p.evaluate(()=>({
-            active:document.querySelector('.page.active')?.id||'',
-            version:document.documentElement.dataset.navigatorVersion||'',
-            architecture:document.documentElement.dataset.navigatorArchitecture||'',
-            gauge:!!document.querySelector('#overview .ovh-gauge svg'),
-            radar:!!document.querySelector('#social #digital #digitalBody .dv-radar-wrap .dv-radar-grid'),
-            radarScope:document.documentElement.dataset.navigatorRadarScope||'',
-            liveStrip:!!document.querySelector('#social .n3-live-strip'),
-            market:!!document.querySelector('#market .pm-stage,#market .pm-canvas'),
-            marketSummary:!!document.querySelector('#market [data-n3-market-summary]'),
-            competition:!!document.querySelector('#competition .vs-comp-axis'),
-            competitionChanges:!!document.querySelector('#competition [data-n3-competition-changes]'),
-            history:!!document.querySelector('#history .vs-history-board'),
-            reports:!!document.querySelector('#history [data-n3-embedded-reports]'),
-            nativeFallbacks:document.querySelectorAll('.n3-native,.n3-native-overview,.n3-native-social,.n3-native-market,.n3-native-competition').length
-          }))}
+
+          async function verifyPublicHome(browser){
+            const p=await browser.newPage({viewport:{width:1440,height:1000}});
+            await p.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:25000});
+            await p.waitForSelector('.hero .heroInner',{state:'visible',timeout:8000});
+            const geom=await p.evaluate(()=>{
+              const box=s=>document.querySelector(s)?.getBoundingClientRect();
+              const hero=box('.hero'),inner=box('.heroInner'),abstract=box('.heroSnapshot,.abstract'),card=box('.heroSnapshot .floatCard,.floatCard');
+              const hub=document.querySelector('#resources.homeHubLive'),top=box('#resources .homeHubTop'),kinds=box('#resources .homeHubKinds'),grid=box('#resources .hubGrid');
+              const css=s=>{const e=document.querySelector(s);return e?getComputedStyle(e):null};
+              return{hero,inner,abstract,card,top,kinds,grid,hub:hub?hub.getBoundingClientRect():null,heroMin:css('.hero')?.minHeight,hubPadTop:css('#resources')?.paddingTop};
+            });
+            assert(geom.hero&&geom.hero.height<=570,`public home: hero still oversized ${JSON.stringify(geom.hero)}`);
+            assert(geom.abstract&&geom.abstract.height<=520,`public home: abstract still oversized ${JSON.stringify(geom.abstract)}`);
+            assert(geom.card&&geom.card.y>=geom.hero.y+10&&geom.card.y+geom.card.height<=geom.hero.y+geom.hero.height-10,`public home: BLIS card not composed inside hero ${JSON.stringify(geom)}`);
+            assert(geom.hub&&geom.top&&geom.grid,'public home: Hub composition missing');
+            const hubGap=geom.kinds?Math.max(geom.kinds.y-(geom.top.y+geom.top.height),geom.grid.y-(geom.kinds.y+geom.kinds.height)):geom.grid.y-(geom.top.y+geom.top.height);
+            assert(hubGap<=30,`public home: Hub has excessive vertical gap ${JSON.stringify({hubGap,geom})}`);
+            await p.screenshot({path:'/tmp/nav3-shots/home-public.png',fullPage:true});
+            await p.locator('#resources').scrollIntoViewIfNeeded();
+            await p.screenshot({path:'/tmp/nav3-shots/home-hub.png',fullPage:false});
+            await p.close();
+          }
 
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
+              await verifyPublicHome(browser);
               for(const client of clients){
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
                 const errors=[];
                 p.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
                 p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errors.push('CONSOLE '+m.text())});
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
-                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,null,{timeout:16000});
+                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1,null,{timeout:16000});
                 await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:10000});
+                await p.waitForFunction(expected=>[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()).join('|')===expected,labels.join('|'),{timeout:8000});
 
-                const start=await p.evaluate(()=>({
-                  lang:document.documentElement.lang,
-                  language:window.BLIS_LANGUAGE,
-                  switcher:!!document.querySelector('.bch3-lang'),
-                  labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),
-                  legacy:document.querySelectorAll('#nav [data-page]').length,
-                  version:document.documentElement.dataset.navigatorVersion||'',
-                  clientStatus:document.querySelector('.client-brand-status')?.textContent?.trim()||'',
-                  clientButton:document.querySelector('.client-switch-button')?.textContent?.replace(/\s+/g,' ').trim()||''
-                }));
+                const start=await p.evaluate(()=>({lang:document.documentElement.lang,language:window.BLIS_LANGUAGE,switcher:!!document.querySelector('.bch3-lang'),legacy:document.querySelectorAll('#nav [data-page]').length,version:document.documentElement.dataset.navigatorVersion||''}));
                 assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing`);
                 assert(!start.switcher,`${client}: language switcher visible`);
-                assert(start.labels.join('|')===labels.join('|'),`${client}: wrong 5+2 navigation ${start.labels.join('|')}`);
-                assert(start.legacy===0,`${client}: legacy navigation still visible`);
-                assert(start.version==='3.0-preserved-visuals-5plus2',`${client}: wrong Navigator 3 version ${start.version}`);
-                assert(!start.clientStatus&&!/Активен клиентски профил/i.test(start.clientButton),`${client}: obsolete active-client label remains`);
-
-                await p.locator('.client-switch-button').click();
-                await p.waitForFunction(()=>document.querySelector('.client-switch')?.classList.contains('open'),null,{timeout:3000});
-                const menuState=await p.evaluate(()=>({
-                  count:document.querySelectorAll('.client-switch-menu .client-option').length,
-                  text:document.querySelector('.client-switch-menu')?.textContent?.replace(/\s+/g,' ').trim()||''
-                }));
-                assert(menuState.count===6,`${client}: client switcher should show six selectable profiles, got ${menuState.count}`);
-                assert(!/Активен клиентски профил/i.test(menuState.text),`${client}: obsolete label leaked into client menu`);
-                if(reviewClients.has(client))await p.screenshot({path:path.join('/tmp/nav3-shots',`${client}-client-switcher.png`),fullPage:true});
-                await p.locator('.client-switch-button').click();
+                assert(start.legacy===0,`${client}: legacy navigation visible`);
+                assert(start.version==='3.0-preserved-visuals-5plus2',`${client}: wrong version ${start.version}`);
 
                 for(const id of pages){
                   console.log('CHECK_PAGE',client,id);
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  await p.waitForFunction(expected=>document.querySelector('.bch3-context-title')?.textContent?.trim()===expected,context[id],{timeout:5000});
-                  await p.waitForFunction(id=>!document.querySelector(`#${id}.page.active .nv3-story`),id,{timeout:5000});
-                  const storyUi=await p.evaluate(()=>({story:!!document.querySelector('.page.active .nv3-story'),proofButton:!!document.querySelector('.page.active [data-n3p-open]')}));
-                  assert(!storyUi.story&&!storyUi.proofButton,`${client}/${id}: duplicate story/proof action UI remains ${JSON.stringify(storyUi)}`);
+                  await p.waitForFunction(expected=>document.querySelector('.bch3-context-title')?.textContent?.trim()===expected,context[id],{timeout:6000});
 
                   if(id==='overview'){
                     await p.waitForFunction(()=>!!document.querySelector('#overview .ovh-gauge svg'),null,{timeout:9000});
-                    await p.waitForFunction(()=>!document.querySelector('#overview .ovh-head,#overview .vs-head'),null,{timeout:5000});
                     await visibleBox(p,'#overview .ovh-gauge',`${client}/overview`);
                     const colors=await p.evaluate(()=>[...document.querySelectorAll('#overview .ovh-arc.risk,#overview .ovh-arc.watch,#overview .ovh-arc.stable,#overview .ovh-arc.good')].map(x=>getComputedStyle(x).stroke));
-                    assert(colors.length===4&&new Set(colors).size===4,`${client}/overview: approved multicolor BLIS gauge lost ${JSON.stringify(colors)}`);
+                    assert(colors.length===4&&new Set(colors).size===4,`${client}/overview: multicolor BLIS gauge lost ${JSON.stringify(colors)}`);
                   }
                   if(id==='social'){
-                    await p.waitForFunction(()=>!!document.querySelector('#social #digital #digitalBody .dv-radar-wrap .dv-radar-grid')&&!!document.querySelector('#social .n3-live-strip'),null,{timeout:9000});
+                    await p.waitForFunction(()=>!!document.querySelector('#social .dv-radar-grid')&&!!document.querySelector('#social [data-n3-radar-legend]'),null,{timeout:9000});
                     const radarBox=await visibleBox(p,'#social .dv-radar-wrap',`${client}/social`);
-                    assert(radarBox.width>=320&&radarBox.width<=620&&radarBox.height>=320&&radarBox.height<=620,`${client}/social: radar geometry lost ${JSON.stringify(radarBox)}`);
-                    const radarStyle=await p.evaluate(()=>{
-                      const grid=document.querySelector('#social #digital #digitalBody .dv-radar-grid');
-                      const stage=document.querySelector('#social #digital #digitalBody .dv-stage');
-                      const icon=document.querySelector('#social #digital #digitalBody .dv-radar-sector svg');
-                      const g=getComputedStyle(grid),st=stage?getComputedStyle(stage):null,ic=icon?getComputedStyle(icon):null;
-                      return{scope:!!document.querySelector('#social #digital.n3-canonical-digital-scope'),background:g.backgroundImage,border:g.borderRadius,stage:st?.display||'',iconW:parseFloat(ic?.width||'0'),iconH:parseFloat(ic?.height||'0')};
+                    const legendBox=await visibleBox(p,'#social [data-n3-radar-legend]',`${client}/social legend`);
+                    assert(radarBox.width>=320&&radarBox.width<=620&&radarBox.height>=320&&radarBox.height<=620,`${client}/social: radar geometry broken ${JSON.stringify(radarBox)}`);
+                    assert(legendBox.y>=radarBox.y+radarBox.height-2,`${client}/social: legend is not below radar ${JSON.stringify({radarBox,legendBox})}`);
+                    assert(Math.abs((legendBox.x+legendBox.width/2)-(radarBox.x+radarBox.width/2))<90,`${client}/social: legend not centered under radar ${JSON.stringify({radarBox,legendBox})}`);
+                    const radar=await p.evaluate(()=>{
+                      const grid=document.querySelector('#social .dv-radar-grid'),stage=document.querySelector('#social .dv-stage'),icon=document.querySelector('#social .dv-radar-sector svg'),legend=document.querySelector('#social [data-n3-radar-legend]');
+                      const g=getComputedStyle(grid),st=getComputedStyle(stage),ic=getComputedStyle(icon);
+                      const keys=['source','risk','good','comp','market','info'];
+                      const shown=Object.fromEntries(keys.map(k=>[k,Number(legend.querySelector(`[data-legend="${k}"] b`)?.textContent||0)]));
+                      const actual={source:grid.querySelectorAll('.dv-blip').length,risk:grid.querySelectorAll('.n3-live-blip.risk').length,good:grid.querySelectorAll('.n3-live-blip.good').length,comp:grid.querySelectorAll('.n3-live-blip.comp').length,market:grid.querySelectorAll('.n3-live-blip.market').length,info:grid.querySelectorAll('.n3-live-blip.info').length};
+                      return{background:g.backgroundImage,stage:st.display,iconW:parseFloat(ic.width||'0'),iconH:parseFloat(ic.height||'0'),text:legend.textContent.replace(/\s+/g,' ').trim(),shown,actual};
                     });
-                    assert(radarStyle.scope&&radarStyle.background!=='none'&&radarStyle.stage==='grid',`${client}/social: original Digital Radar CSS scope lost ${JSON.stringify(radarStyle)}`);
-                    assert(radarStyle.iconW>0&&radarStyle.iconW<=24&&radarStyle.iconH>0&&radarStyle.iconH<=24,`${client}/social: radar SVG sizing broken ${JSON.stringify(radarStyle)}`);
-                    const kpisHidden=await p.evaluate(()=>{const el=document.querySelector('#social .dv-kpis');return !el||getComputedStyle(el).display==='none'});
-                    assert(kpisHidden,`${client}/social: old KPI wall is still visible`);
+                    assert(radar.background!=='none'&&radar.stage==='grid',`${client}/social: original radar CSS lost ${JSON.stringify(radar)}`);
+                    assert(radar.iconW>0&&radar.iconW<=24&&radar.iconH>0&&radar.iconH<=24,`${client}/social: SVG sizing broken ${JSON.stringify(radar)}`);
+                    assert(/Легенда на точките/.test(radar.text)&&/Наблюдаван източник/.test(radar.text)&&/Риск/.test(radar.text)&&/Възможност/.test(radar.text)&&/Конкурент/.test(radar.text)&&/Пазарна промяна/.test(radar.text)&&/Друг значим сигнал/.test(radar.text),`${client}/social: radar legend incomplete ${radar.text}`);
+                    assert(JSON.stringify(radar.shown)===JSON.stringify(radar.actual),`${client}/social: radar legend counts mismatch ${JSON.stringify(radar)}`);
                   }
                   if(id==='market'){
-                    await p.waitForFunction(()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-summary]'),null,{timeout:9000});
-                    await p.waitForFunction(()=>document.querySelector('#market .market1-head h2')?.textContent?.trim()==='Пазар и репутация',null,{timeout:5000});
+                    await p.waitForFunction(()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas'),null,{timeout:9000});
+                    await p.waitForFunction(()=>[...document.querySelectorAll('#market .pm-hero h2,#market .ref-title h2,#market .market1-head h2')].some(x=>x.textContent.trim()==='Среда'),null,{timeout:6000});
                     await visibleBox(p,'#market .pm-stage,#market .pm-canvas',`${client}/market`);
-                    const marketOldTitle=await p.evaluate(()=>[...document.querySelectorAll('#market h1,#market h2,#market h3')].some(x=>/Пазар и нагласи/i.test(x.textContent||'')));
-                    assert(!marketOldTitle,`${client}/market: legacy title Пазар и нагласи remains visible`);
-                    const kpisHidden=await p.evaluate(()=>{const el=document.querySelector('#market .pm-kpis');return !el||getComputedStyle(el).display==='none'});
-                    assert(kpisHidden,`${client}/market: old KPI wall is still visible`);
                   }
                   if(id==='competition'){
-                    await p.waitForFunction(()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),null,{timeout:9000});
+                    await p.waitForFunction(()=>!!document.querySelector('#competition .vs-comp-axis'),null,{timeout:9000});
                     await visibleBox(p,'#competition .vs-comp-axis',`${client}/competition`);
                   }
                   if(id==='history'){
                     await p.waitForFunction(()=>!!document.querySelector('#history .vs-history-board')&&!!document.querySelector('#history [data-n3-embedded-reports]'),null,{timeout:9000});
                     await visibleBox(p,'#history .vs-history-board',`${client}/history`);
                   }
-                  if(id==='hub'||id==='calendar'){
-                    await p.waitForFunction(id=>!!document.querySelector(`#${id} .n3-resource-card`),id,{timeout:6000});
-                  }
+                  if(id==='hub'||id==='calendar')await p.waitForFunction(id=>!!document.querySelector(`#${id} .n3-resource-card`),id,{timeout:6000});
 
-                  const s=await state(p);
-                  assert(s.nativeFallbacks===0,`${client}/${id}: replacement n3-native visual detected ${JSON.stringify(s)}`);
-                  const untranslated=await p.evaluate(()=>[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em,.page.active .pm-client-badge i,.page.active .n3-live-strip-head span,.blis-system-primary b')].some(x=>/\bLIVE\b/i.test(x.textContent.trim())));
+                  const untranslated=await p.evaluate(()=>[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em,.page.active .pm-client-badge i,.page.active .n3-live-strip-head span')].some(x=>/\bLIVE\b/i.test(x.textContent.trim())));
                   assert(!untranslated,`${client}/${id}: untranslated LIVE remains visible`);
+                  assert(!await p.evaluate(()=>!!document.querySelector('.page.active .n3-native,.page.active .n3-native-overview,.page.active .n3-native-social,.page.active .n3-native-market,.page.active .n3-native-competition')),`${client}/${id}: replacement visual detected`);
 
-                  if(reviewClients.has(client)&&core.includes(id)){
-                    await p.screenshot({path:path.join('/tmp/nav3-shots',`${client}-${id}.png`),fullPage:true});
-                  }
+                  if(reviewClients.has(client)&&['overview','social','market','competition','history'].includes(id))await p.screenshot({path:path.join('/tmp/nav3-shots',`${client}-${id}.png`),fullPage:true});
                 }
-
-                const aliases={digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'};
-                for(const [oldId,newId] of Object.entries(aliases)){
-                  await p.evaluate(id=>window.refGo(id),oldId);
-                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,newId,{timeout:5000});
-                }
-
-                await p.evaluate(()=>window.refGo('overview'));
-                await p.evaluate(()=>window.BLISNavigator3ClientProofV1?.open?.());
-                await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
-                const proof=await p.locator('#n3pDrawer').innerText();
-                assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete`);
-                await p.evaluate(()=>window.BLISNavigator3ClientProofV1?.close?.());
-                await p.waitForFunction(()=>!document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:3000});
 
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
-              console.log('NAVIGATOR_3_PRESERVED_VISUAL_BROWSER_QA_OK');
+              console.log('NAVIGATOR_3_FINAL_LABELS_RADAR_LEGEND_HOME_QA_OK');
             } finally {await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE

@@ -1,5 +1,5 @@
-/* BLIS Navigator — canonical universal client header v6.
-   ONE shell-owned header for every client and every dashboard route.
+/* BLIS Navigator — canonical universal client header v7.
+   ONE shell-owned header for every client and every Navigator 3 route.
    Fixed geometry, verified local logo assets where available, monogram fallback otherwise.
    Compatible with existing Navigator QA selectors (.bch3-name/.bch3-logo) and branding owner contract. */
 (function(){
@@ -19,17 +19,15 @@ const P={
   everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',descBg:'Онлайн игри и спортни залози',descEn:'Online gaming & sports betting intelligence',mark:'E',accent:'#173e35',logo:'/client-logos/everbet.svg'}
 };
 const CONTEXT={
-  overview:{bg:['Общ преглед','Обобщен поглед върху позицията, сигналите и ключовите промени.'],en:['Client Overview','A consolidated view of performance, market position and key insights.']},
-  social:{bg:['Социални сигнали','Публични разговори, теми и динамика в социалната среда.'],en:['Social Intelligence','Public conversations, themes and social dynamics.']},
-  market:{bg:['Пазарна среда','Пазарни сигнали, търсене и промени в категорията.'],en:['Market Intelligence','Market signals, demand and category changes.']},
-  digital:{bg:['Дигитална среда','Видимост, търсене и представяне в дигиталните канали.'],en:['Digital Intelligence','Visibility, search and performance across digital channels.']},
-  reputation:{bg:['Репутация','Публично възприятие, доверие и възникващи репутационни рискове.'],en:['Reputation Intelligence','Public perception, trust and emerging reputation risks.']},
-  competition:{bg:['Конкурентна среда','Конкурентна позиция, активност и натиск в категорията.'],en:['Competitive Intelligence','Competitive position, activity and market pressure.']},
-  opportunities:{bg:['Възможности','Идентифицирани пазарни възможности, потенциал и следващи действия.'],en:['Opportunities','Identified market opportunities, potential and next actions.']},
-  history:{bg:['История','Историческа динамика на индексите, сигналите и ключовите промени.'],en:['History','Historical movement of indices, signals and key changes.']},
-  reports:{bg:['Доклади','Аналитични обобщения, експорти и периодични материали.'],en:['Reports','Analytical summaries, exports and recurring deliverables.']}
+  overview:{bg:['Общ изглед','Обобщена картина на състоянието и ключовите промени.'],en:['Client Overview','A consolidated view of performance, market position and key insights.']},
+  social:{bg:['Мониторинг','Текущо наблюдение на сигнали, рискове, възможности и видимост.'],en:['Monitoring','Signals, risks, opportunities and visibility in one live view.']},
+  market:{bg:['Среда','Пазарни теми, публично възприятие и връзките между тях.'],en:['Environment','Market themes, public perception and the relationships between them.']},
+  competition:{bg:['Конкуренти','Позиция, движение и активност на конкурентите.'],en:['Competitors','Competitive position, activity and market pressure.']},
+  history:{bg:['Развитие/Доклади','Историческа динамика, ключови събития и публикувани доклади.'],en:['Development / Reports','Historical movement, key events and published reports.']},
+  hub:{bg:['Intelligence HUB','Редакционно и аналитично съдържание.'],en:['Intelligence HUB','Editorial and analytical content.']},
+  calendar:{bg:['Календар','Събития, срокове и ключови дати.'],en:['Calendar','Events, deadlines and key dates.']}
 };
-const ALIASES={signals:'social',timeline:'history',live:'overview'};
+const ALIASES={signals:'social',live:'social',digital:'social',opportunities:'social',reputation:'market',reports:'history',timeline:'history',development:'history'};
 let rendering=false,scheduled=false,observer=null;
 const logoCache=new Map();
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -82,7 +80,7 @@ function preloadLogo(path){
   img.decoding='async';img.loading='eager';
   img.onload=()=>{rec.ready=img.naturalWidth>0;for(const fn of [...rec.waiters]){try{fn()}catch(_){}}rec.waiters.clear()};
   img.onerror=()=>{rec.failed=true;rec.waiters.clear()};
-  img.src=path+'?v=20260831-universal-v6';return rec;
+  img.src=path+'?v=20260901-universal-v7';return rec;
 }
 function mountLogo(root,p,key,name){
   if(!p.logo)return;const rec=preloadLogo(p.logo);if(!rec)return;
@@ -114,7 +112,7 @@ function render(){
     let cbar=document.getElementById('blisUniversalClientContext');if(!cbar){cbar=document.createElement('section');cbar.id='blisUniversalClientContext';cbar.className='bch3-context';bar.insertAdjacentElement('afterend',cbar)}
     cbar.dataset.client=key;cbar.dataset.route=r;cbar.dataset.lang=en?'en':'bg';cbar.style.setProperty('--bch-accent',p.accent);cbar.innerHTML=`<div class="bch3-context-copy"><div class="bch3-context-title">${esc(ctx[0])}</div><div class="bch3-context-sub">${esc(ctx[1])}</div></div><span class="bch3-context-rule" aria-hidden="true"></span>`;
     document.documentElement.dataset.clientBranding='local-real-v3-1';
-    document.documentElement.dataset.clientHeader='universal-v6';
+    document.documentElement.dataset.clientHeader='universal-v7';
   } finally {rendering=false}
 }
 function needsRepair(){
