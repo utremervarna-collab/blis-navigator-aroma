@@ -34,6 +34,7 @@ jobs:
           node --check static/navigator-system-structure-v1.js
           node --check static/navigator-3-client-clarity-v1.js
           node --check static/navigator-3-evidence-v1.js
+          node --check static/navigator-3-competitor-dossier-v1.js
 
       - name: Validate Navigator 3 Bulgarian client contract
         run: |
@@ -41,10 +42,14 @@ jobs:
           clarity=static/navigator-3-client-clarity-v1.js
           structure=static/navigator-system-structure-v1.js
           evidence=static/navigator-3-evidence-v1.js
+          dossier=static/navigator-3-competitor-dossier-v1.js
           entry=static/navigator-production-entry-v1.js
 
           grep -q "navigator-3-client-clarity-v1.js" "$entry"
           grep -q "navigator-3-evidence-v1.js" "$entry"
+          grep -q "navigator-3-competitor-dossier-v1.js" "$entry"
+          grep -q "forceBulgarianEarly" "$entry"
+          grep -q "window.BLIS_LANGUAGE='bg'" "$entry"
           grep -q "navigatorVersion='3.0-client-clarity-bg'" "$clarity"
           grep -q "document.documentElement.lang='bg'" "$clarity"
           grep -q "Какво е текущото състояние на марката?" "$clarity"
@@ -64,6 +69,9 @@ jobs:
           grep -q "Първоизточник" "$evidence"
           grep -q "Независими потвърждения" "$evidence"
           grep -q "Какво се промени" "$evidence"
+          grep -q "Конкурентно досие" "$dossier"
+          grep -q "не представлява пазарен дял" "$dossier"
+          grep -q "Първоизточник" "$dossier"
 
           ! grep -q "questionEn" "$structure"
           ! grep -q "labelEn" "$structure"
@@ -81,6 +89,7 @@ jobs:
           test -s static/navigator-system-structure-v1.js
           test -s static/navigator-3-client-clarity-v1.js
           test -s static/navigator-3-evidence-v1.js
+          test -s static/navigator-3-competitor-dossier-v1.js
           test -s static/navigator-production-entry-v1.js
 
           node <<'NODE'
@@ -89,12 +98,15 @@ jobs:
           const structure=fs.readFileSync('static/navigator-system-structure-v1.js','utf8');
           const clarity=fs.readFileSync('static/navigator-3-client-clarity-v1.js','utf8');
           const evidence=fs.readFileSync('static/navigator-3-evidence-v1.js','utf8');
-          const order=['/navigator-system-structure-v1.js','/navigator-3-client-clarity-v1.js','/navigator-3-evidence-v1.js'];
+          const dossier=fs.readFileSync('static/navigator-3-competitor-dossier-v1.js','utf8');
+          const order=['/navigator-system-structure-v1.js','/navigator-3-client-clarity-v1.js','/navigator-3-evidence-v1.js','/navigator-3-competitor-dossier-v1.js'];
           let last=-1;
           for(const asset of order){const at=entry.indexOf(asset);if(at<0)throw new Error('Missing entrypoint asset '+asset);if(at<=last)throw new Error('Wrong Navigator 3 load order at '+asset);last=at;}
           if(!structure.includes('__BLIS_SYSTEM_STRUCTURE_V3'))throw new Error('Missing connected journey owner');
           if(!clarity.includes('__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1'))throw new Error('Missing client clarity owner');
           if(!evidence.includes('__BLIS_NAVIGATOR_3_EVIDENCE_V1'))throw new Error('Missing evidence owner');
+          if(!dossier.includes('__BLIS_NAVIGATOR_3_COMPETITOR_DOSSIER_V1'))throw new Error('Missing competitor dossier owner');
           if(!evidence.includes('window.S')||!evidence.includes('window.H')||!evidence.includes('getUsefulSignals'))throw new Error('Evidence layer is not connected to canonical client data');
+          if(!dossier.includes('window.D?.competitors')||!dossier.includes('getUsefulSignals'))throw new Error('Competitor dossiers are not connected to canonical client data');
           console.log('NAVIGATOR_3_FEATURE_CONTRACT_OK');
           NODE
