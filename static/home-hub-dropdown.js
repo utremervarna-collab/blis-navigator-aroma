@@ -44,6 +44,7 @@
   const style = document.createElement('style');
   style.id = 'hubNavClickMenuCss';
   style.textContent = `
+    .top{z-index:1001!important;overflow:visible!important}
     .hubNav{position:relative!important;z-index:1002!important}
     .hubNavTrigger{appearance:none;border:0;background:transparent;padding:0;display:inline-flex;align-items:center;gap:7px;height:42px;color:#b77b19;font:650 13px/1 Inter,"Segoe UI",Arial,sans-serif;cursor:pointer;white-space:nowrap}
     .hubNavTrigger i{font-style:normal;font-size:12px;line-height:1;transition:transform .18s ease;transform-origin:center}
