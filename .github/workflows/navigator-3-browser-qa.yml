@@ -52,6 +52,22 @@ jobs:
           const pages=['overview','social','market','competition','history','hub','calendar'];
           const labels=['Общ преглед','Сигнали и наблюдение','Пазар и репутация','Конкуренция','Развитие и доклади','Intelligence HUB','Календар'];
           const core=['overview','social','market','competition','history'];
+          const visualState=async p=>p.evaluate(()=>({
+            active:document.querySelector('.page.active')?.id||'',
+            overview:!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
+            socialRadar:!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap'),
+            socialNow:!!document.querySelector('#social .n3-now'),
+            marketMap:!!document.querySelector('#market .pm-stage,#market .pm-canvas'),
+            marketContext:!!document.querySelector('#market [data-n3-market-context]'),
+            competitionAxis:!!document.querySelector('#competition .vs-comp-axis'),
+            competitionChanges:!!document.querySelector('#competition [data-n3-competition-changes]'),
+            historyChart:!!document.querySelector('#history .n3-dev-chart'),
+            historyReports:!!document.querySelector('#history [data-n3-reports]'),
+            hub:!!document.querySelector('#hub .n3-resource-card'),
+            calendar:!!document.querySelector('#calendar .n3-resource-card'),
+            architecture:document.documentElement.dataset.navigatorArchitecture||'',
+            stability:document.documentElement.dataset.navigatorVisualStability||''
+          }));
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -71,17 +87,23 @@ jobs:
                 assert(start.version==='3.0-simplified-five-plus-two',`${client}: simplified architecture marker missing ${start.version}`);
 
                 for(const id of pages){
+                  console.log('CHECK_PAGE',client,id);
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  await p.waitForFunction(id=>({
-                    overview:()=>!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
-                    social:()=>!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap')&&!!document.querySelector('#social .n3-now'),
-                    market:()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-context]'),
-                    competition:()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),
-                    history:()=>!!document.querySelector('#history .n3-dev-chart')&&!!document.querySelector('#history [data-n3-reports]'),
-                    hub:()=>!!document.querySelector('#hub .n3-resource-card'),
-                    calendar:()=>!!document.querySelector('#calendar .n3-resource-card')
-                  }[id]?.()),id,{timeout:9000});
+                  try{
+                    await p.waitForFunction(id=>({
+                      overview:()=>!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
+                      social:()=>!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap')&&!!document.querySelector('#social .n3-now'),
+                      market:()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-context]'),
+                      competition:()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),
+                      history:()=>!!document.querySelector('#history .n3-dev-chart')&&!!document.querySelector('#history [data-n3-reports]'),
+                      hub:()=>!!document.querySelector('#hub .n3-resource-card'),
+                      calendar:()=>!!document.querySelector('#calendar .n3-resource-card')
+                    }[id]?.()),id,{timeout:9000});
+                  }catch(e){
+                    const state=await visualState(p);
+                    throw new Error(`${client}/${id}: visual contract timeout ${JSON.stringify(state)} | ${e.message}`);
+                  }
                   if(core.includes(id)){
                     await p.waitForFunction(id=>!!document.querySelector(`#${id}.page.active .nv3-story [data-n3p-open]`),id,{timeout:5000});
                     const count=await p.locator(`#${id}.page.active .n3-summary3 .n3-summary-card`).count();
