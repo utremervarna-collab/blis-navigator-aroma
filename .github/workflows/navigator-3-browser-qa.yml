@@ -128,7 +128,8 @@ jobs:
                 await p.locator('#overview.page.active .nv3-story [data-n3p-open]').click();
                 await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
                 const proof=await p.locator('#n3pDrawer').innerText();
-                assert(/Фактология и източници/.test(proof)&&/Какво стои зад тази страница/.test(proof),`${client}: evidence drawer incomplete`);
+                const proofState=await p.evaluate(()=>{const d=document.getElementById('n3pDrawer');return{owner:d?.dataset?.n3pOwner||'',proofOwner:document.documentElement.dataset.navigatorProof||'',openOwner:document.documentElement.dataset.navigatorProofOpen||'',html:(d?.innerHTML||'').slice(0,500)}});
+                assert(/Фактология и източници/.test(proof)&&/Какво стои зад тази страница/.test(proof),`${client}: evidence drawer incomplete text=${JSON.stringify(proof.slice(0,500))} state=${JSON.stringify(proofState)}`);
                 await p.locator('[data-n3p-close]').click();
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
