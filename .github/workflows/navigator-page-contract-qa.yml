@@ -1,0 +1,148 @@
+name: Navigator Page Contract QA
+
+on:
+  push:
+    branches:
+      - fix/navigator-dedup-hub-link-2026-09-01
+      - main
+    paths:
+      - 'static/navigator-3-page-contract-v1.js'
+      - 'static/navigator-production-entry-v1.js'
+      - 'zzz_home_intelligence_hub_patch.go'
+      - '.github/workflows/navigator-page-contract-qa.yml'
+  workflow_dispatch:
+
+jobs:
+  page-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build and start Navigator
+        run: |
+          set -euo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/page-contract-server.log 2>&1 &
+          echo $! >/tmp/page-contract-server.pid
+          ready=0
+          for i in $(seq 1 70); do
+            if curl --max-time 3 -fsS http://127.0.0.1:10000/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then cat /tmp/page-contract-server.log || true; exit 1; fi
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Verify single-title hierarchy and Intelligence Hub navigation
+        run: |
+          mkdir -p /tmp/page-contract-shots
+          cat >/tmp/page-contract.cjs <<'NODE'
+          const { chromium }=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          const origin='http://127.0.0.1:10000';
+          const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
+          const pages={
+            overview:'Общ преглед',
+            social:'Сигнали и наблюдение',
+            market:'Пазар и репутация',
+            competition:'Конкуренция',
+            history:'Развитие и доклади',
+            hub:'Intelligence HUB',
+            calendar:'Календар'
+          };
+          const core=['overview','social','market','competition','history'];
+          const visual={
+            overview:'#overview .ovh-gauge,#overview .vs-gauge-card,#overview .vs-gauge-svg',
+            social:'#social .dv-radar-grid',
+            market:'#market .pm-stage,#market .pm-canvas',
+            competition:'#competition .vs-comp-axis',
+            history:'#history .vs-history-board'
+          };
+          async function visible(page,selector){
+            return page.locator(selector).evaluateAll(nodes=>nodes.some(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>0&&r.width>1&&r.height>1})).catch(()=>false);
+          }
+          async function duplicateHeadingCount(page,id,title){
+            return page.locator(`#${id} h1,#${id} h2,#${id} h3`).evaluateAll((nodes,title)=>nodes.filter(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect();return n.textContent.trim()===title&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>1&&r.height>1}).length,title);
+          }
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const client of clients){
+                const p=await browser.newPage({viewport:{width:1440,height:1000}});
+                const errors=[];
+                p.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+                p.on('console',m=>{if(m.type()==='error'&&!/favicon|ERR_NAME_NOT_RESOLVED|Failed to load resource/i.test(m.text()))errors.push('CONSOLE '+m.text())});
+                await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:30000});
+                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_PAGE_CONTRACT_V1&&document.documentElement.dataset.navigatorPageContract==='single-shell-title',null,{timeout:20000});
+
+                for(const [id,title] of Object.entries(pages)){
+                  await p.evaluate(id=>window.refGo(id),id);
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:9000});
+                  await p.waitForTimeout(850);
+                  const shell=await p.locator('.bch3-context-title').innerText();
+                  assert(shell.trim()===title,`${client}/${id}: shell title is ${shell}`);
+                  assert(!(await visible(p,'.blis-system-bar')),`${client}/${id}: BLIS system bar is still visible`);
+                  assert(!(await visible(p,`#${id} .n3-page-head`)),`${client}/${id}: duplicate Navigator page head is visible`);
+                  const dup=await duplicateHeadingCount(p,id,title);
+                  assert(dup===0,`${client}/${id}: duplicate body heading '${title}' is still visible (${dup})`);
+
+                  if(core.includes(id)){
+                    assert(await visible(p,visual[id]),`${client}/${id}: canonical visual missing`);
+                  }
+                  if(id==='social'){
+                    assert(!(await visible(p,'#social .dv-title p')),`${client}/social: redundant radar subtitle visible`);
+                    assert(!(await visible(p,'#social .dv-summary')),`${client}/social: redundant radar summary visible`);
+                    const vt=await p.locator('#social .dv-title h2').innerText();
+                    assert(vt.trim()==='Интелигентен радар',`${client}/social: radar title changed: ${vt}`);
+                  }
+                  if(id==='market')assert(!(await visible(p,'#market .pm-hero')),`${client}/market: duplicate market hero visible`);
+                  if(['overview','competition','history'].includes(id))assert(!(await visible(p,`#${id} .vs-head`)),`${client}/${id}: old canonical route header visible`);
+                }
+
+                if(['aroma','mollox'].includes(client)){
+                  await p.evaluate(()=>window.refGo('social'));
+                  await p.waitForTimeout(800);
+                  await p.screenshot({path:`/tmp/page-contract-shots/${client}-signals.png`,fullPage:true});
+                }
+                assert(errors.length===0,`${client}: runtime errors: ${errors.join(' | ')}`);
+                await p.close();
+              }
+
+              const home=await browser.newPage({viewport:{width:1440,height:1000}});
+              await home.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
+              await home.waitForSelector('.hubNav .hubNavLink',{timeout:10000});
+              const href=await home.locator('.hubNav .hubNavLink').getAttribute('href');
+              assert(href==='/intelligence-hub.html',`Home Hub direct href is ${href}`);
+              await home.locator('.hubNav .hubNavLink').click();
+              await home.waitForURL(/\/intelligence-hub\.html(?:[?#].*)?$/,{timeout:10000});
+              assert(/intelligence-hub\.html/.test(home.url()),`Home Hub click did not navigate: ${home.url()}`);
+              await home.screenshot({path:'/tmp/page-contract-shots/home-hub.png',fullPage:false});
+              await home.close();
+              console.log('NAVIGATOR_PAGE_CONTRACT_AND_HUB_QA_OK');
+            } finally { await browser.close(); }
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/page-contract.cjs
+
+      - name: Upload visual checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-page-contract-shots
+          path: /tmp/page-contract-shots/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/page-contract-server.log || true
