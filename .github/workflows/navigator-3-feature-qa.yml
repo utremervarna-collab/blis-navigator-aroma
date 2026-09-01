@@ -9,7 +9,7 @@ on:
 jobs:
   nav3-feature-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
 
@@ -31,15 +31,18 @@ jobs:
           node --check static/navigator-reference.js
           node --check static/navigator-system-structure-v1.js
           node --check static/navigator-3-client-clarity-v1.js
+          node --check static/navigator-3-evidence-v1.js
 
       - name: Validate Navigator 3 Bulgarian client contract
         run: |
           set -euo pipefail
           clarity=static/navigator-3-client-clarity-v1.js
           structure=static/navigator-system-structure-v1.js
+          evidence=static/navigator-3-evidence-v1.js
           entry=static/navigator-production-entry-v1.js
 
           grep -q "navigator-3-client-clarity-v1.js" "$entry"
+          grep -q "navigator-3-evidence-v1.js" "$entry"
           grep -q "navigatorVersion='3.0-client-clarity-bg'" "$clarity"
           grep -q "document.documentElement.lang='bg'" "$clarity"
           grep -q "Какво е текущото състояние на марката?" "$clarity"
@@ -55,6 +58,10 @@ jobs:
           grep -q "Конкурентна позиция" "$clarity"
           grep -q "Готовност на анализа" "$clarity"
           grep -q "version:'3.0-bg-client-journey'" "$structure"
+          grep -q "Информационна основа" "$evidence"
+          grep -q "Първоизточник" "$evidence"
+          grep -q "Независими потвърждения" "$evidence"
+          grep -q "Какво се промени" "$evidence"
 
           ! grep -q "questionEn" "$structure"
           ! grep -q "labelEn" "$structure"
@@ -72,9 +79,25 @@ jobs:
           PORT=10000 ./app >/tmp/nav3-server.log 2>&1 &
           pid=$!
           trap 'kill $pid 2>/dev/null || true' EXIT
-          for i in $(seq 1 25); do
-            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then break; fi
-            sleep 1
-          done
-          curl -fsS http://127.0.0.1:10000/navigator-3-client-clarity-v1.js | grep -q "BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1"
-          curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=mollox&page=overview' | grep -q "navigator-production-entry-v1.js"
+
+          retry_get(){
+            url="$1"; out="$2"
+            for i in $(seq 1 45); do
+              if curl --max-time 3 -fsS "$url" >"$out"; then return 0; fi
+              sleep 1
+            done
+            echo "Navigator 3 endpoint did not become ready: $url" >&2
+            cat /tmp/nav3-server.log >&2 || true
+            return 1
+          }
+
+          retry_get http://127.0.0.1:10000/api/health /tmp/nav3-health.json
+          retry_get http://127.0.0.1:10000/navigator-system-structure-v1.js /tmp/nav3-structure.js
+          retry_get http://127.0.0.1:10000/navigator-3-client-clarity-v1.js /tmp/nav3-clarity.js
+          retry_get http://127.0.0.1:10000/navigator-3-evidence-v1.js /tmp/nav3-evidence.js
+          retry_get 'http://127.0.0.1:10000/dashboard.html?client=mollox&page=overview' /tmp/nav3-dashboard.html
+
+          grep -q "BLIS_SYSTEM_STRUCTURE_V3" /tmp/nav3-structure.js
+          grep -q "BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1" /tmp/nav3-clarity.js
+          grep -q "BLIS_NAVIGATOR_3_EVIDENCE_V1" /tmp/nav3-evidence.js
+          grep -q "navigator-production-entry-v1.js" /tmp/nav3-dashboard.html
