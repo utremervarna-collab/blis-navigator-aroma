@@ -6,6 +6,10 @@ on:
       - feature/navigator-3-bg-client-clarity
       - release/navigator-3-production
     paths:
+      - 'static/index.html'
+      - 'zzz_home_intelligence_hub_patch.go'
+      - 'home_dark_platform_patch.go'
+      - 'zz_home_background_v2.go'
       - 'static/dashboard.html'
       - 'static/navigator-client-ui.js'
       - 'static/navigator-client-ui.css'
@@ -67,9 +71,33 @@ jobs:
             return box;
           }
 
+          async function verifyPublicHome(browser){
+            const p=await browser.newPage({viewport:{width:1440,height:1000}});
+            await p.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:25000});
+            await p.waitForSelector('.hero .heroInner',{state:'visible',timeout:8000});
+            const geom=await p.evaluate(()=>{
+              const box=s=>document.querySelector(s)?.getBoundingClientRect();
+              const hero=box('.hero'),inner=box('.heroInner'),abstract=box('.abstract'),card=box('.floatCard');
+              const hub=document.querySelector('#resources.homeHubLive'),top=box('#resources .homeHubTop'),kinds=box('#resources .homeHubKinds'),grid=box('#resources .hubGrid');
+              const css=s=>{const e=document.querySelector(s);return e?getComputedStyle(e):null};
+              return{hero,inner,abstract,card,top,kinds,grid,hub:hub?hub.getBoundingClientRect():null,heroMin:css('.hero')?.minHeight,hubPadTop:css('#resources')?.paddingTop};
+            });
+            assert(geom.hero&&geom.hero.height<=570,`public home: hero still oversized ${JSON.stringify(geom.hero)}`);
+            assert(geom.abstract&&geom.abstract.height<=520,`public home: abstract still oversized ${JSON.stringify(geom.abstract)}`);
+            assert(geom.card&&geom.card.y>geom.hero.y+80&&geom.card.y+geom.card.height<geom.hero.y+geom.hero.height-35,`public home: BLIS card not composed inside hero ${JSON.stringify(geom)}`);
+            assert(geom.hub&&geom.top&&geom.kinds&&geom.grid,'public home: Hub composition missing');
+            const topToKinds=geom.kinds.y-(geom.top.y+geom.top.height),kindsToGrid=geom.grid.y-(geom.kinds.y+geom.kinds.height);
+            assert(topToKinds<=30&&kindsToGrid<=30,`public home: Hub has excessive vertical gap ${JSON.stringify({topToKinds,kindsToGrid,geom})}`);
+            await p.screenshot({path:'/tmp/nav3-shots/home-public.png',fullPage:true});
+            await p.locator('#resources').scrollIntoViewIfNeeded();
+            await p.screenshot({path:'/tmp/nav3-shots/home-hub.png',fullPage:false});
+            await p.close();
+          }
+
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
+              await verifyPublicHome(browser);
               for(const client of clients){
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
                 const errors=[];
@@ -140,7 +168,7 @@ jobs:
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
-              console.log('NAVIGATOR_3_SHORT_LABELS_RADAR_LEGEND_QA_OK');
+              console.log('NAVIGATOR_3_SHORT_LABELS_RADAR_LEGEND_HOME_QA_OK');
             } finally {await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
