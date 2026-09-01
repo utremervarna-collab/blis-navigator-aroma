@@ -21,6 +21,7 @@ function kind(s){if(s?.kind)return s.kind;if(s?.sentiment==='negative'||['critic
 function competitorPosition(){
   const rows=A(D().competitors).map((x,i)=>({name:String(x?.name||x?.label||`Конкурент ${i+1}`),score:N(x?.score??x?.value),client:Boolean(x?.isClient||x?.is_client||x?.client)})).filter(x=>x.score!=null).sort((a,b)=>b.score-a.score);
   if(!rows.length)return null;const dn=client().trim().toLowerCase();let at=rows.findIndex(x=>x.client||x.name.trim().toLowerCase()===dn||dn.startsWith(x.name.trim().toLowerCase())||x.name.trim().toLowerCase().startsWith(dn));if(at<0)return{position:null,total:rows.length,leader:rows[0].name};return{position:at+1,total:rows.length,leader:rows[0].name,gap:rows[at].score-rows[0].score}
+}
 function state(score){return score==null?'Няма достатъчно данни за обща оценка.':score>=80?'Общото състояние е силно.':score>=65?'Общото състояние е стабилно.':score>=50?'Картината е смесена и има зони за внимание.':'Общото състояние изисква внимание.'}
 function deltaText(d){return d==null?'Няма достатъчно сравнима история.':Math.abs(d)<.05?'Няма съществена промяна спрямо предходното измерване.':d>0?`Последното измерване е с ${F(Math.abs(d))} т. по-високо.`:`Последното измерване е с ${F(Math.abs(d))} т. по-ниско.`}
 function css(){if(document.getElementById('navigator3ClientBriefCss'))return;const s=document.createElement('style');s.id='navigator3ClientBriefCss';s.textContent=`
