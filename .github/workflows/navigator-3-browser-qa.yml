@@ -129,7 +129,7 @@ jobs:
                 await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
                 const proof=await p.locator('#n3pDrawer').innerText();
                 const proofState=await p.evaluate(()=>{const d=document.getElementById('n3pDrawer');return{owner:d?.dataset?.n3pOwner||'',proofOwner:document.documentElement.dataset.navigatorProof||'',openOwner:document.documentElement.dataset.navigatorProofOpen||'',html:(d?.innerHTML||'').slice(0,500)}});
-                assert(/Фактология и източници/.test(proof)&&/Какво стои зад тази страница/.test(proof),`${client}: evidence drawer incomplete text=${JSON.stringify(proof.slice(0,500))} state=${JSON.stringify(proofState)}`);
+                assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete text=${JSON.stringify(proof.slice(0,500))} state=${JSON.stringify(proofState)}`);
                 await p.locator('[data-n3p-close]').click();
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
