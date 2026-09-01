@@ -26,6 +26,25 @@ const BG_REPLACEMENTS=[
  [/\bLive monitoring\b/gi,'Текущо наблюдение'],
  [/\bLIVE\b/g,'В РЕАЛНО ВРЕМЕ']
 ];
+function installBulgarianLockCss(){
+  if(document.getElementById('navigator3BulgarianLockCss'))return;
+  const style=document.createElement('style');
+  style.id='navigator3BulgarianLockCss';
+  style.textContent='.bch3-lang,[data-blis-language-switch],.n3-language-switch-disabled{display:none!important}';
+  document.head.appendChild(style);
+}
+function disableLanguageSwitches(root=document){
+  const scope=root&&root.querySelectorAll?root:document;
+  scope.querySelectorAll('.bch3-lang,[data-blis-language-switch]').forEach(el=>{
+    el.classList.remove('bch3-lang');
+    el.classList.add('n3-language-switch-disabled');
+    el.removeAttribute('data-blis-language-switch');
+    el.hidden=true;
+    el.disabled=true;
+    el.setAttribute('aria-hidden','true');
+    el.tabIndex=-1;
+  });
+}
 function normalizeBulgarianCopy(root=document){
   const scope=root&&root.nodeType?root:document;
   const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT,{acceptNode(node){
@@ -41,12 +60,22 @@ function watchLateRenders(){
   if(copyObserver)return;
   const root=document.querySelector('.shell')||document.body;if(!root)return;
   copyObserver=new MutationObserver(mutations=>{
-    if(!mutations.some(m=>m.type==='characterData'||m.addedNodes?.length))return;
+    const changed=mutations.some(m=>m.type==='characterData'||m.addedNodes?.length||m.type==='attributes');
+    if(!changed)return;
+    disableLanguageSwitches(root);
     scheduleNormalization(12);
   });
-  copyObserver.observe(root,{subtree:true,childList:true,characterData:true});
+  copyObserver.observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','data-blis-language-switch']});
 }
-function forceBulgarian(){document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';document.querySelectorAll('.bch3-lang').forEach(x=>x.remove());const sub=document.querySelector('.brandsub');if(sub)sub.textContent='Система за бизнес анализ и наблюдение';normalizeBulgarianCopy(document)}
+function forceBulgarian(){
+  installBulgarianLockCss();
+  document.documentElement.lang='bg';
+  document.documentElement.dataset.navigatorLanguage='bg-only';
+  window.BLIS_LANGUAGE='bg';
+  disableLanguageSwitches(document);
+  const sub=document.querySelector('.brandsub');if(sub)sub.textContent='Система за бизнес анализ и наблюдение';
+  normalizeBulgarianCopy(document);
+}
 function decorate(){
   forceBulgarian();watchLateRenders();
   document.querySelectorAll('.nv3-story').forEach(n=>n.remove());
@@ -59,5 +88,5 @@ function decorate(){
 let timer=0;function schedule(){clearTimeout(timer);timer=setTimeout(decorate,35)}
 for(const ev of ['blis:routechange','blis:clientdata','blis:intelligence','blis:periodchange'])window.addEventListener(ev,schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.BLISNavigator3ClientClarity={decorate,schedule,story:STORY,normalizeBulgarianCopy,scheduleNormalization};
+window.BLISNavigator3ClientClarity={decorate,schedule,story:STORY,normalizeBulgarianCopy,scheduleNormalization,disableLanguageSwitches};
 })();
