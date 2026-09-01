@@ -6,6 +6,10 @@ on:
       - feature/navigator-3-bg-client-clarity
       - release/navigator-3-production
     paths:
+      - 'static/dashboard.html'
+      - 'static/navigator-client-ui.js'
+      - 'static/navigator-client-ui.css'
+      - 'static/navigator-overview-client-home-v1.js'
       - 'static/navigator-3-*.js'
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-system-structure-v1.js'
@@ -102,22 +106,40 @@ jobs:
                   switcher:!!document.querySelector('.bch3-lang'),
                   labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),
                   legacy:document.querySelectorAll('#nav [data-page]').length,
-                  version:document.documentElement.dataset.navigatorVersion||''
+                  version:document.documentElement.dataset.navigatorVersion||'',
+                  clientStatus:document.querySelector('.client-brand-status')?.textContent?.trim()||'',
+                  clientButton:document.querySelector('.client-switch-button')?.textContent?.replace(/\s+/g,' ').trim()||''
                 }));
                 assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing`);
                 assert(!start.switcher,`${client}: language switcher visible`);
                 assert(start.labels.join('|')===labels.join('|'),`${client}: wrong 5+2 navigation ${start.labels.join('|')}`);
                 assert(start.legacy===0,`${client}: legacy navigation still visible`);
                 assert(start.version==='3.0-preserved-visuals-5plus2',`${client}: wrong Navigator 3 version ${start.version}`);
+                assert(!start.clientStatus&&!/Активен клиентски профил/i.test(start.clientButton),`${client}: obsolete active-client label remains`);
+
+                await p.locator('.client-switch-button').click();
+                await p.waitForFunction(()=>document.querySelector('.client-switch')?.classList.contains('open'),null,{timeout:3000});
+                const menuState=await p.evaluate(()=>({
+                  count:document.querySelectorAll('.client-switch-menu .client-option').length,
+                  text:document.querySelector('.client-switch-menu')?.textContent?.replace(/\s+/g,' ').trim()||''
+                }));
+                assert(menuState.count===6,`${client}: client switcher should show six selectable profiles, got ${menuState.count}`);
+                assert(!/Активен клиентски профил/i.test(menuState.text),`${client}: obsolete label leaked into client menu`);
+                if(reviewClients.has(client))await p.screenshot({path:path.join('/tmp/nav3-shots',`${client}-client-switcher.png`),fullPage:true});
+                await p.locator('.client-switch-button').click();
 
                 for(const id of pages){
                   console.log('CHECK_PAGE',client,id);
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
                   await p.waitForFunction(expected=>document.querySelector('.bch3-context-title')?.textContent?.trim()===expected,context[id],{timeout:5000});
+                  await p.waitForFunction(id=>!document.querySelector(`#${id}.page.active .nv3-story`),id,{timeout:5000});
+                  const storyUi=await p.evaluate(()=>({story:!!document.querySelector('.page.active .nv3-story'),proofButton:!!document.querySelector('.page.active [data-n3p-open]')}));
+                  assert(!storyUi.story&&!storyUi.proofButton,`${client}/${id}: duplicate story/proof action UI remains ${JSON.stringify(storyUi)}`);
 
                   if(id==='overview'){
                     await p.waitForFunction(()=>!!document.querySelector('#overview .ovh-gauge svg'),null,{timeout:9000});
+                    await p.waitForFunction(()=>!document.querySelector('#overview .ovh-head,#overview .vs-head'),null,{timeout:5000});
                     await visibleBox(p,'#overview .ovh-gauge',`${client}/overview`);
                     const colors=await p.evaluate(()=>[...document.querySelectorAll('#overview .ovh-arc.risk,#overview .ovh-arc.watch,#overview .ovh-arc.stable,#overview .ovh-arc.good')].map(x=>getComputedStyle(x).stroke));
                     assert(colors.length===4&&new Set(colors).size===4,`${client}/overview: approved multicolor BLIS gauge lost ${JSON.stringify(colors)}`);
@@ -176,12 +198,11 @@ jobs:
                 }
 
                 await p.evaluate(()=>window.refGo('overview'));
-                await p.waitForFunction(()=>!!document.querySelector('#overview.page.active .nv3-story [data-n3p-open]'),null,{timeout:5000});
-                await p.evaluate(()=>document.querySelector('#overview.page.active .nv3-story [data-n3p-open]')?.click());
+                await p.evaluate(()=>window.BLISNavigator3ClientProofV1?.open?.());
                 await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
                 const proof=await p.locator('#n3pDrawer').innerText();
                 assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete`);
-                await p.evaluate(()=>document.querySelector('[data-n3p-close]')?.click());
+                await p.evaluate(()=>window.BLISNavigator3ClientProofV1?.close?.());
                 await p.waitForFunction(()=>!document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:3000});
 
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
