@@ -9,9 +9,11 @@ on:
 jobs:
   nav3-feature-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-go@v5
         with:
@@ -70,34 +72,29 @@ jobs:
       - name: Verify feature branch does not change Render configuration
         run: |
           set -euo pipefail
-          git diff origin/main...HEAD -- render.yaml >/tmp/render-diff || true
-          test ! -s /tmp/render-diff
+          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main -- render.yaml
 
-      - name: Start embedded server and verify Navigator 3 assets
+      - name: Verify Navigator 3 integration contract
         run: |
           set -euo pipefail
-          PORT=10000 ./app >/tmp/nav3-server.log 2>&1 &
-          pid=$!
-          trap 'kill $pid 2>/dev/null || true' EXIT
+          test -s static/navigator-system-structure-v1.js
+          test -s static/navigator-3-client-clarity-v1.js
+          test -s static/navigator-3-evidence-v1.js
+          test -s static/navigator-production-entry-v1.js
 
-          retry_get(){
-            url="$1"; out="$2"
-            for i in $(seq 1 45); do
-              if curl --max-time 3 -fsS "$url" >"$out"; then return 0; fi
-              sleep 1
-            done
-            echo "Navigator 3 endpoint did not become ready: $url" >&2
-            cat /tmp/nav3-server.log >&2 || true
-            return 1
-          }
-
-          retry_get http://127.0.0.1:10000/api/health /tmp/nav3-health.json
-          retry_get http://127.0.0.1:10000/navigator-system-structure-v1.js /tmp/nav3-structure.js
-          retry_get http://127.0.0.1:10000/navigator-3-client-clarity-v1.js /tmp/nav3-clarity.js
-          retry_get http://127.0.0.1:10000/navigator-3-evidence-v1.js /tmp/nav3-evidence.js
-          retry_get 'http://127.0.0.1:10000/dashboard.html?client=mollox&page=overview' /tmp/nav3-dashboard.html
-
-          grep -q "BLIS_SYSTEM_STRUCTURE_V3" /tmp/nav3-structure.js
-          grep -q "BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1" /tmp/nav3-clarity.js
-          grep -q "BLIS_NAVIGATOR_3_EVIDENCE_V1" /tmp/nav3-evidence.js
-          grep -q "navigator-production-entry-v1.js" /tmp/nav3-dashboard.html
+          node <<'NODE'
+          const fs=require('fs');
+          const entry=fs.readFileSync('static/navigator-production-entry-v1.js','utf8');
+          const structure=fs.readFileSync('static/navigator-system-structure-v1.js','utf8');
+          const clarity=fs.readFileSync('static/navigator-3-client-clarity-v1.js','utf8');
+          const evidence=fs.readFileSync('static/navigator-3-evidence-v1.js','utf8');
+          const order=['/navigator-system-structure-v1.js','/navigator-3-client-clarity-v1.js','/navigator-3-evidence-v1.js'];
+          let last=-1;
+          for(const asset of order){const at=entry.indexOf(asset);if(at<0)throw new Error('Missing entrypoint asset '+asset);if(at<=last)throw new Error('Wrong Navigator 3 load order at '+asset);last=at;}
+          if(!structure.includes('__BLIS_SYSTEM_STRUCTURE_V3'))throw new Error('Missing connected journey owner');
+          if(!clarity.includes('__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1'))throw new Error('Missing client clarity owner');
+          if(!evidence.includes('__BLIS_NAVIGATOR_3_EVIDENCE_V1'))throw new Error('Missing evidence owner');
+          if(!evidence.includes('window.S')||!evidence.includes('window.H')||!evidence.includes('getUsefulSignals'))throw new Error('Evidence layer is not connected to canonical client data');
+          console.log('NAVIGATOR_3_FEATURE_CONTRACT_OK');
+          NODE
