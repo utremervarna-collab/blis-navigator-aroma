@@ -123,10 +123,12 @@ jobs:
 
               const home=await browser.newPage({viewport:{width:1440,height:1000}});
               await home.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
-              await home.waitForSelector('.hubNav .hubNavLink',{timeout:10000});
-              const href=await home.locator('.hubNav .hubNavLink').getAttribute('href');
+              await home.waitForSelector('.hubNav .hubNavTrigger',{timeout:10000});
+              await home.locator('.hubNav .hubNavTrigger').click();
+              await home.waitForSelector('.hubNav.is-open .hubNavAll',{timeout:10000});
+              const href=await home.locator('.hubNav .hubNavAll').getAttribute('href');
               assert(href==='/intelligence-hub.html',`Home Hub direct href is ${href}`);
-              await home.locator('.hubNav .hubNavLink').click();
+              await home.locator('.hubNav .hubNavAll').click();
               await home.waitForURL(/\/intelligence-hub\.html(?:[?#].*)?$/,{timeout:10000});
               assert(/intelligence-hub\.html/.test(home.url()),`Home Hub click did not navigate: ${home.url()}`);
               await home.screenshot({path:'/tmp/page-contract-shots/home-hub.png',fullPage:false});
