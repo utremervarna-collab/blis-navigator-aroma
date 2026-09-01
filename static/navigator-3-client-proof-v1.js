@@ -5,7 +5,7 @@
 'use strict';
 if(window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1)return;
 window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1=true;
-const LABEL={overview:'Общ преглед',social:'Сигнали и наблюдение',market:'Пазар и репутация',competition:'Конкуренция',history:'Развитие и доклади'};
+const LABEL={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади'};
 const ALIAS={signals:'social',live:'social',digital:'social',opportunities:'social',reputation:'market',reports:'history',timeline:'history',development:'history'};
 const A=x=>Array.isArray(x)?x:[];
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));

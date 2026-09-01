@@ -92,6 +92,11 @@ jobs:
           grep -q "n3-canonical-digital-scope" "$preserve"
           grep -q "digital-master-css-scope" "$preserve"
           grep -q "ТЕКУЩО НАБЛЮДЕНИЕ" "$preserve"
+          grep -q "overview:\['Общ изглед'" "$preserve"
+          grep -q "social:\['Мониторинг'" "$preserve"
+          grep -q "market:\['Среда'" "$preserve"
+          grep -q "competition:\['Конкуренти'" "$preserve"
+          grep -q "history:\['Развитие/Доклади'" "$preserve"
           grep -q "Пазар и репутация" "$market"
           ! grep -q "Пазар и нагласи" "$market"
 
