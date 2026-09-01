@@ -8,6 +8,9 @@ on:
     paths:
       - 'static/navigator-3-*.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-intelligence-analysis-v3.js'
+      - 'static/navigator-deep-analytics-v31.js'
+      - 'static/navigator-metric-intelligence-v33.js'
       - '.github/workflows/navigator-3-bg-copy-qa.yml'
   workflow_dispatch:
 
@@ -44,7 +47,7 @@ jobs:
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages=['overview','social','market','competition','history'];
-          const forbidden=['Analytical Intelligence','Deep Analytics','Early Warning','Narrative Intelligence','Metric Intelligence','Share of Voice','Momentum','Opportunity','Confidence','Live monitoring'];
+          const forbidden=['Analytical Intelligence','Deep Analytics','Early Warning','Narrative Intelligence','Metric Intelligence','Share of Voice','Momentum','Opportunity','Confidence','Live monitoring','· velocity ','avg risk ','Historical snapshots','· importance ','Pressure ','share ','impact '];
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
