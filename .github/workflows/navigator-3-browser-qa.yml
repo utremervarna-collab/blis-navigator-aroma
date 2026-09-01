@@ -61,8 +61,8 @@ jobs:
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
-          const labels=['Общ преглед','Мониторинг','Среда','Конкуренция','Развитие/Доклади','Intelligence HUB','Календар'];
-          const context={overview:'Общ преглед',social:'Мониторинг',market:'Среда',competition:'Конкуренция',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
+          const labels=['Общ изглед','Мониторинг','Среда','Конкуренти','Развитие/Доклади','Intelligence HUB','Календар'];
+          const context={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
           const reviewClients=new Set(['aroma','mollox']);
 
           async function visibleBox(p,selector,label){

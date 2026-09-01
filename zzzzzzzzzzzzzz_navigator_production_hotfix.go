@@ -28,7 +28,7 @@ body.blis-app-ready #blisNavigatorBootScreen{opacity:0;visibility:hidden;pointer
 @media(prefers-reduced-motion:reduce){#blisNavigatorBootScreen .blisBootMark:before{animation:none}}
 </style>`
 
-const navigatorStartupScreen = `<div id="blisNavigatorBootScreen" aria-live="polite"><div class="blisBootMark">BLIS Navigator<small>Зареждане на профила</small></div></div>`
+const navigatorStartupScreen = `<div id="blisNavigatorBootScreen" aria-live="polite"><div class="blisBootMark">BLIS Navigator<small>Зареждане на профила</small></div></div><script>(function(){var started=Date.now();function route(){var r=(document.querySelector('.page.active')||{}).id||new URLSearchParams(location.search).get('page')||'overview';var a={digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'};return a[r]||r}function visualReady(){var id=route();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .pm-stage,#market .pm-canvas');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector('#'+id+' .n3-resource-card');return false}function reveal(){if(document.body.classList.contains('blis-app-ready'))return;var ok=document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&document.querySelector('.bch3-context-title')&&document.querySelector('.page.active')&&visualReady();if(ok){var g=document.getElementById('blisPrepaintGuard');if(g)g.remove();document.body.classList.add('blis-app-ready');document.documentElement.dataset.navigatorPaint='ready';requestAnimationFrame(function(){requestAnimationFrame(function(){var c=document.getElementById('blisNavigatorBootScreen');if(c)setTimeout(function(){c.remove()},180)})});return}if(Date.now()-started>12000){var s=document.querySelector('#blisNavigatorBootScreen small');if(s)s.textContent='Финализиране на профила'}setTimeout(reveal,50)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',reveal,{once:true});else reveal()})();</script>`
 
 func init() {
 	if authProxy == nil { return }
@@ -71,13 +71,13 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
 		body = injectNavigatorStartup(body)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260901-nav3-startup-guard"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260901-nav3-final-page-names-1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260901-nav3-startup-guard")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260901-nav3-final-page-names-1")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
