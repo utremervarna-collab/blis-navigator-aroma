@@ -11,14 +11,14 @@
   if (!oldLink || !menu) return;
 
   const categories = [
-    ['Пазари', '/intelligence-hub.html#hub-markets'],
-    ['Репутация', '/intelligence-hub.html#hub-reputation'],
-    ['Конкуренти', '/intelligence-hub.html#hub-competitors'],
-    ['Дигитална среда', '/intelligence-hub.html#hub-digital'],
-    ['Потребителски нагласи', '/intelligence-hub.html#hub-attitudes'],
-    ['Казуси', '/intelligence-hub.html#hub-cases'],
-    ['Методология', '/intelligence-hub.html#hub-methodology'],
-    ['AI и бизнес', '/intelligence-hub.html#hub-ai-business']
+    ['Пазари', '/intelligence-retail-bulgaria-2026.html'],
+    ['Репутация', '/intelligence-reputation-trust.html'],
+    ['Конкуренти', '/intelligence-hub.html#categories'],
+    ['Дигитална среда', '/intelligence-ai-search.html'],
+    ['Потребителски нагласи', '/intelligence-hub.html#categories'],
+    ['Казуси', '/intelligence-hub.html#categories'],
+    ['Методология', '/methodology.html'],
+    ['AI и бизнес', '/intelligence-ai-search.html']
   ];
 
   const trigger = document.createElement('button');
