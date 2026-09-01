@@ -1,0 +1,123 @@
+name: Navigator 3 Feature QA
+
+on:
+  push:
+    branches:
+      - feature/navigator-3-bg-client-clarity
+      - release/navigator-3-production
+    paths:
+      - 'static/navigator-3-*.js'
+      - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-system-structure-v1.js'
+      - 'static/navigator-market-system-v1.js'
+      - '.github/workflows/navigator-3-feature-qa.yml'
+  workflow_dispatch:
+
+jobs:
+  nav3-feature-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build application
+        run: go build -tags netgo -ldflags '-s -w' -o app .
+
+      - name: Check Navigator 3 JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check static/navigator-production-entry-v1.js
+          node --check static/navigator-system-structure-v1.js
+          node --check static/navigator-market-system-v1.js
+          node --check static/navigator-3-client-clarity-v1.js
+          node --check static/navigator-3-client-proof-v1.js
+          node --check static/navigator-3-evidence-v1.js
+          node --check static/navigator-3-competitor-dossier-v1.js
+          node --check static/navigator-3-architecture-v1.js
+          node --check static/navigator-3-visual-preservation-v1.js
+
+      - name: Validate preserved canonical visual architecture
+        run: |
+          set -euo pipefail
+          arch=static/navigator-3-architecture-v1.js
+          preserve=static/navigator-3-visual-preservation-v1.js
+          market=static/navigator-market-system-v1.js
+          entry=static/navigator-production-entry-v1.js
+          clarity=static/navigator-3-client-clarity-v1.js
+          proof=static/navigator-3-client-proof-v1.js
+
+          grep -q "navigator-3-architecture-v1.js" "$entry"
+          grep -q "navigator-3-visual-preservation-v1.js" "$entry"
+          ! grep -q "navigator-3-stability-v1.js" "$entry"
+          ! grep -q "navigator-3-client-brief-v1.js" "$entry"
+          ! grep -q "n3-native" "$entry"
+          ! grep -q "n3-native" "$arch"
+          ! grep -q "n3-native" "$preserve"
+
+          grep -q "Общ преглед" "$arch"
+          grep -q "Сигнали и наблюдение" "$arch"
+          grep -q "Пазар и репутация" "$arch"
+          grep -q "Конкуренция" "$arch"
+          grep -q "Развитие и доклади" "$arch"
+          grep -q "Intelligence HUB" "$arch"
+          grep -q "Календар" "$arch"
+
+          grep -q "digital:'social'" "$arch"
+          grep -q "opportunities:'social'" "$arch"
+          grep -q "reputation:'market'" "$arch"
+          grep -q "reports:'history'" "$arch"
+
+          grep -q "BLISVisualSuiteV1?.render?.('overview')" "$arch"
+          grep -q "BLISDigitalRadar?.render?.()" "$arch"
+          grep -q "BLISMarketSystemV1?.mount?.()" "$arch"
+          grep -q "BLISVisualSuiteV1?.render?.('competition')" "$arch"
+          grep -q "BLISVisualSuiteV1?.render?.('history')" "$arch"
+          grep -q "3.0-preserved-visuals-5plus2" "$arch"
+          grep -q "navigator3-preserved-canonical-visuals" "$entry"
+
+          grep -q "n3-canonical-digital-scope" "$preserve"
+          grep -q "digital-master-css-scope" "$preserve"
+          grep -q "ТЕКУЩО НАБЛЮДЕНИЕ" "$preserve"
+          grep -q "Сигнали и наблюдение" "$preserve"
+          grep -q "Пазар и репутация" "$preserve"
+          grep -q "Развитие и доклади" "$preserve"
+          grep -q "Пазар и репутация" "$market"
+          ! grep -q "Пазар и нагласи" "$market"
+
+          grep -q "Как е брандът ми сега?" "$clarity"
+          grep -q "Какво се случва в момента?" "$clarity"
+          grep -q "Какво се случва около бранда и как се възприема?" "$clarity"
+          grep -q "Как се движим спрямо останалите?" "$clarity"
+          grep -q "Как се развива картината във времето?" "$clarity"
+          grep -q "Фактология и източници" "$proof"
+
+          node <<'NODE'
+          const fs=require('fs');
+          const arch=fs.readFileSync('static/navigator-3-architecture-v1.js','utf8');
+          const entry=fs.readFileSync('static/navigator-production-entry-v1.js','utf8');
+          const preserve=fs.readFileSync('static/navigator-3-visual-preservation-v1.js','utf8');
+          const ids=[...arch.matchAll(/\{id:'(overview|social|market|competition|history|hub|calendar)'/g)].map(x=>x[1]);
+          const unique=[...new Set(ids)];
+          if(unique.join('|')!=='overview|social|market|competition|history|hub|calendar')throw new Error('Visible 5+2 routes changed: '+unique.join('|'));
+          const proof=entry.indexOf("/navigator-3-client-proof-v1.js");
+          const owner=entry.indexOf("/navigator-3-architecture-v1.js");
+          const preservation=entry.indexOf("/navigator-3-visual-preservation-v1.js");
+          if(proof<0||owner<0||preservation<0||owner<proof||preservation<owner)throw new Error('Navigator 3 owner/preservation load order is invalid');
+          if(/navigator-3-stability-v1\.js/.test(entry))throw new Error('Replacement visual stability layer must not load');
+          if(/n3-native/.test(preserve))throw new Error('Preservation layer must not draw replacement visuals');
+          console.log('NAVIGATOR_3_PRESERVED_VISUAL_ARCHITECTURE_OK');
+          NODE
+
+      - name: Verify feature branch does not change Render configuration
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main -- render.yaml
