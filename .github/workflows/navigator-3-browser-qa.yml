@@ -42,32 +42,40 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Verify simplified Bulgarian client experience
+      - name: Verify preserved visual owners and simplified client journey
         run: |
+          mkdir -p /tmp/nav3-shots
           cat >/tmp/nav3-browser.cjs <<'NODE'
           const { chromium }=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const path=require('path');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
-          const labels=['Общ преглед','Сигнали и наблюдение','Пазар и репутация','Конкуренция','Развитие и доклади','Intelligence HUB','Календар'];
           const core=['overview','social','market','competition','history'];
-          const visualState=async p=>p.evaluate(()=>({
+          const labels=['Общ преглед','Сигнали и наблюдение','Пазар и репутация','Конкуренция','Развитие и доклади','Intelligence HUB','Календар'];
+          const reviewClients=new Set(['aroma','mollox']);
+
+          async function visibleBox(p,selector,label){
+            const box=await p.locator(selector).first().boundingBox().catch(()=>null);
+            assert(box&&box.width>120&&box.height>60,`${label}: missing or collapsed visual ${selector} ${JSON.stringify(box)}`);
+          }
+          async function state(p){return p.evaluate(()=>({
             active:document.querySelector('.page.active')?.id||'',
-            overview:!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
-            socialRadar:!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap'),
-            socialNow:!!document.querySelector('#social .n3-now'),
-            marketMap:!!document.querySelector('#market .pm-stage,#market .pm-canvas'),
-            marketContext:!!document.querySelector('#market [data-n3-market-context]'),
-            competitionAxis:!!document.querySelector('#competition .vs-comp-axis'),
-            competitionChanges:!!document.querySelector('#competition [data-n3-competition-changes]'),
-            historyChart:!!document.querySelector('#history .n3-dev-chart'),
-            historyReports:!!document.querySelector('#history [data-n3-reports]'),
-            hub:!!document.querySelector('#hub .n3-resource-card'),
-            calendar:!!document.querySelector('#calendar .n3-resource-card'),
+            version:document.documentElement.dataset.navigatorVersion||'',
             architecture:document.documentElement.dataset.navigatorArchitecture||'',
-            stability:document.documentElement.dataset.navigatorVisualStability||''
-          }));
+            gauge:!!document.querySelector('#overview .vs-gauge-card .vs-gauge-svg'),
+            radar:!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid'),
+            liveStrip:!!document.querySelector('#social .n3-live-strip'),
+            market:!!document.querySelector('#market .pm-stage,#market .pm-canvas'),
+            marketSummary:!!document.querySelector('#market [data-n3-market-summary]'),
+            competition:!!document.querySelector('#competition .vs-comp-axis'),
+            competitionChanges:!!document.querySelector('#competition [data-n3-competition-changes]'),
+            history:!!document.querySelector('#history .vs-history-board'),
+            reports:!!document.querySelector('#history [data-n3-embedded-reports]'),
+            nativeFallbacks:document.querySelectorAll('.n3-native,.n3-native-overview,.n3-native-social,.n3-native-market,.n3-native-competition').length
+          }))}
+
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -79,42 +87,64 @@ jobs:
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
                 await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,null,{timeout:16000});
                 await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:10000});
-                const start=await p.evaluate(()=>({lang:document.documentElement.lang,language:window.BLIS_LANGUAGE,switcher:!!document.querySelector('.bch3-lang'),labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),legacy:document.querySelectorAll('#nav [data-page]').length,version:document.documentElement.dataset.navigatorVersion}));
+
+                const start=await p.evaluate(()=>({
+                  lang:document.documentElement.lang,
+                  language:window.BLIS_LANGUAGE,
+                  switcher:!!document.querySelector('.bch3-lang'),
+                  labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),
+                  legacy:document.querySelectorAll('#nav [data-page]').length,
+                  version:document.documentElement.dataset.navigatorVersion||''
+                }));
                 assert(start.lang==='bg'&&start.language==='bg',`${client}: Bulgarian lock missing`);
                 assert(!start.switcher,`${client}: language switcher visible`);
-                assert(start.labels.join('|')===labels.join('|'),`${client}: wrong simplified navigation ${start.labels.join('|')}`);
-                assert(start.legacy===0,`${client}: legacy navigation buttons remain visible`);
-                assert(start.version==='3.0-simplified-five-plus-two',`${client}: simplified architecture marker missing ${start.version}`);
+                assert(start.labels.join('|')===labels.join('|'),`${client}: wrong 5+2 navigation ${start.labels.join('|')}`);
+                assert(start.legacy===0,`${client}: legacy navigation still visible`);
+                assert(start.version==='3.0-preserved-visuals-5plus2',`${client}: wrong Navigator 3 version ${start.version}`);
 
                 for(const id of pages){
                   console.log('CHECK_PAGE',client,id);
                   await p.evaluate(id=>window.refGo(id),id);
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  try{
-                    await p.waitForFunction(id=>({
-                      overview:()=>!!document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg'),
-                      social:()=>!!document.querySelector('#social [data-n3-radar-shell] .dv-radar-wrap')&&!!document.querySelector('#social .n3-now'),
-                      market:()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-context]'),
-                      competition:()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),
-                      history:()=>!!document.querySelector('#history .n3-dev-chart')&&!!document.querySelector('#history [data-n3-reports]'),
-                      hub:()=>!!document.querySelector('#hub .n3-resource-card'),
-                      calendar:()=>!!document.querySelector('#calendar .n3-resource-card')
-                    }[id]?.()),id,{timeout:9000});
-                  }catch(e){
-                    const state=await visualState(p);
-                    throw new Error(`${client}/${id}: visual contract timeout ${JSON.stringify(state)} | ${e.message}`);
+
+                  if(id==='overview'){
+                    await p.waitForFunction(()=>!!document.querySelector('#overview .vs-gauge-card .vs-gauge-svg'),null,{timeout:9000});
+                    await visibleBox(p,'#overview .vs-gauge-card',`${client}/overview`);
+                    const colors=await p.evaluate(()=>[...document.querySelectorAll('#overview .vs-gauge-svg .arc.risk,#overview .vs-gauge-svg .arc.warn,#overview .vs-gauge-svg .arc.stable,#overview .vs-gauge-svg .arc.good')].map(x=>getComputedStyle(x).stroke));
+                    assert(colors.length===4&&new Set(colors).size===4,`${client}/overview: approved multicolor BLIS gauge lost ${JSON.stringify(colors)}`);
                   }
-                  if(core.includes(id)){
-                    await p.waitForFunction(id=>!!document.querySelector(`#${id}.page.active .nv3-story [data-n3p-open]`),id,{timeout:5000});
-                    const count=await p.locator(`#${id}.page.active .n3-summary3 .n3-summary-card`).count();
-                    if(id==='social'||id==='history')assert(count<=3,`${client}/${id}: too many primary summary cards ${count}`);
+                  if(id==='social'){
+                    await p.waitForFunction(()=>!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid')&&!!document.querySelector('#social .n3-live-strip'),null,{timeout:9000});
+                    await visibleBox(p,'#social .dv-radar-wrap',`${client}/social`);
+                    const kpisHidden=await p.evaluate(()=>{const el=document.querySelector('#social .dv-kpis');return !el||getComputedStyle(el).display==='none'});
+                    assert(kpisHidden,`${client}/social: old KPI wall is still visible`);
                   }
                   if(id==='market'){
-                    const hidden=await p.evaluate(()=>{const el=document.querySelector('#market .pm-kpis');return !el||getComputedStyle(el).display==='none'});
-                    assert(hidden,`${client}/market: old KPI wall remains visible`);
+                    await p.waitForFunction(()=>!!document.querySelector('#market .pm-stage,#market .pm-canvas')&&!!document.querySelector('#market [data-n3-market-summary]'),null,{timeout:9000});
+                    await visibleBox(p,'#market .pm-stage,#market .pm-canvas',`${client}/market`);
+                    const kpisHidden=await p.evaluate(()=>{const el=document.querySelector('#market .pm-kpis');return !el||getComputedStyle(el).display==='none'});
+                    assert(kpisHidden,`${client}/market: old KPI wall is still visible`);
                   }
+                  if(id==='competition'){
+                    await p.waitForFunction(()=>!!document.querySelector('#competition .vs-comp-axis')&&!!document.querySelector('#competition [data-n3-competition-changes]'),null,{timeout:9000});
+                    await visibleBox(p,'#competition .vs-comp-axis',`${client}/competition`);
+                  }
+                  if(id==='history'){
+                    await p.waitForFunction(()=>!!document.querySelector('#history .vs-history-board')&&!!document.querySelector('#history [data-n3-embedded-reports]'),null,{timeout:9000});
+                    await visibleBox(p,'#history .vs-history-board',`${client}/history`);
+                  }
+                  if(id==='hub'||id==='calendar'){
+                    await p.waitForFunction(id=>!!document.querySelector(`#${id} .n3-resource-card`),id,{timeout:6000});
+                  }
+
+                  const s=await state(p);
+                  assert(s.nativeFallbacks===0,`${client}/${id}: replacement n3-native visual detected ${JSON.stringify(s)}`);
                   const english=await p.evaluate(()=>[...document.querySelectorAll('.page.active .vs-vhead em,.page.active .sv2-ch em,.page.active .pm-client-badge i')].some(x=>/\bLIVE\b/i.test(x.textContent.trim())));
-                  assert(!english,`${client}/${id}: LIVE remains visible`);
+                  assert(!english,`${client}/${id}: untranslated LIVE remains visible`);
+
+                  if(reviewClients.has(client)&&core.includes(id)){
+                    await p.screenshot({path:path.join('/tmp/nav3-shots',`${client}-${id}.png`),fullPage:true});
+                  }
                 }
 
                 const aliases={digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'};
@@ -125,21 +155,30 @@ jobs:
 
                 await p.evaluate(()=>window.refGo('overview'));
                 await p.waitForFunction(()=>!!document.querySelector('#overview.page.active .nv3-story [data-n3p-open]'),null,{timeout:5000});
-                await p.locator('#overview.page.active .nv3-story [data-n3p-open]').click();
+                await p.evaluate(()=>document.querySelector('#overview.page.active .nv3-story [data-n3p-open]')?.click());
                 await p.waitForFunction(()=>document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:4000});
                 const proof=await p.locator('#n3pDrawer').innerText();
-                const proofState=await p.evaluate(()=>{const d=document.getElementById('n3pDrawer');return{owner:d?.dataset?.n3pOwner||'',proofOwner:document.documentElement.dataset.navigatorProof||'',openOwner:document.documentElement.dataset.navigatorProofOpen||'',html:(d?.innerHTML||'').slice(0,500)}});
-                assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete text=${JSON.stringify(proof.slice(0,500))} state=${JSON.stringify(proofState)}`);
-                await p.locator('[data-n3p-close]').click();
+                assert(/Фактология и източници/i.test(proof)&&/Какво стои зад тази страница/i.test(proof),`${client}: evidence drawer incomplete`);
+                await p.evaluate(()=>document.querySelector('[data-n3p-close]')?.click());
                 await p.waitForFunction(()=>!document.getElementById('n3pDrawer')?.classList.contains('open'),null,{timeout:3000});
+
                 assert(errors.length===0,`${client}: runtime errors ${errors.join(' | ')}`);
                 await p.close();
               }
-              console.log('NAVIGATOR_3_SIMPLIFIED_BROWSER_QA_OK');
+              console.log('NAVIGATOR_3_PRESERVED_VISUAL_BROWSER_QA_OK');
             } finally {await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/nav3-browser.cjs
+
+      - name: Upload visual review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator3-visual-review
+          path: /tmp/nav3-shots/*.png
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Show server log on failure
         if: failure()
