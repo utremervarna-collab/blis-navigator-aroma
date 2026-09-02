@@ -28,7 +28,10 @@ func init() {
 		body := append([]byte(nil), payload...)
 		http.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+			// Translation assets are requested with explicit version query strings.
+			// Allow the browser to reuse them between KUB/home/profile navigations
+			// instead of downloading the entire language bundle every time.
+			w.Header().Set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800")
 			_, _ = w.Write(body)
 		})
 	}
