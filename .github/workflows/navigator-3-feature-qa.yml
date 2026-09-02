@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - feature/navigator-3-bg-client-clarity
+      - feature/navigator-readable-small-type
       - release/navigator-3-production
     paths:
       - 'static/navigator-3-*.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-readable-type-v1.js'
       - 'static/navigator-system-structure-v1.js'
       - 'static/navigator-market-system-v1.js'
       - 'static/navigator-intelligence-analysis-v3.js'
@@ -38,6 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check static/navigator-production-entry-v1.js
+          node --check static/navigator-readable-type-v1.js
           node --check static/navigator-system-structure-v1.js
           node --check static/navigator-market-system-v1.js
           node --check static/navigator-intelligence-analysis-v3.js
@@ -62,6 +65,7 @@ jobs:
 
           grep -q "navigator-3-architecture-v1.js" "$entry"
           grep -q "navigator-3-visual-preservation-v1.js" "$entry"
+          grep -q "navigator-readable-type-v1.js" "$entry"
           ! grep -q "navigator-3-stability-v1.js" "$entry"
           ! grep -q "navigator-3-client-brief-v1.js" "$entry"
           ! grep -q "n3-native" "$entry"
