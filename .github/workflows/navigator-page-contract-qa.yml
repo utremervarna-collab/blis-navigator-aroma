@@ -123,6 +123,7 @@ jobs:
             return page.locator(`#${id} *`).evaluateAll(nodes=>nodes.filter(el=>{
               if(el.matches('.dv-radar-wrap,.dv-radar-grid'))return false;
               const s=getComputedStyle(el),r=el.getBoundingClientRect();
+              if(s.overflowX==='hidden'&&s.textOverflow==='ellipsis')return false;
               return r.width>20&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&el.scrollWidth>el.clientWidth+2;
             }).slice(0,12).map(el=>({tag:el.tagName.toLowerCase(),class:el.getAttribute('class')||'',clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,text:String(el.textContent||'').trim().slice(0,80)})));
           }
