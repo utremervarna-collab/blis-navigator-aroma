@@ -2,14 +2,15 @@ package main
 
 import (
 	"encoding/xml"
+	"log"
 	"net/url"
 	"strings"
 	"time"
 )
 
-// Near-real-time KUB news collector. The broader 5-minute collector remains as
-// a fallback, while this loop uses short, high-recall queries so new indexed
-// mentions are merged into the same signalState as soon as possible.
+// Near-real-time KUB collector. Google News is the primary discovery stream and
+// Bing web search is a secondary recall layer. Both merge into the same KUB
+// signalState; every retained signal keeps its source URL.
 var kubRealtimeQueries = []string{
 	`"Баба Алино"`,
 	`"Форест Клуб Варна" OR "Forest Club Varna"`,
@@ -22,10 +23,12 @@ func collectKUBRealtimeNewsSignals() []Signal {
 		raw := "https://news.google.com/rss/search?q=" + url.QueryEscape(q) + "&hl=bg&gl=BG&ceid=BG:bg"
 		status, body, _, err := timedFetch(raw, 3*1024*1024)
 		if err != nil || status < 200 || status >= 400 {
+			log.Printf("KUB_REALTIME source=google status=%d err=%v query=%q", status, err, q)
 			continue
 		}
 		var feed collectorRSS
 		if err := xml.Unmarshal([]byte(body), &feed); err != nil {
+			log.Printf("KUB_REALTIME source=google parse_error=%v query=%q", err, q)
 			continue
 		}
 		for _, item := range feed.Channel.Items {
@@ -46,16 +49,24 @@ func collectKUBRealtimeNewsSignals() []Signal {
 
 func runKUBRealtimeCollector() {
 	fresh := collectKUBRealtimeNewsSignals()
+	// Secondary open-web recall catches publisher pages that have not yet reached
+	// the Google News RSS result set.
+	fresh = append(fresh, collectKUBWebSignals()...)
+	fresh = dedupeSignals(fresh)
 	if len(fresh) == 0 {
+		log.Printf("KUB_REALTIME fresh=0 new=0")
 		return
 	}
-	mergeSignals("kub", fresh)
+	newCount := mergeSignals("kub", fresh)
 	saveSignalStateFile()
+	log.Printf("KUB_REALTIME fresh=%d new=%d", len(fresh), newCount)
 }
 
 func init() {
 	go func() {
-		time.Sleep(5 * time.Second)
+		// Run almost immediately after startup so a cold wake does not leave the
+		// Monitoring page waiting for the next minute boundary.
+		time.Sleep(1 * time.Second)
 		runKUBRealtimeCollector()
 		ticker := time.NewTicker(60 * time.Second)
 		defer ticker.Stop()
