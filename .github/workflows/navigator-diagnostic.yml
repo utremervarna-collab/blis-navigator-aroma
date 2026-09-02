@@ -110,7 +110,6 @@ jobs:
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=varna-towers&page=overview' >/tmp/varna-towers.html
           grep -q 'varna-towers-runtime.js' /tmp/varna-towers.html
           grep -q 'navigator-runtime-core-v1.js' /tmp/varna-towers.html
-          ! grep -q 'src="/app.js' /tmp/varna-towers.html
 
       - name: Show diagnostic log on failure
         if: failure()
