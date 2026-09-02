@@ -46,8 +46,14 @@ function applyReadableType(root=document){
   if(scope instanceof Element&&scope.matches(ROOT_SELECTOR))nodes.push(scope);
   scope.querySelectorAll?.(ROOT_SELECTOR).forEach(container=>nodes.push(container));
   nodes.forEach(container=>{
-    if(shouldRaise(container))container.classList.add(CLASS_NAME);
-    container.querySelectorAll('*').forEach(el=>{if(shouldRaise(el))el.classList.add(CLASS_NAME)});
+    const raise=el=>{
+      if(!shouldRaise(el))return;
+      el.classList.add(CLASS_NAME);
+      el.style.setProperty('font-size',`${MIN_SIZE}px`,'important');
+      el.style.setProperty('line-height','1.45','important');
+    };
+    raise(container);
+    container.querySelectorAll('*').forEach(raise);
   });
   document.documentElement.dataset.navigatorTypography='readable-small-type-v1';
 }
