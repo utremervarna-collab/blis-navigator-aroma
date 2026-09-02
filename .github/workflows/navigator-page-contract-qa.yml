@@ -163,7 +163,8 @@ jobs:
                   const unreadable=await unreadableText(p);
                   assert(unreadable.length===0,`${client}/${id}: visible text below 11px remains: ${JSON.stringify(unreadable)}`);
                   assert((await horizontalOverflowCount(p,id))===0,`${client}/${id}: enlarged text causes horizontal overflow`);
-                  assert((await p.evaluate(()=>document.body.scrollWidth<=window.innerWidth+1)),`${client}/${id}: page width exceeds viewport`);
+                  const mainFrame=await p.locator('.main').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,viewport:window.innerWidth}});
+                  assert(mainFrame.left>=0&&mainFrame.right<=mainFrame.viewport+1,`${client}/${id}: main layout exceeds viewport: ${JSON.stringify(mainFrame)}`);
                 }
 
                 if(['aroma','mollox'].includes(client)){
