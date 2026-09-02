@@ -19,13 +19,17 @@ const SMALL='[data-signal-id],.n3-live-item,.n3-change,.n3b-card,.ov3-change,.ov
 
 function pageOf(el){return el?.closest?.('.page')?.id||''}
 function hide(el,reason){if(!el||el.dataset.blisClientValueHidden==='1')return;el.dataset.blisClientValueHidden='1';el.dataset.blisClientValueReason=reason||'low-value'}
-function smallBlock(el){
-  let b=el.closest?.(SMALL);if(b&&b.closest('.page'))return b;
-  let p=el;for(let i=0;i<3&&p;i++,p=p.parentElement){if(!p.closest?.('.page'))break;const t=(p.innerText||'').trim();if(t.length>0&&t.length<440&&p.children.length<=8)return p}
-  return null;
-}
+function knownBlock(el){const b=el.closest?.(SMALL);return b&&b.closest('.page')?b:null}
 function leaf(el){return el&&el.children.length===0}
 function cleanPunctuation(s){return String(s||'').replace(/\s*·\s*·\s*/g,' · ').replace(/\s{2,}/g,' ').replace(/^\s*·\s*|\s*·\s*$/g,'').trim()}
+function reasonFor(txt){
+  if(!txt)return'';
+  if(TECH.test(txt)||(RAWKEY.test(txt)&&/(?:linkedin|facebook|instagram|youtube|meta_ads|metric|source)/i.test(txt)))return'raw-telemetry';
+  if(ABS_AUDIENCE.test(txt)&&!COMPARATIVE.test(txt))return'absolute-audience';
+  if(AVAILABILITY.test(txt)&&!OUTAGE.test(txt)&&!COMPARATIVE.test(txt))return'availability-only';
+  if(DIAGNOSTIC.test(txt))return'internal-diagnostic';
+  return'';
+}
 
 function rewriteUsefulEmptyStates(root){
   const repl=[
@@ -36,53 +40,51 @@ function rewriteUsefulEmptyStates(root){
   ];
   root.querySelectorAll('span,small,p,b,strong,div').forEach(el=>{
     if(!leaf(el))return;const t=(el.textContent||'').trim();if(!t)return;
-    for(const [re,to] of repl)if(re.test(t)){el.textContent=to;break}
+    for(const [re,to] of repl)if(re.test(t)){el.textContent=to;el.dataset.blisClientValueReframed='1';break}
   });
 }
 function removeInternalScores(root){
   root.querySelectorAll('span,small,p,b,strong,div').forEach(el=>{
     if(!leaf(el))return;let t=(el.textContent||'').trim();if(!t)return;
-    if(GENERIC_SOURCE.test(t)){el.dataset.blisClientValueHidden='1';return}
-    if(/значимост\s+\d+(?:[,.]\d+)?/i.test(t)){t=cleanPunctuation(t.replace(/(?:·\s*)?значимост\s+\d+(?:[,.]\d+)?/ig,''));if(t)el.textContent=t;else el.dataset.blisClientValueHidden='1'}
+    if(GENERIC_SOURCE.test(t)){hide(el,'generic-source-caption');return}
+    if(/значимост\s+\d+(?:[,.]\d+)?/i.test(t)){t=cleanPunctuation(t.replace(/(?:·\s*)?значимост\s+\d+(?:[,.]\d+)?/ig,''));if(t)el.textContent=t;else hide(el,'internal-score')}
   });
 }
-function simplifyRadarLegend(root){
-  root.querySelectorAll('.n3-radar-legend-item b').forEach(x=>x.dataset.blisClientValueHidden='1');
+function reframeClientBrief(root){
+  root.querySelectorAll('.n3b-card').forEach(card=>{
+    const sm=[...card.querySelectorAll('small')].find(x=>/значимост на сигнала/i.test(x.textContent||''));
+    if(!sm)return;const v=card.querySelector('strong');
+    if(v&&/\/?100\b/.test(v.textContent||''))v.textContent=card.classList.contains('risk')?'РИСК':card.classList.contains('good')?'ВЪЗМОЖНОСТ':'ЗНАЧИМ СИГНАЛ';
+    sm.textContent='Приоритетна промяна за периода';sm.dataset.blisClientValueReframed='1';
+  });
 }
+function simplifyRadarLegend(root){root.querySelectorAll('.n3-radar-legend-item b').forEach(x=>hide(x,'legend-count'))}
 function sanitizeBlocks(root){
+  const candidates=[...root.querySelectorAll(`${SMALL},span,small,p,b,strong`)];
   const seen=new Set();
-  root.querySelectorAll('div,section,article,li,tr').forEach(el=>{
-    if(seen.has(el)||el.dataset.blisClientValueHidden==='1')return;
-    const pg=pageOf(el);if(KEEP_CONTEXT.has(pg))return;
-    const txt=(el.innerText||'').replace(/\s+/g,' ').trim();if(!txt||txt.length>520)return;
-    let reason='';
-    if(TECH.test(txt)||(RAWKEY.test(txt)&&/(?:linkedin|facebook|instagram|youtube|meta_ads|metric|source)/i.test(txt)))reason='raw-telemetry';
-    else if(ABS_AUDIENCE.test(txt)&&!COMPARATIVE.test(txt))reason='absolute-audience';
-    else if(AVAILABILITY.test(txt)&&!OUTAGE.test(txt)&&!COMPARATIVE.test(txt))reason='availability-only';
-    else if(DIAGNOSTIC.test(txt))reason='internal-diagnostic';
-    if(!reason)return;
-    const b=smallBlock(el)||el;
-    const bt=(b.innerText||'').replace(/\s+/g,' ').trim();
-    // Do not sacrifice a larger analytical block because one nested caption is technical.
-    if(b!==el&&bt.length>500)return;
-    hide(b,reason);seen.add(b);
-  });
+  for(const el of candidates){
+    if(seen.has(el)||el.dataset.blisClientValueHidden==='1')continue;
+    const pg=pageOf(el);if(KEEP_CONTEXT.has(pg))continue;
+    const txt=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();if(!txt||txt.length>520)continue;
+    const reason=reasonFor(txt);if(!reason)continue;
+    const isBlock=el.matches?.(SMALL);const block=isBlock?el:knownBlock(el);
+    if(block){const bt=(block.innerText||'').replace(/\s+/g,' ').trim();if(bt.length<=520){hide(block,reason);seen.add(block);continue}}
+    // If no known analytical card/row exists, remove only the technical leaf.
+    if(leaf(el))hide(el,reason);
+  }
 }
 function cleanupLonelyContainers(root){
-  root.querySelectorAll('.n3-live-list,.n3-change-list,.vs-mini-grid,[class*="grid"]').forEach(g=>{
-    const visible=[...g.children].filter(x=>x.dataset.blisClientValueHidden!=='1');
-    if(!visible.length&&g.children.length)hide(g,'empty-after-client-value-filter');
+  root.querySelectorAll('.n3-live-list,.n3-change-list,.vs-mini-grid').forEach(g=>{
+    const visible=[...g.children].filter(x=>x.dataset.blisClientValueHidden!=='1');if(!visible.length&&g.children.length)hide(g,'empty-after-client-value-filter')
   });
 }
 function installCSS(){if(document.getElementById('blisClientValueGuardCss'))return;const s=document.createElement('style');s.id='blisClientValueGuardCss';s.textContent=`
 [data-blis-client-value-hidden="1"]{display:none!important}
-.n3-radar-legend-item b[data-blis-client-value-hidden="1"]{display:none!important}
 .page [data-blis-client-value-reframed="1"]{color:#506a81!important}
 `;document.head.appendChild(s)}
 function sanitize(root=document){
-  installCSS();
-  const scope=root?.querySelectorAll?root:document;
-  rewriteUsefulEmptyStates(scope);removeInternalScores(scope);simplifyRadarLegend(scope);sanitizeBlocks(scope);cleanupLonelyContainers(scope);
+  installCSS();const scope=root?.querySelectorAll?root:document;
+  rewriteUsefulEmptyStates(scope);removeInternalScores(scope);reframeClientBrief(scope);simplifyRadarLegend(scope);sanitizeBlocks(scope);cleanupLonelyContainers(scope);
   document.documentElement.dataset.clientValueModel='decision-relevance-v1';
 }
 let timers=[];function schedule(){timers.forEach(clearTimeout);timers=[0,80,220,600,1400,3000].map(ms=>setTimeout(()=>sanitize(document.querySelector('.shell')||document),ms))}
