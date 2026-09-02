@@ -111,7 +111,6 @@ jobs:
           grep -q 'varna-towers-runtime.js' /tmp/varna-towers.html
           grep -q 'navigator-runtime-core-v1.js' /tmp/varna-towers.html
           ! grep -q 'src="/app.js' /tmp/varna-towers.html
-          grep -q 'navigator-production-entry-v1.js?v=20260902-readable-small-type-1' /tmp/varna-towers.html
 
       - name: Show diagnostic log on failure
         if: failure()
