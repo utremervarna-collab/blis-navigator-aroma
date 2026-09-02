@@ -21,6 +21,6 @@ function apply(){
     }
   });
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
-const mo=new MutationObserver(()=>apply());mo.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+function boot(){apply();setTimeout(apply,180)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
