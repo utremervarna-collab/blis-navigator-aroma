@@ -5,12 +5,14 @@ on:
     branches:
       - fix/navigator-dedup-hub-link-2026-09-01
       - feature/navigator-3-bg-client-clarity
+      - feature/navigator-readable-small-type
       - main
     paths:
       - 'static/navigator-3-page-contract-v1.js'
       - 'static/navigator-3-visual-preservation-v1.js'
       - 'static/navigator-3-client-proof-v1.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-readable-type-v1.js'
       - 'static/home-hub-dropdown.js'
       - 'zzz_home_intelligence_hub_patch.go'
       - 'zzzz_home_hub_dropdown_loader.go'
@@ -80,6 +82,33 @@ jobs:
           async function duplicateHeadingCount(page,id,title){
             return page.locator(`#${id} h1,#${id} h2,#${id} h3`).evaluateAll((nodes,title)=>nodes.filter(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect();return n.textContent.trim()===title&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>1&&r.height>1}).length,title);
           }
+          async function unreadableTextCount(page){
+            return page.locator('.side,.shell,.modal,.nv3-drawer').evaluateAll(roots=>{
+              const skip=/(?:^|[-_])(icon|glyph|mark|dot|orb|arrow|chevron|logo|brandname|navsym|stream|motion|visual|track|bar|close|zoom)(?:$|[-_])/i;
+              const seen=new Set();
+              let count=0;
+              for(const root of roots){
+                for(const el of [root,...root.querySelectorAll('*')]){
+                  const isTextElement=el instanceof HTMLElement||(typeof SVGTextElement!=='undefined'&&el instanceof SVGTextElement);
+                  if(seen.has(el)||!isTextElement){continue}seen.add(el);
+                  if(el.closest('[hidden],[aria-hidden="true"],script,style,noscript'))continue;
+                  if(!(typeof SVGTextElement!=='undefined'&&el instanceof SVGTextElement)&&el.closest('svg,canvas'))continue;
+                  if(skip.test(el.getAttribute('class')||''))continue;
+                  const own=[...el.childNodes].some(n=>n.nodeType===3&&String(n.nodeValue||'').trim().length>1);
+                  if(!own||String(el.textContent||'').trim().length<2)continue;
+                  const s=getComputedStyle(el),r=el.getBoundingClientRect(),size=Number.parseFloat(s.fontSize||'0');
+                  if(r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&size>=5&&size<11)count++;
+                }
+              }
+              return count;
+            });
+          }
+          async function horizontalOverflowCount(page,id){
+            return page.locator(`#${id} *`).evaluateAll(nodes=>nodes.filter(el=>{
+              const s=getComputedStyle(el),r=el.getBoundingClientRect();
+              return r.width>20&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&el.scrollWidth>el.clientWidth+2;
+            }).length);
+          }
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -91,6 +120,7 @@ jobs:
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:30000});
                 await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_PAGE_CONTRACT_V1&&document.documentElement.dataset.navigatorPageContract==='single-shell-title',null,{timeout:20000});
                 assert((await p.locator('#blisNavigatorBootScreen').count())===0,`${client}: obsolete startup screen is present`);
+                await p.waitForFunction(()=>document.documentElement.dataset.navigatorTypography==='readable-small-type-v1',null,{timeout:10000});
 
                 for(const [id,title] of Object.entries(pages)){
                   await p.evaluate(id=>window.refGo(id),id);
@@ -114,6 +144,9 @@ jobs:
                   }
                   if(id==='market')assert(!(await visible(p,'#market .pm-hero')),`${client}/market: duplicate market hero visible`);
                   if(['overview','competition','history'].includes(id))assert(!(await visible(p,`#${id} .vs-head`)),`${client}/${id}: old canonical route header visible`);
+                  assert((await unreadableTextCount(p))===0,`${client}/${id}: visible text below 11px remains`);
+                  assert((await horizontalOverflowCount(p,id))===0,`${client}/${id}: enlarged text causes horizontal overflow`);
+                  assert((await p.evaluate(()=>document.body.scrollWidth<=window.innerWidth+1)),`${client}/${id}: page width exceeds viewport`);
                 }
 
                 if(['aroma','mollox'].includes(client)){
