@@ -119,11 +119,11 @@ jobs:
               return found.slice(0,12);
             });
           }
-          async function horizontalOverflowCount(page,id){
+          async function horizontalOverflow(page,id){
             return page.locator(`#${id} *`).evaluateAll(nodes=>nodes.filter(el=>{
               const s=getComputedStyle(el),r=el.getBoundingClientRect();
               return r.width>20&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&el.scrollWidth>el.clientWidth+2;
-            }).length);
+            }).slice(0,12).map(el=>({tag:el.tagName.toLowerCase(),class:el.getAttribute('class')||'',clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,text:String(el.textContent||'').trim().slice(0,80)})));
           }
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -162,7 +162,8 @@ jobs:
                   if(['overview','competition','history'].includes(id))assert(!(await visible(p,`#${id} .vs-head`)),`${client}/${id}: old canonical route header visible`);
                   const unreadable=await unreadableText(p);
                   assert(unreadable.length===0,`${client}/${id}: visible text below 11px remains: ${JSON.stringify(unreadable)}`);
-                  assert((await horizontalOverflowCount(p,id))===0,`${client}/${id}: enlarged text causes horizontal overflow`);
+                  const overflow=await horizontalOverflow(p,id);
+                  assert(overflow.length===0,`${client}/${id}: enlarged text causes horizontal overflow: ${JSON.stringify(overflow)}`);
                   const mainFrame=await p.locator('.main').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,viewport:window.innerWidth}});
                   assert(mainFrame.left>=0&&mainFrame.right<=mainFrame.viewport+1,`${client}/${id}: main layout exceeds viewport: ${JSON.stringify(mainFrame)}`);
                 }
