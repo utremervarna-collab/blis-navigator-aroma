@@ -9,7 +9,7 @@ import (
 
 func injectMetricIntelligenceV33(body []byte)[]byte{
 	if bytes.Contains(body,[]byte("navigator-metric-intelligence-v33.js")){return body}
-	tag:=[]byte(`<script src="/navigator-metric-intelligence-v33.js?v=20260829-metric33"></script>`)
+	tag:=[]byte(`<script src="/navigator-metric-intelligence-v33.js?v=20260902-metric34-retired"></script>`)
 	if bytes.Contains(body,[]byte("</body>")){return bytes.Replace(body,[]byte("</body>"),append(tag,[]byte("</body>")...),1)}
 	return append(body,tag...)
 }
