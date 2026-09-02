@@ -96,11 +96,11 @@ jobs:
           async function duplicateHeadingCount(page,id,title){
             return page.locator(`#${id} h1,#${id} h2,#${id} h3`).evaluateAll((nodes,title)=>nodes.filter(n=>{const s=getComputedStyle(n),r=n.getBoundingClientRect();return n.textContent.trim()===title&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>1&&r.height>1}).length,title);
           }
-          async function unreadableTextCount(page){
+          async function unreadableText(page){
             return page.locator('.side,.shell,.modal,.nv3-drawer').evaluateAll(roots=>{
               const skip=/(?:^|[-_])(icon|glyph|mark|dot|orb|arrow|chevron|logo|brandname|navsym|stream|motion|visual|track|bar|close|zoom)(?:$|[-_])/i;
               const seen=new Set();
-              let count=0;
+              const found=[];
               for(const root of roots){
                 for(const el of [root,...root.querySelectorAll('*')]){
                   const isTextElement=el instanceof HTMLElement||(typeof SVGTextElement!=='undefined'&&el instanceof SVGTextElement);
@@ -111,10 +111,12 @@ jobs:
                   const own=[...el.childNodes].some(n=>n.nodeType===3&&String(n.nodeValue||'').trim().length>1);
                   if(!own||String(el.textContent||'').trim().length<2)continue;
                   const s=getComputedStyle(el),r=el.getBoundingClientRect(),size=Number.parseFloat(s.fontSize||'0');
-                  if(r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&size>=5&&size<11)count++;
+                  if(r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&size>=5&&size<11){
+                    found.push({tag:el.tagName.toLowerCase(),class:el.getAttribute('class')||'',size,text:String(el.textContent||'').trim().slice(0,70)});
+                  }
                 }
               }
-              return count;
+              return found.slice(0,12);
             });
           }
           async function horizontalOverflowCount(page,id){
@@ -158,7 +160,8 @@ jobs:
                   }
                   if(id==='market')assert(!(await visible(p,'#market .pm-hero')),`${client}/market: duplicate market hero visible`);
                   if(['overview','competition','history'].includes(id))assert(!(await visible(p,`#${id} .vs-head`)),`${client}/${id}: old canonical route header visible`);
-                  assert((await unreadableTextCount(p))===0,`${client}/${id}: visible text below 11px remains`);
+                  const unreadable=await unreadableText(p);
+                  assert(unreadable.length===0,`${client}/${id}: visible text below 11px remains: ${JSON.stringify(unreadable)}`);
                   assert((await horizontalOverflowCount(p,id))===0,`${client}/${id}: enlarged text causes horizontal overflow`);
                   assert((await p.evaluate(()=>document.body.scrollWidth<=window.innerWidth+1)),`${client}/${id}: page width exceeds viewport`);
                 }
