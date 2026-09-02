@@ -18,6 +18,8 @@ function installStyle(){
   style.textContent=`
     .${CLASS_NAME}{font-size:${MIN_SIZE}px!important;line-height:1.45!important}
     #nav .n3-nav-label.${CLASS_NAME}{font-size:${MIN_SIZE}px!important;line-height:1.35!important}
+    .ovh-event>span{min-width:0!important;max-width:100%!important}
+    .ovh-event b{min-width:0!important;max-width:100%!important}
     @media(max-width:620px){.${CLASS_NAME}{line-height:1.5!important}}
   `;
   document.head.appendChild(style);
