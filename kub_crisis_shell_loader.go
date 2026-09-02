@@ -3,7 +3,7 @@ package main
 import "bytes"
 
 func init() {
-	const kubAttackMapLiveScript = `<script defer src="/kub-attack-map-live-v1.js?v=20260902-live1"></script>`
+	const kubAttackMapLiveScript = `<script defer src="/kub-attack-map-live-v1.js?v=20260902-live2"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("kub-attack-map-live-v1.js")) {
 		blisI18NScripts = append([]byte(kubAttackMapLiveScript), blisI18NScripts...)
 	}
