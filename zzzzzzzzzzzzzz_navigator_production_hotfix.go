@@ -14,22 +14,6 @@ var legacyNavigatorUIStyles = regexp.MustCompile(`<link[^>]+href="/(?:navigator-
 var legacyCompetitionPaintGuard = regexp.MustCompile(`(?s)<style[^>]+id="blisCompetitionPaintGuard"[^>]*>.*?</style>`)
 var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 
-const navigatorStartupGuard = `<style id="blisNavigatorStartupGuard">
-html,body{background:#f4f7fb!important}
-body:not(.blis-app-ready){overflow:hidden!important}
-body:not(.blis-app-ready) .app{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-body.blis-app-ready .app{visibility:visible!important;opacity:1!important;pointer-events:auto!important}
-#blisNavigatorBootScreen{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:linear-gradient(135deg,#f8fafc 0%,#eef4f8 58%,#f7f4ed 100%);opacity:1;visibility:visible;transition:opacity .16s ease,visibility .16s ease}
-#blisNavigatorBootScreen .blisBootMark{display:flex;flex-direction:column;align-items:center;gap:10px;color:#132c49;font:800 22px/1.1 Inter,Segoe UI,Arial,sans-serif;letter-spacing:-.02em}
-#blisNavigatorBootScreen .blisBootMark:before{content:"";width:38px;height:38px;border-radius:50%;border:2px solid #d4e1eb;border-top-color:#1f7c89;animation:blisBootSpin .8s linear infinite}
-#blisNavigatorBootScreen small{font-size:10px;font-weight:650;letter-spacing:.04em;color:#7a8d9f}
-body.blis-app-ready #blisNavigatorBootScreen{opacity:0;visibility:hidden;pointer-events:none}
-@keyframes blisBootSpin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){#blisNavigatorBootScreen .blisBootMark:before{animation:none}}
-</style>`
-
-const navigatorStartupScreen = `<div id="blisNavigatorBootScreen" aria-live="polite"><div class="blisBootMark">BLIS Navigator<small>Зареждане на профила</small></div></div><script>(function(){var started=Date.now();function route(){var r=(document.querySelector('.page.active')||{}).id||new URLSearchParams(location.search).get('page')||'overview';var a={digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'};return a[r]||r}function visualReady(){var id=route();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .pm-stage,#market .pm-canvas');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector('#'+id+' .n3-resource-card');return false}function reveal(){if(document.body.classList.contains('blis-app-ready'))return;var ok=document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&document.querySelector('.bch3-context-title')&&document.querySelector('.page.active')&&visualReady();if(ok){var g=document.getElementById('blisPrepaintGuard');if(g)g.remove();document.body.classList.add('blis-app-ready');document.documentElement.dataset.navigatorPaint='ready';requestAnimationFrame(function(){requestAnimationFrame(function(){var c=document.getElementById('blisNavigatorBootScreen');if(c)setTimeout(function(){c.remove()},180)})});return}if(Date.now()-started>12000){var s=document.querySelector('#blisNavigatorBootScreen small');if(s)s.textContent='Финализиране на профила'}setTimeout(reveal,50)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',reveal,{once:true});else reveal()})();</script>`
-
 func init() {
 	if authProxy == nil { return }
 	previous := authProxy.ModifyResponse
@@ -37,25 +21,6 @@ func init() {
 		if previous != nil { if err := previous(resp); err != nil { return err } }
 		return applyNavigatorProductionHotfixes(resp)
 	}
-}
-
-func injectNavigatorStartup(body []byte) []byte {
-	if !bytes.Contains(body, []byte(`id="blisNavigatorStartupGuard"`)) {
-		body = bytes.Replace(body, []byte("</head>"), append([]byte(navigatorStartupGuard), []byte("</head>")...), 1)
-	}
-	if !bytes.Contains(body, []byte(`id="blisNavigatorBootScreen"`)) {
-		if pos := bytes.Index(body, []byte("<body")); pos >= 0 {
-			if endRel := bytes.IndexByte(body[pos:], '>'); endRel >= 0 {
-				end := pos + endRel + 1
-				out := make([]byte, 0, len(body)+len(navigatorStartupScreen))
-				out = append(out, body[:end]...)
-				out = append(out, []byte(navigatorStartupScreen)...)
-				out = append(out, body[end:]...)
-				body = out
-			}
-		}
-	}
-	return body
 }
 
 func applyNavigatorProductionHotfixes(resp *http.Response) error {
@@ -70,14 +35,13 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
-		body = injectNavigatorStartup(body)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260901-nav3-final-page-names-1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260901-direct-start-1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260901-nav3-final-page-names-1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260901-direct-start-1")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
