@@ -1,13 +1,15 @@
-/* BLIS Navigator — client switcher v6.
+/* BLIS Navigator — client switcher v7.
    Single responsibility: client selection and atomic hand-off to the canonical data loader.
-   Header/chrome is owned by navigator-client-branding-v3.js.
-   Everbet remains directly addressable but is intentionally hidden from the dashboard client switcher. */
+   Crisis profile KUB is routed to its dedicated full-function Navigator workspace.
+   Astor Garden, Everbet and Varna Towers remain directly addressable in the system,
+   but are intentionally hidden from the visible client switcher. */
 (function(){
 'use strict';
 if(window.__BLIS_CLIENT_UI_V3)return;
 window.__BLIS_CLIENT_UI_V3=true;
 
 const clients={
+  kub:{bg:'Корпорация КУБ',en:'KUB Corporation',typeBg:'Кризисен мониторинг · Баба Алино',typeEn:'Crisis monitoring · Baba Alino'},
   aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care'},
   bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery'},
   'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality'},
@@ -16,7 +18,7 @@ const clients={
   wirello:{bg:'Wirello Market',en:'Wirello Market',typeBg:'Модерен ритейл',typeEn:'Retail'},
   everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming'}
 };
-const visibleOrder=['mollox','aroma','bolyarka','wirello','varna-towers','astor-garden'];
+const visibleOrder=['kub','mollox','aroma','bolyarka','wirello'];
 const valid=k=>!!clients[k];
 let wired=!!window.__BLIS_CLIENT_SWITCH_WIRED_V5;
 let switchToken=0;
@@ -93,11 +95,15 @@ async function handoffData(key,sel,token){
   return true;
 }
 async function select(key){
-  if(!valid(key))return;close();const token=++switchToken;
+  if(!valid(key))return;close();
+  if(key==='kub'){
+    try{localStorage.setItem('blis-client-ui','kub')}catch(_){}
+    location.href='/kub-crisis.html';
+    return;
+  }
+  const token=++switchToken;
   if(document.body)document.body.dataset.blisLoading='true';
-  try{
-    localStorage.setItem('blis-client-ui',key);
-  }catch(_){}
+  try{localStorage.setItem('blis-client-ui',key)}catch(_){}
   try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(_){}
   const page=activePage();const u=new URL(location.href);u.pathname='/dashboard.html';u.searchParams.set('client',key);u.searchParams.set('page',page);
   history.replaceState({client:key,page},'',u.pathname+u.search+u.hash);
@@ -109,9 +115,7 @@ async function select(key){
     const ok=await handoffData(key,sel,token);if(!ok)return;
     if(document.body)document.body.dataset.client=key;
     window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:key,data:window.D}}));
-  }catch(err){
-    console.error('BLIS client switch failed',err);
-  }finally{
+  }catch(err){console.error('BLIS client switch failed',err)}finally{
     if(token===switchToken&&document.body)document.body.dataset.blisLoading='false';
   }
 }
@@ -121,6 +125,10 @@ function click(e){
   const w=document.querySelector('.client-switch');if(w&&!w.contains(e.target))close();
 }
 function init(){
+  if(current()==='kub'){
+    location.replace('/kub-crisis.html');
+    return;
+  }
   ensureSelect();ensureMenu();
   const k=current(),sel=document.getElementById('clientSel');if(sel)sel.value=k;paint(k);
   const wrap=document.querySelector('.client-switch');if(wrap){wrap.style.position='relative';wrap.style.zIndex='200'}
