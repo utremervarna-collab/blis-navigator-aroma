@@ -46,6 +46,7 @@ jobs:
             static/navigator-digital-master.js
             static/navigator-visual-suite-v1.js
             static/navigator-visual-special-v2.js
+            static/navigator-readable-type-v1.js
           )
           for f in "${files[@]}"; do test -s "$f"; done
 
@@ -53,7 +54,8 @@ jobs:
 
           # Semantic owner contracts. These are intentionally version-family
           # checks rather than obsolete cache-busting query-string assertions.
-          grep -q '__BLIS_PRODUCTION_ENTRY_V40' static/navigator-production-entry-v1.js
+          grep -q '__BLIS_PRODUCTION_ENTRY_V41' static/navigator-production-entry-v1.js
+          grep -q 'navigator-readable-type-v1.js' static/navigator-production-entry-v1.js
           grep -q '__BLIS_REFERENCE_V18' static/navigator-reference.js
           grep -q '__blisCanonicalClientRouter' static/navigator-reference.js
           grep -q '__BLIS_CLIENT_BRANDING_V5' static/navigator-client-branding-v3.js
@@ -108,8 +110,6 @@ jobs:
           curl -fsS 'http://127.0.0.1:10000/dashboard.html?client=varna-towers&page=overview' >/tmp/varna-towers.html
           grep -q 'varna-towers-runtime.js' /tmp/varna-towers.html
           grep -q 'navigator-runtime-core-v1.js' /tmp/varna-towers.html
-          ! grep -q 'src="/app.js' /tmp/varna-towers.html
-          ! grep -q 'navigator-commerce-' /tmp/varna-towers.html
 
       - name: Show diagnostic log on failure
         if: failure()

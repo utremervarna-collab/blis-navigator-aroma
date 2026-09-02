@@ -3,7 +3,7 @@
 (function(){
 'use strict';
 if(window.__BLIS_PRODUCTION_ENTRY_V41)return;window.__BLIS_PRODUCTION_ENTRY_V41=true;
-const VERSION='20260901-nav3-final-page-names-1';
+const VERSION='20260902-readable-small-type-1';
 function forceBulgarianEarly(){document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';try{const u=new URL(location.href);if(u.searchParams.has('lang')){u.searchParams.delete('lang');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}}catch(_){}}
 forceBulgarianEarly();
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
@@ -41,6 +41,7 @@ async function boot(){
  forceBulgarianEarly();
  await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
+ await safe('/navigator-readable-type-v1.js');
  window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
  document.documentElement.dataset.navigatorUi='navigator3-preserved-canonical-visuals';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:activeRoute(),version:VERSION}}));
