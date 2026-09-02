@@ -20,6 +20,9 @@ function installStyle(){
     #nav .n3-nav-label.${CLASS_NAME}{font-size:${MIN_SIZE}px!important;line-height:1.35!important}
     .ovh-event>span{min-width:0!important;max-width:100%!important}
     .ovh-event b{min-width:0!important;max-width:100%!important}
+    .client-switch-button.blis-client-switch-no-mark{grid-template-columns:minmax(0,1fr) 16px!important}
+    .client-switch-button.blis-client-switch-no-mark .client-brand-copy{width:auto!important;min-width:0!important}
+    .client-switch-button.blis-client-switch-no-mark .client-switch-chevron{width:auto!important;min-width:16px!important}
     @media(max-width:620px){.${CLASS_NAME}{line-height:1.5!important}}
   `;
   document.head.appendChild(style);
@@ -43,6 +46,9 @@ function shouldRaise(el){
 
 function applyReadableType(root=document){
   installStyle();
+  document.querySelectorAll('.client-switch-button').forEach(button=>{
+    button.classList.toggle('blis-client-switch-no-mark',!button.querySelector('.client-brand-mark'));
+  });
   const scope=root instanceof Element?root:document;
   const nodes=[];
   if(scope instanceof Element&&scope.matches(ROOT_SELECTOR))nodes.push(scope);
