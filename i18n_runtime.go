@@ -29,8 +29,8 @@ var kubReadableTypeCSS = []byte(`<style id="kub-readable-type">
 .configBlock h3{font-size:var(--kub-subtitle)}.configBlock p,.configBlock li{font-size:var(--kub-body);line-height:1.65}.callout{font-size:var(--kub-body);line-height:1.65}
 .modalbox p,.modalbox li{font-size:var(--kub-body);line-height:1.65}.note{font-size:var(--kub-small);line-height:1.65}.footnote{font-size:var(--kub-small);line-height:1.65}
 .radarHead .eyebrow{font-size:var(--kub-min)}.radarHead h2,.radarTitle{font-size:clamp(21px,1.5vw,25px);line-height:1.25}.radarHead p,.radarHeader p{font-size:var(--kub-body);line-height:1.6}.radarState,.radarBadge{font-size:var(--kub-min)}.radarLabel{font-size:11.5px}.ping:after{font-size:var(--kub-min)}.radarStat b{font-size:clamp(20px,1.4vw,23px)}.radarStat span,.radarStat p{font-size:var(--kub-small);line-height:1.55}.radarLegend,.radarLegend span{font-size:var(--kub-min)}.radarNote,.radarFoot{font-size:var(--kub-min);line-height:1.6}
-/* Safety floor for miscellaneous text elements not covered by component selectors. */
-.page :where(p,li,td,th,label,input,select,button,a,small){min-font-size:12px}
+/* Fallback floor for miscellaneous supporting text. Component rules above remain authoritative. */
+.page small,.page .note,.page .footnote,.page .sev,.page .meta span{font-size:var(--kub-min)!important}
 @media(max-width:680px){:root{--kub-small:12px;--kub-body:13px;--kub-nav:14px;--kub-subtitle:14px;--kub-section:20px;--kub-h1:32px}.metric .value{font-size:34px}.radarHead h2,.radarTitle{font-size:21px}}
 </style>`)
 
