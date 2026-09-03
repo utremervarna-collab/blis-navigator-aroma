@@ -28,9 +28,11 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
-		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision1"></script>`
-		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
-		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews1"></script>`
+		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision2"></script>`
+		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe2"></script>`
+		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews2"></script>`
+		const dossierData = `<script defer src="/navigator-competitor-dossiers-data-v2.js?v=20260903-dossierdata1"></script>`
+		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui1"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
 		}
@@ -39,6 +41,12 @@ func init() {
 		}
 		if !bytes.Contains(body, []byte("navigator-competition-news-v1.js")) {
 			body = injectBeforeBodyClose(body, competitionNews)
+		}
+		if !bytes.Contains(body, []byte("navigator-competitor-dossiers-data-v2.js")) {
+			body = injectBeforeBodyClose(body, dossierData)
+		}
+		if !bytes.Contains(body, []byte("navigator-3-competitor-dossier-v2.js")) {
+			body = injectBeforeBodyClose(body, dossierV2)
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
