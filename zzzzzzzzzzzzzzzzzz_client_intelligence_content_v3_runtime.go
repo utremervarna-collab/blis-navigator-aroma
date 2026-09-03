@@ -35,6 +35,7 @@ func init() {
 		const dossierTune = `<script defer src="/navigator-competitor-dossiers-tune-v1.js?v=20260903-tune1"></script>`
 		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui2"></script>`
 		const editorial = `<script defer src="/navigator-editorial-cleanup-v1.js?v=20260903-editorial1"></script>`
+		const monitoring = `<script defer src="/navigator-monitoring-intelligence-v2.js?v=20260903-monitor2"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
 		}
@@ -55,6 +56,9 @@ func init() {
 		}
 		if !bytes.Contains(body, []byte("navigator-editorial-cleanup-v1.js")) {
 			body = injectBeforeBodyClose(body, editorial)
+		}
+		if !bytes.Contains(body, []byte("navigator-monitoring-intelligence-v2.js")) {
+			body = injectBeforeBodyClose(body, monitoring)
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
