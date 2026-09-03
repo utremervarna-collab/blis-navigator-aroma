@@ -1,12 +1,13 @@
-/* BLIS Navigator — Monitoring Profile V4.1
-   Client-meaningful signal categories without recursive render events. */
+/* BLIS Navigator — Monitoring Profile V4.2
+   Client-meaningful signal categories. Isolated from the intelligence event
+   bus so the profile cannot create recursive Monitoring renders. */
 (function(){
 'use strict';
-if(window.__BLIS_MONITORING_PROFILE_V41)return;
-window.__BLIS_MONITORING_PROFILE_V41=true;
+if(window.__BLIS_MONITORING_PROFILE_V42)return;
+window.__BLIS_MONITORING_PROFILE_V42=true;
 if(!/\/dashboard\.html$/i.test(location.pathname))return;
 
-const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
 const N=s=>String(s??'').toLowerCase().replace(/\s+/g,' ').trim();
 const text=s=>[s?.topic,s?.category,s?.kind,s?.scope,s?.title,s?.text,s?.description,s?.detail].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
 const attRe=/(critical|high|negative|риск|криз|негатив|жалб|проблем|санкц|спад|наруш|съд|дело|атака|бойкот|скандал)/i;
@@ -53,6 +54,7 @@ function css(){
 }
 
 let busy=false,timers=[];
+function fingerprint(vals){return vals.map(x=>`${x.short}:${x.value}`).join('|')}
 async function upgrade(){
   if(busy)return;
   const root=document.getElementById('social');
@@ -65,24 +67,26 @@ async function upgrade(){
   try{
     const rows=await api.rows();
     if(!root.isConnected||!root.classList.contains('active'))return;
-    const vals=values(Array.isArray(rows)?rows:[]);
+    const vals=values(Array.isArray(rows)?rows:[]),fp=fingerprint(vals);
+    if(wrap.dataset.monProfile==='v42'&&wrap.dataset.monProfileFp===fp)return;
     const old=wrap.querySelector('.mon2-radar');
     if(old)old.outerHTML=svg(vals);else wrap.insertAdjacentHTML('beforeend',svg(vals));
     wrap.querySelector('.mon4-legend')?.remove();
     wrap.insertAdjacentHTML('beforeend',legend(vals));
     const p=wrap.querySelector('p');
     if(p)p.textContent='Дял на значимите сигнали за периода по шест клиентски важни направления. Категориите могат да се припокриват.';
-    wrap.dataset.monProfile='v41';
-    /* Do not dispatch blis:intelligence here. V3 observes the DOM and applies
-       motion automatically. Dispatching the same event from this renderer
-       creates a recursive render loop with Monitoring V2. */
-  }catch(err){console.error('BLIS Monitoring Profile V4.1',err)}finally{busy=false}
+    wrap.dataset.monProfile='v42';
+    wrap.dataset.monProfileFp=fp;
+  }catch(err){console.error('BLIS Monitoring Profile V4.2',err)}finally{busy=false}
 }
 function schedule(){
   timers.forEach(clearTimeout);
-  timers=[80,350,900,1800].map(ms=>setTimeout(upgrade,ms));
+  timers=[220,950].map(ms=>setTimeout(upgrade,ms));
 }
-for(const ev of ['blis:routechange','blis:clientdata','blis:intelligence','blis:periodchange'])window.addEventListener(ev,schedule);
+/* Deliberately do not subscribe to blis:intelligence: Monitoring V2 may emit
+   that event during its own render lifecycle. Route/client/period changes are
+   sufficient and prevent recursive DOM churn. */
+for(const ev of ['blis:routechange','blis:clientdata','blis:periodchange'])window.addEventListener(ev,schedule);
 document.addEventListener('click',e=>{if(e.target.closest?.('#nav button,.client-option,.datebox,[data-page],[data-n3-page]'))schedule()},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.addEventListener('load',schedule,{once:true});
