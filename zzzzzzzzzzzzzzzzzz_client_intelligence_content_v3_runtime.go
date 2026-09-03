@@ -28,20 +28,17 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
-		const tag = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision1"></script><script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
+		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision1"></script>`
+		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
+		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews1"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
-			if bytes.Contains(body, []byte("</body>")) {
-				body = bytes.Replace(body, []byte("</body>"), []byte(tag+"</body>"), 1)
-			} else {
-				body = append(body, []byte(tag)...)
-			}
-		} else if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3-stability.js")) {
-			const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
-			if bytes.Contains(body, []byte("</body>")) {
-				body = bytes.Replace(body, []byte("</body>"), []byte(stability+"</body>"), 1)
-			} else {
-				body = append(body, []byte(stability)...)
-			}
+			body = injectBeforeBodyClose(body, v3)
+		}
+		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3-stability.js")) {
+			body = injectBeforeBodyClose(body, stability)
+		}
+		if !bytes.Contains(body, []byte("navigator-competition-news-v1.js")) {
+			body = injectBeforeBodyClose(body, competitionNews)
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
@@ -50,4 +47,11 @@ func init() {
 		resp.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		return nil
 	}
+}
+
+func injectBeforeBodyClose(body []byte, tag string) []byte {
+	if bytes.Contains(body, []byte("</body>")) {
+		return bytes.Replace(body, []byte("</body>"), []byte(tag+"</body>"), 1)
+	}
+	return append(body, []byte(tag)...)
 }
