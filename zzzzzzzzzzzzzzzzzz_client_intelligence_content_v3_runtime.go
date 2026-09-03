@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 )
+
+var legacyMonitoringScripts = regexp.MustCompile(`(?is)<script[^>]+src=["']/navigator-monitoring-(?:intelligence-v2|polish-v3|profile-v4)\.js[^"']*["'][^>]*></script>`)
 
 // Load the decision-intelligence content owner after the existing dashboard
 // renderers. It does not change KUB's dedicated crisis interface.
@@ -28,6 +31,12 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
+
+		// Monitoring had accumulated three independent late renderers. They caused
+		// visible repaint/jumping and briefly exposed obsolete profile dimensions.
+		// Strip every legacy Monitoring script from the response and load one owner.
+		body = legacyMonitoringScripts.ReplaceAll(body, nil)
+
 		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision3"></script>`
 		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe3"></script>`
 		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews3"></script>`
@@ -35,9 +44,8 @@ func init() {
 		const dossierTune = `<script defer src="/navigator-competitor-dossiers-tune-v1.js?v=20260903-tune1"></script>`
 		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui2"></script>`
 		const editorial = `<script defer src="/navigator-editorial-cleanup-v1.js?v=20260903-editorial1"></script>`
-		const monitoring = `<script defer src="/navigator-monitoring-intelligence-v2.js?v=20260903-monitor2"></script>`
-		const monitoringPolish = `<script defer src="/navigator-monitoring-polish-v3.js?v=20260903-monitor3"></script>`
-		const monitoringProfile = `<script defer src="/navigator-monitoring-profile-v4.js?v=20260903-monitor4fix2"></script>`
+		const monitoringCanonical = `<script defer src="/navigator-monitoring-canonical-v5.js?v=20260903-monitor5a"></script>`
+
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
 		}
@@ -59,15 +67,10 @@ func init() {
 		if !bytes.Contains(body, []byte("navigator-editorial-cleanup-v1.js")) {
 			body = injectBeforeBodyClose(body, editorial)
 		}
-		if !bytes.Contains(body, []byte("navigator-monitoring-intelligence-v2.js")) {
-			body = injectBeforeBodyClose(body, monitoring)
+		if !bytes.Contains(body, []byte("navigator-monitoring-canonical-v5.js")) {
+			body = injectBeforeBodyClose(body, monitoringCanonical)
 		}
-		if !bytes.Contains(body, []byte("navigator-monitoring-polish-v3.js")) {
-			body = injectBeforeBodyClose(body, monitoringPolish)
-		}
-		if !bytes.Contains(body, []byte("navigator-monitoring-profile-v4.js")) {
-			body = injectBeforeBodyClose(body, monitoringProfile)
-		}
+
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
 		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
