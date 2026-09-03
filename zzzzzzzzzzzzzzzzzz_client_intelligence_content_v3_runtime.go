@@ -32,9 +32,8 @@ func init() {
 		}
 		_ = resp.Body.Close()
 
-		// Monitoring had accumulated three independent late renderers. They caused
-		// visible repaint/jumping and briefly exposed obsolete profile dimensions.
-		// Strip every legacy Monitoring script from the response and load one owner.
+		// Strip the superseded Monitoring overlays. Monitoring is now owned by one
+		// canonical renderer mounted into the current visible Monitoring owner.
 		body = legacyMonitoringScripts.ReplaceAll(body, nil)
 
 		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision3"></script>`
@@ -44,7 +43,7 @@ func init() {
 		const dossierTune = `<script defer src="/navigator-competitor-dossiers-tune-v1.js?v=20260903-tune1"></script>`
 		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui2"></script>`
 		const editorial = `<script defer src="/navigator-editorial-cleanup-v1.js?v=20260903-editorial1"></script>`
-		const monitoringCanonical = `<script defer src="/navigator-monitoring-canonical-v5.js?v=20260903-monitor5a"></script>`
+		const monitoringCanonical = `<script defer src="/navigator-monitoring-canonical-v5.js?v=20260903-monitor5b"></script>`
 
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
