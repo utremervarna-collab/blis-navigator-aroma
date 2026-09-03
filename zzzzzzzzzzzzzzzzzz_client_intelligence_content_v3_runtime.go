@@ -28,12 +28,19 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
-		const tag = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision1"></script>`
+		const tag = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision1"></script><script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			if bytes.Contains(body, []byte("</body>")) {
 				body = bytes.Replace(body, []byte("</body>"), []byte(tag+"</body>"), 1)
 			} else {
 				body = append(body, []byte(tag)...)
+			}
+		} else if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3-stability.js")) {
+			const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe1"></script>`
+			if bytes.Contains(body, []byte("</body>")) {
+				body = bytes.Replace(body, []byte("</body>"), []byte(stability+"</body>"), 1)
+			} else {
+				body = append(body, []byte(stability)...)
 			}
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
