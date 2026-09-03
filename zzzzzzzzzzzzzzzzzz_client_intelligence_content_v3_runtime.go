@@ -37,6 +37,7 @@ func init() {
 		const editorial = `<script defer src="/navigator-editorial-cleanup-v1.js?v=20260903-editorial1"></script>`
 		const monitoring = `<script defer src="/navigator-monitoring-intelligence-v2.js?v=20260903-monitor2"></script>`
 		const monitoringPolish = `<script defer src="/navigator-monitoring-polish-v3.js?v=20260903-monitor3"></script>`
+		const monitoringProfile = `<script defer src="/navigator-monitoring-profile-v4.js?v=20260903-monitor4"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
 		}
@@ -63,6 +64,9 @@ func init() {
 		}
 		if !bytes.Contains(body, []byte("navigator-monitoring-polish-v3.js")) {
 			body = injectBeforeBodyClose(body, monitoringPolish)
+		}
+		if !bytes.Contains(body, []byte("navigator-monitoring-profile-v4.js")) {
+			body = injectBeforeBodyClose(body, monitoringProfile)
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
