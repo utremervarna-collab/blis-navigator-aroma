@@ -18,9 +18,13 @@ var kubRealtimeQueries = []string{
 	`"Корпорация КУБ" OR "групировка КУБ"`,
 }
 
-// The Free-plan keepalive pulse and the normal 60-second ticker may fire at the
-// same time. Serialize the expensive discovery pass so we never duplicate web
-// requests or write signals.json concurrently.
+// Aggressive discovery cadence for the crisis profile. The client UI polls the
+// local signal API more frequently, while public search transports are refreshed
+// every 15 seconds to avoid hammering upstream services on every browser poll.
+const kubRealtimeInterval = 15 * time.Second
+
+// Several KUB collectors can fire around the same time. Serialize the expensive
+// discovery pass so we never duplicate web requests or write signals.json concurrently.
 var kubRealtimeRunMu sync.Mutex
 
 func collectKUBRealtimeNewsSignals() []Signal {
@@ -74,13 +78,13 @@ func runKUBRealtimeCollector() {
 func init() {
 	go func() {
 		// Run almost immediately after startup so a cold wake does not leave the
-		// Monitoring page waiting for the next minute boundary.
+		// Monitoring page waiting for the first scheduled discovery pass.
 		time.Sleep(1 * time.Second)
-		runKUBRealtimeCollector()
-		ticker := time.NewTicker(60 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
+		for {
 			runKUBRealtimeCollector()
+			// Sleep after the pass completes; this avoids a ticker backlog if an
+			// upstream source is temporarily slow.
+			time.Sleep(kubRealtimeInterval)
 		}
 	}()
 }
