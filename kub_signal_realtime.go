@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,11 @@ var kubRealtimeQueries = []string{
 	`"Форест Клуб Варна" OR "Forest Club Varna"`,
 	`"Корпорация КУБ" OR "групировка КУБ"`,
 }
+
+// The Free-plan keepalive pulse and the normal 60-second ticker may fire at the
+// same time. Serialize the expensive discovery pass so we never duplicate web
+// requests or write signals.json concurrently.
+var kubRealtimeRunMu sync.Mutex
 
 func collectKUBRealtimeNewsSignals() []Signal {
 	out := make([]Signal, 0, 120)
@@ -42,12 +48,14 @@ func collectKUBRealtimeNewsSignals() []Signal {
 					break
 				}
 			}
-		}
 	}
 	return dedupeSignals(out)
 }
 
 func runKUBRealtimeCollector() {
+	kubRealtimeRunMu.Lock()
+	defer kubRealtimeRunMu.Unlock()
+
 	fresh := collectKUBRealtimeNewsSignals()
 	// Secondary open-web recall catches publisher pages that have not yet reached
 	// the Google News RSS result set.
