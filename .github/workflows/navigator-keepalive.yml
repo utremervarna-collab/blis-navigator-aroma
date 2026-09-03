@@ -1,0 +1,29 @@
+name: Navigator 24-7 Keepalive
+
+on:
+  schedule:
+    - cron: '2-59/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: navigator-keepalive
+  cancel-in-progress: true
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Keep BLIS Navigator awake
+        shell: bash
+        run: |
+          set -u
+          URL='https://blis-navigator-aroma.onrender.com/api/signals/health?client=kub&keepalive=1'
+          for i in 1 2; do
+            code="$(curl -L -sS -o /tmp/blis-health.txt -w '%{http_code}' --connect-timeout 20 --max-time 60 "$URL" || true)"
+            echo "BLIS keepalive HTTP ${code:-000}"
+            if [ "$i" = "1" ]; then sleep 90; fi
+          done
