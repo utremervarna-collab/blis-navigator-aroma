@@ -48,6 +48,7 @@ func collectKUBRealtimeNewsSignals() []Signal {
 					break
 				}
 			}
+		}
 	}
 	return dedupeSignals(out)
 }
