@@ -28,11 +28,13 @@ func init() {
 			return err
 		}
 		_ = resp.Body.Close()
-		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision2"></script>`
-		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe2"></script>`
-		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews2"></script>`
-		const dossierData = `<script defer src="/navigator-competitor-dossiers-data-v2.js?v=20260903-dossierdata1"></script>`
-		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui1"></script>`
+		const v3 = `<script defer src="/navigator-client-intelligence-content-v3.js?v=20260903-decision3"></script>`
+		const stability = `<script defer src="/navigator-client-intelligence-content-v3-stability.js?v=20260903-dedupe3"></script>`
+		const competitionNews = `<script defer src="/navigator-competition-news-v1.js?v=20260903-compnews3"></script>`
+		const dossierData = `<script defer src="/navigator-competitor-dossiers-data-v2.js?v=20260903-dossierdata2"></script>`
+		const dossierTune = `<script defer src="/navigator-competitor-dossiers-tune-v1.js?v=20260903-tune1"></script>`
+		const dossierV2 = `<script defer src="/navigator-3-competitor-dossier-v2.js?v=20260903-dossierui2"></script>`
+		const editorial = `<script defer src="/navigator-editorial-cleanup-v1.js?v=20260903-editorial1"></script>`
 		if !bytes.Contains(body, []byte("navigator-client-intelligence-content-v3.js")) {
 			body = injectBeforeBodyClose(body, v3)
 		}
@@ -45,8 +47,14 @@ func init() {
 		if !bytes.Contains(body, []byte("navigator-competitor-dossiers-data-v2.js")) {
 			body = injectBeforeBodyClose(body, dossierData)
 		}
+		if !bytes.Contains(body, []byte("navigator-competitor-dossiers-tune-v1.js")) {
+			body = injectBeforeBodyClose(body, dossierTune)
+		}
 		if !bytes.Contains(body, []byte("navigator-3-competitor-dossier-v2.js")) {
 			body = injectBeforeBodyClose(body, dossierV2)
+		}
+		if !bytes.Contains(body, []byte("navigator-editorial-cleanup-v1.js")) {
+			body = injectBeforeBodyClose(body, editorial)
 		}
 		resp.Body = io.NopCloser(bytes.NewReader(body))
 		resp.ContentLength = int64(len(body))
