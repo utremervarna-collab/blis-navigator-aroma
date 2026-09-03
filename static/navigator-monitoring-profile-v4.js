@@ -1,11 +1,9 @@
-/* BLIS Navigator — Monitoring Profile V4
-   Replaces technical/abstract radar dimensions with client-meaningful signal
-   categories. Each value is the share of current significant signals matching
-   the category in the selected period. */
+/* BLIS Navigator — Monitoring Profile V4.1
+   Client-meaningful signal categories without recursive render events. */
 (function(){
 'use strict';
-if(window.__BLIS_MONITORING_PROFILE_V4)return;
-window.__BLIS_MONITORING_PROFILE_V4=true;
+if(window.__BLIS_MONITORING_PROFILE_V41)return;
+window.__BLIS_MONITORING_PROFILE_V41=true;
 if(!/\/dashboard\.html$/i.test(location.pathname))return;
 
 const E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -42,34 +40,51 @@ function svg(vals){
 }
 
 function legend(vals){return `<div class="mon4-legend">${vals.map(x=>`<div><span>${E(x.full)}</span><b>${x.value}%</b></div>`).join('')}</div>`}
-function css(){if(document.getElementById('mon4CSS'))return;const s=document.createElement('style');s.id='mon4CSS';s.textContent=`
+function css(){
+  if(document.getElementById('mon4CSS'))return;
+  const s=document.createElement('style');s.id='mon4CSS';s.textContent=`
 #social .mon4-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px;margin:2px 2px 0}
 #social .mon4-legend>div{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid #e6edf3;border-radius:8px;background:#fbfdff;padding:6px 8px}
 #social .mon4-legend span{color:#667d91;font-size:7px;line-height:1.25}
 #social .mon4-legend b{color:#2f6f9e;font-size:8px;white-space:nowrap}
 @media(max-width:760px){#social .mon4-legend{grid-template-columns:1fr}}
-`;document.head.appendChild(s)}
+`;
+  document.head.appendChild(s);
+}
 
-let busy=false;
+let busy=false,timers=[];
 async function upgrade(){
-  if(busy)return;const root=document.getElementById('social');if(!root?.classList.contains('active'))return;
-  const wrap=root.querySelector('.mon2-radar-wrap');if(!wrap)return;
-  const api=window.BLISMonitoringIntelligenceV2;if(!api?.rows)return;
+  if(busy)return;
+  const root=document.getElementById('social');
+  if(!root?.classList.contains('active'))return;
+  const wrap=root.querySelector('.mon2-radar-wrap');
+  if(!wrap)return;
+  const api=window.BLISMonitoringIntelligenceV2;
+  if(!api?.rows)return;
   busy=true;
   try{
-    const rows=await api.rows();if(!root.isConnected||!root.classList.contains('active'))return;
+    const rows=await api.rows();
+    if(!root.isConnected||!root.classList.contains('active'))return;
     const vals=values(Array.isArray(rows)?rows:[]);
-    const old=wrap.querySelector('.mon2-radar');if(old)old.outerHTML=svg(vals);else wrap.insertAdjacentHTML('beforeend',svg(vals));
-    wrap.querySelector('.mon4-legend')?.remove();wrap.insertAdjacentHTML('beforeend',legend(vals));
-    const p=wrap.querySelector('p');if(p)p.textContent='Дял на значимите сигнали за периода по шест клиентски важни направления. 100% означава, че съответната тема присъства във всички значими сигнали; категориите могат да се припокриват.';
-    wrap.dataset.monProfile='v4';
-    setTimeout(()=>{try{const polish=window.__BLIS_MONITORING_POLISH_V3;if(polish){const ev=new Event('blis:intelligence');window.dispatchEvent(ev)}}catch(_){}},20);
-  }finally{busy=false}
+    const old=wrap.querySelector('.mon2-radar');
+    if(old)old.outerHTML=svg(vals);else wrap.insertAdjacentHTML('beforeend',svg(vals));
+    wrap.querySelector('.mon4-legend')?.remove();
+    wrap.insertAdjacentHTML('beforeend',legend(vals));
+    const p=wrap.querySelector('p');
+    if(p)p.textContent='Дял на значимите сигнали за периода по шест клиентски важни направления. Категориите могат да се припокриват.';
+    wrap.dataset.monProfile='v41';
+    /* Do not dispatch blis:intelligence here. V3 observes the DOM and applies
+       motion automatically. Dispatching the same event from this renderer
+       creates a recursive render loop with Monitoring V2. */
+  }catch(err){console.error('BLIS Monitoring Profile V4.1',err)}finally{busy=false}
 }
-function schedule(){[30,120,320,700,1300,2400].forEach(ms=>setTimeout(upgrade,ms))}
+function schedule(){
+  timers.forEach(clearTimeout);
+  timers=[80,350,900,1800].map(ms=>setTimeout(upgrade,ms));
+}
 for(const ev of ['blis:routechange','blis:clientdata','blis:intelligence','blis:periodchange'])window.addEventListener(ev,schedule);
 document.addEventListener('click',e=>{if(e.target.closest?.('#nav button,.client-option,.datebox,[data-page],[data-n3-page]'))schedule()},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.addEventListener('load',schedule,{once:true});
-window.BLISMonitoringProfileV4={upgrade,values};
+window.BLISMonitoringProfileV4={upgrade,values,schedule};
 })();
