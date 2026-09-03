@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// Near-real-time KUB collector. Google News is the primary discovery stream and
-// Bing web search is a secondary recall layer. Both merge into the same KUB
-// signalState; every retained signal keeps its source URL.
+// Near-real-time KUB collector. Direct publisher watchers are the first discovery
+// layer; Google News and Bing remain secondary recall layers. Every retained
+// signal keeps its source URL.
 var kubRealtimeQueries = []string{
 	`"Баба Алино"`,
 	`"Форест Клуб Варна" OR "Forest Club Varna"`,
@@ -19,7 +19,7 @@ var kubRealtimeQueries = []string{
 }
 
 // Aggressive discovery cadence for the crisis profile. The client UI polls the
-// local signal API more frequently, while public search transports are refreshed
+// local signal API more frequently, while publisher/search transports are refreshed
 // every 15 seconds to avoid hammering upstream services on every browser poll.
 const kubRealtimeInterval = 15 * time.Second
 
@@ -61,7 +61,10 @@ func runKUBRealtimeCollector() {
 	kubRealtimeRunMu.Lock()
 	defer kubRealtimeRunMu.Unlock()
 
-	fresh := collectKUBRealtimeNewsSignals()
+	// Primary-source polling comes first so a publisher item can enter Navigator
+	// before it is indexed by Google News or Bing.
+	fresh := collectKUBDirectPublisherSignals()
+	fresh = append(fresh, collectKUBRealtimeNewsSignals()...)
 	// Secondary open-web recall catches publisher pages that have not yet reached
 	// the Google News RSS result set.
 	fresh = append(fresh, collectKUBWebSignals()...)
