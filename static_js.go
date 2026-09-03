@@ -9,7 +9,7 @@ import (
 // handler only whitelists html/css/images. Exact routes take precedence when
 // DefaultServeMux is used; inline_assets.go remains the fallback for the custom handler.
 
-//go:embed static/app.js static/portal-unified.js static/dashboard-extensions.js static/dashboard-premium.js static/dashboard-modules-premium.js static/dashboard-final-premium.js static/navigator-stability-preload-v1.js
+//go:embed static/app.js static/portal-unified.js static/dashboard-extensions.js static/dashboard-premium.js static/dashboard-modules-premium.js static/dashboard-final-premium.js static/navigator-stability-preload-v1.js static/kub-crisis-dynamics-v1.js
 var navigatorJS embed.FS
 
 func serveNavigatorJS(route, file string) {
@@ -33,4 +33,5 @@ func init() {
 	serveNavigatorJS("/dashboard-modules-premium.js", "static/dashboard-modules-premium.js")
 	serveNavigatorJS("/dashboard-final-premium.js", "static/dashboard-final-premium.js")
 	serveNavigatorJS("/navigator-stability-preload-v1.js", "static/navigator-stability-preload-v1.js")
+	serveNavigatorJS("/kub-crisis-dynamics-v1.js", "static/kub-crisis-dynamics-v1.js")
 }
