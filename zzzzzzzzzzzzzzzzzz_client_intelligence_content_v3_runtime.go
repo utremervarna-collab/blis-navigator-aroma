@@ -19,6 +19,7 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
+		}
 		if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
 			return nil
 		}
