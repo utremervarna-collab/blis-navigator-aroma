@@ -2,6 +2,8 @@ name: Navigator 24-7 Keepalive
 
 on:
   schedule:
+    # Offset from the top of the hour to reduce scheduler congestion. GitHub's
+    # minimum scheduled cadence is five minutes.
     - cron: '2-59/5 * * * *'
   workflow_dispatch:
 
@@ -17,13 +19,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Keep BLIS Navigator awake
+      - name: Keep BLIS Navigator awake and verify KUB API
         shell: bash
         run: |
-          set -u
-          URL='https://blis-navigator-aroma.onrender.com/api/signals/health?client=kub&keepalive=1'
-          for i in 1 2; do
-            code="$(curl -L -sS -o /tmp/blis-health.txt -w '%{http_code}' --connect-timeout 20 --max-time 60 "$URL" || true)"
-            echo "BLIS keepalive HTTP ${code:-000}"
-            if [ "$i" = "1" ]; then sleep 90; fi
-          done
+          set -euo pipefail
+          BASE='https://blis-navigator-aroma.onrender.com'
+
+          request() {
+            local url="$1"
+            local out="$2"
+            curl -L --fail --silent --show-error \
+              --connect-timeout 20 --max-time 90 \
+              --retry 4 --retry-delay 4 --retry-all-errors \
+              -H 'Accept: application/json' \
+              "$url" -o "$out"
+          }
+
+          # First request wakes a sleeping Free instance. The KUB realtime
+          # collector starts ~1 second after the application process starts.
+          request "$BASE/api/signals/health?client=kub&keepalive=1&ts=$(date +%s)" /tmp/health-1.json
+          echo 'First KUB health response:'
+          cat /tmp/health-1.json
+
+          # A second request inside the same run gives us two independent hits
+          # and verifies that the actual signal API is responding after wake-up.
+          sleep 75
+          request "$BASE/api/signals?client=kub&limit=3&keepalive=1&ts=$(date +%s)" /tmp/signals.json
+          echo 'KUB signal response:'
+          cat /tmp/signals.json
+
+          # Fail loudly if the API returned HTML or an empty body rather than JSON.
+          grep -q '"signals"' /tmp/signals.json
