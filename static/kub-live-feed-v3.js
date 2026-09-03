@@ -52,15 +52,15 @@ async function sync(immediate){
   failures=0;lastSuccess=checkedAt;let msg='ПОСТОЯННО ОБНОВЯВАНЕ · '+fmtClock(checkedAt)+' · последен сигнал '+fmtCompact(newest);if(!firstSync&&added)msg+=' · нови '+added;
   status(msg,false);updateLivebar(newest,checkedAt);firstSync=false;
  }catch(e){
-  failures++;if(failures>=FAILURE_RED_AFTER){status('ВРЪЗКАТА С ЕКРАНА Е ПРЕКЪСНАТА · автоматичен повторен опит',true)}
+  failures++;if(failures>=FAILURE_RED_AFTER){status('ОПИТ ЗА СВЪРЗВАНЕ · автоматичен повторен опит',false)}
   else if(lastSuccess){status('ПОСТОЯННО ОБНОВЯВАНЕ · временна връзка · последна синхронизация '+fmtClock(lastSuccess),false)}
-  else status('СВЪРЗВАНЕ С МОНИТОРИНГА…',false);
+  else status('ОПИТ ЗА СВЪРЗВАНЕ',false);
   console.warn('KUB feed v3',e);
  }finally{clearTimeout(timeout);inFlight=false;schedule(immediate?1000:undefined)}
 }
 function forceSync(){clearTimeout(timer);sync(true)}
 function boot(){
- render(verified,'ПОТВЪРДЕН СИГНАЛ');sort();status('СВЪРЗВАНЕ С МОНИТОРИНГА…',false);
+ render(verified,'ПОТВЪРДЕН СИГНАЛ');sort();status('ОПИТ ЗА СВЪРЗВАНЕ',false);
  const reload=document.getElementById('reloadBtn');if(reload)reload.onclick=e=>{e.preventDefault();forceSync()};
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)forceSync();else schedule(HIDDEN_POLL_MS)});
  window.addEventListener('focus',forceSync);window.addEventListener('online',forceSync);
