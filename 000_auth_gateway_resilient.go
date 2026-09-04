@@ -160,6 +160,22 @@ func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	// KUB is a standalone crisis profile. Serve its HTML at the external gateway
+	// before any legacy auth/static proxy logic so it can never fall through to
+	// the old dashboard Loading placeholder.
+	if path == "/kub-home.html" {
+		serveKUBHTML("kub-home.html", false)(w, r)
+		return
+	}
+	if path == "/kub-crisis.html" {
+		serveKUBHTML("kub-crisis.html", true)(w, r)
+		return
+	}
+	if path == "/kub" || path == "/kub/" {
+		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
+		return
+	}
+
 	if path == "/services" {
 		http.Redirect(w, r, "/services.html", http.StatusMovedPermanently)
 		return
