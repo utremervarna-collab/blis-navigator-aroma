@@ -45,7 +45,9 @@ func navigatorDashboardTarget(r *http.Request) string {
 		if c, err := r.Cookie(adminClientCookieName); err == nil && validNavigatorClient(c.Value) { slug = c.Value }
 	}
 	if !validNavigatorClient(slug) { slug = "aroma" }
-	q := url.Values{}; q.Set("client", slug); q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+	q := url.Values{}
+	q.Set("client", slug)
+	q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
 	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("lang")), "en") { q.Set("lang", "en") }
 	return "/dashboard.html?" + q.Encode()
 }
@@ -54,13 +56,19 @@ func commerceOwnerOnlyPath(path string) bool { return strings.TrimSpace(path) ==
 
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" || os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") == "1" { return }
-	external := strings.TrimSpace(os.Getenv("PORT")); if external == "" { external = "10000" }
-	p, err := strconv.Atoi(external); if err != nil || p <= 0 || p >= 65534 { return }
+	external := strings.TrimSpace(os.Getenv("PORT"))
+	if external == "" { external = "10000" }
+	p, err := strconv.Atoi(external)
+	if err != nil || p <= 0 || p >= 65534 { return }
 	internal := strconv.Itoa(p + 1)
-	os.Setenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED", "1"); os.Setenv("BLIS_AUTH_PROXY_DISABLED", "1")
-	authExternalPort = external; authInternalPort = internal; os.Setenv("PORT", internal)
+	os.Setenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED", "1")
+	os.Setenv("BLIS_AUTH_PROXY_DISABLED", "1")
+	authExternalPort = external
+	authInternalPort = internal
+	os.Setenv("PORT", internal)
 	target, _ := url.Parse("http://127.0.0.1:" + internal)
-	authProxy = httputil.NewSingleHostReverseProxy(target); authProxy.ModifyResponse = scopeDashboardResponse
+	authProxy = httputil.NewSingleHostReverseProxy(target)
+	authProxy.ModifyResponse = scopeDashboardResponse
 	authProxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) { http.Error(w, "BLIS Navigator временно се зарежда. Опитайте отново след няколко секунди.", http.StatusServiceUnavailable) }
 	go func() { log.Printf("BLIS Navigator gateway listening on 0.0.0.0:%s -> 127.0.0.1:%s", external, internal); if err := http.ListenAndServe("0.0.0.0:"+external, http.HandlerFunc(navigatorGateway)); err != nil { log.Printf("BLIS Navigator gateway stopped: %v", err) } }()
 }
