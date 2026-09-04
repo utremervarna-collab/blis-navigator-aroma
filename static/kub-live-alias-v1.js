@@ -1,13 +1,7 @@
-/* KUB route bootstrap. Keep the canonical KUB runtime path active until all deferred scripts finish, then restore the requested client URL. */
+/* KUB client alias marker. Do not rewrite location.pathname: all KUB runtimes are served alias-aware. */
 (function(){
 'use strict';
-const path=location.pathname;
-if(path!=='/kub-live'&&path!=='/kub-client')return;
-const requested=path+location.search+location.hash;
-try{
-  history.replaceState(null,'','/kub-private'+location.search+location.hash);
-  const restore=()=>setTimeout(()=>{try{history.replaceState(null,'',requested);}catch(_){ }},2200);
-  if(document.readyState==='complete') restore();
-  else window.addEventListener('load',restore,{once:true});
-}catch(_){ }
+const path=(location.pathname||'').toLowerCase();
+if(path!=='/kub-live'&&path!=='/kub-client'&&path!=='/kub-private')return;
+window.__BLIS_KUB_CLIENT_ROUTE=path;
 })();
