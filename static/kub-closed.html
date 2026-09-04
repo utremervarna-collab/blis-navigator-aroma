@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>BLIS Navigator — Корпорация КУБ</title>
+<style>
+:root{--ink:#24384d;--muted:#6d7c8b;--line:#dfe6ec;--paper:#f4f7f9;--red:#b94b4b}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--paper)}body{min-height:100vh;display:grid;place-items:center;padding:24px}.card{width:min(880px,100%);background:#fff;border:1px solid var(--line);border-radius:24px;padding:40px;box-shadow:0 18px 50px rgba(62,82,102,.10)}.eyebrow{font-size:11px;letter-spacing:1.1px;text-transform:uppercase;color:#a66f22;font-weight:850}.card h1{font-size:44px;line-height:1.02;margin:12px 0 14px}.card p{font-size:16px;line-height:1.65;color:var(--muted);margin:0 0 24px}.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#fff0f0;border:1px solid #efcaca;color:#9c3f3f;border-radius:12px;padding:13px 17px;font-weight:850;font-size:13px}.status{display:inline-flex;align-items:center;gap:8px;margin-left:10px;border:1px solid #f0d1d1;background:#fff4f4;color:#a84545;border-radius:999px;padding:7px 10px;font-size:10px;font-weight:900;letter-spacing:.7px}.dot{width:8px;height:8px;border-radius:50%;background:var(--red)}.note{margin-top:22px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#f8fafb;font-size:12px;line-height:1.55;color:var(--muted)}@media(max-width:640px){.card{padding:26px}.card h1{font-size:34px}.status{margin:12px 0 0}}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="eyebrow">Затворен клиентски профил</div>
+<h1>Корпорация КУБ</h1>
+<p>Кризисен профил „Баба Алино“ в BLIS™ Navigator. Този вход е отделен от всички останали клиентски профили и не използва параметъра <code>client</code>.</p>
+<a class="btn" href="/kub-crisis.html">Отвори КУБ</a><span class="status"><span class="dot"></span>CRISIS WATCH</span>
+<div class="note">Директен достъп само до профила на КУБ. Не се зарежда Aroma или друг клиентски контекст.</div>
+</main>
+<script>
+try{localStorage.removeItem('client');localStorage.removeItem('selectedClient');localStorage.removeItem('blisClient');sessionStorage.removeItem('client');sessionStorage.removeItem('selectedClient');sessionStorage.removeItem('blisClient');}catch(e){}
+</script>
+</body>
+</html>
