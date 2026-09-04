@@ -32,33 +32,21 @@ func canonicalNavigatorPage(page string) string {
 	switch strings.TrimSpace(strings.ToLower(page)) {
 	case "overview", "social", "market", "digital", "reputation", "competition", "opportunities", "history", "reports":
 		return strings.TrimSpace(strings.ToLower(page))
-	case "signals":
-		return "social"
-	case "timeline":
-		return "history"
-	case "live":
-		return "overview"
-	default:
-		return "overview"
+	case "signals": return "social"
+	case "timeline": return "history"
+	case "live": return "overview"
+	default: return "overview"
 	}
 }
 
 func navigatorDashboardTarget(r *http.Request) string {
 	slug := strings.TrimSpace(r.URL.Query().Get("client"))
 	if !validNavigatorClient(slug) {
-		if c, err := r.Cookie(adminClientCookieName); err == nil && validNavigatorClient(c.Value) {
-			slug = c.Value
-		}
+		if c, err := r.Cookie(adminClientCookieName); err == nil && validNavigatorClient(c.Value) { slug = c.Value }
 	}
-	if !validNavigatorClient(slug) {
-		slug = "aroma"
-	}
-	q := url.Values{}
-	q.Set("client", slug)
-	q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
-	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("lang")), "en") {
-		q.Set("lang", "en")
-	}
+	if !validNavigatorClient(slug) { slug = "aroma" }
+	q := url.Values{}; q.Set("client", slug); q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("lang")), "en") { q.Set("lang", "en") }
 	return "/dashboard.html?" + q.Encode()
 }
 
@@ -86,19 +74,11 @@ func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool { 
 
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	if path == "/kub" || path == "/kub/" || path == "/kub-home.html" || path == "/kub-crisis.html" {
-		if !ensureOwnerDashboardSession(w, r) { return }
-		q := r.URL.Query(); q.Set("client", "kub"); if q.Get("page") == "" { q.Set("page", "overview") }
-		r2 := r.Clone(r.Context()); r2.URL.Path = "/dashboard.html"; r2.URL.RawQuery = q.Encode(); authProxy.ServeHTTP(w, r2); return
-	}
+	if path == "/kub" || path == "/kub/" || path == "/kub-home.html" || path == "/kub-crisis.html" { if !ensureOwnerDashboardSession(w, r) { return }; q := r.URL.Query(); q.Set("client", "kub"); if q.Get("page") == "" { q.Set("page", "overview") }; r2 := r.Clone(r.Context()); r2.URL.Path = "/dashboard.html"; r2.URL.RawQuery = q.Encode(); authProxy.ServeHTTP(w, r2); return }
 	if path == "/services" { http.Redirect(w, r, "/services.html", http.StatusMovedPermanently); return }
 	if path == "/client-login" || path == "/client-login/" || path == "/login" || path == "/client-access.html" { if !ensureOwnerDashboardSession(w, r) { return }; http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound); return }
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" { clearSession(w, r); setPublicDemoCookie(w, r); r2 := r.Clone(r.Context()); r2.URL.Path = "/dashboard.html"; q := r2.URL.Query(); q.Set("client", "wirello"); if q.Get("page") == "" { q.Set("page", "overview") }; r2.URL.RawQuery = q.Encode(); r2.Header.Set("X-BLIS-Client-Scope", "wirello"); authProxy.ServeHTTP(w, r2); return }
-	if isWirelloDemo(r) {
-		if path == "/api/clients" { w.Header().Set("Content-Type", "application/json; charset=utf-8"); w.Header().Set("Cache-Control", "no-store"); _, _ = w.Write([]byte(`[{"slug":"wirello","name":"Wirello Market","sector":"Търговска верига / модерен ритейл","note":"Публичен демо профил"}]`)); return }
-		if strings.HasPrefix(path, "/api/clients/") && !strings.HasPrefix(path, "/api/clients/wirello/") { w.Header().Set("Content-Type", "application/json; charset=utf-8"); w.WriteHeader(http.StatusForbidden); _, _ = w.Write([]byte(`{"error":"Публичното демо е ограничено до Wirello Market"}`)); return }
-		if path == "/dashboard.html" { http.Redirect(w, r, "/wirello", http.StatusFound); return }
-	}
+	if isWirelloDemo(r) { if path == "/api/clients" { w.Header().Set("Content-Type", "application/json; charset=utf-8"); w.Header().Set("Cache-Control", "no-store"); _, _ = w.Write([]byte(`[{"slug":"wirello","name":"Wirello Market","sector":"Търговска верига / модерен ритейл","note":"Публичен демо профил"}]`)); return }; if strings.HasPrefix(path, "/api/clients/") && !strings.HasPrefix(path, "/api/clients/wirello/") { w.Header().Set("Content-Type", "application/json; charset=utf-8"); w.WriteHeader(http.StatusForbidden); _, _ = w.Write([]byte(`{"error":"Публичното демо е ограничено до Wirello Market"}`)); return }; if path == "/dashboard.html" { http.Redirect(w, r, "/wirello", http.StatusFound); return } }
 	if path == "/dashboard.html" || path == "/navigator-v2.html" { if s, ok := sessionFromRequest(r); !ok || !s.Admin { if !ensureOwnerDashboardSession(w, r) { return }; http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound); return } }
 	if path == "/navigator" || path == "/navigator/" || path == "/owner-access" { clearPublicDemoCookie(w, r) }
 	if commerceOwnerOnlyPath(path) { s, ok := sessionFromRequest(r); if !ok || !s.Admin { http.NotFound(w, r); return } }
