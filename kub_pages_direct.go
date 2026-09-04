@@ -18,21 +18,21 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		}
 
 		if injectRuntime {
-			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-access-guard-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-client-content-v4.js?v=20260904-direct7"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260904-direct7"></script>
-<script defer src="/kub-private-live-v2.js?v=20260904-direct7"></script>
-<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-private-hide-standard-link-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct7"></script>
-<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct7"></script>`
-			if !bytes.Contains(b, []byte("20260904-direct7")) {
+			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-access-guard-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-client-content-v4.js?v=20260904-direct8"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-live-feed-v3.js?v=20260904-direct8"></script>
+<script defer src="/kub-private-live-v2.js?v=20260904-direct8"></script>
+<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-private-hide-standard-link-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct8"></script>
+<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct8"></script>`
+			if !bytes.Contains(b, []byte("20260904-direct8")) {
 				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 			}
 		}
