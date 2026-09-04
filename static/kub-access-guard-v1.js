@@ -3,7 +3,7 @@
 'use strict';
 const K='blis.kub.client.only';
 const path=location.pathname.toLowerCase();
-const isKUB=path==='/kub-home.html'||path==='/kub-crisis.html';
+const isKUB=path==='/kub-private'||path==='/kub-home.html'||path==='/kub-crisis.html';
 try{
   if(isKUB){
     sessionStorage.setItem(K,'1');
@@ -13,7 +13,7 @@ try{
   }
   if(sessionStorage.getItem(K)==='1'){
     const lang=sessionStorage.getItem('blis.kub.lang')||'bg';
-    location.replace('/kub-home.html?lang='+encodeURIComponent(lang));
+    location.replace('/kub-private?lang='+encodeURIComponent(lang));
   }
 }catch(_){ }
 })();
