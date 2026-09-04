@@ -1,11 +1,13 @@
-/* Hide standard Navigator link from canonical private KUB profile. */
+/* Hide standard Navigator link from isolated KUB profiles. */
 (function(){
 'use strict';
-if(location.pathname!=='/kub-private')return;
+const path=location.pathname.toLowerCase();
+if(path!=='/kub-private'&&path!=='/kub-live')return;
 function removeLink(){
   document.querySelectorAll('.sidefoot a').forEach(a=>{
     const t=(a.textContent||'').toLowerCase();
-    if(t.includes('стандартния navigator')||t.includes('стандартният navigator')||t.includes('standard navigator')) a.remove();
+    const h=(a.getAttribute('href')||'').toLowerCase();
+    if(t.includes('стандартния navigator')||t.includes('стандартният navigator')||t.includes('standard navigator')||h.includes('/dashboard.html')) a.remove();
   });
   document.querySelectorAll('.sidefoot').forEach(el=>{
     el.innerHTML=el.innerHTML.replace(/<br\s*\/?>\s*$/i,'').trim();
