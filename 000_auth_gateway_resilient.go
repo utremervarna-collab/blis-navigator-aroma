@@ -21,7 +21,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox", "wirello", "everbet":
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox", "wirello", "everbet", "kub":
 		return true
 	default:
 		return false
@@ -54,9 +54,6 @@ func navigatorDashboardTarget(r *http.Request) string {
 		slug = "aroma"
 	}
 
-	// A session bootstrap must never change the page the user requested. The
-	// gateway used to redirect every fresh dashboard session to overview, which
-	// made direct links such as ?page=social appear to be hijacked after load.
 	q := url.Values{}
 	q.Set("client", slug)
 	q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
@@ -160,19 +157,22 @@ func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// KUB is a standalone crisis profile. Serve its HTML at the external gateway
-	// before any legacy auth/static proxy logic so it can never fall through to
-	// the old dashboard Loading placeholder.
-	if path == "/kub-home.html" {
-		serveKUBHTML("kub-home.html", false)(w, r)
-		return
-	}
-	if path == "/kub-crisis.html" {
-		serveKUBHTML("kub-crisis.html", true)(w, r)
-		return
-	}
-	if path == "/kub" || path == "/kub/" {
-		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
+	// KUB is a first-class Navigator client. Route it through the normal dashboard
+	// flow instead of special static-page handlers, which caused stale Loading
+	// placeholders and disconnected monitoring state.
+	if path == "/kub" || path == "/kub/" || path == "/kub-home.html" || path == "/kub-crisis.html" {
+		if !ensureOwnerDashboardSession(w, r) {
+			return
+		}
+		q := r.URL.Query()
+		q.Set("client", "kub")
+		if q.Get("page") == "" {
+			q.Set("page", "overview")
+		}
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		r2.URL.RawQuery = q.Encode()
+		authProxy.ServeHTTP(w, r2)
 		return
 	}
 
@@ -181,8 +181,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Login screens are retired from the public flow. Any legacy login URL now
-	// enters the main Navigator directly.
 	if path == "/client-login" || path == "/client-login/" || path == "/login" || path == "/client-access.html" {
 		if !ensureOwnerDashboardSession(w, r) {
 			return
@@ -191,7 +189,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wirello Market remains the isolated public demonstration profile.
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
 		clearSession(w, r)
 		setPublicDemoCookie(w, r)
@@ -227,8 +224,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Opening the dashboard without an owner session creates one automatically,
-	// then reloads the same dashboard URL. This removes the login step entirely.
 	if path == "/dashboard.html" || path == "/navigator-v2.html" {
 		if s, ok := sessionFromRequest(r); !ok || !s.Admin {
 			if !ensureOwnerDashboardSession(w, r) {
