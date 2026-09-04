@@ -18,18 +18,18 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		}
 
 		if injectRuntime {
-			const runtime = `<script defer src="/kub-access-guard-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-client-content-v4.js?v=20260904-direct3"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260904-direct3"></script>
-<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct3"></script>
-<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct3"></script>`
-			if !bytes.Contains(b, []byte("20260904-direct3")) {
+			const runtime = `<script defer src="/kub-access-guard-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-client-content-v4.js?v=20260904-direct1"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-live-feed-v3.js?v=20260904-direct1"></script>
+<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct1"></script>
+<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct1"></script>`
+			if !bytes.Contains(b, []byte("20260904-direct1")) {
 				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 			}
 		}
@@ -43,20 +43,12 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 }
 
 func init() {
-	// Meeting-safe KUB route: serve the standalone KUB workspace without any
-	// injected client runtime. This prevents Aroma/other-client state from being
-	// introduced by legacy client scripts or browser client state.
-	http.HandleFunc("/kub-closed.html", serveKUBHTML("kub-crisis.html", false))
-	http.HandleFunc("/kub-meeting", serveKUBHTML("kub-crisis.html", false))
-	http.HandleFunc("/kub-meeting.html", serveKUBHTML("kub-crisis.html", false))
-	http.HandleFunc("/kub-home.html", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/kub-meeting", http.StatusFound)
-	})
+	http.HandleFunc("/kub-home.html", serveKUBHTML("kub-home.html", false))
 	http.HandleFunc("/kub-crisis.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/kub-meeting", http.StatusFound)
+		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
 	})
 	http.HandleFunc("/kub/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/kub-meeting", http.StatusFound)
+		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
 	})
 }
