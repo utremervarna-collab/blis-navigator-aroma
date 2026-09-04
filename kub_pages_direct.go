@@ -18,18 +18,18 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		}
 
 		if injectRuntime {
-			const runtime = `<script defer src="/kub-access-guard-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-client-content-v4.js?v=20260904-direct1"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260904-direct1"></script>
-<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct1"></script>
-<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct1"></script>`
-			if !bytes.Contains(b, []byte("20260904-direct1")) {
+			const runtime = `<script defer src="/kub-access-guard-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-client-content-v4.js?v=20260904-direct2"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-live-feed-v3.js?v=20260904-direct2"></script>
+<script defer src="/kub-crisis-dynamics-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260904-direct2"></script>
+<script defer src="/kub-monitoring-health-v1.js?v=20260904-direct2"></script>`
+			if !bytes.Contains(b, []byte("20260904-direct2")) {
 				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 			}
 		}
@@ -43,7 +43,9 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 }
 
 func init() {
-	http.HandleFunc("/kub-closed.html", serveKUBHTML("kub-closed.html", false))
+	// Closed KUB entry serves the actual KUB crisis workspace directly: no
+	// intermediate page, no client query parameter, no other-client wording.
+	http.HandleFunc("/kub-closed.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-home.html", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/kub-closed.html", http.StatusFound)
 	})
