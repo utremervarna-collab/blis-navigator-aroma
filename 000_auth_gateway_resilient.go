@@ -157,9 +157,6 @@ func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// KUB is a first-class Navigator client. Route it through the normal dashboard
-	// flow instead of special static-page handlers, which caused stale Loading
-	// placeholders and disconnected monitoring state.
 	if path == "/kub" || path == "/kub/" || path == "/kub-home.html" || path == "/kub-crisis.html" {
 		if !ensureOwnerDashboardSession(w, r) {
 			return
