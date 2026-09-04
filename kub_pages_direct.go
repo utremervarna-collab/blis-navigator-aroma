@@ -43,12 +43,15 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 }
 
 func init() {
-	http.HandleFunc("/kub-home.html", serveKUBHTML("kub-home.html", false))
+	http.HandleFunc("/kub-closed.html", serveKUBHTML("kub-closed.html", false))
+	http.HandleFunc("/kub-home.html", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/kub-closed.html", http.StatusFound)
+	})
 	http.HandleFunc("/kub-crisis.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
+		http.Redirect(w, r, "/kub-closed.html", http.StatusFound)
 	})
 	http.HandleFunc("/kub/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/kub-home.html", http.StatusFound)
+		http.Redirect(w, r, "/kub-closed.html", http.StatusFound)
 	})
 }
