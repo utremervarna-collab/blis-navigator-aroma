@@ -16,13 +16,9 @@ var kubRuntimeFiles = map[string]string{
 	"/kub-private-live-v2.js":             "kub-private-live-v2.js",
 	"/kub-monitoring-health-v1.js":        "kub-monitoring-health-v1.js",
 	"/kub-client-stabilizer-v1.js":        "kub-client-stabilizer-v1.js",
+	"/kub-crisis-dynamics-force-v1.js":    "kub-crisis-dynamics-force-v1.js",
 }
 
-// Serve KUB runtime assets with one canonical route test. Older KUB scripts were
-// written against different pathname aliases (/kub-crisis.html or /kub-private),
-// which made the same client profile initialize only partially on /kub-client.
-// Normalizing the guard in the served JS keeps the visible URL stable and avoids
-// history/pathname tricks that caused inactive menu, stale dynamics and Loading.
 func serveKUBRuntimeJS(file string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := staticFS.ReadFile("static/" + file)
@@ -41,10 +37,6 @@ func serveKUBRuntimeJS(file string) http.HandlerFunc {
 	}
 }
 
-// KUB uses dedicated standalone HTML pages. Serve them on exact routes so they
-// cannot fall through the legacy dashboard/static loader (whose placeholder is
-// literally "Loading..."). Exact DefaultServeMux routes take precedence over
-// the catch-all static handler.
 func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := staticFS.ReadFile("static/" + file)
@@ -52,31 +44,28 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 			http.Error(w, "KUB page not found", http.StatusNotFound)
 			return
 		}
-
-		// KUB client pages must never expose a route back to the shared Navigator.
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
-
 		if injectRuntime {
-			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-access-guard-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-client-content-v4.js?v=20260905-direct12"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260905-direct12"></script>
-<script defer src="/kub-private-live-v2.js?v=20260905-direct12"></script>
-<script defer src="/kub-crisis-dynamics-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-private-hide-standard-link-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-monitoring-health-v1.js?v=20260905-direct12"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260905-direct12"></script>`
-			if !bytes.Contains(b, []byte("20260905-direct12")) {
+			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-access-guard-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-client-content-v4.js?v=20260905-direct13"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-live-feed-v3.js?v=20260905-direct13"></script>
+<script defer src="/kub-private-live-v2.js?v=20260905-direct13"></script>
+<script defer src="/kub-crisis-dynamics-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-private-hide-standard-link-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-monitoring-health-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260905-direct13"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260905-direct13"></script>`
+			if !bytes.Contains(b, []byte("20260905-direct13")) {
 				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 			}
 		}
-
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		w.Header().Set("Pragma", "no-cache")
