@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"net/http"
 	"regexp"
 )
@@ -9,15 +10,15 @@ import (
 var kubDashboardLinkRE = regexp.MustCompile(`(?is)(?:<br\s*/?>\s*)?<a\b[^>]*href=["'][^"']*dashboard\.html[^"']*["'][^>]*>.*?</a>`)
 
 var kubRuntimeFiles = map[string]string{
-	"/kub-client-content-v4.js":          "kub-client-content-v4.js",
-	"/kub-crisis-shell-fix-v1.js":        "kub-crisis-shell-fix-v1.js",
-	"/kub-crisis-ru-v1.js":               "kub-crisis-ru-v1.js",
-	"/kub-live-feed-v3.js":                "kub-live-feed-v3.js",
-	"/kub-private-live-v2.js":             "kub-private-live-v2.js",
-	"/kub-monitoring-health-v1.js":        "kub-monitoring-health-v1.js",
-	"/kub-client-stabilizer-v1.js":        "kub-client-stabilizer-v1.js",
-	"/kub-crisis-dynamics-v1.js":          "kub-crisis-dynamics-v1.js",
-	"/kub-crisis-dynamics-force-v1.js":    "kub-crisis-dynamics-force-v1.js",
+	"/kub-client-content-v4.js":       "kub-client-content-v4.js",
+	"/kub-crisis-shell-fix-v1.js":     "kub-crisis-shell-fix-v1.js",
+	"/kub-crisis-ru-v1.js":            "kub-crisis-ru-v1.js",
+	"/kub-client-stabilizer-v1.js":     "kub-client-stabilizer-v1.js",
+	"/kub-crisis-dynamics-force-v1.js": "kub-crisis-dynamics-force-v1.js",
+	"/kub-attack-map-v1.js":            "kub-attack-map-v1.js",
+	"/kub-attack-map-live-v1.js":       "kub-attack-map-live-v1.js",
+	"/kub-attack-map-executive-v1.js":  "kub-attack-map-executive-v1.js",
+	"/kub-attack-map-white3d-v1.js":    "kub-attack-map-white3d-v1.js",
 }
 
 func serveKUBRuntimeJS(file string) http.HandlerFunc {
@@ -49,32 +50,29 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
-			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-access-guard-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-client-content-v4.js?v=20260905-direct13"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260905-direct13"></script>
-<script defer src="/kub-private-live-v2.js?v=20260905-direct13"></script>
-<script defer src="/kub-crisis-dynamics-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-private-hide-standard-link-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-monitoring-health-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260905-direct13"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260905-direct13"></script>`
-			if !bytes.Contains(b, []byte("20260905-direct13")) {
-				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
-			}
+			// Keep the isolated KUB client runtime deliberately small. The legacy
+			// monitoring and dynamics scripts competed for the same DOM nodes and
+			// repeatedly restored stale content. The stabilizer owns monitoring and
+			// the force renderer owns the crisis curve.
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260905-direct14"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260905-direct14"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260905-direct14"></script>`
+			b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
-		w.Header().Set("X-BLIS-KUB-Route", "direct13")
+		w.Header().Set("Clear-Site-Data", `"cache"`)
+		w.Header().Set("X-BLIS-KUB-Route", "direct14")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct14", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
@@ -84,10 +82,6 @@ func init() {
 		http.HandleFunc(route, serveKUBRuntimeJS(file))
 	}
 
-	// Register the isolated KUB client aliases on the application mux itself.
-	// This prevents /kub-client from ever falling through to the legacy dashboard
-	// loader, even if a request reaches the inner app directly instead of the
-	// outer authentication gateway.
 	http.HandleFunc("/kub-client", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-live", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-private", serveKUBHTML("kub-crisis.html", true))
