@@ -16,6 +16,7 @@ var kubRuntimeFiles = map[string]string{
 	"/kub-private-live-v2.js":             "kub-private-live-v2.js",
 	"/kub-monitoring-health-v1.js":        "kub-monitoring-health-v1.js",
 	"/kub-client-stabilizer-v1.js":        "kub-client-stabilizer-v1.js",
+	"/kub-crisis-dynamics-v1.js":          "kub-crisis-dynamics-v1.js",
 	"/kub-crisis-dynamics-force-v1.js":    "kub-crisis-dynamics-force-v1.js",
 }
 
@@ -44,7 +45,9 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 			http.Error(w, "KUB page not found", http.StatusNotFound)
 			return
 		}
+
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
+
 		if injectRuntime {
 			const runtime = `<script defer src="/kub-live-alias-v1.js?v=20260905-direct13"></script>
 <script defer src="/kub-access-guard-v1.js?v=20260905-direct13"></script>
@@ -66,10 +69,12 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 				b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 			}
 		}
+
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
+		w.Header().Set("X-BLIS-KUB-Route", "direct13")
 		_, _ = w.Write(b)
 	}
 }
@@ -78,6 +83,14 @@ func init() {
 	for route, file := range kubRuntimeFiles {
 		http.HandleFunc(route, serveKUBRuntimeJS(file))
 	}
+
+	// Register the isolated KUB client aliases on the application mux itself.
+	// This prevents /kub-client from ever falling through to the legacy dashboard
+	// loader, even if a request reaches the inner app directly instead of the
+	// outer authentication gateway.
+	http.HandleFunc("/kub-client", serveKUBHTML("kub-crisis.html", true))
+	http.HandleFunc("/kub-live", serveKUBHTML("kub-crisis.html", true))
+	http.HandleFunc("/kub-private", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-home.html", serveKUBHTML("kub-home.html", false))
 	http.HandleFunc("/kub-crisis.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub", func(w http.ResponseWriter, r *http.Request) {
