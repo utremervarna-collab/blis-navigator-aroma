@@ -110,8 +110,13 @@ func injectEvidenceIntegrityV5(body []byte) []byte {
 func init() {
     http.HandleFunc("/navigator-evidence-integrity-v5.js", serveEvidenceIntegrityV5)
 
-    // Remove follower counts from the persisted analytical observation base.
-    sanitizeFollowerObservations()
+    // Store loading happens after package init. Clean the persisted analytical
+    // base once the application has started, then persist the clean version.
+    go func() {
+        time.Sleep(6 * time.Second)
+        sanitizeFollowerObservations()
+        saveStore()
+    }()
 
     // Run a fast discovery cycle after startup, then keep every real client and
     // configured competitor in a five-minute public monitoring cycle.
