@@ -88,7 +88,7 @@ func runAllClientSignalsV5() {
 }
 
 func serveEvidenceIntegrityV5(w http.ResponseWriter, r *http.Request) {
-    b, err := staticFS.ReadFile("static/navigator-evidence-integrity-v7.js")
+    b, err := staticFS.ReadFile("static/navigator-evidence-integrity-v8.js")
     if err != nil {
         http.NotFound(w, r)
         return
@@ -99,10 +99,10 @@ func serveEvidenceIntegrityV5(w http.ResponseWriter, r *http.Request) {
 }
 
 func injectEvidenceIntegrityV5(body []byte) []byte {
-    if bytes.Contains(body, []byte("navigator-evidence-integrity-v7.js")) {
+    if bytes.Contains(body, []byte("navigator-evidence-integrity-v8.js")) {
         return body
     }
-    tag := []byte(`<script src="/navigator-evidence-integrity-v7.js?v=20260906-integrity7"></script>`)
+    tag := []byte(`<script src="/navigator-evidence-integrity-v8.js?v=20260906-integrity8"></script>`)
     if bytes.Contains(body, []byte("</body>")) {
         return bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
     }
@@ -110,7 +110,7 @@ func injectEvidenceIntegrityV5(body []byte) []byte {
 }
 
 func init() {
-    http.HandleFunc("/navigator-evidence-integrity-v7.js", serveEvidenceIntegrityV5)
+    http.HandleFunc("/navigator-evidence-integrity-v8.js", serveEvidenceIntegrityV5)
 
     go func() {
         time.Sleep(2 * time.Second)
