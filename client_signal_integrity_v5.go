@@ -25,17 +25,19 @@ func sanitizeFollowerObservations() {
     mu.Lock()
     defer mu.Unlock()
     for _, c := range store.Clients {
-        if c == nil || len(c.Observations) == 0 {
+        if c == nil {
             continue
         }
-        clean := c.Observations[:0]
-        for _, o := range c.Observations {
-            if followerMetricKey(o.MetricKey) {
-                continue
+        if len(c.Observations) > 0 {
+            clean := c.Observations[:0]
+            for _, o := range c.Observations {
+                if followerMetricKey(o.MetricKey) {
+                    continue
+                }
+                clean = append(clean, o)
             }
-            clean = append(clean, o)
+            c.Observations = clean
         }
-        c.Observations = clean
     }
 }
 
@@ -86,7 +88,7 @@ func runAllClientSignalsV5() {
 }
 
 func serveEvidenceIntegrityV5(w http.ResponseWriter, r *http.Request) {
-    b, err := staticFS.ReadFile("static/navigator-evidence-integrity-v5.js")
+    b, err := staticFS.ReadFile("static/navigator-evidence-integrity-v6.js")
     if err != nil {
         http.NotFound(w, r)
         return
@@ -97,10 +99,10 @@ func serveEvidenceIntegrityV5(w http.ResponseWriter, r *http.Request) {
 }
 
 func injectEvidenceIntegrityV5(body []byte) []byte {
-    if bytes.Contains(body, []byte("navigator-evidence-integrity-v5.js")) {
+    if bytes.Contains(body, []byte("navigator-evidence-integrity-v6.js")) {
         return body
     }
-    tag := []byte(`<script src="/navigator-evidence-integrity-v5.js?v=20260906-integrity5"></script>`)
+    tag := []byte(`<script src="/navigator-evidence-integrity-v6.js?v=20260906-integrity6"></script>`)
     if bytes.Contains(body, []byte("</body>")) {
         return bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
     }
@@ -108,18 +110,16 @@ func injectEvidenceIntegrityV5(body []byte) []byte {
 }
 
 func init() {
-    http.HandleFunc("/navigator-evidence-integrity-v5.js", serveEvidenceIntegrityV5)
+    http.HandleFunc("/navigator-evidence-integrity-v6.js", serveEvidenceIntegrityV5)
 
-    // Store loading happens after package init. Clean the persisted analytical
-    // base once the application has started, then persist the clean version.
+    // Clean follower metrics after the store has been initialized, not only at package init time.
     go func() {
-        time.Sleep(6 * time.Second)
+        time.Sleep(2 * time.Second)
         sanitizeFollowerObservations()
         saveStore()
     }()
 
-    // Run a fast discovery cycle after startup, then keep every real client and
-    // configured competitor in a five-minute public monitoring cycle.
+    // Run discovery shortly after startup, then keep real clients and configured competitors in a five-minute cycle.
     go func() {
         time.Sleep(8 * time.Second)
         runAllClientSignalsV5()
