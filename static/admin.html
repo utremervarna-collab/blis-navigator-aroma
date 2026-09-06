@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BLIS Navigator Admin</title>
+<style>
+:root{font-family:Inter,Segoe UI,Arial,sans-serif;color:#153653;background:#f4f7fa}*{box-sizing:border-box}body{margin:0;background:#f4f7fa}.shell{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}.side{background:#0f2f4b;color:#fff;padding:26px 18px;position:sticky;top:0;height:100vh}.brand{font-size:22px;font-weight:800}.brand small{display:block;font-size:10px;letter-spacing:.12em;color:#9fc1db;margin-top:4px}.nav{margin-top:30px;display:grid;gap:8px}.nav button{all:unset;cursor:pointer;padding:11px 12px;border-radius:10px;color:#c9d9e6;font-size:13px}.nav button.active,.nav button:hover{background:#174567;color:#fff}.main{padding:26px 30px}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:22px}.top h1{margin:0;font-size:26px}.top p{margin:5px 0 0;color:#71869a;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 13px;background:#1e6ca5;color:#fff;font-weight:700;cursor:pointer;font-size:12px}.btn.ghost{background:#e8eef4;color:#24455f}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.card{background:#fff;border:1px solid #dfe7ee;border-radius:15px;padding:16px}.metric span{display:block;color:#7e90a2;font-size:10px;text-transform:uppercase;letter-spacing:.04em}.metric strong{display:block;margin-top:7px;font-size:25px;color:#174c75}.section{margin-top:16px}.section h2{font-size:15px;margin:0 0 10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{background:#fff;border:1px solid #dfe7ee;border-radius:15px;overflow:hidden}.panel-h{padding:14px 16px;border-bottom:1px solid #e8eef4;display:flex;justify-content:space-between;gap:12px;align-items:center}.panel-h h3{margin:0;font-size:13px}.panel-b{padding:14px 16px}.select{border:1px solid #cfdce7;border-radius:9px;padding:9px 11px;background:#fff;color:#183e5e;min-width:210px}.rows{display:grid;gap:8px}.row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid #edf1f4;font-size:11px}.row:last-child{border-bottom:0}.row b{display:block;font-size:11px;color:#264a66}.row small{display:block;color:#8294a5;margin-top:3px}.pill{align-self:start;padding:5px 8px;border-radius:999px;background:#edf4f8;color:#286690;font-size:9px;font-weight:800}.ok{color:#1c7b53}.bad{color:#ad3c3c}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:10px;white-space:pre-wrap;max-height:380px;overflow:auto;background:#f8fafc;border-radius:10px;padding:12px}.hidden{display:none}.statusline{font-size:11px;color:#71869a}.signal{padding:10px 0;border-bottom:1px solid #edf1f4}.signal:last-child{border-bottom:0}.signal b{font-size:11px}.signal p{font-size:10px;line-height:1.45;color:#71869a;margin:4px 0}.signal a{font-size:10px;color:#1e6ca5;text-decoration:none}@media(max-width:1000px){.shell{grid-template-columns:1fr}.side{position:relative;height:auto}.grid{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.main{padding:18px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+  <div class="brand">BLIS™ Navigator<small>OWNER ADMIN</small></div>
+  <div class="nav">
+    <button class="active" data-tab="overview">Общ статус</button>
+    <button data-tab="clients">Клиенти</button>
+    <button data-tab="sources">Източници</button>
+    <button data-tab="signals">Сигнали</button>
+    <button data-tab="engine">Engine & мониторинг</button>
+    <button data-tab="raw">Raw data</button>
+  </div>
+</aside>
+<main class="main">
+  <div class="top">
+    <div><h1>Административен панел</h1><p>Оперативен контрол на BLIS Navigator</p></div>
+    <div class="actions">
+      <select id="clientSel" class="select"></select>
+      <button class="btn ghost" id="openNavigator">Отвори клиента</button>
+      <button class="btn" id="refreshClient">Обнови клиента</button>
+      <button class="btn" id="refreshSignals">Обнови сигналите</button>
+    </div>
+  </div>
+
+  <section id="tab-overview">
+    <div class="grid">
+      <div class="card metric"><span>Клиенти</span><strong id="mClients">-</strong></div>
+      <div class="card metric"><span>Източници</span><strong id="mSources">-</strong></div>
+      <div class="card metric"><span>Натрупани observations</span><strong id="mObs">-</strong></div>
+      <div class="card metric"><span>Сигнали</span><strong id="mSignals">-</strong></div>
+    </div>
+    <div class="two section">
+      <div class="panel"><div class="panel-h"><h3>Engine status</h3><span id="engineState" class="statusline">Зареждане...</span></div><div class="panel-b" id="engineSummary"></div></div>
+      <div class="panel"><div class="panel-h"><h3>Signal collector</h3><span id="signalState" class="statusline">Зареждане...</span></div><div class="panel-b" id="signalSummary"></div></div>
+    </div>
+  </section>
+
+  <section id="tab-clients" class="hidden"><div class="panel"><div class="panel-h"><h3>Клиентски профили</h3></div><div class="panel-b rows" id="clientRows"></div></div></section>
+  <section id="tab-sources" class="hidden"><div class="panel"><div class="panel-h"><h3>Източници на избрания клиент</h3></div><div class="panel-b rows" id="sourceRows"></div></div></section>
+  <section id="tab-signals" class="hidden"><div class="panel"><div class="panel-h"><h3>Последни сигнали</h3><span id="signalCount" class="statusline"></span></div><div class="panel-b" id="signalRows"></div></div></section>
+  <section id="tab-engine" class="hidden"><div class="two"><div class="panel"><div class="panel-h"><h3>Engine</h3></div><div class="panel-b mono" id="engineRaw"></div></div><div class="panel"><div class="panel-h"><h3>Signal health</h3></div><div class="panel-b mono" id="signalRaw"></div></div></div></section>
+  <section id="tab-raw" class="hidden"><div class="panel"><div class="panel-h"><h3>Client dashboard JSON</h3></div><div class="panel-b mono" id="rawClient"></div></div></section>
+</main>
+</div>
+<script>
+const $=s=>document.querySelector(s), A=v=>Array.isArray(v)?v:[];
+let store={clients:{}}, engine={}, health={}, selected='aroma';
+async function j(url,opt){const r=await fetch(url,{cache:'no-store',...opt});if(!r.ok)throw new Error(r.status+' '+r.statusText);return r.json()}
+function fmt(n){return Number(n||0).toLocaleString('bg-BG')}
+function clientList(){return Object.values(store.clients||{}).filter(Boolean).sort((a,b)=>String(a.name).localeCompare(String(b.name),'bg'))}
+async function loadBase(){
+  [store,engine,health]=await Promise.all([j('/api/store/export'),j('/api/engine/status'),j('/api/signals/health')]);
+  const list=clientList(); $('#clientSel').innerHTML=list.map(c=>`<option value="${c.slug}">${c.name}</option>`).join('');
+  if(!store.clients[selected]) selected=list[0]?.slug||'aroma'; $('#clientSel').value=selected;
+  renderOverview(); renderClients(); renderEngine(); await loadClient();
+}
+function renderOverview(){const list=clientList(), sources=list.reduce((n,c)=>n+A(c.sources).length,0), obs=list.reduce((n,c)=>n+A(c.observations).length,0), sig=Object.values(health.clients||{}).reduce((a,b)=>a+Number(b||0),0);$('#mClients').textContent=fmt(list.length);$('#mSources').textContent=fmt(sources);$('#mObs').textContent=fmt(obs);$('#mSignals').textContent=fmt(sig);$('#engineState').textContent=engine.running?'Работи':'Готов';$('#engineState').className='statusline '+(engine.running?'ok':'');$('#engineSummary').innerHTML=`<div class="rows"><div class="row"><div><b>Версия</b><small>${engine.version||'-'}</small></div></div><div class="row"><div><b>Последно изпълнение</b><small>${engine.last_run||'-'}</small></div></div><div class="row"><div><b>Успешни / неуспешни</b><small>${engine.successful||0} / ${engine.failed||0}</small></div></div></div>`;$('#signalState').textContent=health.ok?'Активен':'Проблем';$('#signalState').className='statusline '+(health.ok?'ok':'bad');$('#signalSummary').innerHTML=`<div class="rows"><div class="row"><div><b>Последно обновяване</b><small>${health.updated_at||'-'}</small></div></div><div class="row"><div><b>Общо клиентски сигнали</b><small>${fmt(sig)}</small></div></div><div class="row"><div><b>Интервал</b><small>${health.interval_minutes||'-'} минути по основния collector</small></div></div></div>`}
+function renderClients(){ $('#clientRows').innerHTML=clientList().map(c=>`<div class="row"><div><b>${c.name}</b><small>${c.slug} · ${c.sector||''} · ${A(c.sources).length} източника · ${A(c.observations).length} observations</small></div><span class="pill">${fmt((health.clients||{})[c.slug]||0)} сигнала</span></div>`).join('') }
+function renderEngine(){ $('#engineRaw').textContent=JSON.stringify(engine,null,2);$('#signalRaw').textContent=JSON.stringify(health,null,2) }
+async function loadClient(){
+  const c=store.clients[selected]||{}; $('#sourceRows').innerHTML=A(c.sources).map(s=>`<div class="row"><div><b>${s.label||s.key}</b><small>${s.key} · reliability ${s.reliability??'-'}<br>${s.method||''}</small></div><span class="pill">${s.url?'URL':'-'}</span></div>`).join('')||'<div class="statusline">Няма конфигурирани източници.</div>';
+  const [sig,dash]=await Promise.all([j('/api/signals?client='+encodeURIComponent(selected)+'&limit=100').catch(()=>({signals:[]})),j('/api/clients/'+encodeURIComponent(selected)+'/dashboard').catch(()=>({}))]);
+  const rows=A(sig.signals); $('#signalCount').textContent=rows.length+' показани'; $('#signalRows').innerHTML=rows.map(s=>`<div class="signal"><b>${s.title||s.topic||'Сигнал'}</b><p>${s.text||''}</p><small>${s.source||''} · ${s.sentiment||''} · risk ${s.risk_score??'-'}</small>${s.url?`<br><a href="${s.url}" target="_blank" rel="noopener">Отвори източника</a>`:''}</div>`).join('')||'<div class="statusline">Няма налични сигнали за показване.</div>'; $('#rawClient').textContent=JSON.stringify(dash,null,2)
+}
+async function refreshClient(){const b=$('#refreshClient');b.disabled=true;b.textContent='Обновяване...';try{await j('/api/clients/'+encodeURIComponent(selected)+'/refresh',{method:'POST'});await loadBase()}catch(e){alert('Грешка при обновяване: '+e.message)}finally{b.disabled=false;b.textContent='Обнови клиента'}}
+async function refreshSignals(){const b=$('#refreshSignals');b.disabled=true;b.textContent='Обновяване...';try{await j('/api/signals/refresh',{method:'POST'});await loadBase()}catch(e){alert('Грешка при обновяване: '+e.message)}finally{b.disabled=false;b.textContent='Обнови сигналите'}}
+$('.nav').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('main>section').forEach(x=>x.classList.add('hidden'));$('#tab-'+b.dataset.tab).classList.remove('hidden')});
+$('#clientSel').addEventListener('change',async e=>{selected=e.target.value;await loadClient()});
+$('#refreshClient').addEventListener('click',refreshClient);$('#refreshSignals').addEventListener('click',refreshSignals);$('#openNavigator').addEventListener('click',()=>location.href='/dashboard.html?client='+encodeURIComponent(selected)+'&page=overview');
+loadBase().catch(e=>{document.body.innerHTML='<pre style="padding:30px">Admin panel error: '+e.message+'</pre>'});
+</script>
+</body></html>
