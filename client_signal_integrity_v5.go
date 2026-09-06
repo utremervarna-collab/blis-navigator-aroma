@@ -1,10 +1,6 @@
 package main
 
 import (
-    "bytes"
-    "io"
-    "net/http"
-    "strconv"
     "strings"
     "sync"
     "time"
@@ -83,35 +79,12 @@ func runAllClientSignalsV5() {
             mergeSignals(slug, competitorRows)
         }
     }
+    sanitizeFollowerObservations()
     saveSignalStateFile()
     saveStore()
 }
 
-func serveEvidenceIntegrityV5(w http.ResponseWriter, r *http.Request) {
-    b, err := staticFS.ReadFile("static/navigator-evidence-integrity-v8.js")
-    if err != nil {
-        http.NotFound(w, r)
-        return
-    }
-    w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-    w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-    _, _ = w.Write(b)
-}
-
-func injectEvidenceIntegrityV5(body []byte) []byte {
-    if bytes.Contains(body, []byte("navigator-evidence-integrity-v8.js")) {
-        return body
-    }
-    tag := []byte(`<script src="/navigator-evidence-integrity-v8.js?v=20260906-integrity8"></script>`)
-    if bytes.Contains(body, []byte("</body>")) {
-        return bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
-    }
-    return append(body, tag...)
-}
-
 func init() {
-    http.HandleFunc("/navigator-evidence-integrity-v8.js", serveEvidenceIntegrityV5)
-
     go func() {
         time.Sleep(2 * time.Second)
         sanitizeFollowerObservations()
@@ -127,31 +100,4 @@ func init() {
             runAllClientSignalsV5()
         }
     }()
-
-    if authProxy == nil {
-        return
-    }
-    previous := authProxy.ModifyResponse
-    authProxy.ModifyResponse = func(resp *http.Response) error {
-        if previous != nil {
-            if err := previous(resp); err != nil {
-                return err
-            }
-        }
-        if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
-            return nil
-        }
-        body, err := io.ReadAll(resp.Body)
-        if err != nil {
-            return err
-        }
-        _ = resp.Body.Close()
-        body = injectEvidenceIntegrityV5(body)
-        resp.Body = io.NopCloser(bytes.NewReader(body))
-        resp.ContentLength = int64(len(body))
-        resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
-        resp.Header.Del("Content-Encoding")
-        resp.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-        return nil
-    }
 }
