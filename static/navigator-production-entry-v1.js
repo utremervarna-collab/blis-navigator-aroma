@@ -1,9 +1,9 @@
-/* BLIS Navigator 3.0 — canonical production entrypoint.
+/* BLIS Navigator 3.0 - canonical production entrypoint.
    Bulgarian client interface with simplified 5+2 architecture on top of the approved canonical visuals. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_ENTRY_V41)return;window.__BLIS_PRODUCTION_ENTRY_V41=true;
-const VERSION='20260902-readable-small-type-1';
+if(window.__BLIS_PRODUCTION_ENTRY_V42)return;window.__BLIS_PRODUCTION_ENTRY_V42=true;
+const VERSION='20260906-key-factors-1';
 function forceBulgarianEarly(){document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';try{const u=new URL(location.href);if(u.searchParams.has('lang')){u.searchParams.delete('lang');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}}catch(_){}}
 forceBulgarianEarly();
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
@@ -14,10 +14,10 @@ function reset(n){try{window[n]=false}catch(_){}}
 function loadStyle(src){return new Promise((resolve,reject)=>{const l=document.createElement('link');l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';l.onload=resolve;l.onerror=()=>reject(new Error('CSS: '+src));document.head.appendChild(l)})}
 function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src+'?v='+VERSION;s.async=false;s.onload=resolve;s.onerror=()=>reject(new Error('JS: '+src));document.body.appendChild(s)})}
 async function safeStyle(src){try{await loadStyle(src)}catch(e){console.error(e)}}async function safe(src){try{await loadScript(src)}catch(e){console.error(e)}}
-function markCanonicalVisuals(){const radar=document.querySelector('#social .dv-radar-wrap,#digitalBody .dv-radar-wrap');if(radar){radar.setAttribute('data-digital-radar','1');radar.setAttribute('data-blis-visual','signals-observation')}const map=document.querySelector('#market .pm-stage,#market .pm-canvas');if(map)map.setAttribute('data-blis-visual','market-reputation-network');const comp=document.querySelector('#competition .vs-comp-axis');if(comp)comp.setAttribute('data-blis-visual','competition-bar');const gauge=document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg,#overview .ovh-gauge');if(gauge)gauge.setAttribute('data-blis-visual','overview-index')}
+function markCanonicalVisuals(){const radar=document.querySelector('#social .dv-radar-wrap,#digitalBody .dv-radar-wrap');if(radar){radar.setAttribute('data-digital-radar','1');radar.setAttribute('data-blis-visual','signals-observation')}const factors=document.querySelector('#market .kf1');if(factors)factors.setAttribute('data-blis-visual','market-key-factors');const comp=document.querySelector('#competition .vs-comp-axis');if(comp)comp.setAttribute('data-blis-visual','competition-bar');const gauge=document.querySelector('#overview .vs-gauge-card,#overview .vs-gauge-svg,#overview .ovh-gauge');if(gauge)gauge.setAttribute('data-blis-visual','overview-index')}
 function scheduleVisualContract(){markCanonicalVisuals();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();setTimeout(markCanonicalVisuals,70);setTimeout(markCanonicalVisuals,240)}
 function activeRoute(){const raw=document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';return window.BLISRouteAlias?.(raw)||({digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'}[raw]||raw)}
-function canonicalVisualReady(){const id=activeRoute();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .pm-stage,#market .pm-canvas');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector(`#${id} .n3-resource-card`);return!!document.querySelector('.page.active')}
+function canonicalVisualReady(){const id=activeRoute();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .kf1');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector(`#${id} .n3-resource-card`);return!!document.querySelector('.page.active')}
 function finalShellReady(){return document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&!!document.querySelector('.bch3-context-title')&&!!document.querySelector('.page.active')&&canonicalVisualReady()}
 let appRevealed=false;
 function revealFinalApp(){if(appRevealed||!document.body)return;appRevealed=true;document.getElementById('blisPrepaintGuard')?.remove();document.body.classList.add('blis-app-ready');document.documentElement.dataset.navigatorPaint='ready';requestAnimationFrame(()=>requestAnimationFrame(()=>{const cover=document.getElementById('blisNavigatorBootScreen');if(cover)setTimeout(()=>cover.remove(),220)}))}
@@ -29,9 +29,9 @@ function waitForFinalPaint(started=Date.now()){
 }
 async function boot(){
  forceBulgarianEarly();
- for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
+ for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
  await safe('/navigator-system-structure-v1.js');
- await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
+ await safe('/navigator-key-factors-v1.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
  await safe('/navigator-data-loader-v1.js');await window.BLISDataLoaderV1?.load?.(initialClient,true);
  await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');
  await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-executive-reports-v1.js');
@@ -43,7 +43,7 @@ async function boot(){
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
  await safe('/navigator-readable-type-v1.js');
  window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
- document.documentElement.dataset.navigatorUi='navigator3-preserved-canonical-visuals';
+ document.documentElement.dataset.navigatorUi='navigator3-key-factors';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:activeRoute(),version:VERSION}}));
  setTimeout(()=>{forceBulgarianEarly();window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.decorate?.();window.BLISNavigator3ClientProofV1?.decorate?.();window.BLISNavigator3ArchitectureV1?.render?.();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();scheduleVisualContract();waitForFinalPaint()},120);
 }
