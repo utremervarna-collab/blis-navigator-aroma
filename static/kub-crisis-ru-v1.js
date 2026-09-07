@@ -1,7 +1,7 @@
 /* BLIS Navigator — Russian presentation layer for the KUB crisis profile only. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 
 const params=new URLSearchParams(location.search);
 const requested=(params.get('lang')||'').toLowerCase();

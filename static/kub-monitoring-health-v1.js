@@ -1,7 +1,7 @@
 /* KUB 24/7 monitoring freshness guard. Visible client status only; no layout changes. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 if(window.__KUB_MONITORING_HEALTH_V1)return;window.__KUB_MONITORING_HEALTH_V1=true;
 const MAX_FRESH_MS=3*60*1000;
 function ensureBadge(){

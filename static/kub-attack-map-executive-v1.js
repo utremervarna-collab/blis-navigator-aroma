@@ -1,7 +1,7 @@
 /* KUB executive intelligence map: compact, light, card-based network. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 const COLORS={political:'#c9474d',institutional:'#347fae',media:'#d38a2c',stakeholder:'#7856ae'};
 const TINTS={political:'#fff4f4',institutional:'#f2f8fc',media:'#fff8ee',stakeholder:'#f7f3fc'};
 function style(){

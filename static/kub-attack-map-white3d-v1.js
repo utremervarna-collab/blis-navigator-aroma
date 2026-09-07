@@ -1,7 +1,7 @@
 /* KUB pressure-map visual override: white background and colorful 3D nodes while preserving the full analytical page. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 
 function addStyle(){
  if(document.getElementById('kubam-white3d-style'))return;

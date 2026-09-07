@@ -3,7 +3,7 @@
    only as an immediate startup floor while the first API request is connecting. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 if(window.__KUB_LIVE_FEED_V3)return;window.__KUB_LIVE_FEED_V3=true;
 
 const ACTIVE_POLL_MS=5000;

@@ -1,7 +1,7 @@
 /* KUB-only shell corrections. Runs before the KUB language layers. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 const lang=(new URLSearchParams(location.search).get('lang')||'bg').toLowerCase();
 const homeLabel=lang==='ru'?'← На главную':lang==='en'?'← Back to home':'← Към началната страница';
 function isPaymentsControl(text){

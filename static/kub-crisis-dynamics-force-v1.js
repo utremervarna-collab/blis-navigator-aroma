@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const path=(location.pathname||'').toLowerCase();
-if(!/^\/kub-(?:crisis\.html|private|live|client)$/.test(path))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/.test(path))return;
 const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const peaks=[
  {x:270,y:45,label:'13-29 май 2026',title:'Институционален шок и информационен вакуум',text:'Проверки, производства и силен медиен интерес превръщат казуса в национална репутационна криза.'},

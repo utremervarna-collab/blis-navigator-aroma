@@ -1,7 +1,7 @@
 /* KUB-only Attack & Narrative Network. Evidence-aware operational map. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 
 const ACTORS=[
  {id:'vazrazhdane',label:'„Възраждане“ / Коста Стоянов',short:'Възраждане',type:'political',intensity:'КРИТИЧЕН',risk:96,x:140,y:105,

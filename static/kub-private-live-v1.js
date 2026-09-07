@@ -1,7 +1,7 @@
 /* BLIS KUB private live monitoring. Keeps /kub-private isolated while rendering the latest KUB signals. */
 (function(){
 'use strict';
-if(location.pathname!=='/kub-private')return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 if(window.__BLIS_KUB_PRIVATE_LIVE_V1)return;window.__BLIS_KUB_PRIVATE_LIVE_V1=true;
 const API='/api/signals?client=kub&limit=500';
 const POLL=5000;

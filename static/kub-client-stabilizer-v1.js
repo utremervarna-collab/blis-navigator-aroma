@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const path=(location.pathname||'').toLowerCase();
-if(!/^\/kub-(?:crisis\.html|private|live|client)$/.test(path))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/.test(path))return;
 if(window.__KUB_CLIENT_STABILIZER_V3)return;window.__KUB_CLIENT_STABILIZER_V3=true;
 const TITLES={overview:'Кризисен преглед',monitoring:'Мониторинг',environment:'Среда / Наративи',reputation:'Репутация',risks:'Рискове',stakeholders:'Заинтересовани страни',evidence:'Доказателства',timeline:'Хронология',reports:'Развитие / Доклади',sources:'Източници',settings:'Настройки на наблюдението',attackmap:'Карта на натиска и наративите'};
 const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));

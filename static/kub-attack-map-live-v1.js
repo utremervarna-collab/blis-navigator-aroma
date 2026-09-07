@@ -1,7 +1,7 @@
 /* Live overlay for the KUB pressure network. Reads the existing KUB signal API. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 const RULES={
  vazrazhdane:/коста стоянов|възраждане|костадин костадинов/i,
  varna:/благомир коцев|община варна|кмет(?:ът)? на варна|строителен контрол/i,

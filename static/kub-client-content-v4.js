@@ -3,7 +3,7 @@
    client-facing intelligence derived from the live KUB signal feed. */
 (function(){
 'use strict';
-if(!/\/kub-crisis\.html$/i.test(location.pathname))return;
+if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
 if(window.__KUB_CLIENT_CONTENT_V4)return;window.__KUB_CLIENT_CONTENT_V4=true;
 
 const esc=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
