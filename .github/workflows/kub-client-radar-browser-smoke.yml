@@ -1,0 +1,74 @@
+name: KUB Client Radar Browser Smoke
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kub-radars:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Verify KUB mobile client radars on production
+        shell: bash
+        run: |
+          cat > /tmp/kub-radar-smoke.cjs <<'NODE'
+          const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
+          const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          const url='https://blis-navigator-aroma.onrender.com/kub-client?radar-smoke='+Date.now();
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              let last='';
+              for(let attempt=1;attempt<=30;attempt++){
+                const p=await browser.newPage({viewport:{width:390,height:844}});
+                try{
+                  await p.goto(url+'&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:25000});
+                  await p.waitForTimeout(1800);
+                  const state=await p.evaluate(()=>({
+                    title:document.title,
+                    body:(document.body?.innerText||''),
+                    mediaRadar:!!document.querySelector('#overview .radarCard .radarViz svg'),
+                    attackButton:!!document.querySelector('#nav button[data-page="attackmap"]'),
+                    overflow:document.documentElement.scrollWidth-window.innerWidth
+                  }));
+                  if(/Корпорация КУБ/.test(state.body)&&!/MOLLOX/i.test(state.body)&&state.mediaRadar&&state.attackButton){
+                    await p.click('#nav button[data-page="attackmap"]');
+                    await p.waitForSelector('#attackmap.active .kubam-canvas svg',{timeout:8000});
+                    const attack=await p.evaluate(()=>({
+                      active:!!document.querySelector('#attackmap.active'),
+                      svg:!!document.querySelector('#attackmap .kubam-canvas svg'),
+                      nodes:document.querySelectorAll('#attackmap .kubam-node').length,
+                      detail:(document.querySelector('#kubamDetail')?.innerText||'').trim().length,
+                      overflow:document.documentElement.scrollWidth-window.innerWidth
+                    }));
+                    assert(attack.active&&attack.svg,`attack map not visible ${JSON.stringify(attack)}`);
+                    assert(attack.nodes>=5,`attack map nodes missing ${JSON.stringify(attack)}`);
+                    assert(attack.detail>40,`attack detail missing ${JSON.stringify(attack)}`);
+                    assert(attack.overflow<=24,`mobile overflow ${attack.overflow}`);
+                    console.log('KUB_RADAR_BROWSER_SMOKE_OK',JSON.stringify({state:{title:state.title,mediaRadar:state.mediaRadar,attackButton:state.attackButton},attack}));
+                    await p.close();
+                    return;
+                  }
+                  last=JSON.stringify({attempt,state:{title:state.title,mediaRadar:state.mediaRadar,attackButton:state.attackButton,hasKUB:/Корпорация КУБ/.test(state.body),hasMollox:/MOLLOX/i.test(state.body)}});
+                }catch(e){last=`attempt ${attempt}: ${e.message}`}
+                await p.close();
+                await sleep(5000);
+              }
+              throw new Error('production never reached expected KUB radar state: '+last);
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/kub-radar-smoke.cjs
