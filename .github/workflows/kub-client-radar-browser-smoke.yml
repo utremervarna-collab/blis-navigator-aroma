@@ -47,16 +47,31 @@ jobs:
                   if(/Корпорация КУБ/.test(state.body)&&!/MOLLOX/i.test(state.body)&&state.mediaRadar&&state.attackButton){
                     await p.click('#nav button[data-page="attackmap"]');
                     await p.waitForSelector('#attackmap.active .kubam-canvas svg',{timeout:8000});
-                    const attack=await p.evaluate(()=>({
-                      active:!!document.querySelector('#attackmap.active'),
-                      svg:!!document.querySelector('#attackmap .kubam-canvas svg'),
-                      nodes:document.querySelectorAll('#attackmap .kubam-node').length,
-                      detail:(document.querySelector('#kubamDetail')?.innerText||'').trim().length,
-                      overflow:document.documentElement.scrollWidth-window.innerWidth
-                    }));
+                    const attack=await p.evaluate(()=>{
+                      const page=document.querySelector('#attackmap.active');
+                      const intro=document.querySelector('#attackmap .kubam-topcol-left > .card:first-child');
+                      const map=document.querySelector('#attackmap .kubam-topcol-left > .kubam-map-card');
+                      const proof=document.querySelector('#attackmap .kubam-topcol-right > .card:first-child');
+                      const ir=intro&&intro.getBoundingClientRect();
+                      const mr=map&&map.getBoundingClientRect();
+                      const pr=proof&&proof.getBoundingClientRect();
+                      return {
+                        active:!!page,
+                        layoutFixed:page?.dataset.kubPlacement==='1',
+                        svg:!!document.querySelector('#attackmap .kubam-canvas svg'),
+                        nodes:document.querySelectorAll('#attackmap .kubam-node').length,
+                        detail:(document.querySelector('#kubamDetail')?.innerText||'').trim().length,
+                        overflow:document.documentElement.scrollWidth-window.innerWidth,
+                        placementGap:(ir&&mr)?Math.round(mr.top-ir.bottom):9999,
+                        mapBeforeProof:(mr&&pr)?mr.top<pr.top:false
+                      };
+                    });
                     assert(attack.active&&attack.svg,`attack map not visible ${JSON.stringify(attack)}`);
+                    assert(attack.layoutFixed,`pressure map placement fix missing ${JSON.stringify(attack)}`);
                     assert(attack.nodes>=5,`attack map nodes missing ${JSON.stringify(attack)}`);
                     assert(attack.detail>40,`attack detail missing ${JSON.stringify(attack)}`);
+                    assert(attack.placementGap>=0&&attack.placementGap<=28,`map is not directly under heading card ${JSON.stringify(attack)}`);
+                    assert(attack.mapBeforeProof,`mobile map is still below proof/KPI block ${JSON.stringify(attack)}`);
                     assert(attack.overflow<=24,`mobile overflow ${attack.overflow}`);
                     console.log('KUB_RADAR_BROWSER_SMOKE_OK',JSON.stringify({state:{title:state.title,mediaRadar:state.mediaRadar,attackButton:state.attackButton},attack}));
                     await p.close();
