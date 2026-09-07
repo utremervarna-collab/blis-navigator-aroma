@@ -10,15 +10,16 @@ import (
 var kubDashboardLinkRE = regexp.MustCompile(`(?is)(?:<br\s*/?>\s*)?<a\b[^>]*href=["'][^"']*dashboard\.html[^"']*["'][^>]*>.*?</a>`)
 
 var kubRuntimeFiles = map[string]string{
-	"/kub-client-content-v4.js":       "kub-client-content-v4.js",
-	"/kub-crisis-shell-fix-v1.js":     "kub-crisis-shell-fix-v1.js",
-	"/kub-crisis-ru-v1.js":            "kub-crisis-ru-v1.js",
-	"/kub-client-stabilizer-v1.js":     "kub-client-stabilizer-v1.js",
-	"/kub-crisis-dynamics-force-v1.js": "kub-crisis-dynamics-force-v1.js",
-	"/kub-attack-map-v1.js":            "kub-attack-map-v1.js",
-	"/kub-attack-map-live-v1.js":       "kub-attack-map-live-v1.js",
-	"/kub-attack-map-executive-v1.js":  "kub-attack-map-executive-v1.js",
-	"/kub-attack-map-white3d-v1.js":    "kub-attack-map-white3d-v1.js",
+	"/kub-client-content-v4.js":          "kub-client-content-v4.js",
+	"/kub-crisis-shell-fix-v1.js":        "kub-crisis-shell-fix-v1.js",
+	"/kub-crisis-ru-v1.js":               "kub-crisis-ru-v1.js",
+	"/kub-client-stabilizer-v1.js":        "kub-client-stabilizer-v1.js",
+	"/kub-crisis-dynamics-force-v1.js":    "kub-crisis-dynamics-force-v1.js",
+	"/kub-attack-map-v1.js":               "kub-attack-map-v1.js",
+	"/kub-attack-map-live-v1.js":          "kub-attack-map-live-v1.js",
+	"/kub-attack-map-executive-v1.js":     "kub-attack-map-executive-v1.js",
+	"/kub-attack-map-white3d-v1.js":       "kub-attack-map-white3d-v1.js",
+	"/kub-attack-map-premium-v1.js":       "kub-attack-map-premium-v1.js",
 }
 
 func serveKUBRuntimeJS(file string) http.HandlerFunc {
@@ -74,17 +75,19 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 </style>`
 			b = bytes.Replace(b, []byte("</head>"), []byte(mobileLayout+"\n</head>"), 1)
 
-			// Isolated KUB crisis runtime. The mobile aliases are served directly
-			// from this handler so they cannot fall through to another client route.
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct17"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct17"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct17"></script>
+			// Isolated KUB crisis runtime. The premium map override is loaded last
+			// so it wins over the older executive/white-3D styling without touching
+			// another client profile.
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct18"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct18"></script>
+<script defer src="/kub-attack-map-premium-v1.js?v=20260907-direct18"></script>
 <script>
 (function(){
  function placeKUBMap(){
@@ -135,8 +138,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct17")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct17", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct18")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct18", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
