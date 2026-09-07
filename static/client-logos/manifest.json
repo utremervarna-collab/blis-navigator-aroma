@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "logos": {
     "aroma": {
       "path": "/client-logos/aroma.png",
@@ -16,6 +16,10 @@
     "everbet": {
       "path": "/client-logos/everbet.svg",
       "source": "https://everbet.bg/assets/icons/everbet-logo-dark.svg"
+    },
+    "black-sea-center": {
+      "path": "/client-logos/black-sea-center.png",
+      "source": "user-supplied official logo"
     }
   }
 }
