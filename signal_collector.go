@@ -84,6 +84,10 @@ func signalBrandTerms(c *Client) []string {
 		return []string{"MOLLOX", "MOLLOX България", "Mollox Bulgaria", "Молокс"}
 	case "varna-towers":
 		return []string{"Varna Towers", "Варна Тауърс", "Варна Тауърс"}
+	case "kub":
+		return []string{"Корпорация КУБ", "КУБ Корпорация", "КУБ", "Баба Алино", "Forest Club", "Forest Club Варна", "Форест Клуб"}
+	case "black-sea-center":
+		return []string{"Black Sea Center", "BlackSea Center", "BSC Offices"}
 	default:
 		if strings.TrimSpace(c.Name) != "" {
 			return []string{strings.TrimSpace(c.Name)}
@@ -139,7 +143,7 @@ func collectorContainsAny(low string, terms ...string) bool {
 func signalTopic(text string) string {
 	low := strings.ToLower(text)
 	switch {
-	case collectorContainsAny(low, "комисия", "санкц", "глоб", "регул", "забран", "изтегля", "recall", "warning", "echa", "кзп", "нарушение"):
+	case collectorContainsAny(low, "комисия", "санкц", "глоб", "регул", "забран", "изтегля", "recall", "warning", "echa", "кзп", "нарушение", "незакон", "събар", "съд", "правен статут", "проверка", "административ"):
 		return "regulatory"
 	case collectorContainsAny(low, "скандал", "измама", "оплак", "жалб", "недовол", "бойкот", "фалш", "опас", "репутац"):
 		return "reputation"
@@ -156,7 +160,7 @@ func signalTopic(text string) string {
 
 func signalSentimentAndRisk(text string) (string, float64) {
 	low := strings.ToLower(text)
-	negative := []string{"скандал", "измама", "опас", "забран", "санкц", "глоб", "изтегля", "жалб", "оплак", "недовол", "лош", "проблем", "бойкот", "дефект", "наруш", "fake", "fraud", "recall", "warning"}
+	negative := []string{"скандал", "измама", "опас", "забран", "санкц", "глоб", "изтегля", "жалб", "оплак", "недовол", "лош", "проблем", "бойкот", "дефект", "наруш", "незакон", "събар", "заповед за събаряне", "fake", "fraud", "recall", "warning"}
 	positive := []string{"награда", "успех", "растеж", "нов продукт", "партньор", "иновац", "отлич", "препоръч", "award", "growth", "launch"}
 	n, p := 0, 0
 	for _, term := range negative {
@@ -171,7 +175,7 @@ func signalSentimentAndRisk(text string) (string, float64) {
 	}
 	if n > 0 {
 		risk := 40.0 + float64(n)*15.0
-		if collectorContainsAny(low, "опас", "забран", "санкц", "изтегля", "fraud", "recall") {
+		if collectorContainsAny(low, "опас", "забран", "санкц", "изтегля", "fraud", "recall", "незакон", "събар") {
 			risk += 15
 		}
 		if risk > 100 {
@@ -204,6 +208,9 @@ func signalRelevance(c *Client, title, text string) float64 {
 	}
 	if c.Slug == "aroma" && score == 0 && strings.Contains(low, "арома") && collectorContainsAny(low, "козмет", "шампоан", "крем", "toothpaste", "cosmetic") {
 		score = 45
+	}
+	if c.Slug == "kub" && score == 0 && collectorContainsAny(low, "баба алино", "forest club", "форест клуб") {
+		score = 70
 	}
 	if score > 100 {
 		score = 100
@@ -251,8 +258,6 @@ func buildSignal(c *Client, source, sourceType, rawURL, title, text, published s
 	sentiment, risk := signalSentimentAndRisk(title + " " + text)
 	fingerprint := signalHash(c.Slug, rawURL, title, text)
 	scope := signalSourceScope(c, rawURL)
-	// Google News is a discovery transport, not an owned brand channel.
-	// Articles discovered through it are external information signals.
 	if sourceType == "news" {
 		scope = "external"
 	}
@@ -460,9 +465,7 @@ func signalClientSnapshot(slug string) *Client {
 }
 
 func signalEligibleSlugs() []string {
-	// Existing-client rollout only. A slug is never created here; it is used
-	// only when it already exists in the live store.
-	return []string{"aroma", "bolyarka", "mollox", "varna-towers"}
+	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "kub", "black-sea-center"}
 }
 
 func signalObservationExists(c *Client, metric string) bool {
@@ -692,7 +695,7 @@ func signalHealthHandler(w http.ResponseWriter, r *http.Request) {
 	collectorWriteJSON(w, map[string]interface{}{
 		"ok":               true,
 		"updated_at":       updated,
-		"interval_minutes": 10,
+		"interval_minutes": 5,
 		"clients":          counts,
 		"external":         external,
 		"competitor":       competitor,
@@ -705,10 +708,10 @@ func init() {
 	http.HandleFunc("/api/signals/refresh", signalRefreshHandler)
 	http.HandleFunc("/api/signals/health", signalHealthHandler)
 	go func() {
-		// Avoid competing with the existing startup migrations and probes.
-		time.Sleep(90 * time.Second)
+		// Fast first run after the application is ready, then continuous polling.
+		time.Sleep(15 * time.Second)
 		runSignalCollector()
-		ticker := time.NewTicker(10 * time.Minute)
+		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
 			runSignalCollector()
