@@ -20,6 +20,7 @@ var kubRuntimeFiles = map[string]string{
 	"/kub-attack-map-executive-v1.js":     "kub-attack-map-executive-v1.js",
 	"/kub-attack-map-white3d-v1.js":       "kub-attack-map-white3d-v1.js",
 	"/kub-attack-map-premium-v1.js":       "kub-attack-map-premium-v1.js",
+	"/kub-i18n-full-v1.js":                 "kub-i18n-full-v1.js",
 }
 
 func serveKUBRuntimeJS(file string) http.HandlerFunc {
@@ -51,8 +52,6 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
-			// Keep the direct KUB client shell inside the viewport and keep the
-			// actual pressure map directly under its explanatory heading.
 			const mobileLayout = `<style id="kub-mobile-layout-v2">
 #attackmap .kubam-topgrid-fixed{display:grid!important;grid-template-columns:minmax(0,1.45fr) minmax(280px,.55fr)!important;gap:14px!important;align-items:start!important;margin-bottom:14px!important}
 #attackmap .kubam-topcol{display:grid!important;gap:14px!important;min-width:0!important;max-width:100%!important;align-content:start!important}
@@ -75,19 +74,17 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 </style>`
 			b = bytes.Replace(b, []byte("</head>"), []byte(mobileLayout+"\n</head>"), 1)
 
-			// Isolated KUB crisis runtime. The premium map override is loaded last
-			// so it wins over the older executive/white-3D styling without touching
-			// another client profile.
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct18"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct18"></script>
-<script defer src="/kub-attack-map-premium-v1.js?v=20260907-direct18"></script>
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct19"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-attack-map-premium-v1.js?v=20260907-direct19"></script>
+<script defer src="/kub-i18n-full-v1.js?v=20260907-direct19"></script>
 <script>
 (function(){
  function placeKUBMap(){
@@ -138,8 +135,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct18")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct18", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct19")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct19", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
