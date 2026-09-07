@@ -28,6 +28,7 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const url='https://blis-navigator-aroma.onrender.com/kub-client?radar-smoke='+Date.now();
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          const rgbNums=s=>(s.match(/\d+(?:\.\d+)?/g)||[]).slice(0,3).map(Number);
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -36,7 +37,7 @@ jobs:
                 const p=await browser.newPage({viewport:{width:390,height:844}});
                 try{
                   await p.goto(url+'&attempt='+attempt,{waitUntil:'domcontentloaded',timeout:25000});
-                  await p.waitForTimeout(1800);
+                  await p.waitForTimeout(1900);
                   const state=await p.evaluate(()=>({
                     title:document.title,
                     body:(document.body?.innerText||''),
@@ -47,6 +48,7 @@ jobs:
                   if(/Корпорация КУБ/.test(state.body)&&!/MOLLOX/i.test(state.body)&&state.mediaRadar&&state.attackButton){
                     await p.click('#nav button[data-page="attackmap"]');
                     await p.waitForSelector('#attackmap.active .kubam-canvas svg',{timeout:8000});
+                    await p.waitForFunction(()=>document.querySelector('#attackmap')?.dataset.kubPremiumMap==='1',{timeout:8000});
                     const attack=await p.evaluate(()=>{
                       const page=document.querySelector('#attackmap.active');
                       const intro=document.querySelector('#attackmap .kubam-topcol-left > .card:first-child');
@@ -55,25 +57,46 @@ jobs:
                       const ir=intro&&intro.getBoundingClientRect();
                       const mr=map&&map.getBoundingClientRect();
                       const pr=proof&&proof.getBoundingClientRect();
+                      const title=document.querySelector('#attackmap .kubam-node .kubam-node-title');
+                      const card=document.querySelector('#attackmap .kubam-node .kubex-card');
+                      const link=document.querySelector('#attackmap .kubam-link');
+                      const node=document.querySelector('#attackmap .kubam-node');
                       return {
                         active:!!page,
                         layoutFixed:page?.dataset.kubPlacement==='1',
+                        premium:page?.dataset.kubPremiumMap==='1',
                         svg:!!document.querySelector('#attackmap .kubam-canvas svg'),
                         nodes:document.querySelectorAll('#attackmap .kubam-node').length,
+                        cards:document.querySelectorAll('#attackmap .kubex-card').length,
                         detail:(document.querySelector('#kubamDetail')?.innerText||'').trim().length,
                         overflow:document.documentElement.scrollWidth-window.innerWidth,
                         placementGap:(ir&&mr)?Math.round(mr.top-ir.bottom):9999,
-                        mapBeforeProof:(mr&&pr)?mr.top<pr.top:false
+                        mapBeforeProof:(mr&&pr)?mr.top<pr.top:false,
+                        titleFill:title?getComputedStyle(title).fill:'',
+                        titleWeight:title?getComputedStyle(title).fontWeight:'',
+                        cardStroke:card?parseFloat(getComputedStyle(card).strokeWidth):0,
+                        linkStroke:link?parseFloat(getComputedStyle(link).strokeWidth):0,
+                        keyboard:node?.getAttribute('tabindex')==='0'&&node?.getAttribute('role')==='button',
+                        tooltip:!!node?.querySelector(':scope > title')
                       };
                     });
                     assert(attack.active&&attack.svg,`attack map not visible ${JSON.stringify(attack)}`);
                     assert(attack.layoutFixed,`pressure map placement fix missing ${JSON.stringify(attack)}`);
-                    assert(attack.nodes>=5,`attack map nodes missing ${JSON.stringify(attack)}`);
+                    assert(attack.premium,`premium pressure-map styling missing ${JSON.stringify(attack)}`);
+                    assert(attack.nodes>=5&&attack.cards>=5,`attack map nodes/cards missing ${JSON.stringify(attack)}`);
                     assert(attack.detail>40,`attack detail missing ${JSON.stringify(attack)}`);
                     assert(attack.placementGap>=0&&attack.placementGap<=28,`map is not directly under heading card ${JSON.stringify(attack)}`);
                     assert(attack.mapBeforeProof,`mobile map is still below proof/KPI block ${JSON.stringify(attack)}`);
                     assert(attack.overflow<=24,`mobile overflow ${attack.overflow}`);
-                    console.log('KUB_RADAR_BROWSER_SMOKE_OK',JSON.stringify({state:{title:state.title,mediaRadar:state.mediaRadar,attackButton:state.attackButton},attack}));
+                    const [r,g,b]=rgbNums(attack.titleFill); assert((r+g+b)<360,`node title is not dark enough ${attack.titleFill}`);
+                    assert(Number(attack.titleWeight)>=800,`node title weight too weak ${attack.titleWeight}`);
+                    assert(attack.cardStroke>=1.9,`node card stroke too weak ${attack.cardStroke}`);
+                    assert(attack.linkStroke>=2,`network links too thin ${attack.linkStroke}`);
+                    assert(attack.keyboard&&attack.tooltip,`node interaction affordance missing ${JSON.stringify(attack)}`);
+                    await p.hover('#attackmap .kubam-node');
+                    const hoverStroke=await p.$eval('#attackmap .kubam-node .kubex-card',el=>parseFloat(getComputedStyle(el).strokeWidth));
+                    assert(hoverStroke>=2.7,`hover state not strong enough ${hoverStroke}`);
+                    console.log('KUB_RADAR_BROWSER_SMOKE_OK',JSON.stringify({state:{title:state.title,mediaRadar:state.mediaRadar,attackButton:state.attackButton},attack,hoverStroke}));
                     await p.close();
                     return;
                   }
