@@ -1,9 +1,9 @@
-/* BLIS Navigator - Black Sea Center Key Factors globe v2.
-   Client-specific verified-data owner for Environment/Market.
-   Renders a real interactive globe immediately and never shows synthetic zero values. */
+/* BLIS Navigator - Black Sea Center Key Factors globe v3. */
 (function(){
 'use strict';
-if(window.__BLIS_BSC_KEY_FACTORS_GLOBE_V2)return;window.__BLIS_BSC_KEY_FACTORS_GLOBE_V2=true;
+if(window.__BLIS_BSC_KEY_FACTORS_GLOBE_V3)return;
+window.__BLIS_BSC_KEY_FACTORS_GLOBE_V3=true;
+window.__BLIS_BSC_KEY_FACTORS_GLOBE_V2=true;
 const KEY='black-sea-center';
 const isBSC=()=>{try{return new URLSearchParams(location.search).get('client')===KEY||document.body?.dataset?.client===KEY||window.BLIS_INITIAL_CLIENT===KEY}catch(_){return false}};
 if(!isBSC())return;
@@ -19,10 +19,10 @@ const F=[
 ];
 const L=[['mentions','news'],['mentions','tenant'],['mentions','space'],['mentions','offices'],['news','space'],['space','parking'],['space','offices'],['offices','fitness'],['fitness','kids'],['kids','tenant'],['tenant','mentions']];
 const color={search:'#2979ff',social:'#7b61ff',reviews:'#f3a43b',content:'#20a77a',behavior:'#df5f8b'};
-let painting=false;
+let raf=0;
 function route(){const r=document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';return r==='environment'?'market':r}
-function css(){if(document.getElementById('bscGlobeV2Css'))return;const s=document.createElement('style');s.id='bscGlobeV2Css';s.textContent=`
-#marketBody .bsc-globe-v2{border:1px solid #dfe7ee;border-radius:16px;background:#fff;padding:12px 14px 14px;box-shadow:0 8px 24px rgba(28,60,92,.04)}
+function css(){if(document.getElementById('bscGlobeV3Css'))return;const s=document.createElement('style');s.id='bscGlobeV3Css';s.textContent=`
+#marketBody .bsc-globe-v3{border:1px solid #dfe7ee;border-radius:16px;background:#fff;padding:12px 14px 14px;box-shadow:0 8px 24px rgba(28,60,92,.04)}
 #marketBody .bsc-g-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}#marketBody .bsc-g-head h2{margin:0;color:#173e62;font-size:24px;letter-spacing:-.03em}#marketBody .bsc-g-head p{margin:4px 0 0;color:#74899d;font-size:9px}#marketBody .bsc-g-badge{border:1px solid #dbe5ed;border-radius:999px;padding:6px 9px;color:#4b6f8c;font-size:8px;font-weight:850;background:#fff;white-space:nowrap}
 #marketBody .bsc-g-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 9px}#marketBody .bsc-g-kpi{border:1px solid #e1e8ee;border-radius:11px;padding:8px 10px;background:#fbfdff}#marketBody .bsc-g-kpi span{display:block;color:#8394a3;font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}#marketBody .bsc-g-kpi b{display:block;margin-top:4px;color:#31516e;font-size:14px}
 #marketBody .pm-stage.bsc-stage{height:470px;min-height:470px;position:relative;overflow:hidden;border:1px solid #e2e9ef;border-radius:15px;background:radial-gradient(circle at 50% 48%,rgba(54,110,170,.10),rgba(54,110,170,.02) 42%,transparent 70%),linear-gradient(180deg,#fbfdff,#f7fbff);cursor:grab}#marketBody .pm-stage.bsc-stage.pm-globe-drag{cursor:grabbing}
@@ -33,19 +33,17 @@ function css(){if(document.getElementById('bscGlobeV2Css'))return;const s=docume
 `;document.head.appendChild(s)}
 function node(n){return `<button type="button" class="pm-node" data-node="${n.id}" data-gx="${n.gx}" data-gy="${n.gy}" data-gz="${n.gz}" style="left:50%;top:50%;--node:${color[n.cat]}"><b><i></i>${n.label}</b><small>${n.value}</small></button>`}
 function links(){return L.map(([a,b])=>`<path class="pm-link" data-a="${a}" data-b="${b}" d="M500 295 Q500 250 500 295"></path>`).join('')}
-function paint(){
- if(painting||!isBSC()||route()!=='market')return;const root=document.getElementById('marketBody');if(!root)return;
- painting=true;try{
-  css();
-  root.innerHTML=`<section class="bsc-globe-v2"><div class="bsc-g-head"><div><h2>Ключови фактори</h2><p>Проверими фактори и връзки за Black Sea Center, базирани на наличните данни в клиентския профил.</p></div><span class="bsc-g-badge">30-дневна база</span></div><div class="bsc-g-kpis"><div class="bsc-g-kpi"><span>Публични споменавания</span><b>7</b></div><div class="bsc-g-kpi"><span>Медийни публикации</span><b>2</b></div><div class="bsc-g-kpi"><span>Prime Real Estate</span><b>65 000 кв.м</b></div><div class="bsc-g-kpi"><span>Паркоместа</span><b>600+</b></div></div><div class="pm-stage network depth bsc-stage"><div class="pm-canvas"><svg class="pm-links" viewBox="0 0 1000 590" preserveAspectRatio="none">${links()}</svg>${F.map(node).join('')}</div></div><div class="bsc-g-foot"><div class="bsc-g-card"><b>Офис площи</b><small>Публично предлагани площи на етажи 3 и 4.</small></div><div class="bsc-g-card"><b>Лайфстайл и услуги</b><small>Pulse Fitness & Spa 5 000 кв.м, детски център 2 500 кв.м и потвърден търговски обект BabyPlanet.</small></div></div></section>`;
-  setTimeout(()=>{try{window.BLISPerceptionGlobe?.apply?.()}catch(_){}},0);
-  setTimeout(()=>{try{window.BLISPerceptionGlobe?.apply?.()}catch(_){}},120);
- }finally{painting=false}
+function render(){
+ if(!isBSC()||route()!=='market')return;
+ const root=document.getElementById('marketBody');if(!root)return;
+ const existing=root.querySelector('[data-bsc-verified-globe="1"]');
+ if(existing){try{window.BLISPerceptionGlobe?.apply?.()}catch(_){}return}
+ css();
+ root.innerHTML=`<section class="bsc-globe-v3" data-bsc-verified-globe="1"><div class="bsc-g-head"><div><h2>Ключови фактори</h2><p>Проверими фактори и връзки за Black Sea Center, базирани на наличните данни в клиентския профил.</p></div><span class="bsc-g-badge">30-дневна база</span></div><div class="bsc-g-kpis"><div class="bsc-g-kpi"><span>Публични споменавания</span><b>7</b></div><div class="bsc-g-kpi"><span>Медийни публикации</span><b>2</b></div><div class="bsc-g-kpi"><span>Prime Real Estate</span><b>65 000 кв.м</b></div><div class="bsc-g-kpi"><span>Паркоместа</span><b>600+</b></div></div><div class="pm-stage network depth bsc-stage"><div class="pm-canvas"><svg class="pm-links" viewBox="0 0 1000 590" preserveAspectRatio="none">${links()}</svg>${F.map(node).join('')}</div></div><div class="bsc-g-foot"><div class="bsc-g-card"><b>Офис площи</b><small>Публично предлагани площи на етажи 3 и 4.</small></div><div class="bsc-g-card"><b>Лайфстайл и услуги</b><small>Pulse Fitness & Spa 5 000 кв.м, детски център 2 500 кв.м и потвърден търговски обект BabyPlanet.</small></div></div></section>`;
+ requestAnimationFrame(()=>{try{window.BLISPerceptionGlobe?.apply?.()}catch(_){}})
 }
-function schedule(){paint();setTimeout(paint,40);setTimeout(paint,180);setTimeout(paint,500)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-['blis:routechange','blis:navigator-route','blis:clientdata','blis:production-ready','blis:intelligence','popstate'].forEach(ev=>window.addEventListener(ev,schedule));
-document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page="market"],#nav [data-n3-page="market"]'))setTimeout(paint,0)},true);
-const rootObserver=new MutationObserver(()=>{if(painting||route()!=='market')return;const r=document.getElementById('marketBody');if(r&&!r.querySelector('.bsc-globe-v2'))requestAnimationFrame(paint)});
-setTimeout(()=>{const r=document.getElementById('marketBody');if(r)rootObserver.observe(r,{childList:true})},600);
+function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render()})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{schedule();setTimeout(schedule,120)},{once:true});else{schedule();setTimeout(schedule,120)}
+['blis:routechange','blis:navigator-route','blis:clientdata','blis:production-ready','popstate'].forEach(ev=>window.addEventListener(ev,schedule));
+document.addEventListener('click',e=>{if(e.target.closest?.('#nav [data-page="market"],#nav [data-n3-page="market"]'))schedule()},true);
 })();
