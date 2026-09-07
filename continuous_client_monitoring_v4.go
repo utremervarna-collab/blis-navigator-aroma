@@ -72,7 +72,7 @@ func runContinuousSignalCycle() {
 
 func liveMetricClient(slug string) bool {
 	switch slug {
-	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet":
+	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet", "varna-towers", "black-sea-center":
 		return true
 	default:
 		return false
