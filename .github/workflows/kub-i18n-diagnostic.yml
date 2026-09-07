@@ -1,0 +1,52 @@
+name: KUB EN RU Localization Diagnostic
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kub-i18n:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Dump KUB EN and RU visible text
+        shell: bash
+        run: |
+          cat > /tmp/kub-i18n-diagnostic.cjs <<'NODE'
+          const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const lang of ['en','ru']){
+                const p=await browser.newPage({viewport:{width:1440,height:1000}});
+                const url=`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&i18n-diagnostic=${Date.now()}`;
+                await p.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
+                await p.waitForTimeout(2500);
+                const buttons=await p.$$eval('#nav button',els=>els.map(e=>({page:e.dataset.page,label:(e.innerText||'').trim()})));
+                console.log(`\n===== KUB ${lang.toUpperCase()} NAV =====`);
+                console.log(JSON.stringify(buttons));
+                for(const b of buttons){
+                  if(!b.page)continue;
+                  await p.click(`#nav button[data-page="${b.page}"]`);
+                  await p.waitForTimeout(500);
+                  const text=await p.$eval(`#${b.page}.active`,el=>(el.innerText||'').replace(/\n{3,}/g,'\n\n').trim());
+                  console.log(`\n----- ${lang.toUpperCase()} PAGE ${b.page} -----\n${text.slice(0,12000)}`);
+                }
+                await p.close();
+              }
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/kub-i18n-diagnostic.cjs
