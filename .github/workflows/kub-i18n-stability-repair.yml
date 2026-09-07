@@ -1,0 +1,61 @@
+name: KUB I18N Stability Repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/kub-i18n-stability-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Make KUB localization observer idempotent
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('static/kub-i18n-full-v1.js')
+          s=p.read_text()
+          old=""" document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x)b.textContent=x});
+ const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x)title.textContent=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x)}
+}
+function enforceAccessibility(){
+ document.querySelectorAll('#attackmap .kubam-node').forEach(n=>{
+  const label=(n.querySelector('.kubam-node-title')?.textContent||'').trim();
+  const suffix=lang==='en'?' — click for details':' — нажмите для подробностей';
+  n.setAttribute('aria-label',(label|| (lang==='en'?'Network node':'Узел сети'))+suffix);
+  const t=n.querySelector(':scope > title');if(t)t.textContent=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;
+ });
+}
+let translating=false;
+function apply(root){if(translating)return;translating=true;try{walk(root||document.body);enforceNav();enforceAccessibility();document.title=lang==='en'?'BLIS Navigator — KUB Corporation · Crisis Monitoring':'BLIS Navigator — Корпорация КУБ · Кризисный мониторинг'}finally{translating=false}}"""
+          new=""" document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x&&b.textContent!==x)b.textContent=x});
+ const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x){const wanted=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x);if(title.textContent!==wanted)title.textContent=wanted}}
+}
+function enforceAccessibility(){
+ document.querySelectorAll('#attackmap .kubam-node').forEach(n=>{
+  const label=(n.querySelector('.kubam-node-title')?.textContent||'').trim();
+  const suffix=lang==='en'?' — click for details':' — нажмите для подробностей';
+  const wanted=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;
+  if(n.getAttribute('aria-label')!==wanted)n.setAttribute('aria-label',wanted);
+  const t=n.querySelector(':scope > title');if(t&&t.textContent!==wanted)t.textContent=wanted;
+ });
+}
+let translating=false;
+function apply(root){if(translating)return;translating=true;try{walk(root||document.body);enforceNav();enforceAccessibility();const wantedTitle=lang==='en'?'BLIS Navigator — KUB Corporation · Crisis Monitoring':'BLIS Navigator — Корпорация КУБ · Кризисный мониторинг';if(document.title!==wantedTitle)document.title=wantedTitle}finally{translating=false}}"""
+          if old not in s:
+              raise SystemExit('target block not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/kub-i18n-full-v1.js
+          git commit -m 'Fix KUB EN RU localization observer loop'
+          git push origin HEAD:main
