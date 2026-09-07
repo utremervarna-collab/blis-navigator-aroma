@@ -50,19 +50,18 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
-			// Keep the isolated KUB client runtime deliberately small. The legacy
-			// monitoring and dynamics scripts competed for the same DOM nodes and
-			// repeatedly restored stale content. The stabilizer owns monitoring and
-			// the force renderer owns the crisis curve.
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260905-direct14"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260905-direct14"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260905-direct14"></script>`
+			// Restored KUB crisis milestone: keep the embedded Media Signal Radar,
+			// pressure/attack network, live network variants, stable navigation and
+			// the current forced crisis dynamics renderer without legacy duplicate owners.
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct15"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct15"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct15"></script>`
 			b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 		}
 
@@ -71,8 +70,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct14")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct14", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct15")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct15", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
