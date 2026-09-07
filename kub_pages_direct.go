@@ -28,7 +28,7 @@ func serveKUBRuntimeJS(file string) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		aliasGuard := []byte(`if(!/^\/kub-(?:crisis\.html|private|live|client)$/i.test(location.pathname))return;`)
+		aliasGuard := []byte(`if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;`)
 		b = bytes.ReplaceAll(b, []byte(`if(!/\/kub-crisis\.html$/i.test(location.pathname))return;`), aliasGuard)
 		b = bytes.ReplaceAll(b, []byte(`if(location.pathname!=='/kub-private')return;`), aliasGuard)
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
@@ -50,18 +50,17 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
-			// Restored KUB crisis milestone: keep the embedded Media Signal Radar,
-			// pressure/attack network, live network variants, stable navigation and
-			// the current forced crisis dynamics renderer without legacy duplicate owners.
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct15"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct15"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct15"></script>`
+			// Isolated KUB crisis runtime. The mobile aliases are served directly
+			// from this handler so they cannot fall through to another client route.
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct16"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct16"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct16"></script>`
 			b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 		}
 
@@ -70,8 +69,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct15")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct15", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct16")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct16", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
@@ -84,6 +83,8 @@ func init() {
 	http.HandleFunc("/kub-client", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-live", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-private", serveKUBHTML("kub-crisis.html", true))
+	http.HandleFunc("/kub-mobile", serveKUBHTML("kub-crisis.html", true))
+	http.HandleFunc("/kub-mobile.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub-home.html", serveKUBHTML("kub-home.html", false))
 	http.HandleFunc("/kub-crisis.html", serveKUBHTML("kub-crisis.html", true))
 	http.HandleFunc("/kub", func(w http.ResponseWriter, r *http.Request) {
