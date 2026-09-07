@@ -50,10 +50,13 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
-			// Keep the direct KUB client shell inside the mobile viewport. The
-			// horizontal client navigation scrolls inside itself instead of
-			// expanding the whole CSS grid beyond the phone width.
-			const mobileLayout = `<style id="kub-mobile-layout-v1">
+			// Keep the direct KUB client shell inside the viewport and keep the
+			// actual pressure map directly under its explanatory heading.
+			const mobileLayout = `<style id="kub-mobile-layout-v2">
+#attackmap .kubam-topgrid-fixed{display:grid!important;grid-template-columns:minmax(0,1.45fr) minmax(280px,.55fr)!important;gap:14px!important;align-items:start!important;margin-bottom:14px!important}
+#attackmap .kubam-topcol{display:grid!important;gap:14px!important;min-width:0!important;max-width:100%!important;align-content:start!important}
+#attackmap .kubam-topcol>.card{min-width:0!important;max-width:100%!important;margin:0!important}
+#attackmap .kubam-topgrid-fixed .kubam-map-card,#attackmap .kubam-topgrid-fixed .kubam-detail{min-width:0!important;max-width:100%!important;margin:0!important}
 @media(max-width:1050px){
  html,body{width:100%;max-width:100%;overflow-x:hidden}
  .app{grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important}
@@ -61,6 +64,7 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
  .side{width:100%!important;overflow:hidden!important}
  .nav{width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
  .nav button{flex:0 0 auto!important}
+ #attackmap .kubam-topgrid-fixed{grid-template-columns:minmax(0,1fr)!important}
 }
 @media(max-width:700px){
  #attackmap,#attackmap .kubam-hero,#attackmap .kubam-grid,#attackmap .kubam-lower,#attackmap .kubam-map-card,#attackmap .kubam-detail{min-width:0!important;max-width:100%!important}
@@ -72,15 +76,57 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 
 			// Isolated KUB crisis runtime. The mobile aliases are served directly
 			// from this handler so they cannot fall through to another client route.
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct16"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct16"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct16"></script>`
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct17"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct17"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct17"></script>
+<script>
+(function(){
+ function placeKUBMap(){
+  var page=document.getElementById('attackmap');
+  if(!page||page.dataset.kubPlacement==='1')return !!page;
+  var hero=page.querySelector('.kubam-hero');
+  var grid=page.querySelector('.kubam-grid');
+  var map=page.querySelector('.kubam-map-card');
+  var detail=page.querySelector('.kubam-detail');
+  if(!hero||!grid||!map||!detail||hero.children.length<2)return false;
+  var intro=hero.children[0];
+  var proof=hero.children[1];
+  var shell=document.createElement('div');
+  var left=document.createElement('div');
+  var right=document.createElement('div');
+  shell.className='kubam-hero kubam-topgrid-fixed';
+  left.className='kubam-topcol kubam-topcol-left';
+  right.className='kubam-topcol kubam-topcol-right';
+  hero.parentNode.insertBefore(shell,hero);
+  left.appendChild(intro);
+  left.appendChild(map);
+  right.appendChild(proof);
+  right.appendChild(detail);
+  shell.appendChild(left);
+  shell.appendChild(right);
+  hero.remove();
+  grid.remove();
+  page.dataset.kubPlacement='1';
+  page.classList.add('kub-layout-fixed');
+  return true;
+ }
+ function bootPlacement(){
+  if(placeKUBMap())return;
+  var tries=0;
+  var timer=setInterval(function(){
+   tries++;
+   if(placeKUBMap()||tries>80)clearInterval(timer);
+  },100);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootPlacement,{once:true});else bootPlacement();
+})();
+</script>`
 			b = bytes.Replace(b, []byte("</body>"), []byte(runtime+"\n</body>"), 1)
 		}
 
@@ -89,8 +135,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct16")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct16", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct17")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct17", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
