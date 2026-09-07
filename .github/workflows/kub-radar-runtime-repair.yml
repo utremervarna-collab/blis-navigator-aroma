@@ -1,0 +1,55 @@
+name: KUB Radar Runtime Repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'Install KUB radar runtime repair'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Make every KUB runtime alias-safe
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('static')
+          replacements = {
+              "if(!/\\/kub-crisis\\.html$/i.test(location.pathname))return;": "if(!/^\\/kub-(?:crisis\\.html|private|live|client|mobile(?:\\.html)?)$/i.test(location.pathname))return;",
+              "if(location.pathname!=='/kub-private')return;": "if(!/^\\/kub-(?:crisis\\.html|private|live|client|mobile(?:\\.html)?)$/i.test(location.pathname))return;",
+              "if(!/^\\/kub-(?:crisis\\.html|private|live|client)$/.test(path))return;": "if(!/^\\/kub-(?:crisis\\.html|private|live|client|mobile(?:\\.html)?)$/.test(path))return;",
+          }
+          changed=[]
+          for p in sorted(root.glob('kub-*.js')):
+              s=p.read_text(encoding='utf-8')
+              old=s
+              for a,b in replacements.items():
+                  s=s.replace(a,b)
+              if s!=old:
+                  p.write_text(s,encoding='utf-8')
+                  changed.append(str(p))
+          print('Changed:', *changed, sep='\n- ')
+          required=[root/'kub-attack-map-v1.js',root/'kub-attack-map-live-v1.js',root/'kub-attack-map-executive-v1.js',root/'kub-attack-map-white3d-v1.js']
+          for p in required:
+              s=p.read_text(encoding='utf-8')
+              assert 'client|mobile' in s, f'alias repair missing in {p}'
+          PY
+      - name: Commit repaired KUB runtime
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/kub-*.js
+          git commit -m 'Fix KUB radar runtime aliases'
+          git push origin HEAD:main
