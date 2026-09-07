@@ -20,6 +20,7 @@ var kubRuntimeFiles = map[string]string{
 	"/kub-attack-map-executive-v1.js":     "kub-attack-map-executive-v1.js",
 	"/kub-attack-map-white3d-v1.js":       "kub-attack-map-white3d-v1.js",
 	"/kub-attack-map-premium-v1.js":       "kub-attack-map-premium-v1.js",
+	"/kub-dom-idempotency-v1.js":          "kub-dom-idempotency-v1.js",
 	"/kub-i18n-full-v1.js":                 "kub-i18n-full-v1.js",
 }
 
@@ -74,17 +75,18 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 </style>`
 			b = bytes.Replace(b, []byte("</head>"), []byte(mobileLayout+"\n</head>"), 1)
 
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct19"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-attack-map-premium-v1.js?v=20260907-direct19"></script>
-<script defer src="/kub-i18n-full-v1.js?v=20260907-direct19"></script>
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct20"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-crisis-ru-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-attack-map-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-attack-map-premium-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-dom-idempotency-v1.js?v=20260907-direct20"></script>
+<script defer src="/kub-i18n-full-v1.js?v=20260907-direct20"></script>
 <script>
 (function(){
  function placeKUBMap(){
@@ -135,8 +137,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct19")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct19", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct20")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct20", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
