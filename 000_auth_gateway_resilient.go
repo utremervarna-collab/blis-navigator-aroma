@@ -108,11 +108,21 @@ func ensureOwnerDashboardSession(w http.ResponseWriter, r *http.Request) bool {
 }
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	if path == "/black-sea-center" || path == "/black-sea-center/" || path == "/black-sea-center-home.html" {
+	if path == "/black-sea-center" || path == "/black-sea-center/" {
 		clearPublicDemoCookie(w, r)
+		clearLegacyClientRememberCookie(w, r)
 		if !ensureOwnerDashboardSession(w, r) { return }
 		setBscScopeCookie(w, r)
-		r2 := r.Clone(r.Context()); r2.URL.Path = "/black-sea-center-home.html"; r2.URL.RawQuery = ""; authProxy.ServeHTTP(w, r2); return
+		http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
+		return
+	}
+	if path == "/black-sea-center-home.html" {
+		clearPublicDemoCookie(w, r)
+		clearLegacyClientRememberCookie(w, r)
+		if !ensureOwnerDashboardSession(w, r) { return }
+		setBscScopeCookie(w, r)
+		http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
+		return
 	}
 	if isBscScope(r) {
 		if path == "/api/clients" {
