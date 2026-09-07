@@ -1,9 +1,9 @@
-/* BLIS Navigator: stability compatibility preload v24.
+/* BLIS Navigator: stability compatibility preload v25.
    Loads legacy analytical helpers first, then one canonical client-intelligence owner.
-   No post-render follower or empty-state overlays. */
+   Includes the persistent Environment key-factors title owner. */
 (function(){
 'use strict';
-if(window.__BLISStabilityPreloadV24)return;window.__BLISStabilityPreloadV24=true;
+if(window.__BLISStabilityPreloadV25)return;window.__BLISStabilityPreloadV25=true;
 window.BLISStabilityStats={mode:'event-driven',blockedIntervals:0,blockedTimeouts:0,blockedNavRebuilds:0,blockedNavLabelWrites:0,blockedMarketTextWrites:0,blockedCompetitionTimeouts:0,navRepairs:0,marketRepairs:0};
 document.documentElement.dataset.blisStability='event-driven';
 const c=new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
@@ -12,4 +12,5 @@ if(c==='aroma')add('data-aroma-evidence-repair','/navigator-aroma-evidence-repai
 add('data-client-value-universal','/navigator-client-value-universal-v2.js?v=20260905-clientvalue2');
 add('data-client-value-repair','/navigator-client-value-repair-v3.js?v=20260905-clientvalue3');
 add('data-canonical-intelligence-v5','/navigator-intelligence-canonical-v5.js?v=20260906-canonical5');
+add('data-key-factors-title-lock','/navigator-key-factors-title-lock-v1.js?v=20260907-titlelock1');
 })();
