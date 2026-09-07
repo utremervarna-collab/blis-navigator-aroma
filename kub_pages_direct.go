@@ -50,6 +50,26 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		b = kubDashboardLinkRE.ReplaceAll(b, nil)
 
 		if injectRuntime {
+			// Keep the direct KUB client shell inside the mobile viewport. The
+			// horizontal client navigation scrolls inside itself instead of
+			// expanding the whole CSS grid beyond the phone width.
+			const mobileLayout = `<style id="kub-mobile-layout-v1">
+@media(max-width:1050px){
+ html,body{width:100%;max-width:100%;overflow-x:hidden}
+ .app{grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+ .side,.main,.shell,.nav{min-width:0!important;max-width:100%!important}
+ .side{width:100%!important;overflow:hidden!important}
+ .nav{width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ .nav button{flex:0 0 auto!important}
+}
+@media(max-width:700px){
+ #attackmap,#attackmap .kubam-hero,#attackmap .kubam-grid,#attackmap .kubam-lower,#attackmap .kubam-map-card,#attackmap .kubam-detail{min-width:0!important;max-width:100%!important}
+ #attackmap .kubam-canvas{width:100%!important;max-width:100%!important;min-width:0!important;overflow:hidden!important}
+ #attackmap .kubam-canvas svg{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important}
+}
+</style>`
+			b = bytes.Replace(b, []byte("</head>"), []byte(mobileLayout+"\n</head>"), 1)
+
 			// Isolated KUB crisis runtime. The mobile aliases are served directly
 			// from this handler so they cannot fall through to another client route.
 			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260907-direct16"></script>
