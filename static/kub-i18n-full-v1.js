@@ -76,15 +76,15 @@ function walk(root){
 }
 function enforceNav(){
  const navs={en:{overview:'Overview',monitoring:'Monitoring',environment:'Environment / Narratives',attackmap:'Pressure map',reputation:'Reputation',risks:'Risks',stakeholders:'Stakeholders',evidence:'Evidence',timeline:'Timeline',reports:'Development / Reports',sources:'Sources',settings:'Monitoring settings'},ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}};
- document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x)b.textContent=x});
- const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x)title.textContent=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x)}
+ document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x&&b.textContent!==x)b.textContent=x});
+ const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x){const y=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x);if(title.textContent!==y)title.textContent=y}}
 }
 function enforceAccessibility(){
  document.querySelectorAll('#attackmap .kubam-node').forEach(n=>{
   const label=(n.querySelector('.kubam-node-title')?.textContent||'').trim();
   const suffix=lang==='en'?' — click for details':' — нажмите для подробностей';
-  n.setAttribute('aria-label',(label|| (lang==='en'?'Network node':'Узел сети'))+suffix);
-  const t=n.querySelector(':scope > title');if(t)t.textContent=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;
+  const a=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;if(n.getAttribute('aria-label')!==a)n.setAttribute('aria-label',a);
+  const t=n.querySelector(':scope > title');if(t&&t.textContent!==a)t.textContent=a;
  });
 }
 let translating=false;
