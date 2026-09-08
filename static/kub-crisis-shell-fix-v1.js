@@ -2,8 +2,31 @@
 (function(){
 'use strict';
 if(!/^\/kub-(?:crisis\.html|private|live|client|mobile(?:\.html)?)$/i.test(location.pathname))return;
-const lang=(new URLSearchParams(location.search).get('lang')||'bg').toLowerCase();
+const requested=(new URLSearchParams(location.search).get('lang')||'').toLowerCase();
+let saved='';try{saved=(localStorage.getItem('blis.language.v1')||'').toLowerCase()}catch(_){}
+const lang=['bg','en','ru'].includes(requested)?requested:(['bg','en','ru'].includes(saved)?saved:'bg');
 const homeLabel=lang==='ru'?'← На главную':lang==='en'?'← Back to home':'← Към началната страница';
+
+/* The dynamic KUB map owns its own click-localization. Ignore mutations produced
+   inside that map in generic MutationObservers so translated detail HTML cannot
+   recursively trigger itself and freeze EN/RU navigation. */
+if((lang==='en'||lang==='ru')&&!window.__KUB_SAFE_MUTATION_OBSERVER){
+  window.__KUB_SAFE_MUTATION_OBSERVER=1;
+  const NativeMO=window.MutationObserver;
+  if(NativeMO){
+    window.MutationObserver=function(cb){
+      return new NativeMO(function(records,observer){
+        const kept=records.filter(r=>{
+          const t=r.target&&r.target.nodeType===1?r.target:r.target&&r.target.parentElement;
+          return !(t&&t.closest&&t.closest('#attackmap'));
+        });
+        if(kept.length)cb(kept,observer);
+      });
+    };
+    window.MutationObserver.prototype=NativeMO.prototype;
+  }
+}
+
 function isPaymentsControl(text){
   const t=(text||'').replace(/\s+/g,' ').trim().toLowerCase();
   if(!t)return false;
@@ -21,6 +44,28 @@ function apply(){
     }
   });
 }
-function boot(){apply();setTimeout(apply,180)}
+
+const RES_EN={
+'MEDIA RADAR · ТЕКУЩО СЪСТОЯНИЕ':'MEDIA RADAR · CURRENT STATUS','ТЕКУЩО СЪСТОЯНИЕ':'CURRENT STATUS','КРИЗИСНО НИВО':'CRISIS LEVEL','МЕДИЕН ОДИТ · БАЗА 24 МАТЕРИАЛА':'MEDIA AUDIT · BASE OF 24 ITEMS','ПОКРИТИЕ НА ПОЗИЦИЯТА · ЦЕЛ':'POSITION COVERAGE · TARGET','ДРУГИ ПРОЕКТИ':'OTHER PROJECTS','МЕЖДУНАРОДЕН ОБРАЗ':'INTERNATIONAL IMAGE','КРИТЕРИЙ':'CRITERION','ДИАГНОЗА':'DIAGNOSIS','ПОКАЗАТЕЛ':'INDICATOR','ЧЕСТОТА':'FREQUENCY','ЦЕЛ':'TARGET','ТЕМА':'TOPIC','КАКВО Е УСТАНОВЕНО ПУБЛИЧНО':'WHAT IS PUBLICLY ESTABLISHED','КАКВО ОЗНАЧАВА ЗА НАБЛЮДЕНИЕТО':'WHAT IT MEANS FOR MONITORING','кратък проверим отговор с документ или':'a concise verifiable response with a document or','еднакъв фактологичен стандарт независимо от':'the same factual standard regardless of',
+'Къде е текущият':'Where the current','Радарът':'The radar','Как да се чете':'How to read','Какво е ново':'What is new','Показват се':'Only shown are','Защо е важно':'Why it matters','Следят се':'We monitor','ПОСЛЕДНИ ПОТВЪРДЕНИ':'LATEST VERIFIED','ИЗТОЧНИК ↗':'SOURCE ↗','Корпорация КУБ търси':'KUB Corporation seeks','Конкуриращи се наративи':'Competing narratives','Карта на натиска':'Pressure map','Картата показва':'The map shows','СХОДЯЩ СЕ НАТИСК':'CONVERGENT PRESSURE','Мрежа: произход':'Network: origin','Натисни върху възел':'Click a node','Доказателствена граница':'Evidence boundary','Основен политически':'Primary political','ОСНОВЕН МОТИВ':'PRIMARY MOTIVE','ОСНОВНИ НАРАТИВИ':'MAIN NARRATIVES','Следващи тригери':'Next triggers','Кризисен риск-регистър':'Crisis risk register','Информационна нужда':'Information need','Какво следим:':'What we monitor:','Заповеди за премахване':'Removal orders','Хронология на кризата':'Crisis timeline','Нов съдебен етап':'New judicial stage','Кризисен ситуационен обзор':'Crisis situation overview','Какво реално се е променило':'What has actually changed','Кои теми нарастват':'Which topics are growing','Актуален статус по обект':'Current status by property','Източници и канали':'Sources and channels','Покритие: новини':'Coverage: news','Текущ цикъл на наблюдение':'Current monitoring cycle','Какво се класифицира':'What is classified','Граница на покритието':'Coverage boundary','Оперативен принцип':'Operating principle','Развитие / Доклади':'Development / Reports','Настройки на наблюдението':'Monitoring settings'
+};
+const RES_RU={
+'MEDIA RADAR · ТЕКУЩО СЪСТОЯНИЕ':'МЕДИА-РАДАР · ТЕКУЩЕЕ СОСТОЯНИЕ','ТЕКУЩО СЪСТОЯНИЕ':'ТЕКУЩЕЕ СОСТОЯНИЕ','КРИЗИСНО НИВО':'УРОВЕНЬ КРИЗИСА','МЕДИЕН ОДИТ · БАЗА 24 МАТЕРИАЛА':'МЕДИА-АУДИТ · БАЗА 24 МАТЕРИАЛОВ','ПОКРИТИЕ НА ПОЗИЦИЯТА · ЦЕЛ':'ОХВАТ ПОЗИЦИИ · ЦЕЛЬ','ДРУГИ ПРОЕКТИ':'ДРУГИЕ ПРОЕКТЫ','МЕЖДУНАРОДЕН ОБРАЗ':'МЕЖДУНАРОДНЫЙ ОБРАЗ','КРИТЕРИЙ':'КРИТЕРИЙ','ДИАГНОЗА':'ДИАГНОЗ','ПОКАЗАТЕЛ':'ПОКАЗАТЕЛЬ','ЧЕСТОТА':'ЧАСТОТА','ЦЕЛ':'ЦЕЛЬ','ТЕМА':'ТЕМА','КАКВО Е УСТАНОВЕНО ПУБЛИЧНО':'ЧТО ПУБЛИЧНО УСТАНОВЛЕНО','КАКВО ОЗНАЧАВА ЗА НАБЛЮДЕНИЕТО':'ЧТО ЭТО ОЗНАЧАЕТ ДЛЯ МОНИТОРИНГА','кратък проверим отговор с документ или':'краткий проверяемый ответ с документом или','еднакъв фактологичен стандарт независимо от':'единый фактологический стандарт независимо от',
+'Къде е текущият':'Где сейчас','Радарът':'Радар','Как да се чете':'Как читать','Какво е ново':'Что нового','Показват се':'Показываются','Защо е важно':'Почему это важно','Следят се':'Отслеживаются','ПОСЛЕДНИ ПОТВЪРДЕНИ':'ПОСЛЕДНИЕ ПОДТВЕРЖДЁННЫЕ','ИЗТОЧНИК ↗':'ИСТОЧНИК ↗','Корпорация КУБ търси':'Корпорация КУБ ищет','Конкуриращи се наративи':'Конкурирующие нарративы','Карта на натиска':'Карта давления','Картата показва':'Карта показывает','СХОДЯЩ СЕ НАТИСК':'СХОДЯЩЕЕСЯ ДАВЛЕНИЕ','Мрежа: произход':'Сеть: источник','Натисни върху възел':'Нажмите на узел','Доказателствена граница':'Граница доказательности','Основен политически':'Основной политический','ОСНОВЕН МОТИВ':'ОСНОВНОЙ МОТИВ','ОСНОВНИ НАРАТИВИ':'ОСНОВНЫЕ НАРРАТИВЫ','Следващи тригери':'Следующие триггеры','Кризисен риск-регистър':'Реестр кризисных рисков','Информационна нужда':'Информационная потребность','Какво следим:':'Что отслеживаем:','Заповеди за премахване':'Распоряжения о сносе','Хронология на кризата':'Хронология кризиса','Нов съдебен етап':'Новый судебный этап','Кризисен ситуационен обзор':'Кризисный ситуационный обзор','Какво реално се е променило':'Что реально изменилось','Кои теми нарастват':'Какие темы растут','Актуален статус по обект':'Актуальный статус по объекту','Източници и канали':'Источники и каналы','Покритие: новини':'Охват: новости','Текущ цикъл на наблюдение':'Текущий цикл мониторинга','Какво се класифицира':'Что классифицируется','Граница на покритието':'Граница охвата','Оперативен принцип':'Операционный принцип','Развитие / Доклади':'Развитие / Отчёты','Настройки на наблюдението':'Настройки мониторинга'
+};
+const residues=lang==='en'?RES_EN:lang==='ru'?RES_RU:null;
+function sanitize(){
+  if(!residues||!document.body)return;
+  const entries=Object.entries(residues).sort((a,b)=>b[0].length-a[0].length);
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+  while((n=w.nextNode())){
+    const p=n.parentElement;if(!p||/^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/i.test(p.tagName))continue;
+    let v=n.nodeValue||'',x=v;
+    for(const [from,to] of entries)if(x.includes(from))x=x.split(from).join(to);
+    if(x!==v)n.nodeValue=x;
+  }
+}
+function boot(){apply();sanitize();setTimeout(()=>{apply();sanitize()},180);setTimeout(sanitize,700);setTimeout(sanitize,1600)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+if(residues){document.addEventListener('click',()=>{setTimeout(sanitize,60);setTimeout(sanitize,420)},true);setInterval(sanitize,1200)}
 })();
