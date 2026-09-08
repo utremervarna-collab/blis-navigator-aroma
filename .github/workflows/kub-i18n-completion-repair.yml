@@ -1,0 +1,63 @@
+name: KUB I18N Completion Repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'Install KUB i18n completion repair'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Complete dynamic EN and RU localization
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('static/kub-i18n-full-v1.js')
+          s=p.read_text(encoding='utf-8')
+
+          en="""
+'Картата показва':'The map shows','кой генерира, кой институционално потвърждава и кой усилва':'who generates, who institutionally confirms, and who amplifies','отделните линии около „Баба Алино“. Моделът не приема предварително, че всички участници са част от една организирана операция.':'the individual lines around “Baba Alino”. The model does not assume in advance that all participants are part of a single coordinated operation.',
+'Основен мотив / функция':'Primary motive / function','Тригери':'Triggers','Основни наративи':'Main narratives','Доказателствен статус':'Evidence status','Усилватели':'Amplifiers','Институционално потвърждение':'Institutional confirmation','Контранаратив / действие':'Counter-narrative / action','Произход:':'Origin:',
+'Контролни институции + медийно рамкиране':'Control institutions + media framing','Политическа рамка – „Възраждане“':'Political framing – Vazrazhdane','Политически и разследващ дискурс':'Political and investigative discourse','Местен политически конфликт':'Local political conflict','Купувачи, жители и адвокати':'Buyers, residents and lawyers','Политически твърдения + разследващи публикации':'Political claims + investigative publications',
+'Политически актьор':'Political actor','Институционален актьор':'Institutional actor','Медиен актьор':'Media actor','Заинтересована страна':'Stakeholder','АКТЬОР':'ACTOR','Възраждане':'Vazrazhdane','Община Варна':'Varna Municipality','Прокуратура / МРРБ / съд':'Prosecution / MRDPW / court','Национални и местни медии':'National and local media','Купувачи / адвокати / жители':'Buyers / lawyers / residents','БАБА АЛИНО':'BABA ALINO',
+"""
+          ru="""
+'Картата показва':'Карта показывает','кой генерира, кой институционално потвърждава и кой усилва':'кто генерирует, кто институционально подтверждает и кто усиливает','отделните линии около „Баба Алино“. Моделът не приема предварително, че всички участници са част от една организирана операция.':'отдельные линии вокруг «Баба Алино». Модель не предполагает заранее, что все участники являются частью одной организованной операции.',
+'Основен мотив / функция':'Основной мотив / функция','Тригери':'Триггеры','Основни наративи':'Основные нарративы','Доказателствен статус':'Доказательный статус','Усилватели':'Усилители','Институционално потвърждение':'Институциональное подтверждение','Контранаратив / действие':'Контрнарратив / действие','Произход:':'Источник:',
+'Контролни институции + медийно рамкиране':'Контрольные институты + медийное фреймирование','Политическа рамка – „Възраждане“':'Политический фрейм — «Возрождение»','Политически и разследващ дискурс':'Политический и расследовательский дискурс','Местен политически конфликт':'Местный политический конфликт','Купувачи, жители и адвокати':'Покупатели, жители и адвокаты','Политически твърдения + разследващи публикации':'Политические утверждения + расследовательские публикации',
+'Политически актьор':'Политический актор','Институционален актьор':'Институциональный актор','Медиен актьор':'Медийный актор','Заинтересована страна':'Заинтересованная сторона','АКТЬОР':'АКТОР','Възраждане':'Возрождение','Община Варна':'Муниципалитет Варны','Прокуратура / МРРБ / съд':'Прокуратура / МРРБ / суд','Национални и местни медии':'Национальные и местные медиа','Купувачи / адвокати / жители':'Покупатели / адвокаты / жители','БАБА АЛИНО':'БАБА АЛИНО',
+"""
+          if "'Картата показва':'The map shows'" not in s:
+              s=s.replace('const EN={\n','const EN={\n'+en,1)
+          if "'Картата показва':'Карта показывает'" not in s:
+              s=s.replace('const RU={\n','const RU={\n'+ru,1)
+
+          old="function boot(){apply(document.body);let queued=false;const mo=new MutationObserver(ms=>{if(translating)return;if(queued)return;queued=true;queueMicrotask(()=>{queued=false;apply(document.body)})});mo.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});setInterval(()=>apply(document.body),1200)}"
+          new="function boot(){apply(document.body);let queued=false;const mo=new MutationObserver(ms=>{if(translating)return;if(queued)return;queued=true;queueMicrotask(()=>{queued=false;apply(document.body)})});mo.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});const reapply=()=>{[0,40,160,420].forEach(ms=>setTimeout(()=>apply(document.body),ms))};document.addEventListener('click',e=>{if(e.target.closest('#nav,.kubam-node,.kubam-filter'))reapply()},true);setInterval(()=>apply(document.body),700)}"
+          if old in s:
+              s=s.replace(old,new,1)
+          elif 'const reapply=()=>{' not in s:
+              raise SystemExit('boot target not found')
+
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit localization completion
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add static/kub-i18n-full-v1.js
+          if git diff --cached --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git commit -m 'Complete KUB dynamic EN RU localization'
+          git push origin HEAD:main
