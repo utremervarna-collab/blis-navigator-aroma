@@ -68,7 +68,7 @@ func runKUBRealtimeCollector() {
 	// Secondary open-web recall catches publisher pages that have not yet reached
 	// the Google News RSS result set.
 	fresh = append(fresh, collectKUBWebSignals()...)
-	fresh = dedupeSignals(fresh)
+	fresh = stabilizeKUBSignalFingerprints(dedupeSignals(fresh))
 	if len(fresh) == 0 {
 		log.Printf("KUB_REALTIME fresh=0 new=0")
 		return
