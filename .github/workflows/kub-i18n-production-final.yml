@@ -1,0 +1,93 @@
+name: KUB EN RU Production Final
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.head_commit.message == 'Verify KUB EN RU production localization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Render production
+        run: sleep 90
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Verify complete KUB localization on live production
+        shell: bash
+        run: |
+          cat > /tmp/kub-i18n-final.cjs <<'NODE'
+          const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
+          const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          const bgMarkers=[
+            'Къде е текущият','Радарът','Как да се чете','Какво е ново','Показват се','Защо е важно','Следят се',
+            'ПОСЛЕДНИ ПОТВЪРДЕНИ','ИЗТОЧНИК ↗','Корпорация КУБ търси','Конкуриращи се наративи',
+            'Карта на натиска','Картата показва','СХОДЯЩ СЕ НАТИСК','Мрежа: произход','Натисни върху възел',
+            'Доказателствена граница','Основен политически','ОСНОВЕН МОТИВ','ОСНОВНИ НАРАТИВИ','Следващи тригери',
+            'Кризисен риск-регистър','Информационна нужда','Какво следим:','Заповеди за премахване','Хронология на кризата',
+            'Нов съдебен етап','Кризисен ситуационен обзор','Какво реално се е променило','Кои теми нарастват',
+            'Актуален статус по обект','Източници и канали','Покритие: новини','Текущ цикъл на наблюдение',
+            'Какво се класифицира','Граница на покритието','Оперативен принцип','Развитие / Доклади','Настройки на наблюдението',
+            'MEDIA RADAR · ТЕКУЩО СЪСТОЯНИЕ','ТЕКУЩО СЪСТОЯНИЕ','КРИЗИСНО НИВО','МЕДИЕН ОДИТ · БАЗА 24 МАТЕРИАЛА',
+            'ПОКРИТИЕ НА ПОЗИЦИЯТА · ЦЕЛ','ДРУГИ ПРОЕКТИ','МЕЖДУНАРОДЕН ОБРАЗ','КРИТЕРИЙ','ДИАГНОЗА','ПОКАЗАТЕЛ','ЧЕСТОТА',
+            'КАКВО Е УСТАНОВЕНО ПУБЛИЧНО','КАКВО ОЗНАЧАВА ЗА НАБЛЮДЕНИЕТО','кратък проверим отговор с документ или','еднакъв фактологичен стандарт независимо от'
+          ];
+          const expected={
+            en:{overview:'Overview',monitoring:'Monitoring',environment:'Environment / Narratives',attackmap:'Pressure map',reputation:'Reputation',risks:'Risks',stakeholders:'Stakeholders',evidence:'Evidence',timeline:'Timeline',reports:'Development / Reports',sources:'Sources',settings:'Monitoring settings'},
+            ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}
+          };
+          function residue(text){return bgMarkers.filter(x=>text.includes(x));}
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const lang of ['en','ru']){
+                const p=await browser.newPage({viewport:{width:1440,height:1000}});
+                const url=`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&final=${Date.now()}`;
+                await p.goto(url,{waitUntil:'commit',timeout:30000});
+                await p.waitForSelector('#nav button[data-page="overview"]',{timeout:30000});
+                await p.waitForFunction(l=>window.__KUB_FULL_I18N===l,lang,{timeout:20000});
+                await p.waitForTimeout(2200);
+                const nav=await p.$$eval('#nav button[data-page]',els=>Object.fromEntries(els.map(e=>[e.dataset.page,(e.innerText||'').trim()])));
+                for(const [page,label] of Object.entries(expected[lang])) assert(nav[page]===label,`${lang} nav ${page}: ${nav[page]} != ${label}`);
+                for(const page of Object.keys(expected[lang])){
+                  await p.click(`#nav button[data-page="${page}"]`);
+                  await p.waitForTimeout(500);
+                  const text=await p.$eval(`#${page}.active`,el=>(el.innerText||''));
+                  const bad=residue(text);
+                  assert(!bad.length,`${lang} ${page} Bulgarian residue: ${bad.join(' | ')}`);
+                  assert(!/MOLLOX/i.test(text),`${lang} ${page} contains MOLLOX`);
+                }
+                await p.click('#nav button[data-page="attackmap"]');
+                await p.waitForTimeout(700);
+                const ids=await p.$$eval('#attackmap .kubam-node[data-id]',els=>els.map(e=>e.dataset.id));
+                assert(ids.length===7,`${lang} attack map node count ${ids.length}`);
+                for(const id of ids){
+                  await p.click(`#attackmap .kubam-node[data-id="${id}"]`);
+                  await p.waitForTimeout(350);
+                  const text=await p.$eval('#kubamDetail',el=>(el.innerText||''));
+                  const bad=residue(text);
+                  assert(!bad.length,`${lang} actor ${id} Bulgarian residue: ${bad.join(' | ')}`);
+                  const aria=await p.getAttribute(`#attackmap .kubam-node[data-id="${id}"]`,'aria-label')||'';
+                  assert(lang==='en'?aria.includes('click for details'):aria.includes('нажмите для подробностей'),`${lang} actor ${id} aria not localized: ${aria}`);
+                }
+                await p.setViewportSize({width:390,height:844});
+                await p.waitForTimeout(400);
+                const overflow=await p.evaluate(()=>Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth));
+                assert(overflow<=24,`${lang} mobile overflow ${overflow}px`);
+                console.log(`KUB ${lang.toUpperCase()} PASS: 12 sections, 7 nodes, overflow ${overflow}px`);
+                await p.close();
+              }
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/kub-i18n-final.cjs
