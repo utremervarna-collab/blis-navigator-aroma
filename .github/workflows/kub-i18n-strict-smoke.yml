@@ -45,7 +45,10 @@ jobs:
             en:{overview:'Overview',monitoring:'Monitoring',environment:'Environment / Narratives',attackmap:'Pressure map',reputation:'Reputation',risks:'Risks',stakeholders:'Stakeholders',evidence:'Evidence',timeline:'Timeline',reports:'Development / Reports',sources:'Sources',settings:'Monitoring settings'},
             ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}
           };
-          const residue=text=>bgMarkers.filter(x=>text.includes(x));
+          const residue=(text,lang)=>bgMarkers.filter(x=>{
+            if(lang==='ru'&&x==='ПОКАЗАТЕЛ')return /(^|[\s:;,.!?()])ПОКАЗАТЕЛ(?=$|[\s:;,.!?()])/m.test(text);
+            return text.includes(x);
+          });
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -61,14 +64,14 @@ jobs:
                 for(const [page,label] of Object.entries(expected[lang]))assert(nav[page]===label,`${lang} nav ${page}: ${nav[page]} != ${label}`);
                 for(const page of Object.keys(expected[lang])){
                   await p.click(`#nav button[data-page="${page}"]`);await p.waitForTimeout(300);
-                  const text=await p.$eval(`#${page}.active`,el=>el.innerText||'');const bad=residue(text);
+                  const text=await p.$eval(`#${page}.active`,el=>el.innerText||'');const bad=residue(text,lang);
                   assert(!bad.length,`${lang} ${page} Bulgarian residue: ${bad.join(' | ')}`);assert(!/MOLLOX/i.test(text),`${lang} ${page} contains MOLLOX`);
                 }
                 await p.click('#nav button[data-page="attackmap"]');await p.waitForTimeout(400);
                 const ids=await p.$$eval('#attackmap .kubam-node[data-id]',els=>els.map(e=>e.dataset.id));assert(ids.length===7,`${lang} node count ${ids.length}`);
                 for(const id of ids){
                   await p.click(`#attackmap .kubam-node[data-id="${id}"]`);await p.waitForTimeout(200);
-                  const text=await p.$eval('#kubamDetail',el=>el.innerText||'');const bad=residue(text);assert(!bad.length,`${lang} ${id} Bulgarian residue: ${bad.join(' | ')}`);
+                  const text=await p.$eval('#kubamDetail',el=>el.innerText||'');const bad=residue(text,lang);assert(!bad.length,`${lang} ${id} Bulgarian residue: ${bad.join(' | ')}`);
                   const aria=await p.getAttribute(`#attackmap .kubam-node[data-id="${id}"]`,'aria-label')||'';assert(lang==='en'?aria.includes('click for details'):aria.includes('нажмите для подробностей'),`${lang} ${id} aria: ${aria}`);
                 }
                 await p.setViewportSize({width:390,height:844});await p.waitForTimeout(300);
