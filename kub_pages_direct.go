@@ -77,20 +77,28 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 </style>`
 			b = bytes.Replace(b, []byte("</head>"), []byte(mobileLayout+"\n</head>"), 1)
 
-			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260908-direct22"></script>
-<script defer src="/kub-crisis-shell-fix-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-crisis-ru-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-attack-map-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-attack-map-live-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-attack-map-executive-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-attack-map-white3d-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-client-stabilizer-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-attack-map-premium-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-dom-idempotency-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-i18n-full-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-i18n-polish-v1.js?v=20260908-direct22"></script>
-<script defer src="/kub-i18n-final-fragments-v1.js?v=20260908-direct22"></script>
+			const runtime = `<script defer src="/kub-client-content-v4.js?v=20260908-direct23"></script>
+<script defer src="/kub-crisis-shell-fix-v1.js?v=20260908-direct23"></script>
+<script>
+(function(){
+ var q=new URLSearchParams(location.search),lang=(q.get('lang')||'').toLowerCase();
+ if(!['en','ru'].includes(lang)){try{lang=(localStorage.getItem('blis.language.v1')||'').toLowerCase()}catch(_){}}
+ if(!['en','ru'].includes(lang))return;
+ function loadLegacyLanguage(){var s=document.createElement('script');s.src='/kub-crisis-ru-v1.js?v=20260908-direct23';s.async=true;document.body.appendChild(s)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(loadLegacyLanguage,120)},{once:true});else setTimeout(loadLegacyLanguage,120);
+})();
+</script>
+<script defer src="/kub-attack-map-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-attack-map-live-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-attack-map-executive-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-attack-map-white3d-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-client-stabilizer-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-crisis-dynamics-force-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-attack-map-premium-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-dom-idempotency-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-i18n-full-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-i18n-polish-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-i18n-final-fragments-v1.js?v=20260908-direct23"></script>
 <script>
 (function(){
  function placeKUBMap(){
@@ -141,8 +149,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct22")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct22", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct23")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct23", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
