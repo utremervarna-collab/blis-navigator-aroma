@@ -46,6 +46,7 @@ jobs:
             ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}
           };
           const residue=(text,lang)=>bgMarkers.filter(x=>{
+            if(lang==='ru'&&x==='КРИТЕРИЙ')return false;
             if(lang==='ru'&&x==='ПОКАЗАТЕЛ')return /(^|[\s:;,.!?()])ПОКАЗАТЕЛ(?=$|[\s:;,.!?()])/m.test(text);
             return text.includes(x);
           });
