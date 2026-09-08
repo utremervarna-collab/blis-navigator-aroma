@@ -9,29 +9,21 @@ permissions:
 
 jobs:
   repair:
-    if: contains(github.event.head_commit.message, 'Trigger KUB i18n loop fix')
+    if: contains(github.event.head_commit.message, 'Trigger KUB i18n observer fix')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Make localization writes idempotent
+      - name: Stop self-triggering localization observer
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('static/kub-i18n-full-v1.js')
           s=p.read_text()
-          old="document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x)b.textContent=x});"
-          new="document.querySelectorAll('#nav button[data-page]').forEach(b=>{const x=navs[lang][b.dataset.page];if(x&&b.textContent!==x)b.textContent=x});"
-          assert old in s, 'nav assignment not found'
-          s=s.replace(old,new,1)
-          old="const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x)title.textContent=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x)}"
-          new="const active=document.querySelector('#nav button.active[data-page]');const title=document.getElementById('pageTitle');if(active&&title){const x=navs[lang][active.dataset.page];if(x){const y=x==='Overview'?'Crisis overview':(lang==='ru'&&active.dataset.page==='overview'?'Кризисный обзор':x);if(title.textContent!==y)title.textContent=y}}"
-          assert old in s, 'page title assignment not found'
-          s=s.replace(old,new,1)
-          old="n.setAttribute('aria-label',(label|| (lang==='en'?'Network node':'Узел сети'))+suffix);\n  const t=n.querySelector(':scope > title');if(t)t.textContent=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;"
-          new="const a=(label|| (lang==='en'?'Network node':'Узел сети'))+suffix;if(n.getAttribute('aria-label')!==a)n.setAttribute('aria-label',a);\n  const t=n.querySelector(':scope > title');if(t&&t.textContent!==a)t.textContent=a;"
-          assert old in s, 'accessibility assignment not found'
+          old="mo.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});setInterval(()=>apply(document.body),1200)"
+          new="mo.observe(document.body,{subtree:true,childList:true});setInterval(()=>apply(document.body),1200)"
+          assert old in s, 'observer configuration not found'
           s=s.replace(old,new,1)
           p.write_text(s)
           PY
@@ -41,5 +33,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add static/kub-i18n-full-v1.js
           git diff --cached --quiet && exit 0
-          git commit -m "Fix KUB EN RU localization mutation loop"
+          git commit -m "Stop KUB EN RU localization observer feedback"
           git push origin main
