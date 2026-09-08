@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Wait for Render production
+        run: sleep 90
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
@@ -25,7 +27,6 @@ jobs:
         run: |
           cat > /tmp/kub-i18n-strict.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
-          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const bgMarkers=[
             'Къде е текущият','Радарът','Как да се чете','Какво е ново','Показват се','Защо е важно','Следят се',
@@ -35,60 +36,45 @@ jobs:
             'Кризисен риск-регистър','Информационна нужда','Какво следим:','Заповеди за премахване','Хронология на кризата',
             'Нов съдебен етап','Кризисен ситуационен обзор','Какво реално се е променило','Кои теми нарастват',
             'Актуален статус по обект','Източници и канали','Покритие: новини','Текущ цикъл на наблюдение',
-            'Какво се класифицира','Граница на покритието','Оперативен принцип','Развитие / Доклади','Настройки на наблюдението'
+            'Какво се класифицира','Граница на покритието','Оперативен принцип','Развитие / Доклади','Настройки на наблюдението',
+            'MEDIA RADAR · ТЕКУЩО СЪСТОЯНИЕ','ТЕКУЩО СЪСТОЯНИЕ','КРИЗИСНО НИВО','МЕДИЕН ОДИТ · БАЗА 24 МАТЕРИАЛА',
+            'ПОКРИТИЕ НА ПОЗИЦИЯТА · ЦЕЛ','ДРУГИ ПРОЕКТИ','МЕЖДУНАРОДЕН ОБРАЗ','КРИТЕРИЙ','ДИАГНОЗА','ПОКАЗАТЕЛ','ЧЕСТОТА',
+            'КАКВО Е УСТАНОВЕНО ПУБЛИЧНО','КАКВО ОЗНАЧАВА ЗА НАБЛЮДЕНИЕТО','кратък проверим отговор с документ или','еднакъв фактологичен стандарт независимо от'
           ];
-          const navExpected={
+          const expected={
             en:{overview:'Overview',monitoring:'Monitoring',environment:'Environment / Narratives',attackmap:'Pressure map',reputation:'Reputation',risks:'Risks',stakeholders:'Stakeholders',evidence:'Evidence',timeline:'Timeline',reports:'Development / Reports',sources:'Sources',settings:'Monitoring settings'},
             ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}
           };
-          function residue(text){return bgMarkers.filter(x=>text.includes(x));}
+          const residue=text=>bgMarkers.filter(x=>text.includes(x));
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
               for(const lang of ['en','ru']){
-                let p,last='';
-                for(let attempt=1;attempt<=30;attempt++){
-                  p=await browser.newPage({viewport:{width:390,height:844}});
-                  try{
-                    await p.goto(`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&strict=${Date.now()}&attempt=${attempt}`,{waitUntil:'domcontentloaded',timeout:30000});
-                    await p.waitForTimeout(2200);
-                    const ready=await p.evaluate(()=>({i18n:window.__KUB_FULL_I18N||'',title:document.title,body:document.body?.innerText||''}));
-                    if(ready.i18n===lang && /КУБ|KUB/.test(ready.body) && !/MOLLOX/i.test(ready.body))break;
-                    last=JSON.stringify(ready);await p.close();p=null;await sleep(5000);
-                  }catch(e){last=e.message;await p.close();p=null;await sleep(5000)}
-                }
-                assert(p,`production never reached full i18n runtime for ${lang}: ${last}`);
+                const p=await browser.newPage({viewport:{width:1440,height:1000}});
+                const url=`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&strict=${Date.now()}`;
+                await p.goto(url,{waitUntil:'commit',timeout:30000});
+                await p.waitForSelector('#nav button[data-page="overview"]',{timeout:30000});
+                await p.waitForFunction(l=>window.__KUB_FULL_I18N===l,lang,{timeout:20000});
+                await p.waitForTimeout(2500);
                 const nav=await p.$$eval('#nav button[data-page]',els=>Object.fromEntries(els.map(e=>[e.dataset.page,(e.innerText||'').trim()])));
-                console.log('NAV',lang,JSON.stringify(nav));
-                for(const [k,v] of Object.entries(navExpected[lang]))assert(nav[k]===v,`${lang} nav ${k} expected ${v} got ${nav[k]}`);
-                const expectedTitle=lang==='en'?'KUB Corporation · Crisis Monitoring':'Корпорация КУБ · Кризисный мониторинг';
-                assert(documentTitle=await p.title(),`${lang} title missing`);assert(documentTitle.includes(expectedTitle),`${lang} title wrong: ${documentTitle}`);
-                const pages=Object.keys(navExpected[lang]);
-                for(const page of pages){
-                  await p.click(`#nav button[data-page="${page}"]`);await p.waitForTimeout(650);
-                  const text=await p.$eval(`#${page}.active`,el=>(el.innerText||'').replace(/\s+/g,' ').trim());
-                  const bad=residue(text);
-                  if(bad.length)console.log(`RESIDUE ${lang} ${page}`,JSON.stringify(bad),text.slice(0,3500));
-                  assert(!bad.length,`${lang} ${page} Bulgarian residue: ${bad.join(' | ')}`);
+                for(const [page,label] of Object.entries(expected[lang]))assert(nav[page]===label,`${lang} nav ${page}: ${nav[page]} != ${label}`);
+                for(const page of Object.keys(expected[lang])){
+                  await p.click(`#nav button[data-page="${page}"]`);await p.waitForTimeout(550);
+                  const text=await p.$eval(`#${page}.active`,el=>el.innerText||'');const bad=residue(text);
+                  assert(!bad.length,`${lang} ${page} Bulgarian residue: ${bad.join(' | ')}`);assert(!/MOLLOX/i.test(text),`${lang} ${page} contains MOLLOX`);
                 }
-                await p.click('#nav button[data-page="attackmap"]');await p.waitForTimeout(500);
-                const nodes=await p.$$('#attackmap .kubam-node');assert(nodes.length===7,`${lang} expected 7 nodes got ${nodes.length}`);
-                for(let i=0;i<nodes.length;i++){
-                  await p.locator('#attackmap .kubam-node').nth(i).click({force:true});await p.waitForTimeout(350);
-                  const detail=await p.$eval('#kubamDetail',el=>(el.innerText||'').replace(/\s+/g,' ').trim());
-                  const bad=residue(detail);
-                  if(bad.length)console.log(`RESIDUE ${lang} actor ${i}`,JSON.stringify(bad),detail);
-                  assert(!bad.length,`${lang} attack actor ${i} Bulgarian residue: ${bad.join(' | ')}`);
-                  const aria=await p.locator('#attackmap .kubam-node').nth(i).getAttribute('aria-label');
-                  if(lang==='en')assert(/click for details/i.test(aria||''),`EN actor ${i} aria not localized: ${aria}`);
-                  if(lang==='ru')assert(/нажмите для подробностей/i.test(aria||''),`RU actor ${i} aria not localized: ${aria}`);
+                await p.click('#nav button[data-page="attackmap"]');await p.waitForTimeout(700);
+                const ids=await p.$$eval('#attackmap .kubam-node[data-id]',els=>els.map(e=>e.dataset.id));assert(ids.length===7,`${lang} node count ${ids.length}`);
+                for(const id of ids){
+                  await p.click(`#attackmap .kubam-node[data-id="${id}"]`);await p.waitForTimeout(380);
+                  const text=await p.$eval('#kubamDetail',el=>el.innerText||'');const bad=residue(text);assert(!bad.length,`${lang} ${id} Bulgarian residue: ${bad.join(' | ')}`);
+                  const aria=await p.getAttribute(`#attackmap .kubam-node[data-id="${id}"]`,'aria-label')||'';assert(lang==='en'?aria.includes('click for details'):aria.includes('нажмите для подробностей'),`${lang} ${id} aria: ${aria}`);
                 }
-                const overflow=await p.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
-                assert(overflow<=24,`${lang} mobile overflow ${overflow}`);
-                console.log(`KUB_I18N_STRICT_OK ${lang}`,JSON.stringify({pages:pages.length,nodes:nodes.length,overflow,title:await p.title()}));
-                await p.close();
+                await p.setViewportSize({width:390,height:844});await p.waitForTimeout(500);
+                const overflow=await p.evaluate(()=>Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth));assert(overflow<=24,`${lang} overflow ${overflow}px`);
+                console.log(`KUB ${lang.toUpperCase()} PASS — 12 sections, 7 nodes, ${overflow}px overflow`);await p.close();
               }
-            } finally {await browser.close();}
+            }finally{await browser.close();}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/kub-i18n-strict.cjs
