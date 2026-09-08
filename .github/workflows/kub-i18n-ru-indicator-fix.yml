@@ -1,0 +1,37 @@
+name: KUB RU Indicator Localization Repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: contains(github.event.head_commit.message, 'Trigger KUB RU indicator fix')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add missing RU indicator label
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('static/kub-i18n-full-v1.js')
+          s=p.read_text()
+          needle='\nconst DICT=lang===\'en\'?EN:RU;'
+          insert="\nRU['ПОКАЗАТЕЛ']='ПОКАЗАТЕЛЬ';\nconst DICT=lang==='en'?EN:RU;"
+          assert needle in s, 'DICT marker not found'
+          s=s.replace(needle,insert,1)
+          p.write_text(s)
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add static/kub-i18n-full-v1.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Translate KUB RU indicator label"
+          git push origin main
