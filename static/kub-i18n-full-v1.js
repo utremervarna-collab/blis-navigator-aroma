@@ -89,6 +89,6 @@ function enforceAccessibility(){
 }
 let translating=false;
 function apply(root){if(translating)return;translating=true;try{walk(root||document.body);enforceNav();enforceAccessibility();document.title=lang==='en'?'BLIS Navigator — KUB Corporation · Crisis Monitoring':'BLIS Navigator — Корпорация КУБ · Кризисный мониторинг'}finally{translating=false}}
-function boot(){apply(document.body);let queued=false;const mo=new MutationObserver(ms=>{if(translating)return;if(queued)return;queued=true;queueMicrotask(()=>{queued=false;apply(document.body)})});mo.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['title','aria-label','placeholder']});setInterval(()=>apply(document.body),1200)}
+function boot(){apply(document.body);let queued=false;const mo=new MutationObserver(ms=>{if(translating)return;if(queued)return;queued=true;queueMicrotask(()=>{queued=false;apply(document.body)})});mo.observe(document.body,{subtree:true,childList:true});setInterval(()=>apply(document.body),1200)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
