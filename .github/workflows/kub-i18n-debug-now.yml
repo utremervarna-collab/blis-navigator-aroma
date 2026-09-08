@@ -1,28 +1,35 @@
-name: KUB I18N Debug Now
+name: KUB I18N Runtime Repair
 on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  debug:
+  repair:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - name: Install Playwright
+          fetch-depth: 0
+      - name: Delay legacy language runtime
+        shell: bash
         run: |
-          npm install --no-save playwright@1.55.0
-          npx playwright install chromium
-      - name: Inspect live EN and RU immediately
-        run: |
-          cat > /tmp/debug.cjs <<'NODE'
-          const { chromium }=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
-          const markers=['Къде е текущият','Радарът','Как да се чете','Какво е ново','Показват се','Защо е важно','Следят се','ПОСЛЕДНИ ПОТВЪРДЕНИ','ИЗТОЧНИК ↗','Корпорация КУБ търси','Конкуриращи се наративи','Карта на натиска','Картата показва','СХОДЯЩ СЕ НАТИСК','Мрежа: произход','Натисни върху възел','Доказателствена граница','Основен политически','ОСНОВЕН МОТИВ','ОСНОВНИ НАРАТИВИ','Следващи тригери','Кризисен риск-регистър','Информационна нужда','Какво следим:','Заповеди за премахване','Хронология на кризата','Нов съдебен етап','Кризисен ситуационен обзор','Какво реално се е променило','Кои теми нарастват','Актуален статус по обект','Източници и канали','Покритие: новини','Текущ цикъл на наблюдение','Какво се класифицира','Граница на покритието','Оперативен принцип','Развитие / Доклади','Настройки на наблюдението','MEDIA RADAR · ТЕКУЩО СЪСТОЯНИЕ','ТЕКУЩО СЪСТОЯНИЕ','КРИЗИСНО НИВО','МЕДИЕН ОДИТ · БАЗА 24 МАТЕРИАЛА','ПОКРИТИЕ НА ПОЗИЦИЯТА · ЦЕЛ','ДРУГИ ПРОЕКТИ','МЕЖДУНАРОДЕН ОБРАЗ','КРИТЕРИЙ','ДИАГНОЗА','ПОКАЗАТЕЛ','ЧЕСТОТА','КАКВО Е УСТАНОВЕНО ПУБЛИЧНО','КАКВО ОЗНАЧАВА ЗА НАБЛЮДЕНИЕТО','кратък проверим отговор с документ или','еднакъв фактологичен стандарт независимо от'];
-          const pages=['overview','monitoring','environment','attackmap','reputation','risks','stakeholders','evidence','timeline','reports','sources','settings'];
-          (async()=>{const b=await chromium.launch({headless:true,args:['--no-sandbox']});let fail=false;for(const lang of ['en','ru']){const p=await b.newPage({viewport:{width:1440,height:1000}});await p.goto(`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&dbg=${Date.now()}`,{waitUntil:'domcontentloaded',timeout:30000});await p.waitForSelector('#nav button[data-page="overview"]',{timeout:20000});await p.waitForTimeout(3500);console.log('FLAGS',lang,await p.evaluate(()=>({full:window.__KUB_FULL_I18N,final:window.__KUB_FINAL_FRAGMENTS})));for(const pg of pages){await p.evaluate(id=>document.querySelector(`#nav button[data-page="${id}"]`)?.click(),pg);await p.waitForTimeout(350);const text=await p.$eval('#'+pg,e=>e.innerText||'');const bad=markers.filter(m=>text.includes(m));console.log(lang,pg,bad.length?('BAD '+bad.join(' | ')):'PASS');if(bad.length)fail=true;}await p.evaluate(()=>document.querySelector('#nav button[data-page="attackmap"]')?.click());await p.waitForTimeout(500);const ids=await p.$$eval('#attackmap .kubam-node[data-id]',els=>els.map(e=>e.dataset.id));console.log(lang,'nodes',ids.length);for(const id of ids){await p.evaluate(x=>document.querySelector(`#attackmap .kubam-node[data-id="${x}"]`)?.dispatchEvent(new MouseEvent('click',{bubbles:true})),id);await p.waitForTimeout(220);const text=await p.$eval('#kubamDetail',e=>e.innerText||'');const bad=markers.filter(m=>text.includes(m));console.log(lang,'node',id,bad.length?('BAD '+bad.join(' | ')):'PASS');if(bad.length)fail=true;}await p.close();}await b.close();if(fail)process.exit(2)})().catch(e=>{console.error(e);process.exit(1)});
-          NODE
-          node /tmp/debug.cjs
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('kub_pages_direct.go')
+          s=p.read_text()
+          old='<script defer src="/kub-crisis-ru-v1.js?v=20260908-direct22"></script>'
+          new='''<script>\n(function(){\n var q=new URLSearchParams(location.search),lang=(q.get('lang')||'').toLowerCase();\n if(!['en','ru'].includes(lang)){try{lang=(localStorage.getItem('blis.language.v1')||'').toLowerCase()}catch(_){}}\n if(!['en','ru'].includes(lang))return;\n function loadLegacyLanguage(){var s=document.createElement('script');s.src='/kub-crisis-ru-v1.js?v=20260908-direct23';s.async=true;document.body.appendChild(s)}\n if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(loadLegacyLanguage,120)},{once:true});else setTimeout(loadLegacyLanguage,120);\n})();\n</script>'''
+          if old not in s:
+              print('already repaired')
+              raise SystemExit(0)
+          s=s.replace(old,new).replace('v=20260908-direct22','v=20260908-direct23').replace('direct22','direct23')
+          p.write_text(s)
+          PY
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add kub_pages_direct.go
+          git commit -m 'Delay legacy KUB language runtime until DOM ready'
+          git push origin HEAD:main
