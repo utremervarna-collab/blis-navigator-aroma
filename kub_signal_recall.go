@@ -97,6 +97,7 @@ func collectKUBWebRecall() []Signal {
 }
 
 func runKUBRecallCollector() {
+	ensureKUBSignalPersistenceClient()
 	fresh := collectKUBNewsRecall()
 	fresh = append(fresh, collectKUBWebRecall()...)
 	fresh = dedupeSignals(fresh)
@@ -105,6 +106,7 @@ func runKUBRecallCollector() {
 	}
 	mergeSignals("kub", fresh)
 	saveSignalStateFile()
+	saveStore()
 }
 
 func init() {
