@@ -3,16 +3,23 @@ name: KUB EN RU Production Final
 on:
   push:
     branches: [main]
+    paths:
+      - 'static/kub-*.html'
+      - 'static/kub-*.js'
+      - 'kub_pages_direct.go'
+      - '000_auth_gateway_resilient.go'
+      - '.github/workflows/kub-i18n-production-final.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
-  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
 
 jobs:
   verify:
-    if: ${{ github.event.head_commit.message == 'Verify KUB EN RU production localization' && vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -20,6 +27,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Wait for exact production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 36); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?i18n-final=1&ts=$(date +%s)" -o /tmp/build.js && grep -q "$MIGRATION_BUILD" /tmp/build.js; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
@@ -48,7 +69,11 @@ jobs:
             en:{overview:'Overview',monitoring:'Monitoring',environment:'Environment / Narratives',attackmap:'Pressure map',reputation:'Reputation',risks:'Risks',stakeholders:'Stakeholders',evidence:'Evidence',timeline:'Timeline',reports:'Development / Reports',sources:'Sources',settings:'Monitoring settings'},
             ru:{overview:'Общий обзор',monitoring:'Мониторинг',environment:'Среда / Нарративы',attackmap:'Карта давления',reputation:'Репутация',risks:'Риски',stakeholders:'Заинтересованные стороны',evidence:'Доказательства',timeline:'Хронология',reports:'Развитие / Отчёты',sources:'Источники',settings:'Настройки мониторинга'}
           };
-          function residue(text){return bgMarkers.filter(x=>text.includes(x));}
+          function residue(text,lang){return bgMarkers.filter(x=>{
+            if(lang==='ru'&&x==='КРИТЕРИЙ')return false;
+            if(lang==='ru'&&x==='ПОКАЗАТЕЛ')return /(^|[\s:;,.!?()])ПОКАЗАТЕЛ(?=$|[\s:;,.!?()])/m.test(text);
+            return text.includes(x);
+          });}
           (async()=>{
             assert(origin,'NAVIGATOR_ORIGIN is empty');
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -66,7 +91,7 @@ jobs:
                   await p.click(`#nav button[data-page="${page}"]`);
                   await p.waitForTimeout(500);
                   const text=await p.$eval(`#${page}.active`,el=>(el.innerText||''));
-                  const bad=residue(text);
+                  const bad=residue(text,lang);
                   assert(!bad.length,`${lang} ${page} Bulgarian residue: ${bad.join(' | ')}`);
                   assert(!/MOLLOX/i.test(text),`${lang} ${page} contains MOLLOX`);
                 }
@@ -78,7 +103,7 @@ jobs:
                   await p.click(`#attackmap .kubam-node[data-id="${id}"]`);
                   await p.waitForTimeout(350);
                   const text=await p.$eval('#kubamDetail',el=>(el.innerText||''));
-                  const bad=residue(text);
+                  const bad=residue(text,lang);
                   assert(!bad.length,`${lang} actor ${id} Bulgarian residue: ${bad.join(' | ')}`);
                   const aria=await p.getAttribute(`#attackmap .kubam-node[data-id="${id}"]`,'aria-label')||'';
                   assert(lang==='en'?aria.includes('click for details'):aria.includes('нажмите для подробностей'),`${lang} actor ${id} aria not localized: ${aria}`);
