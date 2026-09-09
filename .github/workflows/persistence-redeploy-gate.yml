@@ -1,0 +1,81 @@
+name: Production Persistence Restore Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'main.go'
+      - 'data/live_store.json'
+      - '.github/workflows/persistence-redeploy-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+
+jobs:
+  verify-restored-store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build committed persistence floor
+        run: |
+          set -euo pipefail
+          python - <<'PY' > /tmp/floor.json
+          import json
+          d=json.load(open('data/live_store.json',encoding='utf-8'))
+          out={}
+          for slug,c in d.get('clients',{}).items():
+              out[slug]={
+                  'snapshots':len(c.get('snapshots',[])),
+                  'observations':len(c.get('observations',[])),
+              }
+          assert out, 'committed live_store.json has no clients'
+          print(json.dumps(out,sort_keys=True))
+          PY
+          cat /tmp/floor.json
+
+      - name: Wait until production restores at least committed history
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsS --connect-timeout 15 --max-time 60 "$BASE/api/store/export?restore-gate=1&ts=$(date +%s)" -o /tmp/live.json; then
+              if python - <<'PY'
+          import json,sys
+          floor=json.load(open('/tmp/floor.json',encoding='utf-8'))
+          live=json.load(open('/tmp/live.json',encoding='utf-8')).get('clients',{})
+          failures=[]
+          for slug,f in floor.items():
+              c=live.get(slug)
+              if not c:
+                  failures.append(f'{slug}:missing')
+                  continue
+              s=len(c.get('snapshots',[])); o=len(c.get('observations',[]))
+              if s < f['snapshots'] or o < f['observations']:
+                  failures.append(f"{slug}: live=({s},{o}) floor=({f['snapshots']},{f['observations']})")
+          if failures:
+              print('NOT_RESTORED', ' | '.join(failures))
+              sys.exit(1)
+          print('PERSISTENCE_RESTORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in live.items()})
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
+
+      - name: Publish persistence status
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const state='${{ job.status }}'==='success'?'success':'failure';
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-persistence-restore',description:state==='success'?'production restored committed BLIS history':'production persistence restore failed'});
