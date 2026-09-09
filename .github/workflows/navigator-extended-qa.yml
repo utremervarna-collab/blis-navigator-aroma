@@ -39,7 +39,7 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const pages=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const pages=['overview','social','market','competition','history'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
@@ -47,7 +47,7 @@ jobs:
             phase=`ready:${client}:goto`;
             await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
             phase=`ready:${client}:nav`;
-            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===9,null,{timeout:12000});
+            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===5,null,{timeout:12000});
             phase=`ready:${client}:content`;
             await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
             phase=`ready:${client}:data`;
@@ -66,7 +66,7 @@ jobs:
               const p=await browser.newPage({viewport:{width:1440,height:1000}});
               await ready(p,'aroma');
 
-              for(const [legacy,canonical] of [['signals','social'],['timeline','history'],['live','overview']]){
+              for(const [legacy,canonical] of [['signals','social'],['live','social'],['digital','social'],['opportunities','social'],['reputation','market'],['timeline','history'],['reports','history'],['development','history']]){
                 phase=`alias:${legacy}->${canonical}`;
                 await p.evaluate(x=>window.refGo(x),legacy);
                 await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000});
@@ -79,7 +79,7 @@ jobs:
               const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length,logo:document.querySelector('.bch3-logo img')?.getAttribute('src')||''}));
               assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);
               assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);
-              assert(switched.nav===9,'client switch changed nav count');
+              assert(switched.nav===5,'client switch changed nav count');
               assert(switched.logo.startsWith('/client-logos/'),`client switch did not load local Bolyarka logo ${switched.logo}`);
               await p.close();
 
@@ -110,7 +110,7 @@ jobs:
 
                 phase=`mobile:${client}:chrome`;
                 const chrome=await m.evaluate(()=>({nav:document.querySelectorAll('#nav button[data-page]').length,services:!!document.querySelector('[data-blis-commerce-open]'),oldNumbers:[...document.querySelectorAll('.blis-system-step .num')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length}));
-                assert(chrome.nav===9,`${client}/mobile wrong nav count ${chrome.nav}`);
+                assert(chrome.nav===5,`${client}/mobile wrong nav count ${chrome.nav}`);
                 assert(!chrome.services,`${client}/mobile Services leaked`);
                 assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);
                 await m.close();
@@ -127,5 +127,5 @@ jobs:
         with:
           script: |
             const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and 9-page isolation passed':'Extended Navigator QA failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and 5-page isolation passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
