@@ -24,7 +24,7 @@ jobs:
           BASE="${NAVIGATOR_ORIGIN%/}"
           ok=0
           for i in $(seq 1 36); do
-            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/migration-health?kub-route=1&ts=$(date +%s)" -o /tmp/migration.json && grep -q "$MIGRATION_BUILD" /tmp/migration.json; then
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?kub-route=1&ts=$(date +%s)" -o /tmp/migration-build.js && grep -q "$MIGRATION_BUILD" /tmp/migration-build.js; then
               ok=1
               break
             fi
