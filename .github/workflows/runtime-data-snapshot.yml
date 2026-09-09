@@ -1,0 +1,87 @@
+name: Navigator Runtime Data Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'kub_signal_persistence.go'
+      - 'kub_signal_realtime.go'
+      - 'kub_signal_recall.go'
+      - 'runtime_data_restore.go'
+      - '.github/workflows/runtime-data-snapshot.yml'
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: navigator-runtime-data-snapshot
+  cancel-in-progress: true
+
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for durable KUB store in production
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 54); do
+            if curl -fsS --connect-timeout 15 --max-time 60 "$BASE/api/store/export?runtime-snapshot=1&ts=$(date +%s)" -o /tmp/live_store.json; then
+              if python - <<'PY'
+          import json,sys
+          d=json.load(open('/tmp/live_store.json',encoding='utf-8'))
+          clients=d.get('clients',{})
+          for slug in ('aroma','bolyarka','mollox','astor-garden','kub'):
+              if slug not in clients:
+                  print('WAIT_MISSING',slug)
+                  sys.exit(1)
+          kub=clients['kub']
+          sig=[o for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_')]
+          if not sig:
+              print('WAIT_KUB_SIGNAL_OBSERVATIONS')
+              sys.exit(1)
+          print('RUNTIME_SNAPSHOT_READY',{'kub_signal_observations':len(sig),'kub_observations':len(kub.get('observations',[]))})
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: runtime-data
+          fetch-depth: 1
+
+      - name: Commit live store to runtime-data branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p data
+          cp /tmp/live_store.json data/live_store.json
+          python - <<'PY'
+          import json
+          d=json.load(open('data/live_store.json',encoding='utf-8'))
+          kub=d['clients']['kub']
+          n=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
+          assert n>0
+          print('KUB_SIGNAL_SNAPSHOT_COUNT',n)
+          PY
+          git config user.name 'BLIS Runtime Snapshot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add data/live_store.json
+          if git diff --cached --quiet; then
+            echo 'RUNTIME_DATA_UNCHANGED'
+          else
+            git commit -m "runtime: snapshot production store $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push origin HEAD:runtime-data
+          fi
