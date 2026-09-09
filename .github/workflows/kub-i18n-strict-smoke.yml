@@ -3,23 +3,44 @@ name: KUB EN RU Strict Browser Smoke
 on:
   push:
     branches: [main]
+    paths:
+      - 'static/kub-*.html'
+      - 'static/kub-*.js'
+      - 'kub_pages_direct.go'
+      - '000_auth_gateway_resilient.go'
+      - '.github/workflows/kub-i18n-strict-smoke.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
-  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
 
 jobs:
   kub-i18n-strict:
-    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Wait for exact production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 36); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?i18n-strict=1&ts=$(date +%s)" -o /tmp/build.js && grep -q "$MIGRATION_BUILD" /tmp/build.js; then
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
