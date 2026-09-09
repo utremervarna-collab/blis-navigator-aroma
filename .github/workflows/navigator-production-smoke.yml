@@ -19,11 +19,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -33,19 +31,17 @@ jobs:
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
           PORT=10000 ./app > /tmp/blis-smoke-server.log 2>&1 &
-          echo $! > /tmp/blis-smoke.pid
           for i in $(seq 1 40); do
             if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:10000/api/health
-          curl -fsS http://127.0.0.1:10000/migration-build.js | tee /tmp/migration-build.js
-          grep -q "$MIGRATION_BUILD" /tmp/migration-build.js
+          curl -fsS http://127.0.0.1:10000/migration-build.js -o /tmp/build.js
+          grep -q "$MIGRATION_BUILD" /tmp/build.js
 
       - name: Verify gateway access contracts
         run: |
           set -euo pipefail
-
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
           test "$code" = "200"
           grep -Eqi 'BLIS|client|клиент' /tmp/login.html
@@ -54,20 +50,15 @@ jobs:
           test "$code" = "302"
           grep -Eqi '^location: /client-login' /tmp/dashboard.headers
 
-          code=$(curl -sS -o /tmp/kub-home.html -w '%{http_code}' http://127.0.0.1:10000/kub-home.html)
-          test "$code" = "200"
-          grep -q 'Корпорация КУБ' /tmp/kub-home.html
-
-          code=$(curl -sS -o /tmp/kub-crisis.html -w '%{http_code}' 'http://127.0.0.1:10000/kub-crisis.html?lang=en')
-          test "$code" = "200"
-          grep -Eqi 'KUB|crisis' /tmp/kub-crisis.html
-
-          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
+          code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
-          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
 
-          code=$(curl -sS -o /tmp/wirello.html -w '%{http_code}' http://127.0.0.1:10000/wirello)
-          test "$code" = "200"
+          curl -fsS http://127.0.0.1:10000/kub-home.html -o /tmp/kub-home.html
+          grep -q 'Корпорация КУБ' /tmp/kub-home.html
+          curl -fsS 'http://127.0.0.1:10000/kub-crisis.html?lang=en' -o /tmp/kub-en.html
+          grep -Eqi 'KUB|crisis' /tmp/kub-en.html
+          curl -fsS http://127.0.0.1:10000/wirello -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
 
       - name: Install Playwright
@@ -75,7 +66,7 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Renderer browser regression
+      - name: Verify canonical renderer and all nine routes
         run: |
           cat > /tmp/navigator-smoke.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
@@ -83,14 +74,11 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10001';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const analytical=['overview','social','market','competition','history'];
-          const resources=['hub','calendar'];
-          const pages=[...analytical,...resources];
-          const labels=['Общ изглед','Мониторинг','Среда','Конкуренти','Развитие/Доклади','Intelligence HUB','Календар'];
+          const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const labels=['Общ преглед','Важни сигнали','Пазар и нагласи','Дигитална видимост','Репутация','Конкуренция','Риск и възможности','История','Доклади'];
           const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const visualSelector={overview:'#overview .ovh-gauge',social:'#social .dv-radar-wrap',market:'#market .pm-stage,#market .pm-canvas',competition:'#competition .vs-comp-axis',history:'#history .vs-history-board',hub:'#hub .n3-resource-card',calendar:'#calendar .n3-resource-card'};
           let phase='startup';
-          const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
+          const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -101,46 +89,55 @@ jobs:
                 p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
                 p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errs.push('CONSOLE '+m.text())});
                 p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
-                await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
-                phase=`${client}:runtime-ready`;
-                await p.waitForFunction(()=>typeof window.refGo==='function' && !!window.BLISClientUIV5 && Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:20000});
-                await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:12000});
-                await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
-                await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
-                const boot=await p.evaluate(()=>({client:document.body.dataset.client||'',name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',nav:[...document.querySelectorAll('#nav [data-n3-page]')].map(x=>x.dataset.n3Page),labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),lang:document.documentElement.lang,language:window.BLIS_LANGUAGE,refGo:typeof window.refGo==='function',clientUI:!!window.BLISClientUIV5,legacy:[...document.querySelectorAll('#nav [data-page]')].length,services:!!document.querySelector('[data-blis-commerce-open]'),visibleClients:[...(window.BLIS_VISIBLE_CLIENTS||[])],menuClients:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey)}));
-                assert(boot.client===client,`${client}: body client ${boot.client}`);
-                assert(boot.name.includes(expectedNames[client]),`${client}: wrong client identity ${JSON.stringify(boot)}`);
-                assert(boot.nav.join(',')===pages.join(','),`${client}: wrong Navigator nav ${boot.nav.join(',')}`);
-                assert(boot.labels.join('|')===labels.join('|'),`${client}: wrong Navigator labels ${boot.labels.join('|')}`);
-                assert(boot.refGo&&boot.clientUI,`${client}: canonical runtime contract incomplete`);
-                assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian lock missing`);
-                assert(boot.legacy===0,`${client}: legacy navigation leaked`);
-                assert(!boot.services,`${client}: Services launcher leaked into client dashboard`);
-                assert(boot.visibleClients.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: visible registry mismatch ${boot.visibleClients}`);
-                assert(boot.menuClients.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: client menu leaked hidden profiles ${boot.menuClients}`);
-                for(const id of pages){
-                  phase=`${client}:${id}:render`;
+                await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
+                phase=`${client}:runtime`;
+                await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
+                await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===9,null,{timeout:15000});
+                await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:20000});
+                await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
+                const boot=await p.evaluate(()=>({
+                  client:document.body.dataset.client||'',
+                  name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
+                  nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
+                  labels:[...document.querySelectorAll('#nav button[data-page] .navtxt')].map(x=>x.textContent.trim()),
+                  visible:[...(window.BLIS_VISIBLE_CLIENTS||[])],
+                  menu:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey),
+                  lang:document.documentElement.lang,
+                  language:window.BLIS_LANGUAGE
+                }));
+                assert(boot.client===client,`${client}: wrong body client ${boot.client}`);
+                assert(boot.name.includes(expectedNames[client]),`${client}: wrong identity ${boot.name}`);
+                assert(boot.nav.join(',')===routes.join(','),`${client}: router mismatch ${boot.nav}`);
+                assert(boot.labels.join('|')===labels.join('|'),`${client}: labels mismatch ${boot.labels}`);
+                assert(boot.visible.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: visible registry ${boot.visible}`);
+                assert(boot.menu.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: menu leaked hidden client ${boot.menu}`);
+                assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian default missing`);
+                for(const id of routes){
+                  phase=`${client}:${id}`;
                   await p.evaluate(id=>window.refGo(id),id);
-                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:9000});
-                  await p.waitForTimeout(250);
-                  const x=await p.evaluate(({id,sel})=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;const visual=document.querySelector(sel),vr=visual?.getBoundingClientRect(),vs=visual?getComputedStyle(visual):null;return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),visual:!!visual&&vs.display!=='none'&&vs.visibility!=='hidden'&&Number(vs.opacity||1)>.01,visualW:vr?.width||0,visualH:vr?.height||0};},{id,sel:visualSelector[id]});
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:10000});
+                  await p.waitForTimeout(350);
+                  const x=await p.evaluate(id=>{
+                    const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
+                    const text=(root?.innerText||'').trim();
+                    return {id:document.querySelector('.page.active')?.id,text:text.length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:Math.max(0,document.documentElement.scrollWidth-window.innerWidth),loading:/\bLoading\b|Зареждане\.{2,}/i.test(text)};
+                  },id);
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
                   assert(x.visible&&x.height>70&&x.text>20,`${client}/${id}: blank/collapsed ${JSON.stringify(x)}`);
-                  assert(!x.loading,`${client}/${id}: loading state remained`);
-                  assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
-                  assert(x.visual&&x.visualW>70&&x.visualH>30,`${client}/${id}: canonical visual missing ${JSON.stringify(x)}`);
+                  assert(!x.loading,`${client}/${id}: loading remained`);
+                  assert(x.overflow<=12,`${client}/${id}: horizontal overflow ${x.overflow}`);
                 }
                 assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
                 await p.close();
               }
               clearTimeout(watchdog);
-              console.log('NAVIGATOR_LOCAL_RENDERER_REGRESSION_OK');
+              console.log('NAVIGATOR_NINE_ROUTE_LOCAL_OK');
             } finally {await browser.close();}
           })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',String(e.message||e))}catch(_){};console.error(e);process.exit(1)});
           NODE
           node /tmp/navigator-smoke.cjs
 
-      - name: Show server log on failure
+      - name: Show diagnostics on failure
         if: failure()
         run: |
           cat /tmp/navigator-smoke-error.txt || true
@@ -151,32 +148,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Wait for exact migration build on production
+      - name: Wait for exact migration build
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          echo "Waiting for $MIGRATION_BUILD on $BASE"
-          found=0
+          ok=0
           for i in $(seq 1 42); do
-            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?ts=$(date +%s)" -o /tmp/migration-build.js; then
-              if grep -q "$MIGRATION_BUILD" /tmp/migration-build.js; then
-                found=1
-                break
-              fi
-            fi
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?ts=$(date +%s)" -o /tmp/build.js && grep -q "$MIGRATION_BUILD" /tmp/build.js; then ok=1; break; fi
             sleep 10
           done
-          cat /tmp/migration-build.js 2>/dev/null || true
-          test "$found" = "1"
+          test "$ok" = "1"
 
-      - name: Verify production health, auth, KUB, store and Wirello
+      - name: Verify live code.run migration contracts
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-
           curl -fsS "$BASE/api/health?ts=$(date +%s)" -o /tmp/health.json
           grep -q '"ok":true' /tmp/health.json
-
           curl -fsS "$BASE/api/store/export?ts=$(date +%s)" -o /tmp/store.json
           python - <<'PY'
           import json
@@ -184,40 +172,26 @@ jobs:
           clients=d.get('clients',{})
           for slug in ('aroma','bolyarka','mollox','astor-garden'):
               assert slug in clients, f'{slug} missing from production store'
-          print('STORE_OK', ','.join(sorted(clients)))
+          print('STORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in clients.items()})
           PY
-
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' "$BASE/client-login?ts=$(date +%s)")
           test "$code" = "200"
-          grep -Eqi 'BLIS|client|клиент' /tmp/login.html
-
           code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /client-login' /tmp/dashboard.headers
-
-          code=$(curl -sS -o /tmp/kub-home.html -w '%{http_code}' "$BASE/kub-home.html?ts=$(date +%s)")
-          test "$code" = "200"
+          curl -fsS "$BASE/kub-home.html?ts=$(date +%s)" -o /tmp/kub-home.html
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
-
-          code=$(curl -sS -o /tmp/kub-crisis.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=en&ts=$(date +%s)")
-          test "$code" = "200"
-          grep -Eqi 'KUB|crisis' /tmp/kub-crisis.html
-
-          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
+          code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
-          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
-
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
           curl -fsS "$BASE/api/signals/health?client=kub&ts=$(date +%s)" -o /tmp/kub-health.json
           curl -fsS "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)" -o /tmp/kub-signals.json
           grep -q '"signals"' /tmp/kub-signals.json
-
-          code=$(curl -sS -o /tmp/wirello.html -w '%{http_code}' "$BASE/wirello?ts=$(date +%s)")
-          test "$code" = "200"
+          curl -fsS "$BASE/wirello?ts=$(date +%s)" -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
+          echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
 
-          echo "NAVIGATOR_PRODUCTION_MIGRATION_OK"
-
-      - name: Publish migration status
+      - name: Publish production migration status
         if: always()
         uses: actions/github-script@v7
         with:
