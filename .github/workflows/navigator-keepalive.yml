@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/navigator-keepalive.yml'
+      - 'migration_health.go'
   schedule:
     - cron: '2-59/5 * * * *'
   workflow_dispatch:
@@ -17,54 +18,47 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
 
 jobs:
-  origin-preflight:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: Check production origin configuration
-        shell: bash
-        run: |
-          if [ -z "${NAVIGATOR_ORIGIN:-}" ]; then
-            echo 'NAVIGATOR_ORIGIN is not configured. Production availability checks are intentionally disabled until the existing Northflank public origin is set.'
-          else
-            echo 'NAVIGATOR_ORIGIN is configured; production availability checks are enabled.'
-          fi
-
   availability:
-    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
-    needs: origin-preflight
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     steps:
-      - name: Verify Navigator health and KUB signals
+      - name: Verify exact production migration and Navigator health
         shell: bash
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
+          test -n "$BASE"
+          echo "Probing production origin: $BASE"
 
           request() {
             local url="$1"
             local out="$2"
-            curl -L --fail --silent --show-error \
+            curl --fail --silent --show-error \
               --connect-timeout 20 --max-time 90 \
               --retry 4 --retry-delay 4 --retry-all-errors \
               -H 'Accept: application/json' \
               "$url" -o "$out"
           }
 
+          request "$BASE/api/migration-health?probe=1&ts=$(date +%s)" /tmp/migration-health.json
+          cat /tmp/migration-health.json
+          grep -q "$MIGRATION_BUILD" /tmp/migration-health.json
+          grep -q '"storage_writable":true' /tmp/migration-health.json
+          grep -q '"store_present":true' /tmp/migration-health.json
+
           request "$BASE/api/health?probe=1&ts=$(date +%s)" /tmp/app-health.json
-          echo 'Navigator health response:'
           cat /tmp/app-health.json
-          grep -q '"ok"' /tmp/app-health.json
+          grep -q '"ok":true' /tmp/app-health.json
 
           request "$BASE/api/signals/health?client=kub&probe=1&ts=$(date +%s)" /tmp/kub-health.json
-          echo 'KUB signal health response:'
           cat /tmp/kub-health.json
 
           request "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)" /tmp/signals.json
-          echo 'KUB signal response:'
           cat /tmp/signals.json
           grep -q '"signals"' /tmp/signals.json
+
+          echo 'NAVIGATOR_24_7_PRODUCTION_OK'
