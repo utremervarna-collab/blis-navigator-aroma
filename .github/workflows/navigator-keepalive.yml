@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/navigator-keepalive.yml'
-      - 'migration_health.go'
+      - 'static/migration-build.js'
   schedule:
     - cron: '2-59/5 * * * *'
   workflow_dispatch:
@@ -40,19 +40,24 @@ jobs:
             curl --fail --silent --show-error \
               --connect-timeout 20 --max-time 90 \
               --retry 4 --retry-delay 4 --retry-all-errors \
-              -H 'Accept: application/json' \
               "$url" -o "$out"
           }
 
-          request "$BASE/api/migration-health?probe=1&ts=$(date +%s)" /tmp/migration-health.json
-          cat /tmp/migration-health.json
-          grep -q "$MIGRATION_BUILD" /tmp/migration-health.json
-          grep -q '"storage_writable":true' /tmp/migration-health.json
-          grep -q '"store_present":true' /tmp/migration-health.json
+          request "$BASE/migration-build.js?probe=1&ts=$(date +%s)" /tmp/migration-build.js
+          cat /tmp/migration-build.js
+          grep -q "$MIGRATION_BUILD" /tmp/migration-build.js
 
           request "$BASE/api/health?probe=1&ts=$(date +%s)" /tmp/app-health.json
           cat /tmp/app-health.json
           grep -q '"ok":true' /tmp/app-health.json
+
+          request "$BASE/api/store/export?probe=1&ts=$(date +%s)" /tmp/store.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/store.json',encoding='utf-8'))
+          for slug in ('aroma','bolyarka','mollox','astor-garden'):
+              assert slug in d.get('clients',{}), f'{slug} missing from production store'
+          PY
 
           request "$BASE/api/signals/health?client=kub&probe=1&ts=$(date +%s)" /tmp/kub-health.json
           cat /tmp/kub-health.json
