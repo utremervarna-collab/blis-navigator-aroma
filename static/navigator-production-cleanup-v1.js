@@ -4,7 +4,10 @@
 'use strict';
 if(window.__BLIS_PRODUCTION_CLEANUP_V2)return;window.__BLIS_PRODUCTION_CLEANUP_V2=true;
 
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
+// All shared-dashboard clients are valid here, including hidden legacy profiles.
+// Visibility is controlled exclusively by navigator-client-ui.js; this allowlist must
+// never rewrite a valid direct owner route to another client identity.
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello','everbet','black-sea-center']);
 const PAGES=new Set(['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help']);
 
 function currentClient(){
