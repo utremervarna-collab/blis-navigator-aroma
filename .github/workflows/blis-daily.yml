@@ -9,22 +9,38 @@ permissions:
   contents: write
 
 env:
-  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
 
 jobs:
   refresh-and-persist:
-    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
-      - name: Refresh all client profiles on active production
+      - name: Verify active code.run production before refresh
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          test -n "$BASE"
+          curl --fail --silent --show-error \
+            --connect-timeout 20 --max-time 90 \
+            --retry 5 --retry-delay 5 --retry-all-errors \
+            "$BASE/api/migration-health?daily=1&ts=$(date +%s)" \
+            -o /tmp/migration-health.json
+          cat /tmp/migration-health.json
+          grep -q "$MIGRATION_BUILD" /tmp/migration-health.json
+          grep -q '"storage_writable":true' /tmp/migration-health.json
+          grep -q '"store_present":true' /tmp/migration-health.json
+
+      - name: Refresh all persistent client profiles on active production
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           for CLIENT in aroma bolyarka astor-garden mollox; do
             echo "Refreshing $CLIENT"
-            curl --fail --retry 5 --retry-delay 10 --max-time 240 \
+            curl --fail --retry 5 --retry-delay 10 --retry-all-errors --max-time 240 \
               -X POST "$BASE/api/clients/$CLIENT/refresh" \
               -o "/tmp/blis-$CLIENT.json"
             python - <<PY
@@ -41,7 +57,7 @@ jobs:
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           mkdir -p data
-          curl --fail --retry 5 --retry-delay 8 --max-time 120 \
+          curl --fail --retry 5 --retry-delay 8 --retry-all-errors --max-time 120 \
             "$BASE/api/store/export" \
             -o data/live_store.json
           python - <<'PY'
