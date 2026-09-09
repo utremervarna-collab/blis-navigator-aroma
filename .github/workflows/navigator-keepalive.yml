@@ -59,11 +59,18 @@ jobs:
               assert slug in d.get('clients',{}), f'{slug} missing from production store'
           PY
 
-          request "$BASE/api/signals/health?client=kub&probe=1&ts=$(date +%s)" /tmp/kub-health.json
-          cat /tmp/kub-health.json
+          # KUB's crisis surface is reachable, but signal data is intentionally protected.
+          request "$BASE/kub-home.html?probe=1&ts=$(date +%s)" /tmp/kub-home.html
+          grep -q 'Корпорация КУБ' /tmp/kub-home.html
 
-          request "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)" /tmp/signals.json
-          cat /tmp/signals.json
-          grep -q '"signals"' /tmp/signals.json
+          code=$(curl -sS -o /tmp/kub-health.json -w '%{http_code}' \
+            --connect-timeout 20 --max-time 90 \
+            "$BASE/api/signals/health?client=kub&probe=1&ts=$(date +%s)")
+          test "$code" = "401" -o "$code" = "403"
+
+          code=$(curl -sS -o /tmp/signals.json -w '%{http_code}' \
+            --connect-timeout 20 --max-time 90 \
+            "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)")
+          test "$code" = "401" -o "$code" = "403"
 
           echo 'NAVIGATOR_24_7_PRODUCTION_OK'
