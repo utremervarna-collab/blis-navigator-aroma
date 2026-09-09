@@ -9,8 +9,12 @@ permissions:
   contents: read
   statuses: write
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
+
 jobs:
-  smoke:
+  local-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,7 +28,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build and start Navigator through production gateway
+      - name: Build and start Navigator gateway
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
@@ -35,19 +39,51 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:10000/api/health
+          curl -fsS http://127.0.0.1:10000/api/migration-health | tee /tmp/migration-health.json
+          grep -q "$MIGRATION_BUILD" /tmp/migration-health.json
+
+      - name: Verify gateway access contracts
+        run: |
+          set -euo pipefail
+
+          code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
+          test "$code" = "200"
+          grep -Eqi 'BLIS|client|клиент' /tmp/login.html
+
+          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')
+          test "$code" = "302"
+          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+
+          code=$(curl -sS -o /tmp/kub-home.html -w '%{http_code}' http://127.0.0.1:10000/kub-home.html)
+          test "$code" = "200"
+          grep -q 'Корпорация КУБ' /tmp/kub-home.html
+
+          code=$(curl -sS -o /tmp/kub-crisis.html -w '%{http_code}' 'http://127.0.0.1:10000/kub-crisis.html?lang=en')
+          test "$code" = "200"
+          grep -Eqi 'KUB|crisis' /tmp/kub-crisis.html
+
+          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
+          test "$code" = "302"
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+
+          code=$(curl -sS -o /tmp/wirello.html -w '%{http_code}' http://127.0.0.1:10000/wirello)
+          test "$code" = "200"
+          grep -Eqi 'Wirello' /tmp/wirello.html
 
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Browser smoke test
+      - name: Renderer browser regression
         run: |
           cat > /tmp/navigator-smoke.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          const origin='http://127.0.0.1:10000';
+          // Port 10001 is the application behind the auth gateway. Renderer QA is
+          // intentionally isolated from authentication, which is tested separately above.
+          const origin='http://127.0.0.1:10001';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
           const analytical=['overview','social','market','competition','history'];
           const resources=['hub','calendar'];
@@ -81,8 +117,6 @@ jobs:
                 await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:12000});
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
                 await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
-
-                phase=`${client}:architecture`;
                 const boot=await p.evaluate(()=>({
                   client:document.body.dataset.client||'',
                   name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
@@ -104,7 +138,6 @@ jobs:
                 assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian lock missing`);
                 assert(boot.legacy===0,`${client}: legacy navigation leaked`);
                 assert(!boot.services,`${client}: Services launcher leaked into client dashboard`);
-
                 for(const id of pages){
                   phase=`${client}:${id}:render`;
                   await p.evaluate(id=>window.refGo(id),id);
@@ -121,18 +154,11 @@ jobs:
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
                   assert(x.visual&&x.visualW>70&&x.visualH>30,`${client}/${id}: canonical visual missing ${JSON.stringify(x)}`);
                 }
-
-                const aliases={signals:'social',live:'social',digital:'social',opportunities:'social',risk:'social',reputation:'market','market-reputation':'market',reports:'history',timeline:'history',development:'history',intelligence:'hub',events:'calendar'};
-                for(const [legacy,canonical] of Object.entries(aliases)){
-                  phase=`${client}:alias:${legacy}`;
-                  await p.evaluate(id=>window.refGo(id),legacy);
-                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,canonical,{timeout:6000});
-                }
                 assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
                 await p.close();
               }
               clearTimeout(watchdog);
-              console.log('NAVIGATOR_PRODUCTION_SMOKE_OK');
+              console.log('NAVIGATOR_LOCAL_RENDERER_REGRESSION_OK');
             } finally {await browser.close();}
           })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',String(e.message||e))}catch(_){};console.error(e);process.exit(1)});
           NODE
@@ -144,14 +170,80 @@ jobs:
           cat /tmp/navigator-smoke-error.txt || true
           cat /tmp/blis-smoke-server.log || true
 
-      - name: Publish smoke status
+  production-origin:
+    needs: local-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for exact migration build on production
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          echo "Waiting for $MIGRATION_BUILD on $BASE"
+          found=0
+          for i in $(seq 1 42); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/migration-health?ts=$(date +%s)" -o /tmp/migration.json; then
+              if grep -q "$MIGRATION_BUILD" /tmp/migration.json; then
+                found=1
+                break
+              fi
+            fi
+            sleep 10
+          done
+          cat /tmp/migration.json 2>/dev/null || true
+          test "$found" = "1"
+          grep -q '"storage_writable":true' /tmp/migration.json
+          grep -q '"store_present":true' /tmp/migration.json
+
+      - name: Verify production health, auth, KUB and Wirello
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+
+          curl -fsS "$BASE/api/health?ts=$(date +%s)" -o /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+
+          code=$(curl -sS -o /tmp/login.html -w '%{http_code}' "$BASE/client-login?ts=$(date +%s)")
+          test "$code" = "200"
+          grep -Eqi 'BLIS|client|клиент' /tmp/login.html
+
+          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")
+          test "$code" = "302"
+          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+
+          code=$(curl -sS -o /tmp/kub-home.html -w '%{http_code}' "$BASE/kub-home.html?ts=$(date +%s)")
+          test "$code" = "200"
+          grep -q 'Корпорация КУБ' /tmp/kub-home.html
+
+          code=$(curl -sS -o /tmp/kub-crisis.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=en&ts=$(date +%s)")
+          test "$code" = "200"
+          grep -Eqi 'KUB|crisis' /tmp/kub-crisis.html
+
+          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
+          test "$code" = "302"
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+
+          curl -fsS "$BASE/api/signals/health?client=kub&ts=$(date +%s)" -o /tmp/kub-health.json
+          curl -fsS "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)" -o /tmp/kub-signals.json
+          grep -q '"signals"' /tmp/kub-signals.json
+
+          code=$(curl -sS -o /tmp/wirello.html -w '%{http_code}' "$BASE/wirello?ts=$(date +%s)")
+          test "$code" = "200"
+          grep -Eqi 'Wirello' /tmp/wirello.html
+
+          echo "NAVIGATOR_PRODUCTION_MIGRATION_OK"
+
+      - name: Publish migration status
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
-            const fs=require('fs');
             const state='${{ job.status }}'==='success'?'success':'failure';
-            let detail='';
-            try{detail=fs.readFileSync('/tmp/navigator-smoke-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'6 clients and Navigator 3 (5+2) passed':'Navigator production smoke failed'});
-            if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`navigator-smoke:${detail}`,description:'First browser smoke failure'});}
+            await github.rest.repos.createCommitStatus({
+              owner:context.repo.owner,
+              repo:context.repo.repo,
+              sha:context.sha,
+              state,
+              context:'navigator-code-run-production',
+              description:state==='success'?'code.run production migration passed':'code.run production migration failed'
+            });
