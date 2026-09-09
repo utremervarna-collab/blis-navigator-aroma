@@ -27,12 +27,17 @@ jobs:
           curl --fail --silent --show-error \
             --connect-timeout 20 --max-time 90 \
             --retry 5 --retry-delay 5 --retry-all-errors \
-            "$BASE/api/migration-health?daily=1&ts=$(date +%s)" \
-            -o /tmp/migration-health.json
-          cat /tmp/migration-health.json
-          grep -q "$MIGRATION_BUILD" /tmp/migration-health.json
-          grep -q '"storage_writable":true' /tmp/migration-health.json
-          grep -q '"store_present":true' /tmp/migration-health.json
+            "$BASE/migration-build.js?daily=1&ts=$(date +%s)" \
+            -o /tmp/migration-build.js
+          cat /tmp/migration-build.js
+          grep -q "$MIGRATION_BUILD" /tmp/migration-build.js
+          curl --fail --silent --show-error --max-time 90 "$BASE/api/store/export?daily=1&ts=$(date +%s)" -o /tmp/store-before.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/store-before.json',encoding='utf-8'))
+          for slug in ('aroma','bolyarka','astor-garden','mollox'):
+              assert slug in d.get('clients',{}), f'{slug} missing from production store before refresh'
+          PY
 
       - name: Refresh all persistent client profiles on active production
         run: |
@@ -47,27 +52,36 @@ jobs:
           import json
           p='/tmp/blis-$CLIENT.json'
           d=json.load(open(p,encoding='utf-8'))
+          assert d.get('ok') is True, d
           e=d.get('engine',{})
           print('$CLIENT', 'successful=',e.get('successful'), 'failed=',e.get('failed'), 'version=',e.get('version'))
           PY
           done
 
-      - name: Export persistent BLIS store
+      - name: Export and verify persistent BLIS store changed
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           mkdir -p data
           curl --fail --retry 5 --retry-delay 8 --retry-all-errors --max-time 120 \
-            "$BASE/api/store/export" \
+            "$BASE/api/store/export?after-refresh=1&ts=$(date +%s)" \
             -o data/live_store.json
           python - <<'PY'
           import json
-          p='data/live_store.json'
-          d=json.load(open(p,encoding='utf-8'))
-          clients=d.get('clients',{})
+          before=json.load(open('/tmp/store-before.json',encoding='utf-8'))
+          after=json.load(open('data/live_store.json',encoding='utf-8'))
+          bc=before.get('clients',{}); ac=after.get('clients',{})
+          changed=[]
           for slug in ('aroma','bolyarka','astor-garden','mollox'):
-              assert slug in clients, f'{slug} missing from exported store'
-              print(slug, 'snapshots=',len(clients[slug].get('snapshots',[])), 'observations=',len(clients[slug].get('observations',[])))
+              assert slug in ac, f'{slug} missing from exported store'
+              bsn=len(bc.get(slug,{}).get('snapshots',[])); asn=len(ac[slug].get('snapshots',[]))
+              bob=len(bc.get(slug,{}).get('observations',[])); aob=len(ac[slug].get('observations',[]))
+              assert asn >= bsn, f'{slug} snapshot count regressed {bsn}->{asn}'
+              assert aob >= bob, f'{slug} observation count regressed {bob}->{aob}'
+              if asn>bsn or aob>bob: changed.append(slug)
+              print(slug, 'snapshots=',asn, 'observations=',aob)
+          assert changed, 'production refresh returned success but persistent store did not change'
+          print('PERSISTENCE_WRITE_OK', ','.join(changed))
           PY
 
       - name: Commit daily data snapshot
