@@ -9,36 +9,47 @@ permissions:
   contents: read
 
 env:
-  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  MIGRATION_BUILD: code-run-migration-2026-09-09-v1
 
 jobs:
   kub-route:
-    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Verify public KUB client route
+      - name: Verify exact production build and public KUB isolation
         shell: bash
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          url="$BASE/kub-client?smoke=$(date +%s)"
           ok=0
-          code=000
-          for i in $(seq 1 18); do
-            code=$(curl -L -sS --max-time 20 -o /tmp/kub.html -w '%{http_code}' "$url" || true)
-            if [ "$code" = "200" ] && grep -q 'Корпорация КУБ' /tmp/kub.html && ! grep -qi 'MOLLOX' /tmp/kub.html; then
+          for i in $(seq 1 36); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/migration-health?kub-route=1&ts=$(date +%s)" -o /tmp/migration.json && grep -q "$MIGRATION_BUILD" /tmp/migration.json; then
               ok=1
               break
             fi
-            sleep 5
+            sleep 10
           done
+          test "$ok" = "1"
+
+          url="$BASE/kub-client?smoke=$(date +%s)"
+          code=$(curl -sS --max-time 30 -o /tmp/kub.html -w '%{http_code}' "$url")
           echo "ORIGIN=$BASE"
           echo "HTTP=$code"
-          grep -o '<title>[^<]*</title>' /tmp/kub.html || true
-          if [ "$ok" != "1" ]; then
-            echo 'KUB_ROUTE_SMOKE_FAILED'
-            head -c 2000 /tmp/kub.html || true
-            exit 1
-          fi
+          test "$code" = "200"
+          grep -q 'Корпорация КУБ' /tmp/kub.html
+          ! grep -Eqi 'MOLLOX|Varna Towers|Everbet|Aroma Cosmetics' /tmp/kub.html
+
+          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview")
+          test "$code" = "302"
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+
+          code=$(curl -sS -o /tmp/kub-en.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=en")
+          test "$code" = "200"
+          grep -Eqi 'KUB|crisis' /tmp/kub-en.html
+
+          code=$(curl -sS -o /tmp/kub-ru.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=ru")
+          test "$code" = "200"
+          grep -Eqi 'КУБ|криз' /tmp/kub-ru.html
+
           echo 'KUB_ROUTE_SMOKE_OK'
