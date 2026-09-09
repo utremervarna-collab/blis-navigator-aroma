@@ -1,6 +1,10 @@
 name: BLIS Daily Engine v2 Multi-client
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/blis-daily.yml'
   schedule:
     - cron: '30 5 * * *'
   workflow_dispatch:
@@ -37,6 +41,7 @@ jobs:
           d=json.load(open('/tmp/store-before.json',encoding='utf-8'))
           for slug in ('aroma','bolyarka','astor-garden','mollox'):
               assert slug in d.get('clients',{}), f'{slug} missing from production store before refresh'
+          print('STORE_BEFORE', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in d.get('clients',{}).items()})
           PY
 
       - name: Refresh all persistent client profiles on active production
