@@ -8,8 +8,12 @@ on:
 permissions:
   contents: read
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+
 jobs:
   kub-route:
+    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -17,8 +21,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          url="https://blis-navigator-aroma.onrender.com/kub-client?smoke=$(date +%s)"
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          url="$BASE/kub-client?smoke=$(date +%s)"
           ok=0
+          code=000
           for i in $(seq 1 18); do
             code=$(curl -L -sS --max-time 20 -o /tmp/kub.html -w '%{http_code}' "$url" || true)
             if [ "$code" = "200" ] && grep -q 'Корпорация КУБ' /tmp/kub.html && ! grep -qi 'MOLLOX' /tmp/kub.html; then
@@ -27,6 +33,7 @@ jobs:
             fi
             sleep 5
           done
+          echo "ORIGIN=$BASE"
           echo "HTTP=$code"
           grep -o '<title>[^<]*</title>' /tmp/kub.html || true
           if [ "$ok" != "1" ]; then
