@@ -131,6 +131,10 @@ function rerenderCurrent(){
   if(slug()!=='mollox')return;
   const active=document.querySelector('.page.active')?.id||'';
   if(active==='social'){
+    if(window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&typeof window.BLISNavigator3ArchitectureV1?.render==='function'){
+      window.BLISNavigator3ArchitectureV1.render();
+      return;
+    }
     const canonical=renderCanonicalVisual('social');
     if(!canonical){
       try{window.BLISSignalsSystemV3?.render?.()}catch(_){}
