@@ -7,9 +7,12 @@ on:
 permissions:
   contents: read
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+
 jobs:
   verify:
-    if: github.event.head_commit.message == 'Verify KUB EN RU production localization'
+    if: ${{ github.event.head_commit.message == 'Verify KUB EN RU production localization' && vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -17,8 +20,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Wait for Render production
-        run: sleep 90
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
@@ -29,6 +30,7 @@ jobs:
           cat > /tmp/kub-i18n-final.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
+          const origin=String(process.env.NAVIGATOR_ORIGIN||'').replace(/\/+$/,'');
           const bgMarkers=[
             'Къде е текущият','Радарът','Как да се чете','Какво е ново','Показват се','Защо е важно','Следят се',
             'ПОСЛЕДНИ ПОТВЪРДЕНИ','ИЗТОЧНИК ↗','Корпорация КУБ търси','Конкуриращи се наративи',
@@ -48,11 +50,12 @@ jobs:
           };
           function residue(text){return bgMarkers.filter(x=>text.includes(x));}
           (async()=>{
+            assert(origin,'NAVIGATOR_ORIGIN is empty');
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
               for(const lang of ['en','ru']){
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
-                const url=`https://blis-navigator-aroma.onrender.com/kub-client?lang=${lang}&final=${Date.now()}`;
+                const url=`${origin}/kub-client?lang=${lang}&final=${Date.now()}`;
                 await p.goto(url,{waitUntil:'commit',timeout:30000});
                 await p.waitForSelector('#nav button[data-page="overview"]',{timeout:30000});
                 await p.waitForFunction(l=>window.__KUB_FULL_I18N===l,lang,{timeout:20000});
