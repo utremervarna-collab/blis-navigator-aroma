@@ -46,6 +46,8 @@ jobs:
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           ok=0
+          # A successful comparison proves the running container restored the
+          # repository snapshot rather than falling back to seedStore().
           for i in $(seq 1 60); do
             if curl -fsS --connect-timeout 15 --max-time 60 "$BASE/api/store/export?restore-gate=1&ts=$(date +%s)" -o /tmp/live.json; then
               if python - <<'PY'
