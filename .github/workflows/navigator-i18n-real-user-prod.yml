@@ -14,8 +14,12 @@ on:
 permissions:
   contents: read
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+
 jobs:
   real-user-en:
+    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -31,7 +35,7 @@ jobs:
         run: |
           cat >/tmp/real-user-en.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
-          const origin='https://blis-navigator-aroma.onrender.com';
+          const origin=String(process.env.NAVIGATOR_ORIGIN||'').replace(/\/+$/,'');
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];
           const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
           const cyr=/[А-Яа-яЁёЀ-ӿ]/;
@@ -58,6 +62,7 @@ jobs:
             await page.waitForTimeout(1200);
           }
           (async()=>{
+            if(!origin)throw new Error('NAVIGATOR_ORIGIN is empty');
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             for(const route of routes){
               const batch=clients.map(async client=>{
