@@ -1,0 +1,124 @@
+name: Navigator Final Migration Closure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'static/migration-build.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+  FINAL_BUILD: code-run-migration-2026-09-09-final-v2
+
+jobs:
+  closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Read durable floors
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --connect-timeout 20 --max-time 90 \
+            "https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/runtime-data/data/live_store.json?ts=$(date +%s)" \
+            -o /tmp/runtime-floor.json
+          curl -fsSL --connect-timeout 20 --max-time 90 \
+            "https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/data/live_store.json?ts=$(date +%s)" \
+            -o /tmp/main-floor.json
+          python - <<'PY' > /tmp/floors.env
+          import json
+          runtime=json.load(open('/tmp/runtime-floor.json',encoding='utf-8'))
+          main=json.load(open('/tmp/main-floor.json',encoding='utf-8'))
+          rc=runtime.get('clients',{})
+          mc=main.get('clients',{})
+          kub=rc.get('kub')
+          assert kub is not None, 'runtime-data has no KUB persistence record'
+          kub_floor=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
+          assert kub_floor>0, 'runtime-data has no durable KUB signals'
+          for slug in ('aroma','bolyarka','mollox','astor-garden'):
+              assert slug in mc, f'{slug} missing from main durable floor'
+          print(f'KUB_FLOOR={kub_floor}')
+          print('MAIN_FLOOR='+json.dumps({k:{'snapshots':len(v.get('snapshots',[])),'observations':len(v.get('observations',[]))} for k,v in mc.items()},separators=(',',':')))
+          PY
+          cat /tmp/floors.env
+
+      - name: Wait for exact final production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsS --connect-timeout 15 --max-time 45 "$BASE/migration-build.js?final=1&ts=$(date +%s)" -o /tmp/build.js; then
+              if grep -Fq "window.__BLIS_MIGRATION_BUILD__='${FINAL_BUILD}'" /tmp/build.js; then ok=1; break; fi
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
+
+      - name: Prove cold-start runtime-data restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          . /tmp/floors.env
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS --connect-timeout 15 --max-time 45 "$BASE/api/runtime-data/status?final=1&ts=$(date +%s)" -o /tmp/restore.json; then
+              if python - "$KUB_FLOOR" <<'PY'
+          import json,sys
+          floor=int(sys.argv[1])
+          d=json.load(open('/tmp/restore.json',encoding='utf-8'))
+          assert d.get('attempted') is True, d
+          assert d.get('applied') is True, d
+          assert d.get('reason')=='remote_snapshot_applied', d
+          assert int(d.get('kub_signal_observations') or 0)>=floor, (d,floor)
+          print('COLD_START_RESTORE_OK',d)
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 5
+          done
+          test "$ok" = "1"
+
+      - name: Prove full live store and KUB history survived redeploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          . /tmp/floors.env
+          curl -fsS --connect-timeout 15 --max-time 90 "$BASE/api/store/export?final=1&ts=$(date +%s)" -o /tmp/live.json
+          python - "$KUB_FLOOR" "$MAIN_FLOOR" <<'PY'
+          import json,sys
+          kub_floor=int(sys.argv[1]); main_floor=json.loads(sys.argv[2])
+          live=json.load(open('/tmp/live.json',encoding='utf-8')).get('clients',{})
+          for slug,f in main_floor.items():
+              c=live.get(slug)
+              assert c is not None, f'{slug} missing after final redeploy'
+              assert len(c.get('snapshots',[]))>=f['snapshots'], (slug,'snapshots',len(c.get('snapshots',[])),f['snapshots'])
+              assert len(c.get('observations',[]))>=f['observations'], (slug,'observations',len(c.get('observations',[])),f['observations'])
+          kub=live.get('kub')
+          assert kub is not None, 'KUB persistence record missing after final redeploy'
+          n=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
+          assert n>=kub_floor, (n,kub_floor)
+          print('FINAL_STORE_PERSISTENCE_OK',{'kub_signal_observations':n,'floor':kub_floor})
+          PY
+
+          curl -fsS "$BASE/api/health?final=1&ts=$(date +%s)" -o /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+          code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&final=1&ts=$(date +%s)")
+          test "$code" = "401" -o "$code" = "403"
+          echo 'NAVIGATOR_FINAL_MIGRATION_CLOSURE_OK'
+
+      - name: Publish final migration status
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const state='${{ job.status }}'==='success'?'success':'failure';
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-final-migration',description:state==='success'?'full migration closure passed':'full migration closure failed'});
