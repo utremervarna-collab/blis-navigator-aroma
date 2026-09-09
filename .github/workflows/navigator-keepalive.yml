@@ -16,8 +16,22 @@ env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
 
 jobs:
+  origin-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check production origin configuration
+        shell: bash
+        run: |
+          if [ -z "${NAVIGATOR_ORIGIN:-}" ]; then
+            echo 'NAVIGATOR_ORIGIN is not configured. Production availability checks are intentionally disabled until the existing Northflank public origin is set.'
+          else
+            echo 'NAVIGATOR_ORIGIN is configured; production availability checks are enabled.'
+          fi
+
   availability:
     if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
+    needs: origin-preflight
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -50,7 +64,3 @@ jobs:
           echo 'KUB signal response:'
           cat /tmp/signals.json
           grep -q '"signals"' /tmp/signals.json
-
-      - name: Explain disabled probe
-        if: ${{ vars.NAVIGATOR_ORIGIN == '' }}
-        run: echo 'Set repository variable NAVIGATOR_ORIGIN to the active production origin to enable this probe.'
