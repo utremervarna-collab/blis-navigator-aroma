@@ -1,8 +1,8 @@
-/* BLIS Navigator — production cleanup guard v3.
+/* BLIS Navigator — production cleanup guard v4.
    Final event-driven normalization only. No global MutationObserver and no polling. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_CLEANUP_V3)return;window.__BLIS_PRODUCTION_CLEANUP_V3=true;
+if(window.__BLIS_PRODUCTION_CLEANUP_V4)return;window.__BLIS_PRODUCTION_CLEANUP_V4=true;
 
 // The standalone services catalogue owns its own commerce UI. Never strip it there.
 if(location.pathname==='/services.html')return;
@@ -55,8 +55,14 @@ function installCSS(){
 }
 function settle(){installCSS();normalizeNav();normalizeClientState();removeCommerceLeak();suppressDenseMarkers(document)}
 function schedule(){requestAnimationFrame(settle)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.addEventListener('blis:clientdata',schedule);
+function scheduleAfterClientRender(){
+  schedule();
+  // Commerce legacy renderers queue a second animation frame on clientdata.
+  // Re-assert the retired launcher after that bounded render pass, without polling.
+  setTimeout(schedule,180);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleAfterClientRender,{once:true});else scheduleAfterClientRender();
+window.addEventListener('blis:clientdata',scheduleAfterClientRender);
 window.addEventListener('blis:periodchange',schedule);
-document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page],.client-option[data-client-key]'))setTimeout(schedule,0)},true);
+document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page],.client-option[data-client-key]'))scheduleAfterClientRender()},true);
 })();
