@@ -1,8 +1,11 @@
-/* BLIS Navigator — production cleanup guard v2.
+/* BLIS Navigator — production cleanup guard v3.
    Final event-driven normalization only. No global MutationObserver and no polling. */
 (function(){
 'use strict';
-if(window.__BLIS_PRODUCTION_CLEANUP_V2)return;window.__BLIS_PRODUCTION_CLEANUP_V2=true;
+if(window.__BLIS_PRODUCTION_CLEANUP_V3)return;window.__BLIS_PRODUCTION_CLEANUP_V3=true;
+
+// The standalone services catalogue owns its own commerce UI. Never strip it there.
+if(location.pathname==='/services.html')return;
 
 // All shared-dashboard clients are valid here, including hidden legacy profiles.
 // Visibility is controlled exclusively by navigator-client-ui.js; this allowlist must
@@ -30,6 +33,9 @@ function normalizeClientState(){
   try{window.slug=c}catch(_){}
   const sel=document.getElementById('clientSel');if(sel&&sel.value!==c)sel.value=c;
 }
+function removeCommerceLeak(){
+  document.querySelectorAll('#commerce,.blis-commerce-launch,[data-blis-commerce-open]').forEach(x=>x.remove());
+}
 function suppressDenseMarkers(root=document){
   root.querySelectorAll?.('.n15-chartdot,.blis-added-point,.blis-curve-point').forEach(x=>x.remove());
   root.querySelectorAll?.('svg[data-curve-key]').forEach(svg=>{
@@ -41,15 +47,16 @@ function installCSS(){
   if(document.getElementById('blisProductionCleanupCSS'))return;
   const s=document.createElement('style');s.id='blisProductionCleanupCSS';s.textContent=`
     .n15-chartdot,.blis-added-point,.blis-curve-point{display:none!important;pointer-events:none!important}
+    #commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}
     .page{max-width:100%!important;box-sizing:border-box!important}
     .page svg{max-width:100%!important}
     html,body{max-width:100%;overflow-x:hidden}
   `;document.head.appendChild(s);
 }
-function settle(){installCSS();normalizeNav();normalizeClientState();suppressDenseMarkers(document)}
+function settle(){installCSS();normalizeNav();normalizeClientState();removeCommerceLeak();suppressDenseMarkers(document)}
 function schedule(){requestAnimationFrame(settle)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.addEventListener('blis:clientdata',schedule);
 window.addEventListener('blis:periodchange',schedule);
-document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page],.client-option[data-client-key],[data-blis-commerce-open]'))setTimeout(schedule,0)},true);
+document.addEventListener('click',e=>{if(e.target.closest?.('#nav button[data-page],.client-option[data-client-key]'))setTimeout(schedule,0)},true);
 })();
