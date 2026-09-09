@@ -7,8 +7,12 @@ on:
 permissions:
   contents: read
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+
 jobs:
   kub-radars:
+    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -26,10 +30,12 @@ jobs:
           cat > /tmp/kub-radar-smoke.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          const url='https://blis-navigator-aroma.onrender.com/kub-client?radar-smoke='+Date.now();
+          const origin=String(process.env.NAVIGATOR_ORIGIN||'').replace(/\/+$/,'');
+          const url=origin+'/kub-client?radar-smoke='+Date.now();
           const sleep=ms=>new Promise(r=>setTimeout(r,ms));
           const rgbNums=s=>(s.match(/\d+(?:\.\d+)?/g)||[]).slice(0,3).map(Number);
           (async()=>{
+            assert(origin,'NAVIGATOR_ORIGIN is empty');
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
               let last='';
