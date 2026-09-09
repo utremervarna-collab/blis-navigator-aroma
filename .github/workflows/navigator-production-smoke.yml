@@ -99,7 +99,8 @@ jobs:
                   visible:[...(window.BLIS_VISIBLE_CLIENTS||[])],
                   menu:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey),
                   lang:document.documentElement.lang,
-                  language:window.BLIS_LANGUAGE
+                  language:window.BLIS_LANGUAGE,
+                  services:!!document.querySelector('[data-blis-commerce-open],#commerce,.blis-commerce-launch')
                 }));
                 console.log('NAV_RUNTIME',client,JSON.stringify(boot));
                 assert(boot.client===client,`${client}: wrong body client ${boot.client}`);
@@ -109,6 +110,7 @@ jobs:
                 assert(boot.visible.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: visible registry ${boot.visible}`);
                 assert(boot.menu.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: menu leaked hidden client ${boot.menu}`);
                 assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian default missing`);
+                assert(!boot.services,`${client}: Services launcher leaked into Navigator`);
                 for(const id of boot.nav){
                   phase=`${client}:${id}`;
                   await p.evaluate(id=>window.refGo(id),id);
@@ -181,9 +183,14 @@ jobs:
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
-          curl -fsS "$BASE/api/signals/health?client=kub&ts=$(date +%s)" -o /tmp/kub-health.json
-          curl -fsS "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)" -o /tmp/kub-signals.json
-          grep -q '"signals"' /tmp/kub-signals.json
+
+          # KUB signal data is intentionally protected. The migration gate must prove
+          # that unauthenticated traffic cannot read it; it must never add a public bypass.
+          code=$(curl -sS -o /tmp/kub-health.json -w '%{http_code}' "$BASE/api/signals/health?client=kub&ts=$(date +%s)")
+          test "$code" = "401" -o "$code" = "403"
+          code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
+          test "$code" = "401" -o "$code" = "403"
+
           curl -fsS "$BASE/wirello?ts=$(date +%s)" -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
           echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
