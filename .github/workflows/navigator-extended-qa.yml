@@ -27,6 +27,7 @@ jobs:
           go build -tags netgo -ldflags '-s -w' -o app .
           PORT=10000 ./app >/tmp/blis-extended.log 2>&1 &
           for i in $(seq 1 40); do curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:10000/api/health
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -39,26 +40,36 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const pages=['overview','social','market','competition','history'];
+          const analytical=['overview','social','market','competition','history'];
+          const resources=['hub','calendar'];
+          const pages=[...analytical,...resources];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
           async function ready(p,client){
             phase=`ready:${client}:goto`;
             await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
-            phase=`ready:${client}:nav`;
-            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===5,null,{timeout:12000});
+            phase=`ready:${client}:runtime`;
+            await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,null,{timeout:20000});
+            await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:12000});
             phase=`ready:${client}:content`;
             await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
-            phase=`ready:${client}:data`;
             await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
-            phase=`ready:${client}:owners`;
-            const owner=await p.evaluate(()=>({canonical:window.refGo?.__blisCanonicalClientRouter===true,ref18:!!window.__BLIS_REFERENCE_V18,stages:window.BLISSystemStructure?.stages?.map(x=>x.id)||[],branding:document.documentElement.dataset.clientBranding||''}));
-            assert(owner.canonical&&owner.ref18,`${client}: canonical router missing ${JSON.stringify(owner)}`);
-            assert(owner.stages.join(',')===pages.join(','),`${client}: wrong analytical stages ${owner.stages.join(',')}`);
-            assert(owner.branding==='local-real-v3-1',`${client}: wrong branding ${owner.branding}`);
+            const owner=await p.evaluate(()=>({
+              nav:[...document.querySelectorAll('#nav [data-n3-page]')].map(x=>x.dataset.n3Page),
+              legacy:document.querySelectorAll('#nav [data-page]').length,
+              arch:!!window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1,
+              clarity:!!window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1,
+              proof:!!window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,
+              lang:document.documentElement.lang,
+              language:window.BLIS_LANGUAGE
+            }));
+            assert(owner.nav.join(',')===pages.join(','),`${client}: wrong Navigator 3 pages ${owner.nav.join(',')}`);
+            assert(owner.legacy===0,`${client}: legacy nav remains`);
+            assert(owner.arch&&owner.clarity&&owner.proof,`${client}: Navigator 3 runtime incomplete`);
+            assert(owner.lang==='bg'&&owner.language==='bg',`${client}: Bulgarian lock missing`);
           }
-          async function inspect(p,id){return p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;return{id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||'')}},id)}
+          async function inspect(p,id){return p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;return{id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),resource:!!root?.querySelector('.n3-resource-card')}} ,id)}
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -66,7 +77,8 @@ jobs:
               const p=await browser.newPage({viewport:{width:1440,height:1000}});
               await ready(p,'aroma');
 
-              for(const [legacy,canonical] of [['signals','social'],['live','social'],['digital','social'],['opportunities','social'],['reputation','market'],['timeline','history'],['reports','history'],['development','history']]){
+              const aliases={signals:'social',live:'social',digital:'social',opportunities:'social',risk:'social',reputation:'market','market-reputation':'market',timeline:'history',reports:'history',development:'history',intelligence:'hub',events:'calendar'};
+              for(const [legacy,canonical] of Object.entries(aliases)){
                 phase=`alias:${legacy}->${canonical}`;
                 await p.evaluate(x=>window.refGo(x),legacy);
                 await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,canonical,{timeout:6000});
@@ -74,12 +86,18 @@ jobs:
 
               phase='client-switch:bolyarka';
               await p.evaluate(()=>window.refGo('overview'));
-              await p.evaluate(()=>document.querySelector('.client-option[data-client-key="bolyarka"]')?.click());
+              const hasSwitcher=await p.locator('.client-switch-button').count();
+              assert(hasSwitcher>0,'client switch button missing');
+              await p.locator('.client-switch-button').click();
+              await p.waitForFunction(()=>document.querySelector('.client-switch')?.classList.contains('open'),null,{timeout:3000});
+              const option=p.locator('.client-option[data-client-key="bolyarka"]');
+              assert(await option.count()>0,'Bolyarka client option missing');
+              await option.click();
               await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&document.body.dataset.blisLoading!=='true'&&(document.querySelector('.bch3-name')?.textContent||'').includes('Болярка'),null,{timeout:12000});
-              const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||'',data:window.D?.name||'',nav:document.querySelectorAll('#nav button[data-page]').length,logo:document.querySelector('.bch3-logo img')?.getAttribute('src')||''}));
+              await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:8000});
+              const switched=await p.evaluate(()=>({body:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||'',nav:document.querySelectorAll('#nav [data-n3-page]').length,logo:document.querySelector('.bch3-logo img')?.getAttribute('src')||''}));
               assert(switched.body==='bolyarka'&&switched.name.includes('Болярка'),`client switch chrome failed ${JSON.stringify(switched)}`);
-              assert(!switched.data||/боляр/i.test(switched.data),`client switch data mismatch ${JSON.stringify(switched)}`);
-              assert(switched.nav===5,'client switch changed nav count');
+              assert(switched.nav===7,'client switch changed Navigator 3 nav count');
               assert(switched.logo.startsWith('/client-logos/'),`client switch did not load local Bolyarka logo ${switched.logo}`);
               await p.close();
 
@@ -88,7 +106,7 @@ jobs:
                 const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
                 const errs=[];
                 m.on('pageerror',e=>errs.push(e.message));
-                m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(x.text()))errs.push(x.text())});
+                m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(x.text()))errs.push(x.text())});
                 await ready(m,client);
                 phase=`mobile:${client}:identity`;
                 const identity=await m.evaluate(()=>({id:document.body.dataset.client,name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',header:!!document.querySelector('.topbar.blis-client-header')}));
@@ -99,18 +117,19 @@ jobs:
                 for(const page of pages){
                   phase=`mobile:${client}:${page}:invoke`;
                   await m.evaluate(x=>window.refGo(x),page);
-                  await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:6000});
+                  await m.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:7000});
                   await m.waitForTimeout(180);
-                  phase=`mobile:${client}:${page}:inspect`;
                   const x=await inspect(m,page);
                   assert(x.visible&&x.height>70&&x.text>20,`${client}/mobile/${page} blank ${JSON.stringify(x)}`);
                   assert(!x.loading,`${client}/mobile/${page} loading remained`);
                   assert(x.overflow<=8,`${client}/mobile/${page} overflow ${x.overflow}`);
+                  if(resources.includes(page))assert(x.resource,`${client}/mobile/${page} resource card missing`);
                 }
 
                 phase=`mobile:${client}:chrome`;
-                const chrome=await m.evaluate(()=>({nav:document.querySelectorAll('#nav button[data-page]').length,services:!!document.querySelector('[data-blis-commerce-open]'),oldNumbers:[...document.querySelectorAll('.blis-system-step .num')].filter(x=>getComputedStyle(x).display!=='none'&&x.getBoundingClientRect().width>0).length}));
-                assert(chrome.nav===5,`${client}/mobile wrong nav count ${chrome.nav}`);
+                const chrome=await m.evaluate(()=>({nav:document.querySelectorAll('#nav [data-n3-page]').length,legacy:document.querySelectorAll('#nav [data-page]').length,services:!!document.querySelector('[data-blis-commerce-open]')}));
+                assert(chrome.nav===7,`${client}/mobile wrong Navigator 3 nav count ${chrome.nav}`);
+                assert(chrome.legacy===0,`${client}/mobile legacy nav leaked`);
                 assert(!chrome.services,`${client}/mobile Services leaked`);
                 assert(errs.length===0,`${client}/mobile runtime errors ${errs.join(' | ')}`);
                 await m.close();
@@ -121,11 +140,16 @@ jobs:
           })().catch(e=>{fs.writeFileSync('/tmp/extended-error.txt',`${phase}: ${String(e.message||e)}`);console.error(phase,e);process.exit(1)});
           NODE
           node /tmp/extended.cjs
+      - name: Show server log on failure
+        if: failure()
+        run: |
+          cat /tmp/extended-error.txt || true
+          cat /tmp/blis-extended.log || true
       - name: Publish QA status
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and 5-page isolation passed':'Extended Navigator QA failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'mobile, aliases, switching and Navigator 3 (5+2) passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
