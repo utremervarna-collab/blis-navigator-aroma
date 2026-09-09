@@ -30,7 +30,7 @@ jobs:
           curl -fsSL --connect-timeout 20 --max-time 90 \
             "https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/main/data/live_store.json?ts=$(date +%s)" \
             -o /tmp/main-floor.json
-          python - <<'PY' > /tmp/floors.env
+          python - <<'PY'
           import json
           runtime=json.load(open('/tmp/runtime-floor.json',encoding='utf-8'))
           main=json.load(open('/tmp/main-floor.json',encoding='utf-8'))
@@ -42,10 +42,14 @@ jobs:
           assert kub_floor>0, 'runtime-data has no durable KUB signals'
           for slug in ('aroma','bolyarka','mollox','astor-garden'):
               assert slug in mc, f'{slug} missing from main durable floor'
-          print(f'KUB_FLOOR={kub_floor}')
-          print('MAIN_FLOOR='+json.dumps({k:{'snapshots':len(v.get('snapshots',[])),'observations':len(v.get('observations',[]))} for k,v in mc.items()},separators=(',',':')))
+          counts={k:{'snapshots':len(v.get('snapshots',[])),'observations':len(v.get('observations',[]))} for k,v in mc.items()}
+          open('/tmp/kub_floor.txt','w',encoding='utf-8').write(str(kub_floor))
+          json.dump(counts,open('/tmp/main-floor-counts.json','w',encoding='utf-8'),separators=(',',':'),sort_keys=True)
+          print('KUB_FLOOR',kub_floor)
+          print('MAIN_FLOOR',json.dumps(counts,separators=(',',':'),sort_keys=True))
           PY
-          cat /tmp/floors.env
+          cat /tmp/kub_floor.txt
+          cat /tmp/main-floor-counts.json
 
       - name: Wait for exact final production build
         shell: bash
@@ -66,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          . /tmp/floors.env
+          KUB_FLOOR=$(cat /tmp/kub_floor.txt)
           ok=0
           for i in $(seq 1 30); do
             if curl -fsS --connect-timeout 15 --max-time 45 "$BASE/api/runtime-data/status?final=1&ts=$(date +%s)" -o /tmp/restore.json; then
@@ -91,11 +95,12 @@ jobs:
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          . /tmp/floors.env
+          KUB_FLOOR=$(cat /tmp/kub_floor.txt)
           curl -fsS --connect-timeout 15 --max-time 90 "$BASE/api/store/export?final=1&ts=$(date +%s)" -o /tmp/live.json
-          python - "$KUB_FLOOR" "$MAIN_FLOOR" <<'PY'
+          python - "$KUB_FLOOR" <<'PY'
           import json,sys
-          kub_floor=int(sys.argv[1]); main_floor=json.loads(sys.argv[2])
+          kub_floor=int(sys.argv[1])
+          main_floor=json.load(open('/tmp/main-floor-counts.json',encoding='utf-8'))
           live=json.load(open('/tmp/live.json',encoding='utf-8')).get('clients',{})
           for slug,f in main_floor.items():
               c=live.get(slug)
