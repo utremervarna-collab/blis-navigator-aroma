@@ -14,8 +14,12 @@ on:
 permissions:
   contents: read
 
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN }}
+
 jobs:
   full-real-user-en:
+    if: ${{ vars.NAVIGATOR_ORIGIN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -31,7 +35,7 @@ jobs:
         run: |
           cat >/tmp/full-real-user-en.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
-          const origin='https://blis-navigator-aroma.onrender.com';
+          const origin=String(process.env.NAVIGATOR_ORIGIN||'').replace(/\/+$/,'');
           const cyr=/[А-Яа-яЁёЀ-ӿ]/;
           const norm=s=>(s||'').replace(/\s+/g,' ').trim();
           const residual=new Map(),errors=[];
@@ -77,6 +81,7 @@ jobs:
             }catch(e){errors.push(`${where}: ${e.message}`)}finally{await c.close()}
           }
           (async()=>{
+            if(!origin)throw new Error('NAVIGATOR_ORIGIN is empty');
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             const publicPaths=['/','/about.html','/blis.html','/brand-lab.html','/clients.html','/contact.html','/methodology.html','/privacy.html','/terms.html','/services.html','/intelligence-hub.html','/intelligence-ai-search.html','/intelligence-calendar.html','/intelligence-reputation-trust.html','/intelligence-retail-bulgaria-2026.html','/demo.html','/demo-navigator.html','/demo-status.html','/mollox.html'];
             for(const path of publicPaths)await auditPage(browser,path,`public:${path}`);
