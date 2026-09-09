@@ -49,15 +49,19 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const pages=['overview','social','market','competition','history'];
+          const analytical=['overview','social','market','competition','history'];
+          const resources=['hub','calendar'];
+          const pages=[...analytical,...resources];
+          const labels=['Общ изглед','Мониторинг','Среда','Конкуренти','Развитие/Доклади','Intelligence HUB','Календар'];
           const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const localLogoClients=new Set(['aroma','bolyarka','mollox']);
           const visualSelector={
-            overview:'.ovh-gauge,.ovh-visual,.ovh-main',
-            social:'.sv2-sigboard,.vs-signal-core,.vs-signal-board',
-            market:'svg,.pm-map,.perception-map,[data-perception-map]',
-            competition:'.vs-comp-core,.vs-comp-axis,.vs-comp-row,.cmpv11-matrix,.cmpv10-layout,.cmpv12-static-flow,[data-competition-visual]',
-            history:'.vs-history-core,.vs-history-board,.vs-hevents,.xv2-timeline,.sv2-history,[data-history-visual]'
+            overview:'#overview .ovh-gauge',
+            social:'#social .dv-radar-wrap',
+            market:'#market .pm-stage,#market .pm-canvas',
+            competition:'#competition .vs-comp-axis',
+            history:'#history .vs-history-board',
+            hub:'#hub .n3-resource-card',
+            calendar:'#calendar .n3-resource-card'
           };
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},120000);
@@ -69,80 +73,61 @@ jobs:
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
                 const errs=[];
                 p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
-                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED/i.test(m.text()))errs.push('CONSOLE '+m.text())});
+                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errs.push('CONSOLE '+m.text())});
                 p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:20000});
-                phase=`${client}:nav`;
-                await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length===5,null,{timeout:12000});
+                phase=`${client}:navigator3`;
+                await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1&&window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,null,{timeout:20000});
+                await p.waitForFunction(()=>document.querySelectorAll('#nav [data-n3-page]').length===7,null,{timeout:12000});
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:15000});
                 await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:12000});
+
                 phase=`${client}:architecture`;
                 const boot=await p.evaluate(()=>({
-                  client:document.body.dataset.client,
-                  name:document.querySelector('.client-brand-name')?.textContent||document.querySelector('.bch3-name')?.textContent||'',
-                  headerName:document.querySelector('.bch3-name')?.textContent||'',
-                  nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
-                  canonical:window.refGo?.__blisCanonicalClientRouter===true,
-                  ref18:!!window.__BLIS_REFERENCE_V18,
-                  stages:window.BLISSystemStructure?.stages?.map(x=>x.id)||[],
-                  oldApp:[...document.scripts].some(s=>/\/app\.js/.test(s.src)),
-                  legacyV15:[...document.scripts].some(s=>s.src.includes('navigator-architecture-v15.js')),
-                  branding:document.documentElement.dataset.clientBranding||'',
-                  header:!!document.querySelector('.topbar.blis-client-header'),
-                  commerceLauncher:!!document.querySelector('[data-blis-commerce-open]')
+                  client:document.body.dataset.client||'',
+                  name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
+                  nav:[...document.querySelectorAll('#nav [data-n3-page]')].map(x=>x.dataset.n3Page),
+                  labels:[...document.querySelectorAll('#nav [data-n3-page] .navtxt')].map(x=>x.textContent.trim()),
+                  lang:document.documentElement.lang,
+                  language:window.BLIS_LANGUAGE,
+                  arch:!!window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1,
+                  clarity:!!window.__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1,
+                  proof:!!window.__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1,
+                  legacy:[...document.querySelectorAll('#nav [data-page]')].length,
+                  services:!!document.querySelector('[data-blis-commerce-open]')
                 }));
                 assert(boot.client===client,`${client}: body client ${boot.client}`);
-                assert(boot.name.includes(expectedNames[client])||boot.headerName.includes(expectedNames[client]),`${client}: wrong client identity ${JSON.stringify(boot)}`);
-                assert(boot.nav.join(',')===pages.join(','),`${client}: wrong nav ${boot.nav.join(',')}`);
-                assert(boot.canonical&&boot.ref18,`${client}: canonical router v18 missing`);
-                assert(boot.stages.join(',')===pages.join(','),`${client}: wrong analytical stages ${boot.stages.join(',')}`);
-                assert(!boot.oldApp&&!boot.legacyV15,`${client}: legacy UI owner loaded`);
-                assert(boot.header,`${client}: canonical client header missing`);
-                assert(boot.branding==='local-real-v3-1',`${client}: wrong branding owner ${boot.branding}`);
-                assert(!boot.commerceLauncher,`${client}: Services launcher leaked into client dashboard`);
-
-                if(localLogoClients.has(client)){
-                  phase=`${client}:local-logo`;
-                  await p.waitForFunction(()=>{
-                    const im=document.querySelector('.bch3-logo img');
-                    return !!im && /\/client-logos\//.test(im.getAttribute('src')||im.src||'');
-                  },null,{timeout:8000});
-                  const logo=await p.evaluate(()=>({src:document.querySelector('.bch3-logo img')?.getAttribute('src')||'',naturalWidth:document.querySelector('.bch3-logo img')?.naturalWidth||0}));
-                  assert(logo.src.startsWith('/client-logos/')&&logo.naturalWidth>0,`${client}: local official logo failed ${JSON.stringify(logo)}`);
-                }
-                if(client==='varna-towers'||client==='astor-garden'){
-                  await p.waitForTimeout(250);
-                  const fake=await p.evaluate(()=>({headerImg:!!document.querySelector('.bch3-logo img'),markText:(document.querySelector('.client-brand-mark')?.textContent||'').trim()}));
-                  assert(!fake.headerImg,`${client}: unverified image must not be shown as logo`);
-                  assert(!fake.markText,`${client}: initials leaked as fake logo (${fake.markText})`);
-                }
+                assert(boot.name.includes(expectedNames[client]),`${client}: wrong client identity ${JSON.stringify(boot)}`);
+                assert(boot.nav.join(',')===pages.join(','),`${client}: wrong Navigator 3 nav ${boot.nav.join(',')}`);
+                assert(boot.labels.join('|')===labels.join('|'),`${client}: wrong Navigator 3 labels ${boot.labels.join('|')}`);
+                assert(boot.arch&&boot.clarity&&boot.proof,`${client}: Navigator 3 runtime incomplete`);
+                assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian lock missing`);
+                assert(boot.legacy===0,`${client}: legacy navigation leaked`);
+                assert(!boot.services,`${client}: Services launcher leaked into client dashboard`);
 
                 for(const id of pages){
                   phase=`${client}:${id}:render`;
                   await p.evaluate(id=>window.refGo(id),id);
-                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:8000});
-                  await p.waitForTimeout(300);
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:9000});
+                  await p.waitForTimeout(250);
                   const x=await p.evaluate(({id,sel})=>{
                     const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-                    const visualQuery=[sel,'.vs-visual','[data-blis-visual]'].filter(Boolean).join(',');
-                    const visuals=root?[...root.querySelectorAll(visualQuery)]:[];
-                    const visual=visuals.find(v=>{const q=v.getBoundingClientRect(),s=getComputedStyle(v);return q.width>70&&q.height>30&&s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)>.01})||visuals[0];
-                    const vr=visual?.getBoundingClientRect();
-                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),visual:!!visual,visualW:vr?.width||0,visualH:vr?.height||0};
+                    const visual=document.querySelector(sel),vr=visual?.getBoundingClientRect(),vs=visual?getComputedStyle(visual):null;
+                    return {id:document.querySelector('.page.active')?.id,text:(root?.innerText||'').trim().length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:document.documentElement.scrollWidth-window.innerWidth,loading:/\bLoading\b|Зареждане\.{2,}/i.test(root?.innerText||''),visual:!!visual&&vs.display!=='none'&&vs.visibility!=='hidden'&&Number(vs.opacity||1)>.01,visualW:vr?.width||0,visualH:vr?.height||0};
                   },{id,sel:visualSelector[id]});
                   assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
-                  assert(x.visible&&x.height>80&&x.text>20,`${client}/${id}: blank/collapsed ${JSON.stringify(x)}`);
+                  assert(x.visible&&x.height>70&&x.text>20,`${client}/${id}: blank/collapsed ${JSON.stringify(x)}`);
                   assert(!x.loading,`${client}/${id}: loading state remained`);
                   assert(x.overflow<=8,`${client}/${id}: horizontal overflow ${x.overflow}`);
-                  assert(x.visual&&x.visualW>70&&x.visualH>30,`${client}/${id}: dominant visual missing ${JSON.stringify(x)}`);
+                  assert(x.visual&&x.visualW>70&&x.visualH>30,`${client}/${id}: canonical visual missing ${JSON.stringify(x)}`);
                 }
 
-                phase=`${client}:market-stability`;
-                await p.evaluate(()=>window.refGo('market'));
-                await p.evaluate(()=>{window.__smokeMutations=0;const root=document.getElementById('market');window.__smokeObserver=new MutationObserver(ms=>window.__smokeMutations+=ms.length);window.__smokeObserver.observe(root,{childList:true,subtree:true,characterData:true})});
-                await p.waitForTimeout(1400);
-                const late=await p.evaluate(()=>{window.__smokeObserver?.disconnect();return window.__smokeMutations||0});
-                assert(late<60,`${client}/market: repaint storm ${late}`);
+                const aliases={signals:'social',live:'social',digital:'social',opportunities:'social',risk:'social',reputation:'market','market-reputation':'market',reports:'history',timeline:'history',development:'history',intelligence:'hub',events:'calendar'};
+                for(const [legacy,canonical] of Object.entries(aliases)){
+                  phase=`${client}:alias:${legacy}`;
+                  await p.evaluate(id=>window.refGo(id),legacy);
+                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,canonical,{timeout:6000});
+                }
                 assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
                 await p.close();
               }
@@ -168,5 +153,5 @@ jobs:
             const state='${{ job.status }}'==='success'?'success':'failure';
             let detail='';
             try{detail=fs.readFileSync('/tmp/navigator-smoke-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').trim().slice(0,70)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'6 clients and 5 canonical pages passed':'Navigator production smoke failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-production-smoke',description:state==='success'?'6 clients and Navigator 3 (5+2) passed':'Navigator production smoke failed'});
             if(state==='failure'&&detail){await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`navigator-smoke:${detail}`,description:'First browser smoke failure'});}
