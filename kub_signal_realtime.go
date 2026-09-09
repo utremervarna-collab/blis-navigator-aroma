@@ -61,6 +61,10 @@ func runKUBRealtimeCollector() {
 	kubRealtimeRunMu.Lock()
 	defer kubRealtimeRunMu.Unlock()
 
+	// Create/restore the infrastructure-only KUB store record before merging any
+	// fresh signals so every event is also persisted as a durable observation.
+	ensureKUBSignalPersistenceClient()
+
 	// Primary-source polling comes first so a publisher item can enter Navigator
 	// before it is indexed by Google News or Bing.
 	fresh := collectKUBDirectPublisherSignals()
@@ -75,6 +79,7 @@ func runKUBRealtimeCollector() {
 	}
 	newCount := mergeSignals("kub", fresh)
 	saveSignalStateFile()
+	saveStore()
 	log.Printf("KUB_REALTIME fresh=%d new=%d", len(fresh), newCount)
 }
 
