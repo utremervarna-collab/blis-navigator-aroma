@@ -192,16 +192,7 @@ func init() {
 			time.Sleep(5 * time.Minute)
 		}
 	}()
-	go func() {
-		time.Sleep(4 * time.Minute)
-		for {
-			mu.Lock()
-			c := store.Clients[blackSeaCenterSlug]
-			mu.Unlock()
-			if c != nil {
-				runClientEngine(c, false)
-			}
-			time.Sleep(30 * time.Minute)
-		}
-	}()
+	// Black Sea Center currently has a dedicated signal pipeline but no dedicated
+	// metric engine. Do not send it through runClientEngine: the generic fallback
+	// is Aroma-specific and would create cross-client metric contamination.
 }
