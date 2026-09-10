@@ -49,7 +49,31 @@ jobs:
           if not sig:
               print('WAIT_KUB_SIGNAL_OBSERVATIONS')
               sys.exit(1)
+
+          def signal_payload(o):
+              raw=o.get('value')
+              if isinstance(raw,dict):
+                  return raw
+              if isinstance(raw,str):
+                  try:
+                      return json.loads(raw)
+                  except Exception:
+                      return {}
+              return {}
+
+          decorated=[]
+          for o in sig:
+              payload=signal_payload(o)
+              decorated.append((str(payload.get('published_at') or payload.get('PublishedAt') or ''),o,payload))
+          decorated.sort(key=lambda row: row[0])
+          published,latest,payload=decorated[-1]
           print('RUNTIME_SNAPSHOT_READY',{'kub_signal_observations':len(sig),'kub_observations':len(kub.get('observations',[]))})
+          print('KUB_RUNTIME_LATEST',{
+              'published_at':published,
+              'source':payload.get('source') or payload.get('Source'),
+              'title':payload.get('title') or payload.get('Title'),
+              'metric_key':latest.get('metric_key'),
+          })
           PY
               then ok=1; break; fi
             fi
