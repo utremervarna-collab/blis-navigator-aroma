@@ -51,6 +51,8 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
         {"/navigator-production-cleanup-v1.js?v=20260824-clean2", "/navigator-production-cleanup-v1.js?v=20260824-clean3"},
         {"/navigator-commerce-visual-cards-v7.js?v=20260824-v7", "/navigator-commerce-visual-cards-v7.js?v=20260824-light9"},
         {"/navigator-commerce-visual-cards-v7.js?v=20260824-v7-light3", "/navigator-commerce-visual-cards-v7.js?v=20260824-light9"},
+        {"/navigator-client-ui.js?v=20260824-clientcore1", "/navigator-client-ui.js?v=20260910-ownerfull1"},
+        {"const allowed=['aroma','bolyarka','varna-towers','mollox','wirello','everbet'];", "const allowed=['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello','everbet','black-sea-center'];"},
     }
     for _, pair := range replacements {
         body = bytes.ReplaceAll(body, []byte(pair[0]), []byte(pair[1]))
