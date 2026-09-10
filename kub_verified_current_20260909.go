@@ -8,6 +8,7 @@ import "time"
 func init() {
 	go func() {
 		time.Sleep(3 * time.Second)
+		ensureKUBSignalPersistenceClient()
 		if s, ok := buildKUBSignal(
 			"БНТ",
 			"news",
