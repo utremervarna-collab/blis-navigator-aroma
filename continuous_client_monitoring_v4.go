@@ -71,8 +71,10 @@ func runContinuousSignalCycle() {
 }
 
 func liveMetricClient(slug string) bool {
+	// Only clients with an explicit runClientEngine dispatch belong here.
+	// Unknown/legacy client slugs must never fall through to the Aroma engine.
 	switch slug {
-	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet", "varna-towers", "black-sea-center":
+	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet":
 		return true
 	default:
 		return false
