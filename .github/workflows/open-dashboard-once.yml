@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.head_commit.message != 'Open Navigator dashboard without login'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,36 +26,36 @@ jobs:
           p=Path('auth_proxy.go')
           s=p.read_text(encoding='utf-8')
           old='''\tif path == "/dashboard.html" || path == "/navigator-v2.html" {\n\t\tif !loggedIn {\n\t\t\tnext := url.QueryEscape(path)\n\t\t\thttp.Redirect(w, r, "/client-login?next="+next, http.StatusFound)\n\t\t\treturn\n\t\t}\n\t\tif !s.Admin {\n'''
-          new='''\tif path == "/dashboard.html" || path == "/navigator-v2.html" {\n\t\t// The Navigator dashboard is intentionally public for read access.\n\t\t// Authentication remains available for scoped client sessions and owner-only routes.\n\t\tif !loggedIn {\n\t\t\tif strings.TrimSpace(r.URL.Query().Get("client")) == "" {\n\t\t\t\thttp.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)\n\t\t\t\treturn\n\t\t\t}\n\t\t} else if !s.Admin {\n'''
+          new='''\tif path == "/dashboard.html" || path == "/navigator-v2.html" {\n\t\t// Public read access to the normal Navigator dashboard. Owner/admin routes and\n\t\t// protected APIs remain independently guarded by the gateway.\n\t\tif !loggedIn {\n\t\t\trequested := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("client")))\n\t\t\tswitch requested {\n\t\t\tcase "":\n\t\t\t\thttp.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)\n\t\t\t\treturn\n\t\t\tcase "kub":\n\t\t\t\thttp.Redirect(w, r, "/kub-crisis.html", http.StatusFound)\n\t\t\t\treturn\n\t\t\tcase "aroma", "bolyarka", "mollox":\n\t\t\t\t// These shared Navigator profiles are public read-only entry points.\n\t\t\tcase "wirello":\n\t\t\t\thttp.Redirect(w, r, "/wirello", http.StatusFound)\n\t\t\t\treturn\n\t\t\tdefault:\n\t\t\t\t// Hidden/legacy profiles must not become public merely by editing ?client=.\n\t\t\t\thttp.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)\n\t\t\t\treturn\n\t\t\t}\n\t\t} else if !s.Admin {\n'''
           if old not in s:
               raise SystemExit('auth_proxy dashboard auth block not found')
           p.write_text(s.replace(old,new,1),encoding='utf-8')
 
-          for name in ('.github/workflows/navigator-production-smoke.yml','.github/workflows/navigator-extended-qa.yml'):
-              p=Path(name)
-              s=p.read_text(encoding='utf-8')
-              old_local='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')\n          test "$code" = "302"\n          grep -Eqi '^location: /client-login' /tmp/dashboard.headers\n'''
-              new_local='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')\n          test "$code" = "200"\n          grep -Eqi 'BLIS|Navigator' /tmp/dashboard.body\n'''
-              if old_local in s:
-                  s=s.replace(old_local,new_local,1)
-              if name.endswith('navigator-production-smoke.yml'):
-                  old_prod='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")\n          test "$code" = "302"\n          grep -Eqi '^location: /client-login' /tmp/dashboard.headers\n'''
-                  new_prod='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")\n          test "$code" = "200"\n          grep -Eqi 'BLIS|Navigator' /tmp/dashboard.body\n'''
-                  if old_prod not in s:
-                      raise SystemExit('production dashboard contract not found')
-                  s=s.replace(old_prod,new_prod,1)
-              if old_local not in p.read_text(encoding='utf-8'):
-                  raise SystemExit(f'local dashboard contract not found in {name}')
-              p.write_text(s,encoding='utf-8')
+          p=Path('.github/workflows/navigator-production-smoke.yml')
+          s=p.read_text(encoding='utf-8')
+          old_local='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')\n          test "$code" = "302"\n          grep -Eqi '^location: /client-login' /tmp/dashboard.headers\n'''
+          new_local='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')\n          test "$code" = "200"\n          grep -Eqi 'BLIS|Navigator' /tmp/dashboard.body\n'''
+          old_prod='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")\n          test "$code" = "302"\n          grep -Eqi '^location: /client-login' /tmp/dashboard.headers\n'''
+          new_prod='''          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")\n          test "$code" = "200"\n          grep -Eqi 'BLIS|Navigator' /tmp/dashboard.body\n'''
+          if old_local not in s: raise SystemExit('production smoke local dashboard contract not found')
+          if old_prod not in s: raise SystemExit('production smoke live dashboard contract not found')
+          s=s.replace(old_local,new_local,1).replace(old_prod,new_prod,1)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('.github/workflows/navigator-extended-qa.yml')
+          s=p.read_text(encoding='utf-8')
+          if old_local not in s: raise SystemExit('extended QA dashboard contract not found')
+          p.write_text(s.replace(old_local,new_local,1),encoding='utf-8')
 
           Path('.github/workflows/open-dashboard-once.yml').unlink()
           PY
+
       - name: Commit public dashboard access
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add auth_proxy.go .github/workflows/navigator-production-smoke.yml .github/workflows/navigator-extended-qa.yml .github/workflows/open-dashboard-once.yml
+          git add -A
           git commit -m 'Open Navigator dashboard without login'
           git push origin HEAD:main
