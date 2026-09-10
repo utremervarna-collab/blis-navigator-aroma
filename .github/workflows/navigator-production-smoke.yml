@@ -26,6 +26,22 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Verify owner catalogue contract
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const src=fs.readFileSync('static/navigator-client-ui.js','utf8');
+          const m=src.match(/const ownerVisibleOrder=(\[[^;]+\]);/);
+          if(!m) throw new Error('ownerVisibleOrder missing');
+          const actual=Function(`return ${m[1]}`)();
+          const expected=['kub','mollox','aroma','bolyarka','astor-garden','everbet','varna-towers','black-sea-center'];
+          if(JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error(`owner catalogue mismatch ${JSON.stringify(actual)}`);
+          if(actual.includes('wirello')) throw new Error('Wirello leaked into owner catalogue');
+          if(!/key==='wirello'/.test(src)) throw new Error('Wirello owner-selection guard missing');
+          console.log('OWNER_FULL_CLIENT_CATALOGUE_OK',actual.join(','));
+          NODE
+
       - name: Build and start Navigator gateway
         run: |
           set -euxo pipefail
@@ -51,10 +67,14 @@ jobs:
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
+          code=$(curl -sS -D /tmp/bsc.headers -o /tmp/bsc.body -w '%{http_code}' 'http://127.0.0.1:10000/black-sea-center')
+          test "$code" = "302"
+          grep -Eqi '^location: /client-login' /tmp/bsc.headers
           curl -fsS http://127.0.0.1:10000/kub-home.html -o /tmp/kub-home.html
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
           curl -fsS 'http://127.0.0.1:10000/kub-crisis.html?lang=en' -o /tmp/kub-en.html
           grep -Eqi 'KUB|crisis' /tmp/kub-en.html
+          # Wirello remains an isolated public demo, not an owner dashboard profile.
           curl -fsS http://127.0.0.1:10000/wirello -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
 
@@ -63,15 +83,15 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Verify final visible Navigator routes for every client
+      - name: Verify final visible Navigator routes for every real dashboard client
         run: |
           cat > /tmp/navigator-smoke.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10001';
-          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
+          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','black-sea-center'];
+          const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden','black-sea-center':'Black Sea Center'};
           const required=['overview','social','market','competition','history'];
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
@@ -84,13 +104,14 @@ jobs:
                 const errs=[];
                 p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
                 p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errs.push('CONSOLE '+m.text())});
-                p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
+                p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico'&&u.pathname!=='/api/client-session')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
                 phase=`${client}:runtime`;
                 await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
                 await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=5,null,{timeout:15000});
                 await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:20000});
                 await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
+                await p.waitForTimeout(250);
                 const boot=await p.evaluate(()=>({
                   client:document.body.dataset.client||'',
                   name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
@@ -107,8 +128,9 @@ jobs:
                 assert(boot.name.includes(expectedNames[client]),`${client}: wrong identity ${boot.name}`);
                 assert(new Set(boot.nav).size===boot.nav.length,`${client}: duplicate nav routes ${boot.nav}`);
                 for(const id of required)assert(boot.nav.includes(id),`${client}: required route missing ${id}; visible=${boot.nav}`);
-                assert(boot.visible.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: visible registry ${boot.visible}`);
-                assert(boot.menu.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: menu leaked hidden client ${boot.menu}`);
+                assert(boot.visible.join(',')===client,`${client}: unauthenticated renderer catalogue did not fail closed ${boot.visible}`);
+                assert(boot.menu.join(',')===client,`${client}: unauthenticated renderer menu leaked another client ${boot.menu}`);
+                assert(!boot.visible.includes('wirello')&&!boot.menu.includes('wirello'),`${client}: Wirello leaked into Navigator dashboard catalogue`);
                 assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian default missing`);
                 assert(!boot.services,`${client}: Services launcher leaked into Navigator`);
                 for(const id of boot.nav){
@@ -169,7 +191,7 @@ jobs:
           import json
           d=json.load(open('/tmp/store.json',encoding='utf-8'))
           clients=d.get('clients',{})
-          for slug in ('aroma','bolyarka','mollox','astor-garden'):
+          for slug in ('aroma','bolyarka','mollox','astor-garden','varna-towers','everbet','black-sea-center'):
               assert slug in clients, f'{slug} missing from production store'
           print('STORE_OK', {k:(len(v.get('snapshots') or []),len(v.get('observations') or [])) for k,v in clients.items()})
           PY
@@ -183,6 +205,9 @@ jobs:
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
+          code=$(curl -sS -D /tmp/bsc.headers -o /tmp/bsc.body -w '%{http_code}' "$BASE/black-sea-center?ts=$(date +%s)")
+          test "$code" = "302"
+          grep -Eqi '^location: /client-login' /tmp/bsc.headers
 
           # KUB signal data is intentionally protected. The migration gate must prove
           # that unauthenticated traffic cannot read it; it must never add a public bypass.
@@ -191,8 +216,15 @@ jobs:
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
 
+          # Wirello is intentionally kept as a separate public demo only.
           curl -fsS "$BASE/wirello?ts=$(date +%s)" -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
+          curl -fsS "$BASE/navigator-client-ui.js?v=20260910-ownerfull1&ts=$(date +%s)" -o /tmp/client-ui.js
+          grep -Fq "const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','astor-garden','everbet','varna-towers','black-sea-center'];" /tmp/client-ui.js
+          if grep -F "const ownerVisibleOrder=" /tmp/client-ui.js | grep -q "wirello"; then
+            echo 'Wirello leaked into owner catalogue' >&2
+            exit 1
+          fi
           echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
 
       - name: Publish production migration status
