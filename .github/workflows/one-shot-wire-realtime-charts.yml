@@ -1,0 +1,54 @@
+name: One-shot wire realtime charts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-shot-wire-realtime-charts.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire realtime chart assets into production shell
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('static/dashboard.html')
+          s=p.read_text(encoding='utf-8')
+          changes=[
+            ('/navigator-curves.js?v=20260824-measured1','/navigator-curves.js?v=20260910-realtime41'),
+            ('/navigator-trend-fix.js?v=20260831-daily5','/navigator-trend-fix.js?v=20260910-realtime51'),
+            ('<script src="/blis-pwa-register.js?v=20260909-1"></script>','<script src="/navigator-live-refresh-v1.js?v=20260910-live1"></script><script src="/blis-pwa-register.js?v=20260909-1"></script>')
+          ]
+          for old,new in changes:
+              if old not in s:
+                  raise SystemExit(f'expected shell marker not found: {old}')
+              s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          node --check static/navigator-live-refresh-v1.js
+          node --check static/navigator-curves.js
+          node --check static/navigator-trend-fix.js
+          grep -q 'navigator-live-refresh-v1.js?v=20260910-live1' static/dashboard.html
+          grep -q 'navigator-curves.js?v=20260910-realtime41' static/dashboard.html
+          grep -q 'navigator-trend-fix.js?v=20260910-realtime51' static/dashboard.html
+          git diff --check
+      - name: Commit shell wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "blis-ci"
+          git config user.email "blis-ci@users.noreply.github.com"
+          git add static/dashboard.html
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: wire realtime charts into production shell"
+          git push origin HEAD:main
