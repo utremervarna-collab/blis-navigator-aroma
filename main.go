@@ -370,7 +370,12 @@ func ensureStore() {
 	store = seedStore()
 	saveStore()
 }
-func saveStore() { b, _ := json.MarshalIndent(store, "", "  "); _ = os.WriteFile(dataPath, b, 0644) }
+func saveStore() {
+	obsMu.Lock()
+	b, _ := json.MarshalIndent(store, "", "  ")
+	obsMu.Unlock()
+	_ = os.WriteFile(dataPath, b, 0644)
+}
 
 func idx(k, l string, v float64, desc string, components []interface{}, formula string, sources []string) map[string]interface{} {
 	clean := make([]interface{}, 0, len(components))
