@@ -171,7 +171,7 @@ jobs:
           clients=d.get('clients',{})
           for slug in ('aroma','bolyarka','mollox','astor-garden'):
               assert slug in clients, f'{slug} missing from production store'
-          print('STORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in clients.items()})
+          print('STORE_OK', {k:(len(v.get('snapshots') or []),len(v.get('observations') or [])) for k,v in clients.items()})
           PY
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' "$BASE/client-login?ts=$(date +%s)")
           test "$code" = "200"
