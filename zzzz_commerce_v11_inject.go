@@ -73,7 +73,7 @@ func init() {
 
 		if path == "/dashboard.html" {
 			head := `<style id="blisCommerceOwnerOnly">#commerce,.blis-commerce-launch,[data-blis-commerce-open]{display:none!important}</style>`
-			late := `<script>(function(){function hide(){document.querySelectorAll('#commerce,.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}hide();setTimeout(hide,250);setTimeout(hide,900);})();</script>`
+			late := `<script>(function(){function removeCommerce(){document.querySelectorAll('#commerce,.blis-commerce-launch,[data-blis-commerce-open]').forEach(function(n){n.remove()});}removeCommerce();if(window.MutationObserver&&document.documentElement){new MutationObserver(removeCommerce).observe(document.documentElement,{childList:true,subtree:true});}})();</script>`
 			body = bytes.Replace(body, []byte("</head>"), []byte(head+"</head>"), 1)
 			body = bytes.Replace(body, []byte("</body>"), []byte(late+"</body>"), 1)
 		} else if path == "/services.html" {
