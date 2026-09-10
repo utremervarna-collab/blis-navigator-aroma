@@ -77,18 +77,22 @@ jobs:
           after=json.load(open('data/live_store.json',encoding='utf-8'))
           bc=before.get('clients',{}); ac=after.get('clients',{})
           changed=[]
+          observation_retention_cap=12000
           for slug in ('aroma','bolyarka','astor-garden','mollox'):
               assert slug in ac, f'{slug} missing from exported store'
               bsn=len(bc.get(slug,{}).get('snapshots',[])); asn=len(ac[slug].get('snapshots',[]))
               bob=len(bc.get(slug,{}).get('observations',[])); aob=len(ac[slug].get('observations',[]))
               assert asn >= bsn, f'{slug} snapshot count regressed {bsn}->{asn}'
-              assert aob >= bob, f'{slug} observation count regressed {bob}->{aob}'
+              if aob < bob:
+                  assert bob > observation_retention_cap and aob == observation_retention_cap, \
+                      f'{slug} observation count regressed outside retention compaction {bob}->{aob}'
+                  print(slug, f'OBSERVATION_RETENTION_COMPACTION {bob}->{aob}')
               if asn>bsn or aob>bob: changed.append(slug)
               print(slug, 'snapshots=',asn, 'observations=',aob)
           if changed:
               print('PERSISTENCE_WRITE_OK', ','.join(changed))
           else:
-              print('NO_NEW_DATA: refresh completed successfully; persistent counts are unchanged')
+              print('NO_NEW_DATA: refresh completed successfully; persistent counts are unchanged or retention-capped')
           PY
 
       - name: Commit daily data snapshot
