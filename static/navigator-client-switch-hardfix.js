@@ -3,7 +3,7 @@
   'use strict';
   if(window.__BLISClientSwitchHardfix)return;
   window.__BLISClientSwitchHardfix=true;
-  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
+  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello','everbet','black-sea-center']);
 
   async function switchInPlace(key){
     if(!allowed.has(key))return;
