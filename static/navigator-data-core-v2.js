@@ -1,16 +1,19 @@
-/* BLIS Navigator — data-only core v2. No navigation, no page rendering. */
+/* BLIS Navigator — data-only core v2.1. No navigation, no page rendering. */
 (function(){
 'use strict';
 if(window.__BLIS_DATA_CORE_V2)return;window.__BLIS_DATA_CORE_V2=true;
 
 var $=window.$=window.$||function(id){return document.getElementById(id)};
-var esc=window.esc=window.esc||function(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])})};
+var esc=window.esc=window.esc||function(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m])})};
 var slug=window.slug=String(window.BLIS_INITIAL_CLIENT||document.body?.dataset?.client||'aroma');
 var D=window.D=null,S=window.S=[],Q=window.Q={},A=window.A=[],H=window.H=[];
 var loadEpoch=0;
+var liveTimer=0;
+var liveRefreshInFlight=false;
 const REQUEST_TIMEOUT_MS=7000;
+const LIVE_REFRESH_MS=15000;
 
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello']);
+const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello','kub','black-sea-center']);
 function currentClient(){
   try{const q=new URLSearchParams(location.search).get('client');if(CLIENTS.has(q))return q}catch(_){}
   const b=document.body?.dataset?.client;if(CLIENTS.has(b))return b;
@@ -45,37 +48,53 @@ async function json(url,fallback){
     if(timer)clearTimeout(timer);
   }
 }
-async function load(key){
+async function load(key,opt){
+  opt=opt||{};
   const epoch=++loadEpoch;
   setClient(CLIENTS.has(key)?key:currentClient());
-  document.body.dataset.blisLoading='true';
+  if(!opt.silent)document.body.dataset.blisLoading='true';
   const b=Date.now();
   const out=await Promise.all([
-    json(endpoint('dashboard')+'?_='+b,{}),
-    json(endpoint('sources')+'?_='+b,[]),
-    json(endpoint('data-quality')+'?_='+b,{}),
-    json(endpoint('activity')+'?_='+b,[]),
-    json(endpoint('history')+'?_='+b,[])
+    json(endpoint('dashboard')+'?_='+b,D||{}),
+    json(endpoint('sources')+'?_='+b,Array.isArray(S)?S:[]),
+    json(endpoint('data-quality')+'?_='+b,Q||{}),
+    json(endpoint('activity')+'?_='+b,Array.isArray(A)?A:[]),
+    json(endpoint('history')+'?_='+b,Array.isArray(H)?H:[])
   ]);
   if(epoch!==loadEpoch)return D;
-  D=out[0]||{};S=Array.isArray(out[1])?out[1]:[];Q=out[2]||{};A=Array.isArray(out[3])?out[3]:[];H=Array.isArray(out[4])?out[4]:[];
+  D=out[0]||D||{};S=Array.isArray(out[1])?out[1]:S;Q=out[2]||Q||{};A=Array.isArray(out[3])?out[3]:A;H=Array.isArray(out[4])?out[4]:H;
   document.body.dataset.blisLoading='false';
+  document.body.dataset.blisLive='true';
+  document.body.dataset.blisLiveUpdated=String(Date.now());
   syncGlobals();
   const ls=document.getElementById('lastSync');if(ls)ls.textContent=D?.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'няма синхронизация';
-  window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:slug,slug:slug,data:D,sources:S,quality:Q,activity:A,history:H}}));
+  window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:slug,slug:slug,data:D,sources:S,quality:Q,activity:A,history:H,realtime:!!opt.silent}}));
   requestAnimationFrame(function(){try{window.BLISCanonicalRenderActive?.()}catch(e){console.warn('BLIS canonical render',e)}});
   return D;
 }
+async function liveRefresh(){
+  if(liveRefreshInFlight||document.hidden)return D;
+  liveRefreshInFlight=true;
+  try{return await load(slug,{silent:true})}finally{liveRefreshInFlight=false}
+}
+function startLiveRefresh(){
+  if(liveTimer)clearInterval(liveTimer);
+  liveTimer=setInterval(liveRefresh,LIVE_REFRESH_MS);
+}
 window.load=load;
+window.BLISLiveRefresh={refresh:liveRefresh,interval:LIVE_REFRESH_MS,version:'2.1'};
 window.refreshNow=async function(){try{await fetch(endpoint('refresh'),{method:'POST'});return await load(slug)}catch(e){console.error(e)}};
 window.download=function(type,format){location.href=endpoint('generate')+`?type=${encodeURIComponent(type)}&format=${encodeURIComponent(format)}`};
 window.closeModal=function(){document.getElementById('modal')?.classList.remove('open')};
 
 async function init(){
   const sel=document.getElementById('clientSel');
-  if(sel){sel.value=currentClient();sel.onchange=function(e){load(String(e.target.value||'aroma'))}}
+  if(sel){sel.value=currentClient();sel.onchange=function(e){load(String(e.target.value||'aroma')).then(startLiveRefresh)}}
   setClient(currentClient());
   await load(slug);
+  startLiveRefresh();
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)liveRefresh()});
+  window.addEventListener('focus',liveRefresh);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
