@@ -103,7 +103,18 @@ jobs:
           grep -q '"ok":true' /tmp/health.json
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&final=1&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
-          echo 'NAVIGATOR_FINAL_MIGRATION_CLOSURE_OK'
+          echo 'NAVIGATOR_FINAL_MIGRATION_HEALTH_OK'
+
+      - name: Prove unsupported manual refresh is fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          curl -sS -c /tmp/wirello.cookies "$BASE/wirello?final=1&ts=$(date +%s)" -o /tmp/wirello.html
+          code=$(curl -sS -b /tmp/wirello.cookies -X POST -o /tmp/wirello-refresh.json -w '%{http_code}' "$BASE/api/clients/wirello/refresh?final=1&ts=$(date +%s)")
+          test "$code" = "409"
+          grep -Fq 'metric engine unavailable for this client' /tmp/wirello-refresh.json
+          echo 'UNSUPPORTED_MANUAL_REFRESH_FAIL_CLOSED_OK'
 
       - name: Publish final migration status
         if: always()
