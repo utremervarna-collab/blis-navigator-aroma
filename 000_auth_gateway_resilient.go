@@ -291,8 +291,14 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 
 	if path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html" {
 		clearBscScopeCookie(w, r)
-		clearSession(w, r)
-		setPublicDemoCookie(w, r)
+		_, owner := ownerSession(r)
+		if owner {
+			// Owner browsing the public demo must never destroy the durable owner session.
+			clearPublicDemoCookie(w, r)
+		} else {
+			clearSession(w, r)
+			setPublicDemoCookie(w, r)
+		}
 		r2 := r.Clone(r.Context())
 		r2.URL.Path = "/dashboard.html"
 		q := r2.URL.Query()
@@ -301,7 +307,9 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			q.Set("page", "overview")
 		}
 		r2.URL.RawQuery = q.Encode()
-		r2.Header.Set("X-BLIS-Client-Scope", "wirello")
+		if !owner {
+			r2.Header.Set("X-BLIS-Client-Scope", "wirello")
+		}
 		authProxy.ServeHTTP(w, r2)
 		return
 	}
