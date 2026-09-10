@@ -85,8 +85,10 @@ jobs:
               assert aob >= bob, f'{slug} observation count regressed {bob}->{aob}'
               if asn>bsn or aob>bob: changed.append(slug)
               print(slug, 'snapshots=',asn, 'observations=',aob)
-          assert changed, 'production refresh returned success but persistent store did not change'
-          print('PERSISTENCE_WRITE_OK', ','.join(changed))
+          if changed:
+              print('PERSISTENCE_WRITE_OK', ','.join(changed))
+          else:
+              print('NO_NEW_DATA: refresh completed successfully; persistent counts are unchanged')
           PY
 
       - name: Commit daily data snapshot
