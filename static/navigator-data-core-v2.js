@@ -4,7 +4,7 @@
 if(window.__BLIS_DATA_CORE_V2)return;window.__BLIS_DATA_CORE_V2=true;
 
 var $=window.$=window.$||function(id){return document.getElementById(id)};
-var esc=window.esc=window.esc||function(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m])})};
+var esc=window.esc=window.esc||function(s){return String(s??'').replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])})};
 var slug=window.slug=String(window.BLIS_INITIAL_CLIENT||document.body?.dataset?.client||'aroma');
 var D=window.D=null,S=window.S=[],Q=window.Q={},A=window.A=[],H=window.H=[];
 var loadEpoch=0;
