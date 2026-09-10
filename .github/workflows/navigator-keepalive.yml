@@ -43,6 +43,15 @@ jobs:
               "$url" -o "$out"
           }
 
+          # Public entry points must render actual HTML, not only API health.
+          request "$BASE/?probe=1&ts=$(date +%s)" /tmp/home.html
+          test -s /tmp/home.html
+          grep -Eqi 'BLIS Navigator|Brand Lab Intelligence System' /tmp/home.html
+
+          request "$BASE/client-login?probe=1&ts=$(date +%s)" /tmp/client-login.html
+          test -s /tmp/client-login.html
+          grep -Eqi 'BLIS|client|клиент' /tmp/client-login.html
+
           request "$BASE/migration-build.js?probe=1&ts=$(date +%s)" /tmp/migration-build.js
           cat /tmp/migration-build.js
           grep -q "$MIGRATION_BUILD" /tmp/migration-build.js
