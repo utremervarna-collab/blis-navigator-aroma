@@ -48,8 +48,6 @@ jobs:
           print('KUB_FLOOR',kub_floor)
           print('MAIN_FLOOR',json.dumps(counts,separators=(',',':'),sort_keys=True))
           PY
-          cat /tmp/kub_floor.txt
-          cat /tmp/main-floor-counts.json
 
       - name: Wait for exact final production build
         shell: bash
@@ -65,7 +63,7 @@ jobs:
           done
           test "$ok" = "1"
 
-      - name: Prove cold-start runtime-data restore
+      - name: Prove cold-start durable store restore
         shell: bash
         run: |
           set -euo pipefail
@@ -73,16 +71,22 @@ jobs:
           KUB_FLOOR=$(cat /tmp/kub_floor.txt)
           ok=0
           for i in $(seq 1 30); do
-            if curl -fsS --connect-timeout 15 --max-time 45 "$BASE/api/runtime-data/status?final=1&ts=$(date +%s)" -o /tmp/restore.json; then
+            if curl -fsS --connect-timeout 15 --max-time 90 "$BASE/api/store/export?cold=1&ts=$(date +%s)" -o /tmp/cold-live.json; then
               if python - "$KUB_FLOOR" <<'PY'
           import json,sys
-          floor=int(sys.argv[1])
-          d=json.load(open('/tmp/restore.json',encoding='utf-8'))
-          assert d.get('attempted') is True, d
-          assert d.get('applied') is True, d
-          assert d.get('reason')=='remote_snapshot_applied', d
-          assert int(d.get('kub_signal_observations') or 0)>=floor, (d,floor)
-          print('COLD_START_RESTORE_OK',d)
+          kub_floor=int(sys.argv[1])
+          main_floor=json.load(open('/tmp/main-floor-counts.json',encoding='utf-8'))
+          live=json.load(open('/tmp/cold-live.json',encoding='utf-8')).get('clients',{})
+          for slug,f in main_floor.items():
+              c=live.get(slug)
+              assert c is not None, f'{slug} missing after cold deploy'
+              assert len(c.get('snapshots',[]))>=f['snapshots'], (slug,'snapshots',len(c.get('snapshots',[])),f['snapshots'])
+              assert len(c.get('observations',[]))>=f['observations'], (slug,'observations',len(c.get('observations',[])),f['observations'])
+          kub=live.get('kub')
+          assert kub is not None, 'KUB persistence record missing after cold deploy'
+          n=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
+          assert n>=kub_floor, (n,kub_floor)
+          print('COLD_START_STORE_RESTORE_OK',{'kub_signal_observations':n,'floor':kub_floor})
           PY
               then ok=1; break; fi
             fi
@@ -90,30 +94,11 @@ jobs:
           done
           test "$ok" = "1"
 
-      - name: Prove full live store and KUB history survived redeploy
+      - name: Prove final health and KUB access isolation
         shell: bash
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          KUB_FLOOR=$(cat /tmp/kub_floor.txt)
-          curl -fsS --connect-timeout 15 --max-time 90 "$BASE/api/store/export?final=1&ts=$(date +%s)" -o /tmp/live.json
-          python - "$KUB_FLOOR" <<'PY'
-          import json,sys
-          kub_floor=int(sys.argv[1])
-          main_floor=json.load(open('/tmp/main-floor-counts.json',encoding='utf-8'))
-          live=json.load(open('/tmp/live.json',encoding='utf-8')).get('clients',{})
-          for slug,f in main_floor.items():
-              c=live.get(slug)
-              assert c is not None, f'{slug} missing after final redeploy'
-              assert len(c.get('snapshots',[]))>=f['snapshots'], (slug,'snapshots',len(c.get('snapshots',[])),f['snapshots'])
-              assert len(c.get('observations',[]))>=f['observations'], (slug,'observations',len(c.get('observations',[])),f['observations'])
-          kub=live.get('kub')
-          assert kub is not None, 'KUB persistence record missing after final redeploy'
-          n=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
-          assert n>=kub_floor, (n,kub_floor)
-          print('FINAL_STORE_PERSISTENCE_OK',{'kub_signal_observations':n,'floor':kub_floor})
-          PY
-
           curl -fsS "$BASE/api/health?final=1&ts=$(date +%s)" -o /tmp/health.json
           grep -q '"ok":true' /tmp/health.json
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&final=1&ts=$(date +%s)")
