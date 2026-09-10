@@ -62,19 +62,52 @@ jobs:
           ref: runtime-data
           fetch-depth: 1
 
-      - name: Commit live store to runtime-data branch
+      - name: Merge KUB history and commit live store
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p data
+          if [ -f data/live_store.json ]; then
+            cp data/live_store.json /tmp/previous_live_store.json
+          fi
           cp /tmp/live_store.json data/live_store.json
           python - <<'PY'
-          import json
-          d=json.load(open('data/live_store.json',encoding='utf-8'))
-          kub=d['clients']['kub']
-          n=sum(1 for o in kub.get('observations',[]) if o.get('source_key')=='signal_collector' and str(o.get('metric_key','')).startswith('signal_event_'))
-          assert n>0
-          print('KUB_SIGNAL_SNAPSHOT_COUNT',n)
+          import json, os
+
+          def is_kub_signal(o):
+              return o.get('source_key') == 'signal_collector' and str(o.get('metric_key','')).startswith('signal_event_')
+
+          path='data/live_store.json'
+          candidate=json.load(open(path,encoding='utf-8'))
+          kub=candidate['clients']['kub']
+          candidate_obs=kub.setdefault('observations',[])
+          candidate_keys={o.get('metric_key') for o in candidate_obs if is_kub_signal(o)}
+          before=len(candidate_keys)
+          previous_count=0
+          restored=0
+
+          prev_path='/tmp/previous_live_store.json'
+          if os.path.exists(prev_path):
+              previous=json.load(open(prev_path,encoding='utf-8'))
+              previous_kub=previous.get('clients',{}).get('kub',{})
+              previous_signals=[o for o in previous_kub.get('observations',[]) if is_kub_signal(o)]
+              previous_count=len({o.get('metric_key') for o in previous_signals})
+              for o in previous_signals:
+                  key=o.get('metric_key')
+                  if key and key not in candidate_keys:
+                      candidate_obs.append(o)
+                      candidate_keys.add(key)
+                      restored += 1
+
+          after=len(candidate_keys)
+          if after == 0:
+              raise SystemExit('KUB snapshot refused: no durable signal observations')
+          if after < previous_count:
+              raise SystemExit(f'KUB snapshot regression refused: previous={previous_count} candidate={before} merged={after}')
+
+          with open(path,'w',encoding='utf-8') as f:
+              json.dump(candidate,f,ensure_ascii=False,separators=(',',':'))
+          print('KUB_SIGNAL_SNAPSHOT_COUNTS',{'previous':previous_count,'candidate':before,'restored':restored,'final':after})
           PY
           git config user.name 'BLIS Runtime Snapshot'
           git config user.email 'actions@users.noreply.github.com'
