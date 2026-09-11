@@ -41,7 +41,7 @@ jobs:
 
           retry_code "$BASE/api/clients/aroma/dashboard" 200 /tmp/aroma.json
           retry_code "$BASE/api/clients" 200 /tmp/clients.json
-          retry_code "$BASE/static/navigator-client-ui.js" 200 /tmp/client-ui.js
+          retry_code "$BASE/navigator-client-ui.js" 200 /tmp/client-ui.js
           grep -Fq "ownerVisibleOrder=['aroma','bolyarka','mollox','wirello','astor-garden','varna-towers','everbet','black-sea-center','kub']" /tmp/client-ui.js
           grep -Fq "function visibleOrder(){return ownerVisibleOrder.slice()}" /tmp/client-ui.js
           grep -Fq "async function select(key){if(!valid(key))return;" /tmp/client-ui.js
