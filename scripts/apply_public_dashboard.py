@@ -72,7 +72,7 @@ t = t.replace(
 )
 
 start = t.find("function visibleOrder(){")
-end = t.find("function syncLabels()", start)
+end = t.find("function removeLegacyIdentity()", start)
 if start < 0 or end < 0:
     raise SystemExit("client catalogue function block not found")
 replacement = '''function visibleOrder(){return ownerVisibleOrder.slice()}
