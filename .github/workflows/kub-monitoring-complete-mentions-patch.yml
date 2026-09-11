@@ -127,3 +127,5 @@ jobs:
           git add signal_collector.go kub_signal_extension.go static/kub-live-feed-v3.js kub_monitoring_mention_coverage_v1.go
           git commit -m 'Show every captured KUB mention in Monitoring'
           git push origin HEAD:main
+
+# Triggered explicitly to apply the complete KUB mention coverage patch.
