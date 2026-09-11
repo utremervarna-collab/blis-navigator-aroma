@@ -119,7 +119,8 @@ jobs:
                 assert(!boot.services,`${client}: Services launcher leaked into Navigator`);
                 for(const id of boot.nav){
                   phase=`${client}:${id}`;
-                  await p.evaluate(id=>window.refGo(id),id);
+                  const button=p.locator(`#nav button[data-page="${id}"]`);
+                  await button.click();
                   await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:10000});
                   await p.waitForTimeout(350);
                   const x=await p.evaluate(id=>{
@@ -138,7 +139,7 @@ jobs:
               clearTimeout(watchdog);
               console.log('NAVIGATOR_VISIBLE_ROUTES_LOCAL_OK');
             } finally {await browser.close();}
-          })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',String(e.message||e))}catch(_){};console.error(e);process.exit(1)});
+          })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',`${phase}: ${String(e.message||e)}`)}catch(_){};console.error(phase,e);process.exit(1)});
           NODE
           node /tmp/navigator-smoke.cjs
 
