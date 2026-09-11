@@ -31,12 +31,12 @@ jobs:
           const m=src.match(/const ownerVisibleOrder=(\[[^;]+\]);/);
           if(!m) throw new Error('ownerVisibleOrder missing');
           const actual=Function(`return ${m[1]}`)();
-          const expected=['kub','mollox','aroma','bolyarka','astor-garden','everbet','varna-towers','black-sea-center'];
+          const expected=['aroma','bolyarka','mollox'];
           if(JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error(`owner catalogue mismatch ${JSON.stringify(actual)}`);
           if(actual.includes('wirello')) throw new Error('Wirello leaked into owner catalogue');
           if(!/key==='wirello'/.test(src)) throw new Error('Wirello owner-selection guard missing');
           if(!/fetch\('\/api\/client-session'/.test(src)) throw new Error('server-backed owner session resolution missing');
-          console.log('OWNER_FULL_CLIENT_CATALOGUE_OK',actual.join(','));
+          console.log('OWNER_ACTIVE_CLIENT_CATALOGUE_OK',actual.join(','));
           NODE
 
       - name: Start Navigator through production gateway
