@@ -99,6 +99,7 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 <script defer src="/kub-i18n-full-v1.js?v=20260908-direct23"></script>
 <script defer src="/kub-i18n-polish-v1.js?v=20260908-direct23"></script>
 <script defer src="/kub-i18n-final-fragments-v1.js?v=20260908-direct23"></script>
+<script defer src="/kub-live-feed-v3.js?v=20260911-live9"></script>
 <script>
 (function(){
  function placeKUBMap(){
@@ -149,8 +150,8 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 		w.Header().Set("Pragma", "no-cache")
 		w.Header().Set("Expires", "0")
 		w.Header().Set("Clear-Site-Data", `"cache"`)
-		w.Header().Set("X-BLIS-KUB-Route", "direct23")
-		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct23", r.URL.Path, file, len(b))
+		w.Header().Set("X-BLIS-KUB-Route", "direct24")
+		log.Printf("KUB_PAGE route=%s file=%s bytes=%d marker=direct24", r.URL.Path, file, len(b))
 		_, _ = w.Write(b)
 	}
 }
