@@ -33,18 +33,25 @@ jobs:
           done
           curl -fsS http://127.0.0.1:10000/api/health
 
-      - name: Verify secure gateway contracts
+      - name: Verify public read-only gateway and protected mutation contracts
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
           test "$code" = "200"
           grep -Eqi 'BLIS|client|клиент' /tmp/login.html
           code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')
-          test "$code" = "302"
-          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+          test "$code" = "200"
+          ! grep -qi 'client-login' /tmp/dashboard.body
+          code=$(curl -sS -o /tmp/aroma.json -w '%{http_code}' 'http://127.0.0.1:10000/api/clients/aroma/dashboard')
+          test "$code" = "200"
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
+          code=$(curl -sS -o /tmp/admin.body -w '%{http_code}' http://127.0.0.1:10000/admin.html)
+          test "$code" = "404"
+          code=$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST http://127.0.0.1:10000/api/clients/wirello/refresh)
+          test "$code" = "409"
+          echo PUBLIC_READ_ONLY_GATEWAY_OK
 
       - name: Install Chromium
         run: |
@@ -57,8 +64,8 @@ jobs:
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          // Renderer QA deliberately uses the application behind the auth gateway.
-          // Authentication is validated separately above.
+          // Renderer QA deliberately uses the application behind the gateway.
+          // The external public read-only contract is validated separately above.
           const origin='http://127.0.0.1:10001';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
           const pages=['overview','social','market','digital','reputation','competition','history','reports'];
@@ -175,5 +182,5 @@ jobs:
         with:
           script: |
             const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'current desktop/mobile runtime, routing and switching passed':'Extended Navigator QA failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'public read-only gateway + desktop/mobile QA passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
