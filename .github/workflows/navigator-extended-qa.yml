@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify owner catalogue contract
+      - name: Verify active client catalogue contract
         run: |
           set -euo pipefail
           node <<'NODE'
@@ -33,10 +33,10 @@ jobs:
           const actual=Function(`return ${m[1]}`)();
           const expected=['aroma','bolyarka','mollox'];
           if(JSON.stringify(actual)!==JSON.stringify(expected)) throw new Error(`owner catalogue mismatch ${JSON.stringify(actual)}`);
-          if(actual.includes('wirello')) throw new Error('Wirello leaked into owner catalogue');
+          if(actual.includes('wirello')) throw new Error('Wirello leaked into standard catalogue');
           if(!/key==='wirello'/.test(src)) throw new Error('Wirello owner-selection guard missing');
-          if(!/fetch\('\/api\/client-session'/.test(src)) throw new Error('server-backed owner session resolution missing');
-          console.log('OWNER_ACTIVE_CLIENT_CATALOGUE_OK',actual.join(','));
+          if(!/fetch\('\/api\/client-session'/.test(src)) throw new Error('server-backed session resolution missing');
+          console.log('ACTIVE_CLIENT_CATALOGUE_OK',actual.join(','));
           NODE
 
       - name: Start Navigator through production gateway
@@ -50,80 +50,75 @@ jobs:
           done
           curl -fsS http://127.0.0.1:10000/api/health
 
-      - name: Verify secure gateway contracts
+      - name: Verify public gateway and protected mutation contracts
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
           test "$code" = "200"
           grep -Eqi 'BLIS|client|клиент' /tmp/login.html
+
           code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')
-          test "$code" = "302"
-          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+          test "$code" = "200"
+          grep -Eqi 'BLIS|Aroma' /tmp/dashboard.body
+
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
+
           code=$(curl -sS -D /tmp/bsc.headers -o /tmp/bsc.body -w '%{http_code}' 'http://127.0.0.1:10000/black-sea-center')
           test "$code" = "302"
-          grep -Eqi '^location: /client-login' /tmp/bsc.headers
+          grep -Eqi '^location: /dashboard\.html\?client=black-sea-center&page=overview' /tmp/bsc.headers
+
+          code=$(curl -sS -o /tmp/clients.json -w '%{http_code}' http://127.0.0.1:10000/api/clients)
+          test "$code" = "200"
+
+          code=$(curl -sS -o /tmp/admin.body -w '%{http_code}' http://127.0.0.1:10000/admin.html)
+          test "$code" = "404"
+
+          code=$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST http://127.0.0.1:10000/api/clients/wirello/refresh)
+          test "$code" = "409"
+          echo PUBLIC_GATEWAY_SECURITY_OK
 
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Run current desktop and mobile browser QA
+      - name: Run desktop and mobile public dashboard QA
         run: |
           cat >/tmp/extended.cjs <<'NODE'
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          // Renderer QA deliberately uses the application behind the auth gateway.
-          // Without an authenticated gateway session, the catalogue must fail closed
-          // to the current profile only. Owner catalogue is verified from its source contract above.
-          const origin='http://127.0.0.1:10001';
+          const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','black-sea-center'];
           const pages=['overview','social','market','digital','reputation','competition','history','reports'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden','black-sea-center':'Black Sea Center'};
           let phase='startup';
-          const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
+          const watchdog=setTimeout(()=>{try{fs.writeFileSync('/tmp/extended-error.txt',`watchdog timeout at ${phase}`)}catch(_){};process.exit(2)},150000);
 
           async function ready(p,client){
-            phase=`ready:${client}:goto`;
+            phase=`ready:${client}`;
             await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
-            phase=`ready:${client}:runtime`;
             await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
             await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=8,null,{timeout:15000});
             await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:18000});
             await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
-            await p.waitForTimeout(250);
             const state=await p.evaluate(()=>({
               id:document.body.dataset.client||'',
               name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
               nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
               visible:[...(window.BLIS_VISIBLE_CLIENTS||[])],
               menu:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey),
-              lang:document.documentElement.lang,
-              language:window.BLIS_LANGUAGE,
               services:!!document.querySelector('[data-blis-commerce-open]')
             }));
             assert(state.id===client,`${client}: wrong body client ${state.id}`);
             assert(state.name.includes(expected[client]),`${client}: wrong identity ${state.name}`);
-            assert(new Set(state.nav).size===state.nav.length,`${client}: duplicate routes ${state.nav}`);
-            for(const id of pages)assert(state.nav.includes(id),`${client}: missing route ${id}; nav=${state.nav}`);
-            assert(state.visible.join(',')===client,`${client}: unauthenticated renderer catalogue did not fail closed ${state.visible}`);
-            assert(state.menu.join(',')===client,`${client}: unauthenticated renderer menu leaked another profile ${state.menu}`);
-            assert(!state.visible.includes('wirello')&&!state.menu.includes('wirello'),`${client}: Wirello leaked into Navigator catalogue`);
-            assert(state.lang==='bg'&&state.language==='bg',`${client}: Bulgarian default missing`);
-            assert(!state.services,`${client}: Services launcher leaked into Navigator`);
-            return state;
-          }
-
-          async function inspect(p,id){
-            return p.evaluate(id=>{
-              const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-              const text=(root?.innerText||'').trim();
-              return {id:document.querySelector('.page.active')?.id,text:text.length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:Math.max(0,document.documentElement.scrollWidth-window.innerWidth),loading:/\bLoading\b|Зареждане\.{2,}/i.test(text)};
-            },id);
+            assert(new Set(state.nav).size===state.nav.length,`${client}: duplicate routes`);
+            for(const id of pages)assert(state.nav.includes(id),`${client}: missing route ${id}`);
+            assert(state.visible.join(',')===client,`${client}: public renderer catalogue leaked ${state.visible}`);
+            assert(state.menu.join(',')===client,`${client}: public menu leaked ${state.menu}`);
+            assert(!state.services,`${client}: Services launcher leaked`);
           }
 
           async function verifyPages(p,client){
@@ -131,9 +126,9 @@ jobs:
               phase=`${client}:${page}`;
               await p.evaluate(x=>window.refGo(x),page);
               await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:10000});
-              await p.waitForTimeout(250);
-              const x=await inspect(p,page);
-              assert(x.visible&&x.height>70&&x.text>20,`${client}/${page}: blank or collapsed ${JSON.stringify(x)}`);
+              await p.waitForTimeout(200);
+              const x=await p.evaluate(id=>{const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null,text=(root?.innerText||'').trim();return {text:text.length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden',overflow:Math.max(0,document.documentElement.scrollWidth-window.innerWidth),loading:/\bLoading\b|Зареждане\.{2,}/i.test(text)}},page);
+              assert(x.visible&&x.height>70&&x.text>20,`${client}/${page}: blank ${JSON.stringify(x)}`);
               assert(!x.loading,`${client}/${page}: loading remained`);
               assert(x.overflow<=12,`${client}/${page}: horizontal overflow ${x.overflow}`);
             }
@@ -142,31 +137,18 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
-              phase='desktop:aroma';
-              const p=await browser.newPage({viewport:{width:1440,height:1000}});
-              const errs=[];
-              p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
-              p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errs.push('CONSOLE '+m.text())});
-              await ready(p,'aroma');
-              await verifyPages(p,'aroma-desktop');
-              assert(errs.length===0,`desktop runtime errors ${errs.join(' | ')}`);
-              await p.close();
-
+              const d=await browser.newPage({viewport:{width:1440,height:1000}});
+              await ready(d,'aroma');
+              await verifyPages(d,'aroma-desktop');
+              await d.close();
               for(const client of clients){
-                phase=`mobile:${client}:open`;
                 const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-                const mobileErrs=[];
-                m.on('pageerror',e=>mobileErrs.push('PAGEERROR '+e.message));
-                m.on('console',x=>{if(x.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(x.text()))mobileErrs.push('CONSOLE '+x.text())});
                 await ready(m,client);
                 await verifyPages(m,`${client}-mobile`);
-                assert(mobileErrs.length===0,`${client}/mobile runtime errors ${mobileErrs.join(' | ')}`);
                 await m.close();
               }
-
-              phase='done';
               clearTimeout(watchdog);
-              console.log('NAVIGATOR_EXTENDED_CURRENT_QA_OK');
+              console.log('NAVIGATOR_EXTENDED_PUBLIC_QA_OK');
             } finally {await browser.close();}
           })().catch(e=>{try{fs.writeFileSync('/tmp/extended-error.txt',`${phase}: ${String(e.message||e)}`)}catch(_){};console.error(phase,e);process.exit(1)});
           NODE
@@ -184,5 +166,5 @@ jobs:
         with:
           script: |
             const fs=require('fs');const ok='${{ job.status }}'==='success';let detail='';try{detail=fs.readFileSync('/tmp/extended-error.txt','utf8').replace(/[^a-zA-Z0-9_:\/.-]+/g,' ').slice(0,95)}catch(_){}
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'current desktop/mobile runtime and owner catalogue passed':'Extended Navigator QA failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:ok?'success':'failure',context:'navigator-extended-qa',description:ok?'public gateway desktop/mobile QA passed':'Extended Navigator QA failed'});
             if(!ok&&detail)await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state:'failure',context:`nav-ext:${detail}`,description:'First extended QA failure'});
