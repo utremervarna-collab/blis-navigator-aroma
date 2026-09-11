@@ -3,7 +3,7 @@ package main
 import "bytes"
 
 func init() {
-	const feedTag = `<script defer src="/kub-live-feed-v3.js?v=20260903-live7"></script>`
+	const feedTag = `<script defer src="/kub-live-feed-v3.js?v=20260911-live8"></script>`
 	const dynamicsTag = `<script defer src="/kub-crisis-dynamics-v1.js?v=20260903-dynamics1"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("kub-live-feed-v3.js")) {
 		// Append so v3 executes after the older KUB feed helpers and becomes the
