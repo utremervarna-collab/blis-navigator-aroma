@@ -45,6 +45,9 @@ jobs:
           console.log('ACTIVE_CLIENT_CATALOGUE_OK',actual.join(','));
           NODE
           node --check static/navigator-client-ui.js
+          grep -q "2026-09-10T00:00:00+03:00" static/kub-live-feed-v3.js
+          grep -q "Радио Варна / БНР" static/kub-live-feed-v3.js
+          grep -q "Парламентът отхвърли искане за изслушване относно корпорация КУБ" static/kub-live-feed-v3.js
 
       - name: Build and start Navigator gateway
         run: |
@@ -134,6 +137,14 @@ jobs:
               exit 1
             fi
           done
+
+          # Verify the actual production KUB Monitoring renderer includes the restored backfill.
+          curl -fsS "$BASE/kub-live-feed-v3.js?ts=$(date +%s)" -o /tmp/kub-feed.js
+          grep -q "2026-09-10T00:00:00+03:00" /tmp/kub-feed.js
+          grep -q "Радио Варна / БНР" /tmp/kub-feed.js
+          grep -q "Парламентът отхвърли искане за изслушване относно корпорация КУБ" /tmp/kub-feed.js
+          grep -q "2026-09-09T14:58:00+03:00" /tmp/kub-feed.js
+          echo 'KUB_BACKFILL_PRODUCTION_OK'
           echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
 
       - name: Publish production migration status
@@ -142,4 +153,4 @@ jobs:
         with:
           script: |
             const state='${{ job.status }}'==='success'?'success':'failure';
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'active clients + KUB production passed':'active clients + KUB production failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'active clients + KUB backfill production passed':'active clients + KUB production failed'});
