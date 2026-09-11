@@ -76,7 +76,9 @@ func navigatorDashboardTarget(r *http.Request) string {
 	return "/dashboard.html?" + q.Encode()
 }
 
-func commerceOwnerOnlyPath(path string) bool { return strings.TrimSpace(path) == "/service-cards-v10.zip" }
+func commerceOwnerOnlyPath(path string) bool {
+	return strings.TrimSpace(path) == "/service-cards-v10.zip"
+}
 
 func init() {
 	if os.Getenv("BLIS_AUTH_PROXY_DISABLED") == "1" || os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") == "1" {
@@ -210,6 +212,55 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// A dashboard request for KUB has one canonical destination: the dedicated crisis profile.
 	if (path == "/dashboard.html" || path == "/navigator-v2.html" || path == "/navigator" || path == "/navigator/") && strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "kub") {
 		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
+		return
+	}
+
+	// PUBLIC_FULL_DASHBOARD_V1
+	// Public Navigator: dashboard and read APIs are accessible without a login.
+	// KUB keeps its dedicated crisis route; admin and mutation routes are not opened here.
+	if path == "/navigator" || path == "/navigator/" {
+		clearPublicDemoCookie(w, r)
+		clearBscScopeCookie(w, r)
+		clearLegacyClientRememberCookie(w, r)
+		http.Redirect(w, r, navigatorDashboardTarget(r), http.StatusFound)
+		return
+	}
+	if (path == "/black-sea-center" || path == "/black-sea-center/" || path == "/black-sea-center-home.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		clearPublicDemoCookie(w, r)
+		clearBscScopeCookie(w, r)
+		clearLegacyClientRememberCookie(w, r)
+		http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
+		return
+	}
+	if (path == "/wirello" || path == "/wirello/" || path == "/wirello-master-demo.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		clearPublicDemoCookie(w, r)
+		clearBscScopeCookie(w, r)
+		http.Redirect(w, r, "/dashboard.html?client=wirello&page=overview", http.StatusFound)
+		return
+	}
+	if (path == "/dashboard.html" || path == "/navigator-v2.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		clearPublicDemoCookie(w, r)
+		clearBscScopeCookie(w, r)
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		if !validNavigatorClient(strings.TrimSpace(q.Get("client"))) {
+			q.Set("client", "aroma")
+		}
+		if q.Get("page") == "" {
+			q.Set("page", "overview")
+		}
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Del("X-BLIS-Client-Scope")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && (path == "/api/clients" || strings.HasPrefix(path, "/api/clients/")) {
+		if authProxy == nil {
+			http.Error(w, "Gateway unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		authProxy.ServeHTTP(w, r)
 		return
 	}
 
