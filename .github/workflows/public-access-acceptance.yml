@@ -1,0 +1,65 @@
+name: Navigator Public Access Acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/public-access-acceptance.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify live public Navigator access
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run'
+          retry_code() {
+            local url="$1" expected="$2" body="$3" code=''
+            for i in 1 2 3 4 5 6 7 8; do
+              code=$(curl -sS --connect-timeout 10 --max-time 30 -o "$body" -w '%{http_code}' "$url" || true)
+              if [[ "$code" == "$expected" ]]; then return 0; fi
+              echo "attempt=$i url=$url got=$code expected=$expected"
+              sleep 10
+            done
+            echo "FAILED url=$url got=$code expected=$expected"
+            cat "$body" 2>/dev/null | head -c 800 || true
+            exit 1
+          }
+
+          retry_code "$BASE/dashboard.html?client=aroma&page=overview" 200 /tmp/aroma.html
+          ! grep -qi 'client-login' /tmp/aroma.html
+          grep -qi 'BLIS' /tmp/aroma.html
+
+          for client in bolyarka mollox wirello astor-garden varna-towers everbet black-sea-center; do
+            retry_code "$BASE/dashboard.html?client=$client&page=overview" 200 "/tmp/$client.html"
+            ! grep -qi 'client-login' "/tmp/$client.html"
+            retry_code "$BASE/api/clients/$client/dashboard" 200 "/tmp/$client.json"
+          done
+
+          retry_code "$BASE/api/clients/aroma/dashboard" 200 /tmp/aroma.json
+          retry_code "$BASE/api/clients" 200 /tmp/clients.json
+          retry_code "$BASE/static/navigator-client-ui.js" 200 /tmp/client-ui.js
+          grep -Fq "ownerVisibleOrder=['aroma','bolyarka','mollox','wirello','astor-garden','varna-towers','everbet','black-sea-center','kub']" /tmp/client-ui.js
+          grep -Fq "function visibleOrder(){return ownerVisibleOrder.slice()}" /tmp/client-ui.js
+          grep -Fq "async function select(key){if(!valid(key))return;" /tmp/client-ui.js
+
+          nav_headers=$(mktemp)
+          nav_code=$(curl -sS --connect-timeout 10 --max-time 30 -D "$nav_headers" -o /dev/null -w '%{http_code}' "$BASE/navigator" || true)
+          [[ "$nav_code" =~ ^(301|302|303|307|308)$ ]]
+          nav_loc=$(tr -d '\r' < "$nav_headers" | awk 'tolower($1)=="location:" {print $2}' | tail -1)
+          [[ "$nav_loc" == /dashboard.html* ]]
+          [[ "$nav_loc" != *client-login* ]]
+
+          kub_headers=$(mktemp)
+          kub_code=$(curl -sS --connect-timeout 10 --max-time 30 -D "$kub_headers" -o /dev/null -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview" || true)
+          [[ "$kub_code" =~ ^(301|302|303|307|308)$ ]]
+          kub_loc=$(tr -d '\r' < "$kub_headers" | awk 'tolower($1)=="location:" {print $2}' | tail -1)
+          [[ "$kub_loc" == /kub-crisis.html* ]]
+          retry_code "$BASE/kub-crisis.html" 200 /tmp/kub.html
+
+          echo 'PUBLIC_ACCESS_ACCEPTANCE_OK'
+          echo 'Shared dashboard profiles: aroma, bolyarka, mollox, wirello, astor-garden, varna-towers, everbet, black-sea-center'
+          echo 'Dedicated profile: kub -> /kub-crisis.html'
