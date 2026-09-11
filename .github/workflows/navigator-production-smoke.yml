@@ -75,7 +75,7 @@ jobs:
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
-          const origin='http://127.0.0.1:10001';
+          const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
           const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
           const required=['overview','social','market','competition','history'];
