@@ -647,10 +647,18 @@ func signalListHandler(w http.ResponseWriter, r *http.Request) {
 	defer signalMu.RUnlock()
 	if client != "" {
 		rows := append([]Signal{}, signalState.Signals[client]...)
-		if scope == "external" || scope == "owned" {
+		if scope != "" {
 			filtered := rows[:0]
 			for _, s := range rows {
-				if s.Scope == scope {
+				signalScope := strings.ToLower(strings.TrimSpace(s.Scope))
+				keep := true
+				switch scope {
+				case "external", "owned", "competitor":
+					keep = signalScope == scope
+				case "brand", "monitoring":
+					keep = signalScope != "competitor"
+				}
+				if keep {
 					filtered = append(filtered, s)
 				}
 			}
