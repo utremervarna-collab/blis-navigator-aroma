@@ -79,9 +79,11 @@ jobs:
             code=$(curl -sS -o /tmp/$client.json -w '%{http_code}' "http://127.0.0.1:10000/api/clients/$client/dashboard")
             test "$code" = "200"
           done
-          code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
-          test "$code" = "302"
-          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
+          # The embedded/local gateway serves dashboard.html directly. The external
+          # production gateway owns the KUB redirect contract and is tested below.
+          code=$(curl -sS -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
+          test "$code" = "200"
+          ! grep -qi 'client-login' /tmp/kub.body
           curl -fsS http://127.0.0.1:10000/kub-home.html -o /tmp/kub-home.html
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
           curl -fsS 'http://127.0.0.1:10000/kub-crisis.html?lang=en' -o /tmp/kub-en.html
