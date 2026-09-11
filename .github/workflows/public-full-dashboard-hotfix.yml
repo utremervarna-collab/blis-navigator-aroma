@@ -142,3 +142,5 @@ function ensureMenu(){const menu=document.querySelector('.client-switch-menu');i
           git add 000_auth_gateway_resilient.go static/navigator-client-ui.js
           git commit -m 'Open full Navigator dashboard and client catalogue'
           git push origin HEAD:main
+
+# trigger: public full dashboard 2026-09-11
