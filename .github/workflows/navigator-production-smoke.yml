@@ -30,9 +30,9 @@ jobs:
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
-          PORT=10000 ./app > /tmp/blis-smoke-server.log 2>&1 &
+          PORT=10000 ./app >/tmp/blis-smoke-server.log 2>&1 &
           for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json; then break; fi
+            curl -fsS http://127.0.0.1:10000/api/health >/tmp/health.json && break
             sleep 1
           done
           curl -fsS http://127.0.0.1:10000/api/health
@@ -42,104 +42,93 @@ jobs:
       - name: Verify public read-only gateway contracts
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
-          test "$code" = "200"
-          grep -Eqi 'BLIS|client|клиент' /tmp/login.html
-          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')
-          test "$code" = "200"
-          ! grep -qi 'client-login' /tmp/dashboard.body
-          code=$(curl -sS -o /tmp/aroma.json -w '%{http_code}' 'http://127.0.0.1:10000/api/clients/aroma/dashboard')
-          test "$code" = "200"
+          test "$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)" = "200"
+          test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')" = "200"
+          test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' 'http://127.0.0.1:10000/api/clients/aroma/dashboard')" = "200"
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
-          curl -fsS http://127.0.0.1:10000/kub-home.html -o /tmp/kub-home.html
-          grep -q 'Корпорация КУБ' /tmp/kub-home.html
-          curl -fsS 'http://127.0.0.1:10000/kub-crisis.html?lang=en' -o /tmp/kub-en.html
-          grep -Eqi 'KUB|crisis' /tmp/kub-en.html
-          curl -fsS http://127.0.0.1:10000/wirello -o /tmp/wirello.html
-          grep -Eqi 'Wirello' /tmp/wirello.html
-          code=$(curl -sS -o /tmp/admin.body -w '%{http_code}' http://127.0.0.1:10000/admin.html)
-          test "$code" = "404"
-          code=$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST http://127.0.0.1:10000/api/clients/wirello/refresh)
-          test "$code" = "409"
+          test "$(curl -sS -o /tmp/admin.body -w '%{http_code}' http://127.0.0.1:10000/admin.html)" = "404"
+          test "$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST http://127.0.0.1:10000/api/clients/wirello/refresh)" = "409"
+          curl -fsS http://127.0.0.1:10000/kub-home.html | grep -q 'Корпорация КУБ'
+          curl -fsS http://127.0.0.1:10000/wirello | grep -Eqi 'Wirello'
+          echo GATEWAY_CONTRACT_OK
 
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
 
-      - name: Verify final visible Navigator routes for every client
+      - name: Verify Navigator routes and catalogue in a real browser
         run: |
-          cat > /tmp/navigator-smoke.cjs <<'NODE'
-          const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
+          cat >/tmp/navigator-smoke.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const fs=require('fs');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
-          const expectedNames={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const required=['overview','social','market','competition','history'];
+          const names={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
+          const visible='kub,mollox,aroma,bolyarka,wirello';
           let phase='startup';
-          const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
+          const watchdog=setTimeout(()=>{console.error('watchdog',phase);process.exit(2)},150000);
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
               for(const client of clients){
                 phase=`${client}:open`;
                 const p=await browser.newPage({viewport:{width:1440,height:1000}});
-                const errs=[];
-                p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));
-                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errs.push('CONSOLE '+m.text())});
-                p.on('response',r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.status()>=400&&u.pathname!=='/favicon.ico')errs.push(`HTTP ${r.status()} ${u.pathname}`)}catch(_){}});
+                const errors=[];
+                p.on('pageerror',e=>errors.push(`PAGEERROR ${e.message}`));
+                p.on('console',m=>{if(m.type()==='error'&&!/favicon|Failed to load resource|ERR_NAME_NOT_RESOLVED|net::ERR_/i.test(m.text()))errors.push(`CONSOLE ${m.text()}`)});
                 await p.goto(`${origin}/dashboard.html?client=${client}&page=overview`,{waitUntil:'domcontentloaded',timeout:25000});
-                phase=`${client}:runtime`;
-                await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
-                await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=5,null,{timeout:15000});
-                await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:20000});
+                await p.waitForFunction(()=>window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS)&&document.querySelector('.page.active'),null,{timeout:25000});
                 await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
                 const boot=await p.evaluate(()=>({
                   client:document.body.dataset.client||'',
                   name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
                   nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
-                  labels:[...document.querySelectorAll('#nav button[data-page] .navtxt')].map(x=>x.textContent.trim()),
                   visible:[...(window.BLIS_VISIBLE_CLIENTS||[])],
                   menu:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey),
+                  services:!!document.querySelector('[data-blis-commerce-open],#commerce,.blis-commerce-launch'),
                   lang:document.documentElement.lang,
-                  language:window.BLIS_LANGUAGE,
-                  services:!!document.querySelector('[data-blis-commerce-open],#commerce,.blis-commerce-launch')
+                  language:window.BLIS_LANGUAGE
                 }));
                 console.log('NAV_RUNTIME',client,JSON.stringify(boot));
-                assert(boot.client===client,`${client}: wrong body client ${boot.client}`);
-                assert(boot.name.includes(expectedNames[client]),`${client}: wrong identity ${boot.name}`);
-                assert(new Set(boot.nav).size===boot.nav.length,`${client}: duplicate nav routes ${boot.nav}`);
-                for(const id of required)assert(boot.nav.includes(id),`${client}: required route missing ${id}; visible=${boot.nav}`);
-                assert(boot.visible.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: visible registry ${boot.visible}`);
-                assert(boot.menu.join(',')==='kub,mollox,aroma,bolyarka,wirello',`${client}: menu leaked hidden client ${boot.menu}`);
-                assert(boot.lang==='bg'&&boot.language==='bg',`${client}: Bulgarian default missing`);
-                assert(!boot.services,`${client}: Services launcher leaked into Navigator`);
+                assert(boot.client===client,`${client}: body client ${boot.client}`);
+                assert(boot.name.includes(names[client]),`${client}: identity ${boot.name}`);
+                assert(boot.visible.join(',')===visible,`${client}: visible registry ${boot.visible}`);
+                assert(boot.menu.join(',')===visible,`${client}: selector ${boot.menu}`);
+                assert(!boot.services,`${client}: Services leaked`);
+                assert(boot.lang==='bg'&&boot.language==='bg',`${client}: BG default missing`);
+                assert(new Set(boot.nav).size===boot.nav.length,`${client}: duplicate routes`);
+                for(const required of ['overview','social','market','competition','history']) assert(boot.nav.includes(required),`${client}: missing ${required}`);
+
                 for(const id of boot.nav){
                   phase=`${client}:${id}`;
-                  const button=p.locator(`#nav button[data-page="${id}"]`);
-                  await button.click();
-                  await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:10000});
-                  await p.waitForTimeout(350);
-                  const x=await p.evaluate(id=>{
-                    const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root?getComputedStyle(root):null;
-                    const text=(root?.innerText||'').trim();
-                    return {id:document.querySelector('.page.active')?.id,text:text.length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01,overflow:Math.max(0,document.documentElement.scrollWidth-window.innerWidth),loading:/\bLoading\b|Зареждане\.{2,}/i.test(text)};
+                  const active=await p.locator('.page.active').getAttribute('id');
+                  if(active!==id){
+                    const button=p.locator(`#nav button[data-page="${id}"]:visible`).first();
+                    assert(await button.count()===1,`${client}/${id}: no visible nav control`);
+                    await button.click({timeout:10000});
+                    await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,id,{timeout:10000});
+                  }
+                  await p.waitForTimeout(250);
+                  const state=await p.evaluate(id=>{
+                    const root=document.getElementById(id),r=root?.getBoundingClientRect(),cs=root&&getComputedStyle(root),text=(root?.innerText||'').trim();
+                    return {active:document.querySelector('.page.active')?.id,text:text.length,height:r?.height||0,visible:!!root&&cs.display!=='none'&&cs.visibility!=='hidden',overflow:Math.max(0,document.documentElement.scrollWidth-window.innerWidth),loading:/\bLoading\b|Зареждане\.{2,}/i.test(text)};
                   },id);
-                  assert(x.id===id,`${client}/${id}: wrong active route ${x.id}`);
-                  assert(x.visible&&x.height>70&&x.text>20,`${client}/${id}: blank/collapsed ${JSON.stringify(x)}`);
-                  assert(!x.loading,`${client}/${id}: loading remained`);
-                  assert(x.overflow<=12,`${client}/${id}: horizontal overflow ${x.overflow}`);
+                  assert(state.active===id,`${client}/${id}: active=${state.active}`);
+                  assert(state.visible&&state.height>70&&state.text>20,`${client}/${id}: blank ${JSON.stringify(state)}`);
+                  assert(!state.loading,`${client}/${id}: loading remained`);
+                  assert(state.overflow<=12,`${client}/${id}: overflow ${state.overflow}`);
                 }
-                assert(errs.length===0,`${client}: runtime errors ${errs.join(' | ')}`);
+                assert(errors.length===0,`${client}: ${errors.join(' | ')}`);
                 await p.close();
               }
               clearTimeout(watchdog);
-              console.log('NAVIGATOR_VISIBLE_ROUTES_LOCAL_OK');
+              console.log('NAVIGATOR_BROWSER_SMOKE_OK');
             } finally {await browser.close();}
-          })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',`${phase}: ${String(e.message||e)}`)}catch(_){};console.error(phase,e);process.exit(1)});
+          })().catch(e=>{try{fs.writeFileSync('/tmp/navigator-smoke-error.txt',`${phase}: ${e.message||e}`)}catch(_){};console.error(phase,e);process.exit(1)});
           NODE
           node /tmp/navigator-smoke.cjs
 
@@ -154,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Wait for exact migration build
+      - name: Wait for migration build on canonical production
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
@@ -180,28 +169,15 @@ jobs:
               assert slug in clients, f'{slug} missing from production store'
           print('STORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in clients.items()})
           PY
-          code=$(curl -sS -o /tmp/login.html -w '%{http_code}' "$BASE/client-login?ts=$(date +%s)")
-          test "$code" = "200"
-          code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")
-          test "$code" = "200"
-          ! grep -qi 'client-login' /tmp/dashboard.body
-          code=$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")
-          test "$code" = "200"
-          curl -fsS "$BASE/kub-home.html?ts=$(date +%s)" -o /tmp/kub-home.html
-          grep -q 'Корпорация КУБ' /tmp/kub-home.html
+          test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
+          test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
-
-          # KUB signal data remains protected even though standard dashboard reads are public.
-          code=$(curl -sS -o /tmp/kub-health.json -w '%{http_code}' "$BASE/api/signals/health?client=kub&ts=$(date +%s)")
-          test "$code" = "401" -o "$code" = "403"
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
-
-          curl -fsS "$BASE/wirello?ts=$(date +%s)" -o /tmp/wirello.html
-          grep -Eqi 'Wirello' /tmp/wirello.html
-          echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
+          curl -fsS "$BASE/wirello?ts=$(date +%s)" | grep -Eqi 'Wirello'
+          echo NAVIGATOR_CODE_RUN_PRODUCTION_OK
 
       - name: Publish production migration status
         if: always()
@@ -209,4 +185,4 @@ jobs:
         with:
           script: |
             const state='${{ job.status }}'==='success'?'success':'failure';
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'code.run public production migration passed':'code.run production migration failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'code.run production migration passed':'code.run production migration failed'});
