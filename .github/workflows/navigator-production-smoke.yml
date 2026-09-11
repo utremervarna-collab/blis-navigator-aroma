@@ -45,9 +45,13 @@ jobs:
           console.log('ACTIVE_CLIENT_CATALOGUE_OK',actual.join(','));
           NODE
           node --check static/navigator-client-ui.js
+          node --check static/kub-client-stabilizer-v1.js
           grep -q "2026-09-10T00:00:00+03:00" static/kub-live-feed-v3.js
           grep -q "Радио Варна / БНР" static/kub-live-feed-v3.js
           grep -q "Парламентът отхвърли искане за изслушване относно корпорация КУБ" static/kub-live-feed-v3.js
+          ! grep -q "refreshMonitoring" static/kub-client-stabilizer-v1.js
+          ! grep -q "feed.innerHTML" static/kub-client-stabilizer-v1.js
+          grep -q "Monitoring feed ownership belongs exclusively to kub-live-feed-v3.js" static/kub-client-stabilizer-v1.js
 
       - name: Build and start Navigator gateway
         run: |
@@ -144,6 +148,13 @@ jobs:
           grep -q "Радио Варна / БНР" /tmp/kub-feed.js
           grep -q "Парламентът отхвърли искане за изслушване относно корпорация КУБ" /tmp/kub-feed.js
           grep -q "2026-09-09T14:58:00+03:00" /tmp/kub-feed.js
+
+          # The legacy KUB stabilizer must never overwrite the canonical Monitoring feed.
+          curl -fsS "$BASE/kub-client-stabilizer-v1.js?ts=$(date +%s)" -o /tmp/kub-stabilizer.js
+          ! grep -q "refreshMonitoring" /tmp/kub-stabilizer.js
+          ! grep -q "feed.innerHTML" /tmp/kub-stabilizer.js
+          grep -q "Monitoring feed ownership belongs exclusively to kub-live-feed-v3.js" /tmp/kub-stabilizer.js
+          echo 'KUB_SINGLE_FEED_OWNER_PRODUCTION_OK'
           echo 'KUB_BACKFILL_PRODUCTION_OK'
           echo 'NAVIGATOR_CODE_RUN_PRODUCTION_OK'
 
@@ -153,4 +164,4 @@ jobs:
         with:
           script: |
             const state='${{ job.status }}'==='success'?'success':'failure';
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'active clients + KUB backfill production passed':'active clients + KUB production failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'active clients + KUB single-feed production passed':'active clients + KUB production failed'});
