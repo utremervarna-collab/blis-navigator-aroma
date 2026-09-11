@@ -1,6 +1,6 @@
 /* BLIS Navigator — canonical client switcher.
-   Public full-profile catalogue.
-   KUB remains a separate crisis-monitoring route and opens its dedicated profile. */
+   Visible selector: KUB, MOLLOX, Aroma, Bolyarka and Wirello.
+   Legacy profiles remain registered for direct/internal routes but stay hidden from the normal selector. */
 (function(){
 'use strict';
 if(window.__BLIS_CLIENT_UI_V3)return;
@@ -10,14 +10,14 @@ const clients={
   kub:{bg:'Корпорация КУБ',en:'KUB Corporation',typeBg:'Кризисен мониторинг · Баба Алино',typeEn:'Crisis monitoring · Baba Alino',visible:true},
   aroma:{bg:'Aroma Cosmetics',en:'Aroma Cosmetics',typeBg:'Козметика',typeEn:'Beauty & personal care',visible:true},
   bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',visible:true},
-  'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',visible:true},
-  'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',visible:true},
+  'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',visible:false},
+  'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',visible:false},
   mollox:{bg:'MOLLOX България',en:'MOLLOX Bulgaria',typeBg:'Професионална хигиена',typeEn:'Professional hygiene',visible:true},
   wirello:{bg:'Wirello Market',en:'Wirello Market',typeBg:'Модерен ритейл',typeEn:'Retail',visible:true},
-  everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',visible:true},
-  'black-sea-center':{bg:'Black Sea Center',en:'Black Sea Center',typeBg:'Бизнес и търговски комплекс',typeEn:'Business & retail complex',visible:true}
+  everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',visible:false},
+  'black-sea-center':{bg:'Black Sea Center',en:'Black Sea Center',typeBg:'Бизнес и търговски комплекс',typeEn:'Business & retail complex',visible:false}
 };
-const ownerVisibleOrder=['aroma','bolyarka','mollox','wirello','astor-garden','varna-towers','everbet','black-sea-center','kub'];
+const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','wirello'];
 const valid=k=>!!clients[k];
 let ownerMode=false;
 let sessionClient='';
