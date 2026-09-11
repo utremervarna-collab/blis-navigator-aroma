@@ -39,15 +39,17 @@ jobs:
           curl -fsS http://127.0.0.1:10000/migration-build.js -o /tmp/build.js
           grep -q "$MIGRATION_BUILD" /tmp/build.js
 
-      - name: Verify gateway access contracts
+      - name: Verify public read-only gateway contracts
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' http://127.0.0.1:10000/client-login)
           test "$code" = "200"
           grep -Eqi 'BLIS|client|клиент' /tmp/login.html
           code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=aroma&page=overview')
-          test "$code" = "302"
-          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+          test "$code" = "200"
+          ! grep -qi 'client-login' /tmp/dashboard.body
+          code=$(curl -sS -o /tmp/aroma.json -w '%{http_code}' 'http://127.0.0.1:10000/api/clients/aroma/dashboard')
+          test "$code" = "200"
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' 'http://127.0.0.1:10000/dashboard.html?client=kub&page=overview')
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
@@ -57,6 +59,10 @@ jobs:
           grep -Eqi 'KUB|crisis' /tmp/kub-en.html
           curl -fsS http://127.0.0.1:10000/wirello -o /tmp/wirello.html
           grep -Eqi 'Wirello' /tmp/wirello.html
+          code=$(curl -sS -o /tmp/admin.body -w '%{http_code}' http://127.0.0.1:10000/admin.html)
+          test "$code" = "404"
+          code=$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST http://127.0.0.1:10000/api/clients/wirello/refresh)
+          test "$code" = "409"
 
       - name: Install Playwright
         run: |
@@ -176,16 +182,17 @@ jobs:
           code=$(curl -sS -o /tmp/login.html -w '%{http_code}' "$BASE/client-login?ts=$(date +%s)")
           test "$code" = "200"
           code=$(curl -sS -D /tmp/dashboard.headers -o /tmp/dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")
-          test "$code" = "302"
-          grep -Eqi '^location: /client-login' /tmp/dashboard.headers
+          test "$code" = "200"
+          ! grep -qi 'client-login' /tmp/dashboard.body
+          code=$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")
+          test "$code" = "200"
           curl -fsS "$BASE/kub-home.html?ts=$(date +%s)" -o /tmp/kub-home.html
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
 
-          # KUB signal data is intentionally protected. The migration gate must prove
-          # that unauthenticated traffic cannot read it; it must never add a public bypass.
+          # KUB signal data remains protected even though standard dashboard reads are public.
           code=$(curl -sS -o /tmp/kub-health.json -w '%{http_code}' "$BASE/api/signals/health?client=kub&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
@@ -201,4 +208,4 @@ jobs:
         with:
           script: |
             const state='${{ job.status }}'==='success'?'success':'failure';
-            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'code.run production migration passed':'code.run production migration failed'});
+            await github.rest.repos.createCommitStatus({owner:context.repo.owner,repo:context.repo.repo,sha:context.sha,state,context:'navigator-code-run-production',description:state==='success'?'code.run public production migration passed':'code.run production migration failed'});
