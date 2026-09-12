@@ -1,0 +1,123 @@
+name: Navigator Mention Production QA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+
+jobs:
+  live-mention-streams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for live mention UI build
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 36); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" -o /tmp/live-refresh.js; then
+              bytes=$(wc -c </tmp/live-refresh.js | tr -d ' ')
+              marker_v2=$(grep -Fc '__BLIS_LIVE_REFRESH_V2' /tmp/live-refresh.js || true)
+              timeline=$(grep -Fc 'Хронология на споменаванията' /tmp/live-refresh.js || true)
+              comp_timeline=$(grep -Fc 'Хронология на конкурентните споменавания' /tmp/live-refresh.js || true)
+              ticker=$(grep -Fc 'blis-ms-ticker' /tmp/live-refresh.js || true)
+              api=$(grep -Fc '/api/public/mentions' /tmp/live-refresh.js || true)
+              echo "MENTION_UI_PROBE attempt=$i bytes=$bytes v2=$marker_v2 timeline=$timeline competitor_timeline=$comp_timeline ticker=$ticker api=$api"
+              if test "$marker_v2" -gt 0 && test "$timeline" -gt 0 && test "$comp_timeline" -gt 0 && test "$ticker" -gt 0 && test "$api" -gt 0; then
+                ok=1
+                break
+              fi
+            fi
+            sleep 10
+          done
+          if test "$ok" != "1"; then
+            echo 'LIVE_MENTION_UI_NOT_READY'
+            head -c 800 /tmp/live-refresh.js || true
+            exit 1
+          fi
+          echo LIVE_MENTION_UI_OK
+
+      - name: Validate Aroma Bolyarka and MOLLOX production streams
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          for CLIENT in aroma bolyarka mollox; do
+            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-brand.json"
+            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-competitor.json"
+          done
+          curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          clients=('aroma','bolyarka','mollox')
+          store=json.load(open('/tmp/mentions-store.json',encoding='utf-8')).get('clients',{})
+
+          def norm(v):
+              return re.sub(r'\s+',' ',str(v or '')).strip().casefold()
+
+          def configured_competitors(slug):
+              out=set()
+              for src in store.get(slug,{}).get('sources',[]):
+                  key=norm(src.get('key'))
+                  if key.startswith('cmp_') or key.startswith('competitor_'):
+                      label=str(src.get('label') or '').strip()
+                      if label:
+                          out.add(norm(label))
+              return out
+
+          summary={}
+          for slug in clients:
+              allowed=configured_competitors(slug)
+              summary[slug]={'configured_competitors':sorted(allowed)}
+              for scope in ('brand','competitor'):
+                  data=json.loads(Path(f'/tmp/{slug}-{scope}.json').read_text(encoding='utf-8'))
+                  assert data.get('client')==slug, (slug,scope,'wrong response client',data.get('client'))
+                  rows=data.get('signals') or []
+                  assert isinstance(rows,list), (slug,scope,'signals is not a list')
+                  seen=set()
+                  for row in rows:
+                      assert norm(row.get('client'))==slug, (slug,scope,'cross-client leak',row)
+                      rs=norm(row.get('scope'))
+                      fp=norm(row.get('fingerprint') or row.get('url'))
+                      assert fp not in seen, (slug,scope,'duplicate signal',row)
+                      seen.add(fp)
+                      if scope=='competitor':
+                          assert rs=='competitor', (slug,scope,'wrong scope',row)
+                          b=norm(row.get('brand'))
+                          assert b, (slug,scope,'competitor brand missing',row)
+                          if allowed:
+                              assert b in allowed, (slug,scope,'unconfigured competitor brand',row.get('brand'),sorted(allowed))
+                      else:
+                          assert rs in ('external','owned'), (slug,scope,'wrong brand scope',row)
+                      assert re.match(r'^https?://',str(row.get('url') or ''),re.I), (slug,scope,'bad URL',row)
+                      assert str(row.get('source') or '').strip(), (slug,scope,'source missing',row)
+                      assert str(row.get('title') or '').strip(), (slug,scope,'title missing',row)
+
+                  if scope=='competitor' and slug=='bolyarka':
+                      brewery_evidence=('пивоварна загорка','пивоварната загорка','загорка ад','загорка а.д.','бира загорка','бирата загорка','загорка beer','загорка пивовар')
+                      for row in rows:
+                          if norm(row.get('brand'))!='загорка':
+                              continue
+                          hay=norm((row.get('title') or '')+' '+(row.get('text') or ''))
+                          if 'парк загорка' in hay:
+                              assert any(x in hay for x in brewery_evidence), ('bolyarka','false positive: park Zagorka',row)
+
+                  summary[slug][scope]={
+                      'count':len(rows),
+                      'updated_at':data.get('updated_at') or '',
+                      'sample_titles':[str(x.get('title') or '')[:160] for x in rows[:8]],
+                      'sample_brands':[str(x.get('brand') or '') for x in rows[:16]] if scope=='competitor' else [],
+                      'sample_sources':[str(x.get('source') or '') for x in rows[:8]],
+                  }
+
+          print('LIVE_MENTION_STREAM_QA_OK')
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
