@@ -58,6 +58,10 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 	}
 	rows := make([]publicClientMention, 0)
 	updated := ""
+	var clientSnapshot *Client
+	if scope == "brand" {
+		clientSnapshot = signalClientSnapshot(slug)
+	}
 	if slug != "wirello" { // A synthetic demo has no verified web mentions.
 		restoreSignalsFromObservations()
 		signalMu.RLock()
@@ -67,6 +71,9 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if scope == "brand" && s.Scope != "external" && s.Scope != "owned" {
+				continue
+			}
+			if scope == "brand" && clientSnapshot != nil && !brandMentionContextAcceptable(clientSnapshot, s.Title, s.Text) {
 				continue
 			}
 			if scope == "competitor" && zagorkaParkOnly(s.Brand, s.Title, s.Text) {
