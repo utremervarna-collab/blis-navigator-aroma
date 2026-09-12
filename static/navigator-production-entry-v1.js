@@ -84,7 +84,12 @@ async function boot(){
  await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
  await safe('/navigator-readable-type-v1.js');
- window.addEventListener('blis:intelligence',()=>{holdRoute();setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,()=>{holdRoute();scheduleVisualContract()});
+ // Data updates do not change the route. Only navigation or a client switch
+ // should hide the active page while a new canonical visual is assembled.
+ let paintedClient=initialClient;
+ window.addEventListener('blis:intelligence',markCanonicalVisuals);
+ for(const ev of ['blis:routechange','blis:navigator-route','popstate'])window.addEventListener(ev,()=>{holdRoute();scheduleVisualContract()});
+ window.addEventListener('blis:clientdata',e=>{const next=e.detail?.client||document.body?.dataset.client;if(next&&next!==paintedClient){paintedClient=next;holdRoute();scheduleVisualContract()}});
  document.addEventListener('click',e=>{if(e.target.closest?.('.client-option'))holdRoute()},true);
  document.documentElement.dataset.navigatorUi='navigator3-globe-key-factors';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:activeRoute(),version:VERSION}}));

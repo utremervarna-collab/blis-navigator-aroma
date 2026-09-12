@@ -4,7 +4,7 @@
 'use strict';
 if(window.__BLIS_DATA_LOADER_V1)return;window.__BLIS_DATA_LOADER_V1=true;
 const valid=new Set(['aroma','bolyarka','varna-towers','mollox','wirello','everbet','astor-garden']);
-let seq=0,busy=null,current='';
+let seq=0,busy=null,current='',lastPublishedSignature='';
 function key(input){
   if(valid.has(input))return input;
   try{const q=new URLSearchParams(location.search).get('client');if(valid.has(q))return q}catch(_){}
@@ -14,12 +14,14 @@ function key(input){
 }
 async function json(url,fallback){try{const r=await fetch(url,{cache:'no-store',credentials:'same-origin'});if(!r.ok)return fallback;return await r.json()}catch(_){return fallback}}
 function publish(k,d,s,q,a,h){
+  const signature=JSON.stringify([k,d,s,q,a,h]);
+  const changed=signature!==lastPublishedSignature;
   window.slug=k;window.D=d||{};window.S=Array.isArray(s)?s:[];window.Q=q||{};window.A=Array.isArray(a)?a:[];window.H=Array.isArray(h)?h:[];
   if(document.body)document.body.dataset.client=k;
   const sel=document.getElementById('clientSel');if(sel&&sel.value!==k)sel.value=k;
   const note=document.getElementById('clientNote');if(note)note.textContent=window.D?.note||'';
   const sync=document.getElementById('lastSync');if(sync){const raw=window.D?.data_updated||window.D?.updated_at||'';const dt=new Date(raw);sync.textContent=raw&&!Number.isNaN(dt.getTime())?dt.toLocaleString('bg-BG'):'—'}
-  window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:k,dashboard:window.D,sources:window.S,quality:window.Q,activity:window.A,history:window.H,canonical:true}}));
+  if(changed){lastPublishedSignature=signature;window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:k,dashboard:window.D,sources:window.S,quality:window.Q,activity:window.A,history:window.H,canonical:true}}))}
 }
 async function load(input,force=false){
   const k=key(input);const my=++seq;

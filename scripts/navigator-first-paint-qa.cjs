@@ -73,6 +73,25 @@ async function check(page, client, first, width) {
         return !!document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid');
       });
       if (!survived) throw new Error('legacy socialBody rewrite removed the canonical radar');
+      const beforeRefresh = await page.evaluate(() => {
+        window.__stableRadar = document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid');
+        window.__monitorDataBefore = {
+          D: JSON.stringify(window.D), S: JSON.stringify(window.S), H: JSON.stringify(window.H),
+          signals: JSON.stringify(window.BLISIntelligenceStreamV3?.getUsefulSignals?.())
+        };
+        return {refresh: Number(document.body.dataset.blisLiveUpdated || 0), t: performance.now()};
+      });
+      await page.waitForFunction(previous =>
+        Number(document.body.dataset.blisLiveUpdated || 0) > previous, beforeRefresh.refresh, {timeout: 35000});
+      await page.waitForTimeout(1600);
+      const stable = await page.evaluate(start => ({
+        sameRadar: document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid') === window.__stableRadar,
+        interrupted: window.__paintFrames.some(frame => frame.t >= start && frame.id === 'social' && (!frame.visible || frame.pending)),
+        changed: Object.fromEntries(['D','S','H','signals'].map(key =>
+          [key, window.__monitorDataBefore[key] !== JSON.stringify(key === 'signals' ? window.BLISIntelligenceStreamV3?.getUsefulSignals?.() : window[key])]))
+      }), beforeRefresh.t);
+      if (!stable.sameRadar || stable.interrupted)
+        throw new Error(`15-second data refresh interrupted Monitoring: ${JSON.stringify(stable)}`);
     }
   }
   console.log(`FIRST_PAINT_OK ${client} ${first} ${width}`);
