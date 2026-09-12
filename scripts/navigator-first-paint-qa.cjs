@@ -185,6 +185,10 @@ async function checkMentionStreams(browser) {
     }));
     if (zero.brand.includes('Aroma verified mention') || (zero.count === '0' && zero.painted))
       throw new Error(`empty or wrong-client monitoring painted as evidence: ${JSON.stringify(zero)}`);
+    await page.locator('#nav [data-n3-page="competition"]').click();
+    await page.waitForFunction(() => document.querySelector('.page.active')?.id === 'competition' && !!document.querySelector('#compnews-v1'), null, {timeout: 20000});
+    if ((await page.locator('#compnews-v1').innerText()).includes('Biofresh verified mention'))
+      throw new Error('previous client competitor mention survived a client switch');
     console.log('CLIENT_MENTIONS_OK');
   } finally { await context.close(); }
 }
