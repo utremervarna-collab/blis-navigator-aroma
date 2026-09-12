@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-	"time"
 )
 
 // competitorSignalTarget is derived only from competitors already configured
@@ -390,17 +389,4 @@ func runCompetitorSignalCollector() map[string]int {
 	saveSignalStateFile()
 	saveStore()
 	return counts
-}
-
-func init() {
-	go func() {
-		// Run shortly after the base collector has restored its state.
-		time.Sleep(110 * time.Second)
-		runCompetitorSignalCollector()
-		ticker := time.NewTicker(10 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-			runCompetitorSignalCollector()
-		}
-	}()
 }

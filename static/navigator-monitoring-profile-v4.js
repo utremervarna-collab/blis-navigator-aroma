@@ -30,6 +30,7 @@ function values(rows){return [
 ]}
 
 function svg(vals){
+  if(!vals.some(x=>x.value>0))return '<div class="mon2-empty" data-mon4-empty="1">Няма потвърдени сигнали за профилна графика през избрания период.</div>';
   const w=400,h=300,cx=200,cy=145,R=105,n=vals.length;
   const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+Math.cos(a)*r,cy+Math.sin(a)*r]};
   const grids=[.25,.5,.75,1].map(q=>`<polygon points="${vals.map((_,i)=>pt(i,R*q).join(',')).join(' ')}" fill="none" stroke="#dce7f0" stroke-width="1"/>`).join('');
@@ -70,6 +71,7 @@ async function upgrade(){
     const vals=values(Array.isArray(rows)?rows:[]),fp=fingerprint(vals);
     if(wrap.dataset.monProfile==='v42'&&wrap.dataset.monProfileFp===fp)return;
     const old=wrap.querySelector('.mon2-radar');
+    wrap.querySelector('[data-mon4-empty]')?.remove();
     if(old)old.outerHTML=svg(vals);else wrap.insertAdjacentHTML('beforeend',svg(vals));
     wrap.querySelector('.mon4-legend')?.remove();
     wrap.insertAdjacentHTML('beforeend',legend(vals));

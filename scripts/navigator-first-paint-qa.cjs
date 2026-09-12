@@ -148,6 +148,51 @@ async function checkRetiredLauncher(browser) {
   } finally { await context.close(); }
 }
 
+async function checkMentionStreams(browser) {
+  if (origin !== 'http://127.0.0.1:10000') return;
+  const context = await browser.newContext({serviceWorkers: 'block'});
+  try {
+    const page = await context.newPage();
+    await page.route('**/api/signals?**', async route => {
+      const url = new URL(route.request().url());
+      const scope = url.searchParams.get('scope');
+      const client = url.searchParams.get('client');
+      const base = {source: 'Public test source', url: 'https://example.org/report', detected_at: new Date().toISOString()};
+      const rows = client === 'aroma' && scope === 'brand' ? [
+        {...base, client: 'aroma', scope: 'external', title: 'Aroma verified mention', fingerprint: 'brand-aroma'},
+        {...base, client: 'bolyarka', scope: 'external', title: 'Wrong client mention', fingerprint: 'brand-bolyarka'}
+      ] : client === 'aroma' && scope === 'competitor' ? [
+        {...base, client: 'aroma', scope: 'competitor', brand: 'Biofresh', title: 'Biofresh verified mention', fingerprint: 'competitor-aroma'},
+        {...base, client: 'bolyarka', scope: 'competitor', brand: 'Загорка', title: 'Wrong competitor mention', fingerprint: 'competitor-bolyarka'}
+      ] : [];
+      await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({client, signals: rows})});
+    });
+    await page.goto(`${origin}/dashboard.html?client=aroma&page=social`, {waitUntil: 'domcontentloaded', timeout: 30000});
+    await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready'), null, {timeout: 45000});
+    await page.waitForFunction(() => document.querySelector('#mon5 .mon5-mention')?.textContent.includes('Aroma verified mention'), null, {timeout: 20000});
+    const brand = await page.locator('#mon5 .mon5-mentions').innerText();
+    if (brand.includes('Wrong client mention')) throw new Error('another client leaked into brand mentions');
+    await page.locator('#nav [data-n3-page="competition"]').click();
+    await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 20000});
+    const competitors = await page.locator('#compnews-v1').innerText();
+    if (competitors.includes('Wrong competitor mention')) throw new Error('another client leaked into competitor mentions');
+    await page.goto(`${origin}/dashboard.html?client=bolyarka&page=social`, {waitUntil: 'domcontentloaded', timeout: 30000});
+    await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready') && document.querySelector('#mon5')?.dataset.client === 'bolyarka', null, {timeout: 45000});
+    const zero = await page.evaluate(() => ({
+      brand: document.querySelector('#mon5 .mon5-mentions')?.textContent || '',
+      count: document.querySelector('#mon5 .mon5-kpi strong')?.textContent?.trim(),
+      painted: !!document.querySelector('#mon5 svg.mon5-radar')
+    }));
+    if (zero.brand.includes('Aroma verified mention') || (zero.count === '0' && zero.painted))
+      throw new Error(`empty or wrong-client monitoring painted as evidence: ${JSON.stringify(zero)}`);
+    await page.locator('#nav [data-n3-page="competition"]').click();
+    await page.waitForFunction(() => document.querySelector('.page.active')?.id === 'competition' && !!document.querySelector('#compnews-v1'), null, {timeout: 20000});
+    if ((await page.locator('#compnews-v1').innerText()).includes('Biofresh verified mention'))
+      throw new Error('previous client competitor mention survived a client switch');
+    console.log('CLIENT_MENTIONS_OK');
+  } finally { await context.close(); }
+}
+
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -163,5 +208,6 @@ async function checkRetiredLauncher(browser) {
     }
     await checkSlowBootstrap(browser);
     await checkRetiredLauncher(browser);
+    await checkMentionStreams(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
