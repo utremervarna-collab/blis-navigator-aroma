@@ -116,7 +116,7 @@ function renderCompetition(){
   let panel=document.getElementById('blisCompetitorMentionTimeline');
   if(!panel){panel=document.createElement('section');panel.id='blisCompetitorMentionTimeline';panel.className='blis-ms blis-ms-competition';host.appendChild(panel)}
   if(panel.dataset.signature===sig)return;panel.dataset.signature=sig;
-  panel.innerHTML=`<div class="blis-ms-head"><div><h3>Конкурентни споменавания</h3><p>Непрекъснат поток от потвърдени публикации за всички конфигурирани конкуренти на текущия бранд.</p></div>${statusHTML(st)}</div>${tickerHTML(rows)}<div class="blis-ms-count" style="padding-top:13px"><b>${rows.length}</b> конкурентни споменавания за последните ${periodDays()} дни</div><div class="blis-ms-timeline">${timelineHTML(rows,{competitor:true})}</div>`;
+  panel.innerHTML=`<div class="blis-ms-head"><div><h3>Хронология на конкурентните споменавания</h3><p>Непрекъснат поток от потвърдени публикации за всички конфигурирани конкуренти на текущия бранд.</p></div>${statusHTML(st)}</div>${tickerHTML(rows)}<div class="blis-ms-count" style="padding-top:13px"><b>${rows.length}</b> конкурентни споменавания за последните ${periodDays()} дни</div><div class="blis-ms-timeline">${timelineHTML(rows,{competitor:true})}</div>`;
 }
 function renderStreams(){ensureCSS();renderMonitoring();renderCompetition()}
 function scheduleRender(){clearTimeout(renderTimer);renderTimer=setTimeout(renderStreams,80)}
