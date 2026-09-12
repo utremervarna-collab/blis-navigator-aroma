@@ -63,6 +63,17 @@ async function check(page, client, first, width) {
     if (bad) throw new Error(`${client}/${id}/${width}: intermediate frame ${JSON.stringify(bad)}`);
     if (!state.frames.some(frame => frame.visible && frame.id === id && frame.final))
       throw new Error(`${client}/${id}/${width}: no visible canonical frame`);
+    if (client === 'aroma' && width === 1440 && id === 'social') {
+      // Legacy intelligence modules can rewrite socialBody after route change.
+      // The canonical radar must stay mounted in its independently owned host.
+      const survived = await page.evaluate(() => {
+        const legacy = document.getElementById('socialBody');
+        if (!legacy) return false;
+        legacy.replaceChildren(document.createElement('section'));
+        return !!document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid');
+      });
+      if (!survived) throw new Error('legacy socialBody rewrite removed the canonical radar');
+    }
   }
   console.log(`FIRST_PAINT_OK ${client} ${first} ${width}`);
 }
