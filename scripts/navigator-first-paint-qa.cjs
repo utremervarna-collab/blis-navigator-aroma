@@ -132,6 +132,22 @@ async function checkSlowBootstrap(browser) {
   } finally { await context.close(); }
 }
 
+async function checkRetiredLauncher(browser) {
+  if (origin !== 'http://127.0.0.1:10000') return;
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:10001/dashboard.html?client=aroma&page=overview', {waitUntil: 'domcontentloaded', timeout: 30000});
+    await page.waitForFunction(() => window.__BLIS_COMMERCE_SAFE_V3 === true, null, {timeout: 25000});
+    const leaked = await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('blis:clientdata', {detail: {client: 'aroma'}}));
+      return !!document.querySelector('[data-blis-commerce-open]');
+    });
+    if (leaked) throw new Error('retired Services launcher recreated in the internal Navigator');
+    console.log('RETIRED_LAUNCHER_OK');
+  } finally { await context.close(); }
+}
+
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -146,5 +162,6 @@ async function checkSlowBootstrap(browser) {
       await context.close();
     }
     await checkSlowBootstrap(browser);
+    await checkRetiredLauncher(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
