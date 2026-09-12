@@ -77,7 +77,9 @@ async function checkSlowBootstrap(browser) {
       await route.continue();
     });
     const started = Date.now();
-    await page.goto(`${origin}/dashboard.html?client=aroma&page=overview`, {waitUntil: 'domcontentloaded', timeout: 30000});
+    // DOMContentLoaded waits for this intentionally delayed blocking script.
+    // Observe the page from response commit so the 16-second sample is real.
+    await page.goto(`${origin}/dashboard.html?client=aroma&page=overview`, {waitUntil: 'commit', timeout: 30000});
     await page.waitForTimeout(Math.max(0, 16000 - (Date.now() - started)));
     const pending = await page.evaluate(() => ({
       ready: document.documentElement.classList.contains('blis-dashboard-ready'),
