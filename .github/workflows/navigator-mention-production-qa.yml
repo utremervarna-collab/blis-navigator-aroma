@@ -73,10 +73,19 @@ jobs:
                           out.add(norm(label))
               return out
 
+          def source_inventory(slug):
+              return [
+                  {'key':str(x.get('key') or ''),'label':str(x.get('label') or ''),'url':str(x.get('url') or '')}
+                  for x in store.get(slug,{}).get('sources',[])
+              ]
+
           summary={}
           for slug in clients:
               allowed=configured_competitors(slug)
-              summary[slug]={'configured_competitors':sorted(allowed)}
+              summary[slug]={
+                  'configured_competitors':sorted(allowed),
+                  'source_inventory':source_inventory(slug),
+              }
               for scope in ('brand','competitor'):
                   data=json.loads(Path(f'/tmp/{slug}-{scope}.json').read_text(encoding='utf-8'))
                   assert data.get('client')==slug, (slug,scope,'wrong response client',data.get('client'))
@@ -100,6 +109,12 @@ jobs:
                       assert re.match(r'^https?://',str(row.get('url') or ''),re.I), (slug,scope,'bad URL',row)
                       assert str(row.get('source') or '').strip(), (slug,scope,'source missing',row)
                       assert str(row.get('title') or '').strip(), (slug,scope,'title missing',row)
+
+                  if scope=='brand' and slug=='bolyarka':
+                      for row in rows:
+                          hay=norm((row.get('title') or '')+' '+(row.get('text') or ''))
+                          assert 'мебелна къща' not in hay, ('bolyarka','false positive: furniture house',row)
+                          assert 'дгс „болярка“' not in hay and 'дгс “болярка”' not in hay and 'дгс болярка' not in hay, ('bolyarka','false positive: state forestry',row)
 
                   if scope=='competitor' and slug=='bolyarka':
                       brewery_evidence=('пивоварна загорка','пивоварната загорка','загорка ад','загорка а.д.','бира загорка','бирата загорка','загорка beer','загорка пивовар')
