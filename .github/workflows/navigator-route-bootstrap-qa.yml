@@ -9,6 +9,8 @@ on:
       - 'auth_proxy.go'
       - 'static/navigator-reference.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-3-architecture-v1.js'
+      - 'static/navigator-3-visual-preservation-v1.js'
   pull_request:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - 'auth_proxy.go'
       - 'static/navigator-reference.js'
       - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-3-architecture-v1.js'
+      - 'static/navigator-3-visual-preservation-v1.js'
   workflow_dispatch:
 
 permissions:
