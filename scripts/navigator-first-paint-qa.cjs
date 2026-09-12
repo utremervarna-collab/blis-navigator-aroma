@@ -176,6 +176,10 @@ async function checkMentionStreams(browser) {
     await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 20000});
     const competitors = await page.locator('#compnews-v1').innerText();
     if (competitors.includes('Wrong competitor mention')) throw new Error('another client leaked into competitor mentions');
+    await page.evaluate(() => document.querySelector('#competitionBody').replaceChildren(document.createElement('div')));
+    await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
+    if (await page.evaluate(() => document.documentElement.classList.contains('blis-route-pending')))
+      throw new Error('competitor panel recovery hid the active route');
     await page.goto(`${origin}/dashboard.html?client=bolyarka&page=social`, {waitUntil: 'domcontentloaded', timeout: 30000});
     await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready') && document.querySelector('#mon5')?.dataset.client === 'bolyarka', null, {timeout: 45000});
     const zero = await page.evaluate(() => ({
