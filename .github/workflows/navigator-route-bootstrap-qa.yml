@@ -70,7 +70,8 @@ jobs:
                   const page=await context.newPage();
                   const requested=`${origin}/dashboard.html?client=${client}&page=${route}`;
                   await page.goto(requested,{waitUntil:'domcontentloaded',timeout:25000});
-                  await page.waitForFunction(({client,route})=>document.body?.dataset?.client===client&&document.querySelector('.page.active')?.id===route&&document.documentElement.classList.contains('blis-dashboard-ready'),{client,route},{timeout:20000});
+                  try{await page.waitForFunction(({client,route})=>document.body?.dataset?.client===client&&document.querySelector('.page.active')?.id===route&&document.documentElement.classList.contains('blis-dashboard-ready'),{client,route},{timeout:20000})}
+                  catch(e){const snapshot=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client,active:document.querySelector('.page.active')?.id,ready:document.documentElement.classList.contains('blis-dashboard-ready'),error:document.documentElement.classList.contains('blis-dashboard-error'),version:document.documentElement.dataset.navigatorVersion}));fail(`direct route not ready ${client}/${route}: ${JSON.stringify(snapshot)}: ${e.message}`)}
                   let state=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||''}));
                   let u=new URL(state.href);
                   if(state.client!==client||state.active!==route||u.searchParams.get('client')!==client||u.searchParams.get('page')!==route)fail(`fresh route changed ${client}/${route}: ${JSON.stringify(state)}`);
