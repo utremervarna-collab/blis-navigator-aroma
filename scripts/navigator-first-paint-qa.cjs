@@ -176,6 +176,7 @@ async function checkMentionStreams(browser) {
     await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 20000});
     const competitors = await page.locator('#compnews-v1').innerText();
     if (competitors.includes('Wrong competitor mention')) throw new Error('another client leaked into competitor mentions');
+    await page.waitForFunction(() => !document.documentElement.classList.contains('blis-route-pending'), null, {timeout: 15000});
     await page.evaluate(() => document.querySelector('#competitionBody').replaceChildren(document.createElement('div')));
     await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
     if (await page.evaluate(() => document.documentElement.classList.contains('blis-route-pending')))
