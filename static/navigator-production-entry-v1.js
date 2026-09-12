@@ -21,17 +21,53 @@ function scheduleVisualContract(){markCanonicalVisuals();window.BLISNavigator3Vi
 function activeRoute(){const raw=document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';return window.BLISRouteAlias?.(raw)||({environment:'market',digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'}[raw]||raw)}
 function canonicalVisualReady(){const id=activeRoute();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .pm-stage,#market .pm-canvas');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector(`#${id} .n3-resource-card`);return!!document.querySelector('.page.active')}
 function finalShellReady(){return document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&!!document.querySelector('.bch3-context-title')&&!!document.querySelector('.page.active')&&canonicalVisualReady()}
-let appRevealed=false;
-function revealFinalApp(){if(appRevealed||!document.body)return;appRevealed=true;document.getElementById('blisPrepaintGuard')?.remove();document.body.classList.add('blis-app-ready');document.documentElement.dataset.navigatorPaint='ready';requestAnimationFrame(()=>requestAnimationFrame(()=>{const cover=document.getElementById('blisNavigatorBootScreen');if(cover)setTimeout(()=>cover.remove(),120)}))}
+let appRevealed=false,paintToken=0;
+function revealFinalApp(){
+ if(appRevealed||!document.body||!finalShellReady())return;
+ appRevealed=true;document.getElementById('blisPrepaintGuard')?.remove();
+ document.body.classList.add('blis-app-ready');
+ document.documentElement.dataset.navigatorPaint='ready';
+ document.documentElement.classList.remove('blis-dashboard-error');
+ document.documentElement.classList.add('blis-dashboard-ready');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{const cover=document.getElementById('blisNavigatorBootScreen');if(cover)setTimeout(()=>cover.remove(),120)}));
+}
+function settleRoute(id,token,started){
+ if(token!==paintToken)return;
+ const root=document.documentElement;
+ if(activeRoute()!==id){holdRoute(activeRoute());return}
+ if(Date.now()-started>=600&&finalShellReady()&&document.body?.dataset.blisLoading!=='true'){
+  window.BLISNavigator3PageContractV1?.apply?.();
+  markCanonicalVisuals();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   if(token!==paintToken||activeRoute()!==id||!finalShellReady())return;
+   root.classList.remove('blis-route-pending');root.removeAttribute('data-blis-pending-route');
+  }));
+  return;
+ }
+ if(Date.now()-started<12000)setTimeout(()=>settleRoute(id,token,started),60);
+ else{root.classList.remove('blis-route-pending');root.classList.add('blis-dashboard-error');root.removeAttribute('data-blis-pending-route')}
+}
+function holdRoute(id=activeRoute()){
+ if(!appRevealed)return;
+ const root=document.documentElement,token=++paintToken;
+ root.dataset.blisPendingRoute=id;
+ root.classList.add('blis-route-pending');
+ setTimeout(()=>settleRoute(id,token,Date.now()),50);
+}
+window.BLISVisualGate={hold:holdRoute};
 function waitForFinalPaint(started=Date.now()){
- forceBulgarianEarly();window.BLISNavigator3ArchitectureV1?.render?.();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();markCanonicalVisuals();
- const elapsed=Date.now()-started;
- if(finalShellReady()||elapsed>4500){scheduleVisualContract();requestAnimationFrame(()=>requestAnimationFrame(revealFinalApp));return}
- setTimeout(()=>waitForFinalPaint(started),70)
+ // The visual owners are rendered by Navigator 3. Polling must never re-render
+ // the page: that previously replaced content every 70 ms before reveal.
+ if(finalShellReady()&&document.body?.dataset.blisLoading!=='true'&&Date.now()-started>=600){
+  window.BLISNavigator3PageContractV1?.apply?.();
+  requestAnimationFrame(()=>requestAnimationFrame(revealFinalApp));
+  return;
+ }
+ if(Date.now()-started<12000)setTimeout(()=>waitForFinalPaint(started),70);
+ else document.documentElement.classList.add('blis-dashboard-error');
 }
 async function boot(){
  forceBulgarianEarly();
- const emergencyReveal=setTimeout(()=>{scheduleVisualContract();revealFinalApp()},6000);
  for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
  await safe('/navigator-system-structure-v1.js');
  await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
@@ -45,10 +81,10 @@ async function boot(){
  await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
  await safe('/navigator-readable-type-v1.js');
- window.addEventListener('blis:intelligence',()=>{setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,scheduleVisualContract);
+ window.addEventListener('blis:intelligence',()=>{holdRoute();setTimeout(()=>window.BLISCanonicalRenderActive?.(),50);scheduleVisualContract()});for(const ev of ['blis:routechange','blis:navigator-route','blis:clientdata','popstate'])window.addEventListener(ev,()=>{holdRoute();scheduleVisualContract()});
+ document.addEventListener('click',e=>{if(e.target.closest?.('.client-option'))holdRoute()},true);
  document.documentElement.dataset.navigatorUi='navigator3-globe-key-factors';
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:activeRoute(),version:VERSION}}));
- clearTimeout(emergencyReveal);
  setTimeout(()=>{forceBulgarianEarly();window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.decorate?.();window.BLISNavigator3ClientProofV1?.decorate?.();window.BLISNavigator3ArchitectureV1?.render?.();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();scheduleVisualContract();waitForFinalPaint()},120);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

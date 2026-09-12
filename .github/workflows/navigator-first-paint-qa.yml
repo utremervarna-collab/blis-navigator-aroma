@@ -1,0 +1,41 @@
+name: Navigator First Paint QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  first-paint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Start the production gateway
+        run: |
+          go build -o app .
+          PORT=10000 ./app >/tmp/blis-first-paint.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:10000/api/health
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Check every visible first-paint and navigation frame
+        run: node scripts/navigator-first-paint-qa.cjs
+      - name: Gateway diagnostics on failure
+        if: failure()
+        run: tail -100 /tmp/blis-first-paint.log
