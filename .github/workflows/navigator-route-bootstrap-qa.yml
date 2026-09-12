@@ -84,7 +84,7 @@ jobs:
                   await context.close();
                 }
               }
-              const aliases=[['signals','social'],['timeline','history'],['live','social'],['digital','social'],['reputation','market'],['reports','history']];
+              const aliases=[['signals','social'],['timeline','history'],['live','overview'],['digital','social'],['reputation','market'],['reports','history']];
               for(const [alias,expected] of aliases){
                 const context=await browser.newContext();const page=await context.newPage();
                 await page.goto(`${origin}/dashboard.html?client=mollox&page=${alias}`,{waitUntil:'domcontentloaded',timeout:25000});
