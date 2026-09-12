@@ -95,6 +95,7 @@ jobs:
           print('PRODUCTION_STORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in clients.items()})
           PY
           test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
+          grep -Fq 'blisDashboardPrepaintV4' /tmp/aroma.html
           test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
