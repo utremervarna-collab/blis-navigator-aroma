@@ -106,6 +106,89 @@ jobs:
           curl -fsS "$BASE/wirello?ts=$(date +%s)" | grep -Eqi 'Wirello'
           echo NAVIGATOR_CODE_RUN_PRODUCTION_OK
 
+      - name: Verify live brand and competitor mention streams
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          for CLIENT in aroma bolyarka mollox; do
+            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-brand.json"
+            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-competitor.json"
+          done
+          curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
+          curl -fsS "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" -o /tmp/live-refresh.js
+          grep -Fq 'Хронология на споменаванията' /tmp/live-refresh.js
+          grep -Fq 'Хронология на конкурентните споменавания' /tmp/live-refresh.js
+          grep -Fq 'blis-ms-ticker' /tmp/live-refresh.js
+          grep -Fq '/api/public/mentions' /tmp/live-refresh.js
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+
+          clients=('aroma','bolyarka','mollox')
+          store=json.load(open('/tmp/mentions-store.json',encoding='utf-8')).get('clients',{})
+
+          def norm(v):
+              return re.sub(r'\s+',' ',str(v or '')).strip().casefold()
+
+          def configured_competitors(slug):
+              out=set()
+              for src in store.get(slug,{}).get('sources',[]):
+                  key=norm(src.get('key'))
+                  if key.startswith('cmp_') or key.startswith('competitor_'):
+                      label=str(src.get('label') or '').strip()
+                      if label:
+                          out.add(norm(label))
+              return out
+
+          summary={}
+          for slug in clients:
+              allowed=configured_competitors(slug)
+              summary[slug]={}
+              for scope in ('brand','competitor'):
+                  path=Path(f'/tmp/{slug}-{scope}.json')
+                  data=json.loads(path.read_text(encoding='utf-8'))
+                  assert data.get('client')==slug, (slug,scope,'wrong response client',data.get('client'))
+                  rows=data.get('signals') or []
+                  assert isinstance(rows,list), (slug,scope,'signals is not a list')
+                  for row in rows:
+                      assert norm(row.get('client'))==slug, (slug,scope,'cross-client leak',row)
+                      rs=norm(row.get('scope'))
+                      if scope=='competitor':
+                          assert rs=='competitor', (slug,scope,'wrong scope',row)
+                          b=norm(row.get('brand'))
+                          assert b, (slug,scope,'competitor brand missing',row)
+                          if allowed:
+                              assert b in allowed, (slug,scope,'unconfigured competitor brand',row.get('brand'),sorted(allowed))
+                      else:
+                          assert rs in ('external','owned'), (slug,scope,'wrong brand scope',row)
+                      assert re.match(r'^https?://',str(row.get('url') or ''),re.I), (slug,scope,'bad URL',row)
+                      assert str(row.get('source') or '').strip(), (slug,scope,'source missing',row)
+                      assert str(row.get('title') or '').strip(), (slug,scope,'title missing',row)
+
+                  if scope=='competitor' and slug=='bolyarka':
+                      brewery_evidence=('пивоварна загорка','пивоварната загорка','загорка ад','загорка а.д.','бира загорка','бирата загорка','загорка beer','загорка пивовар')
+                      for row in rows:
+                          if norm(row.get('brand'))!='загорка':
+                              continue
+                          hay=norm((row.get('title') or '')+' '+(row.get('text') or ''))
+                          if 'парк загорка' in hay:
+                              assert any(x in hay for x in brewery_evidence), ('bolyarka','false positive: park Zagorka',row)
+
+                  stamps=[]
+                  for row in rows:
+                      stamps.append(str(row.get('published_at') or row.get('detected_at') or ''))
+                  summary[slug][scope]={
+                      'count':len(rows),
+                      'updated_at':data.get('updated_at') or '',
+                      'configured_competitors':len(allowed) if scope=='competitor' else None,
+                      'sample_titles':[str(x.get('title') or '')[:120] for x in rows[:5]],
+                      'sample_brands':[str(x.get('brand') or '') for x in rows[:10]] if scope=='competitor' else [],
+                  }
+
+          print('LIVE_MENTION_STREAM_QA_OK')
+          print(json.dumps(summary,ensure_ascii=False,indent=2))
+          PY
+
       - name: Publish production migration status
         if: always()
         uses: actions/github-script@v7
