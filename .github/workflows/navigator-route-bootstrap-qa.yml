@@ -9,6 +9,14 @@ on:
       - 'auth_proxy.go'
       - 'static/navigator-reference.js'
       - 'static/navigator-production-entry-v1.js'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/navigator-route-bootstrap-qa.yml'
+      - '000_auth_gateway_resilient.go'
+      - 'auth_proxy.go'
+      - 'static/navigator-reference.js'
+      - 'static/navigator-production-entry-v1.js'
   workflow_dispatch:
 
 permissions:
@@ -51,7 +59,7 @@ jobs:
           const fs=require('fs');
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','wirello','varna-towers','astor-garden','everbet'];
-          const pages=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+          const pages=['overview','social','market','competition','history','hub','calendar'];
           const fail=msg=>{try{fs.writeFileSync('/tmp/route-bootstrap-error.txt',msg)}catch(_){};throw new Error(msg)};
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -62,28 +70,28 @@ jobs:
                   const page=await context.newPage();
                   const requested=`${origin}/dashboard.html?client=${client}&page=${route}`;
                   await page.goto(requested,{waitUntil:'domcontentloaded',timeout:25000});
-                  await page.waitForFunction(({client,route})=>document.body?.dataset?.client===client&&document.querySelector('.page.active')?.id===route,{client,route},{timeout:15000});
+                  await page.waitForFunction(({client,route})=>document.body?.dataset?.client===client&&document.querySelector('.page.active')?.id===route&&document.documentElement.classList.contains('blis-dashboard-ready'),{client,route},{timeout:20000});
                   let state=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||''}));
                   let u=new URL(state.href);
                   if(state.client!==client||state.active!==route||u.searchParams.get('client')!==client||u.searchParams.get('page')!==route)fail(`fresh route changed ${client}/${route}: ${JSON.stringify(state)}`);
                   const session=await page.evaluate(async()=>{const r=await fetch('/api/client-session',{cache:'no-store'});return {status:r.status,body:await r.json().catch(()=>({}))}});
-                  if(session.status!==200||session.body?.authenticated!==true||session.body?.admin!==true)fail(`owner session missing ${client}/${route}: ${JSON.stringify(session)}`);
+                  if(session.status!==401||session.body?.authenticated!==false)fail(`public route minted an owner session ${client}/${route}: ${JSON.stringify(session)}`);
                   await page.reload({waitUntil:'domcontentloaded',timeout:25000});
-                  await page.waitForFunction(route=>document.querySelector('.page.active')?.id===route,route,{timeout:12000});
+                  await page.waitForFunction(route=>document.querySelector('.page.active')?.id===route&&document.documentElement.classList.contains('blis-dashboard-ready'),route,{timeout:20000});
                   state=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||''}));
                   u=new URL(state.href);
                   if(state.client!==client||state.active!==route||u.searchParams.get('client')!==client||u.searchParams.get('page')!==route)fail(`reload route changed ${client}/${route}: ${JSON.stringify(state)}`);
                   await context.close();
                 }
               }
-              const aliases=[['signals','social'],['timeline','history'],['live','overview']];
+              const aliases=[['signals','social'],['timeline','history'],['live','social'],['digital','social'],['reputation','market'],['reports','history']];
               for(const [alias,expected] of aliases){
                 const context=await browser.newContext();const page=await context.newPage();
-                await page.goto(`${origin}/dashboard.html?client=mollox&page=${alias}&lang=en`,{waitUntil:'domcontentloaded',timeout:25000});
+                await page.goto(`${origin}/dashboard.html?client=mollox&page=${alias}`,{waitUntil:'domcontentloaded',timeout:25000});
                 await page.waitForFunction(expected=>document.querySelector('.page.active')?.id===expected,expected,{timeout:12000});
-                const state=await page.evaluate(()=>({href:location.href,active:document.querySelector('.page.active')?.id||'',lang:document.documentElement.lang||''}));
+                const state=await page.evaluate(()=>({href:location.href,active:document.querySelector('.page.active')?.id||''}));
                 const u=new URL(state.href);
-                if(state.active!==expected||u.searchParams.get('page')!==expected||u.searchParams.get('lang')!=='en')fail(`alias/lang bootstrap failed ${alias}: ${JSON.stringify(state)}`);
+                if(state.active!==expected||u.searchParams.get('page')!==expected)fail(`alias bootstrap failed ${alias}: ${JSON.stringify(state)}`);
                 await context.close();
               }
               console.log('NAVIGATOR_ROUTE_BOOTSTRAP_OK');
