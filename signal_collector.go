@@ -465,7 +465,16 @@ func signalClientSnapshot(slug string) *Client {
 }
 
 func signalEligibleSlugs() []string {
-	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "kub", "black-sea-center"}
+	mu.Lock()
+	defer mu.Unlock()
+	slugs := make([]string, 0, len(store.Clients))
+	for slug, client := range store.Clients {
+		if client != nil {
+			slugs = append(slugs, slug)
+		}
+	}
+	sort.Strings(slugs)
+	return slugs
 }
 
 func signalObservationExists(c *Client, metric string) bool {
