@@ -255,6 +255,10 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		authProxy.ServeHTTP(w, r2)
 		return
 	}
+	if path == "/api/public/mentions" {
+		publicClientMentions(w, r)
+		return
+	}
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && (path == "/api/clients" || strings.HasPrefix(path, "/api/clients/")) {
 		if authProxy == nil {
 			http.Error(w, "Gateway unavailable", http.StatusServiceUnavailable)

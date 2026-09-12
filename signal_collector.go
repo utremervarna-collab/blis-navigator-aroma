@@ -469,7 +469,8 @@ func signalEligibleSlugs() []string {
 	defer mu.Unlock()
 	slugs := make([]string, 0, len(store.Clients))
 	for slug, client := range store.Clients {
-		if client != nil {
+		// Wirello is a synthetic demo profile and must not claim web monitoring.
+		if client != nil && slug != "wirello" {
 			slugs = append(slugs, slug)
 		}
 	}
