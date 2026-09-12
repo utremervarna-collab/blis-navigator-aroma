@@ -30,7 +30,7 @@ function values(rows){return [
 ]}
 
 function svg(vals){
-  const w=360,h=300,cx=180,cy=145,R=105,n=vals.length;
+  const w=400,h=300,cx=200,cy=145,R=105,n=vals.length;
   const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+Math.cos(a)*r,cy+Math.sin(a)*r]};
   const grids=[.25,.5,.75,1].map(q=>`<polygon points="${vals.map((_,i)=>pt(i,R*q).join(',')).join(' ')}" fill="none" stroke="#dce7f0" stroke-width="1"/>`).join('');
   const axes=vals.map((_,i)=>{const p=pt(i,R);return`<line x1="${cx}" y1="${cy}" x2="${p[0]}" y2="${p[1]}" stroke="#e1e9f0"/>`}).join('');

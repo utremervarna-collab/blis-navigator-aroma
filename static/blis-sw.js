@@ -1,4 +1,4 @@
-const CACHE = 'blis-navigator-pwa-v1';
+const CACHE = 'blis-navigator-pwa-v2';
 const APP_SHELL = [
   '/dashboard.html',
   '/manifest.webmanifest',
