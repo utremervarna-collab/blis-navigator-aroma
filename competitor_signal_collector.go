@@ -145,8 +145,30 @@ func competitorAliasHit(t competitorSignalTarget, low string) bool {
 	return false
 }
 
+// Zagorka is also the name of a park. A beer festival held there is not by
+// itself a mention of the brewery, even when the article contains beer terms.
+func zagorkaParkOnly(name, title, body string) bool {
+	if !strings.EqualFold(strings.TrimSpace(name), "Загорка") {
+		return false
+	}
+	low := strings.ToLower(title + " " + body)
+	plain := strings.NewReplacer("„", " ", "“", " ", `"`, " ", "'", " ", "«", " ", "»", " ").Replace(low)
+	if !strings.Contains(strings.Join(strings.Fields(plain), " "), "парк загорка") {
+		return false
+	}
+	for _, evidence := range []string{"пивоварна загорка", "пивоварната загорка", "загорка ад", "загорка а.д.", "бира загорка", "бирата загорка", "загорка beer", "загорка пивовар"} {
+		if strings.Contains(plain, evidence) {
+			return false
+		}
+	}
+	return true
+}
+
 func competitorRelevance(c *Client, t competitorSignalTarget, title, text string) float64 {
 	low := strings.ToLower(title + " " + text)
+	if zagorkaParkOnly(t.Name, title, text) {
+		return 0
+	}
 	if !competitorAliasHit(t, low) {
 		return 0
 	}
@@ -351,6 +373,9 @@ func sanitizeKnownSignalFalsePositives() {
 	}
 	clean := rows[:0]
 	for _, s := range rows {
+		if s.Scope == "competitor" && zagorkaParkOnly(s.Brand, s.Title, s.Text) {
+			continue
+		}
 		if s.Scope == "external" {
 			low := strings.ToLower(s.Title + " " + s.Text)
 			furniture := collectorContainsAny(low, "мебелна къща", "мебелен", "мебели")

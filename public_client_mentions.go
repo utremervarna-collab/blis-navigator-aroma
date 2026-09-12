@@ -69,6 +69,9 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 			if scope == "brand" && s.Scope != "external" && s.Scope != "owned" {
 				continue
 			}
+			if scope == "competitor" && zagorkaParkOnly(s.Brand, s.Title, s.Text) {
+				continue
+			}
 			u, err := url.Parse(s.URL)
 			if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || strings.TrimSpace(s.Source) == "" || strings.TrimSpace(s.Title) == "" {
 				continue
