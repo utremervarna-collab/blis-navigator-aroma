@@ -68,11 +68,13 @@ async function check(page, client, first, width) {
 }
 
 async function checkSlowBootstrap(browser) {
-  const context = await browser.newContext({viewport: {width: 1440, height: 900}});
+  const context = await browser.newContext({viewport: {width: 1440, height: 900}, serviceWorkers: 'block'});
   try {
     const page = await context.newPage();
     await instrument(page);
-    await page.route('**/navigator-3-architecture-v1.js*', async route => {
+    let delayed = 0;
+    await page.route('**/navigator-production-entry-v1.js*', async route => {
+      delayed++;
       await new Promise(resolve => setTimeout(resolve, 17000));
       await route.continue();
     });
@@ -86,8 +88,8 @@ async function checkSlowBootstrap(browser) {
       slow: document.documentElement.classList.contains('blis-dashboard-slow'),
       error: document.documentElement.classList.contains('blis-dashboard-error')
     }));
-    if (pending.ready || !pending.slow || pending.error)
-      throw new Error(`slow bootstrap showed a premature state: ${JSON.stringify(pending)}`);
+    if (!delayed || pending.ready || !pending.slow || pending.error)
+      throw new Error(`slow bootstrap showed a premature state: ${JSON.stringify({delayed, ...pending})}`);
     await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready'), null, {timeout: 60000});
     const state = await page.evaluate(() => ({
       frames: window.__paintFrames,
