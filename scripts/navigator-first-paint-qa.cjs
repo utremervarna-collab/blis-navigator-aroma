@@ -153,7 +153,7 @@ async function checkMentionStreams(browser) {
   const context = await browser.newContext({serviceWorkers: 'block'});
   try {
     const page = await context.newPage();
-    await page.route('**/api/signals?**', async route => {
+    await page.route('**/api/public/mentions?**', async route => {
       const url = new URL(route.request().url());
       const scope = url.searchParams.get('scope');
       const client = url.searchParams.get('client');
@@ -193,7 +193,31 @@ async function checkMentionStreams(browser) {
   } finally { await context.close(); }
 }
 
+async function checkPublicMentionsContract() {
+  if (origin !== 'http://127.0.0.1:10000') return;
+  const base = `${origin}/api/public/mentions`;
+  for (const scope of ['brand', 'competitor']) {
+    const response = await fetch(`${base}?client=aroma&scope=${scope}`);
+    if (response.status !== 200) throw new Error(`public ${scope} mentions: HTTP ${response.status}`);
+    const payload = await response.json();
+    if (payload.client !== 'aroma' || payload.scope !== scope || !Array.isArray(payload.signals) ||
+        payload.signals.some(s => s.client !== 'aroma' || (scope === 'competitor') !== (s.scope === 'competitor') || !s.source || !/^https?:\/\//.test(s.url)))
+      throw new Error(`unscoped public ${scope} mentions`);
+  }
+  for (const [url, method, expected] of [
+    [`${base}?client=aroma&scope=all`, 'GET', 400],
+    [`${base}?client=black-sea-center&scope=brand`, 'GET', 403],
+    [`${base}?client=aroma&scope=brand`, 'POST', 405],
+    [`${origin}/api/signals?client=aroma`, 'GET', 401]
+  ]) {
+    const response = await fetch(url, {method});
+    if (response.status !== expected) throw new Error(`${method} ${url}: HTTP ${response.status}, expected ${expected}`);
+  }
+  console.log('PUBLIC_MENTIONS_CONTRACT_OK');
+}
+
 (async () => {
+  await checkPublicMentionsContract();
   const browser = await chromium.launch({headless: true});
   try {
     for (const width of [1440, 390]) {

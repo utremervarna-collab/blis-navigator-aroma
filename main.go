@@ -1791,6 +1791,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	switch path {
 	case "api/signals":
 		signalListHandler(w, r)
+	case "api/public/mentions":
+		publicClientMentions(w, r)
 		return
 	case "api/signals/refresh":
 		signalRefreshHandler(w, r)
