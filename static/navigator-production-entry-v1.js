@@ -27,7 +27,7 @@ function revealFinalApp(){
  appRevealed=true;document.getElementById('blisPrepaintGuard')?.remove();
  document.body.classList.add('blis-app-ready');
  document.documentElement.dataset.navigatorPaint='ready';
- document.documentElement.classList.remove('blis-dashboard-error');
+ document.documentElement.classList.remove('blis-dashboard-error','blis-dashboard-slow');
  document.documentElement.classList.add('blis-dashboard-ready');
  requestAnimationFrame(()=>requestAnimationFrame(()=>{const cover=document.getElementById('blisNavigatorBootScreen');if(cover)setTimeout(()=>cover.remove(),120)}));
 }
@@ -44,8 +44,8 @@ function settleRoute(id,token,started){
   }));
   return;
  }
- if(Date.now()-started<12000)setTimeout(()=>settleRoute(id,token,started),60);
- else{root.classList.remove('blis-route-pending');root.classList.add('blis-dashboard-error');root.removeAttribute('data-blis-pending-route')}
+ // Delayed data and late renderer work must not turn a valid route into an error.
+ setTimeout(()=>settleRoute(id,token,started),Date.now()-started<12000?60:250);
 }
 function holdRoute(id=activeRoute()){
  if(!appRevealed)return;
@@ -63,15 +63,18 @@ function waitForFinalPaint(started=Date.now()){
   requestAnimationFrame(()=>requestAnimationFrame(revealFinalApp));
   return;
  }
- if(Date.now()-started<12000)setTimeout(()=>waitForFinalPaint(started),70);
- else document.documentElement.classList.add('blis-dashboard-error');
+ // The gateway may still be streaming dependent assets after 12 seconds.
+ setTimeout(()=>waitForFinalPaint(started),Date.now()-started<12000?70:250);
 }
 async function boot(){
  forceBulgarianEarly();
- for(const css of ['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'])await safeStyle(css);
+ await Promise.all(['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'].map(safeStyle));
  await safe('/navigator-system-structure-v1.js');
  await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
- await safe('/navigator-data-loader-v1.js');await window.BLISDataLoaderV1?.load?.(initialClient,true);
+ await safe('/navigator-data-loader-v1.js');
+ // Data can continue loading after the shell is assembled. Bound only the
+ // bootstrap wait; the loader publishes late results through blis:clientdata.
+ await Promise.race([window.BLISDataLoaderV1?.load?.(initialClient,true),new Promise(resolve=>setTimeout(resolve,3000))]);
  await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');
  await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-executive-reports-v1.js');
  await safe('/navigator-visual-suite-v1.js');await safe('/navigator-visual-suite-motion-v1.js');await safe('/navigator-visual-special-v2.js');await safe('/navigator-overview-client-home-v1.js');

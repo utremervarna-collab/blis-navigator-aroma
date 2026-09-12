@@ -67,6 +67,41 @@ async function check(page, client, first, width) {
   console.log(`FIRST_PAINT_OK ${client} ${first} ${width}`);
 }
 
+async function checkSlowBootstrap(browser) {
+  const context = await browser.newContext({viewport: {width: 1440, height: 900}, serviceWorkers: 'block'});
+  try {
+    const page = await context.newPage();
+    await instrument(page);
+    let delayed = 0;
+    await page.route('**/navigator-production-entry-v1.js*', async route => {
+      delayed++;
+      await new Promise(resolve => setTimeout(resolve, 17000));
+      await route.continue();
+    });
+    const started = Date.now();
+    // DOMContentLoaded waits for this intentionally delayed blocking script.
+    // Observe the page from response commit so the 16-second sample is real.
+    await page.goto(`${origin}/dashboard.html?client=aroma&page=overview`, {waitUntil: 'commit', timeout: 30000});
+    await page.waitForTimeout(Math.max(0, 16000 - (Date.now() - started)));
+    const pending = await page.evaluate(() => ({
+      ready: document.documentElement.classList.contains('blis-dashboard-ready'),
+      slow: document.documentElement.classList.contains('blis-dashboard-slow'),
+      error: document.documentElement.classList.contains('blis-dashboard-error')
+    }));
+    if (!delayed || pending.ready || !pending.slow || pending.error)
+      throw new Error(`slow bootstrap showed a premature state: ${JSON.stringify({delayed, ...pending})}`);
+    await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready'), null, {timeout: 60000});
+    const state = await page.evaluate(() => ({
+      frames: window.__paintFrames,
+      slow: document.documentElement.classList.contains('blis-dashboard-slow'),
+      active: document.querySelector('.page.active')?.id
+    }));
+    if (state.slow || state.active !== 'overview' || state.frames.some(frame => frame.visible && !frame.final))
+      throw new Error('slow bootstrap did not recover cleanly');
+    console.log('SLOW_BOOTSTRAP_OK aroma overview');
+  } finally { await context.close(); }
+}
+
 (async () => {
   const browser = await chromium.launch({headless: true});
   try {
@@ -80,5 +115,6 @@ async function check(page, client, first, width) {
       }
       await context.close();
     }
+    await checkSlowBootstrap(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
