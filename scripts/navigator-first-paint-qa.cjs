@@ -163,6 +163,7 @@ async function checkMentionStreams(browser) {
         {...base, client: 'bolyarka', scope: 'external', title: 'Wrong client mention', fingerprint: 'brand-bolyarka'}
       ] : client === 'aroma' && scope === 'competitor' ? [
         {...base, client: 'aroma', scope: 'competitor', brand: 'Biofresh', title: 'Biofresh verified mention', fingerprint: 'competitor-aroma'},
+        {...base, client: 'aroma', scope: 'competitor', brand: 'Biofresh', title: 'Archived competitor article', published_at: 'Tue, 14 Feb 2017 08:00:00 GMT', fingerprint: 'competitor-archive'},
         {...base, client: 'bolyarka', scope: 'competitor', brand: 'Загорка', title: 'Wrong competitor mention', fingerprint: 'competitor-bolyarka'}
       ] : [];
       await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({client, signals: rows})});
@@ -175,7 +176,8 @@ async function checkMentionStreams(browser) {
     await page.locator('#nav [data-n3-page="competition"]').click();
     await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 20000});
     const competitors = await page.locator('#compnews-v1').innerText();
-    if (competitors.includes('Wrong competitor mention')) throw new Error('another client leaked into competitor mentions');
+    if (competitors.includes('Wrong competitor mention') || competitors.includes('Archived competitor article'))
+      throw new Error('wrong-client or archived publication counted as a current competitor mention');
     await page.waitForFunction(() => !document.documentElement.classList.contains('blis-route-pending'), null, {timeout: 15000});
     await page.evaluate(() => document.querySelector('#competitionBody').replaceChildren(document.createElement('div')));
     await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
