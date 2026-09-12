@@ -22,8 +22,8 @@ async function refresh(){
     await load();
     document.body.dataset.blisLive='true';
     document.body.dataset.blisLiveUpdated=String(Date.now());
-    window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:document.body.dataset.client||'',realtime:true,at:new Date().toISOString()}}));
-    requestAnimationFrame(function(){try{window.BLISCanonicalRenderActive?.()}catch(_){}});
+    // The canonical loader publishes changed data. A second synthetic event and
+    // forced full-page render made Monitoring rebuild on every 15-second tick.
   }catch(e){console.warn('BLIS live refresh',e?.message||e)}finally{busy=false}
 }
 function start(){
