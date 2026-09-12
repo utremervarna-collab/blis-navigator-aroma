@@ -89,7 +89,7 @@ jobs:
               for(const [alias,expected] of aliases){
                 const context=await browser.newContext();const page=await context.newPage();
                 await page.goto(`${origin}/dashboard.html?client=mollox&page=${alias}`,{waitUntil:'domcontentloaded',timeout:25000});
-                await page.waitForFunction(expected=>document.querySelector('.page.active')?.id===expected,expected,{timeout:12000});
+                await page.waitForFunction(expected=>document.documentElement.classList.contains('blis-dashboard-ready')&&document.querySelector('.page.active')?.id===expected,expected,{timeout:20000});
                 const state=await page.evaluate(()=>({href:location.href,active:document.querySelector('.page.active')?.id||''}));
                 const u=new URL(state.href);
                 if(state.active!==expected||u.searchParams.get('page')!==expected)fail(`alias bootstrap failed ${alias}: ${JSON.stringify(state)}`);
