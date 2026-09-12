@@ -64,7 +64,7 @@ function normalizeVisualCopy(id){
   if(id==='overview'){
     text(document.querySelector('#overview .vs-vhead b'),'BLIS индекс');
   }else if(id==='social'){
-    text(document.querySelector('#social .dv-title h2'),'Интелигентен радар');
+    text(document.querySelector('#social .dv-title h2'),'Радар');
     document.querySelectorAll('#social .n3-live-strip-head span').forEach(el=>text(el,'Текущо наблюдение'));
     document.querySelectorAll('#social .n3-live-strip-head b').forEach(el=>text(el,'Какво се случва сега'));
   }else if(id==='market'){
