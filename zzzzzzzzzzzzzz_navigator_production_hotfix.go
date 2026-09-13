@@ -13,6 +13,7 @@ var legacyNavigatorUIScripts = regexp.MustCompile(`<script[^>]+src="/(?:app|navi
 var legacyNavigatorUIStyles = regexp.MustCompile(`<link[^>]+href="/(?:navigator-reference|navigator-overview-master|navigator-live-master|navigator-geo-v2|navigator-digital-master|navigator-shell-master|navigator-client-ui|navigator-social-master|navigator-reputation-exact-art-v41|navigator-reputation-master|navigator-reputation-totem-3d-v40|navigator-client-value-pages-v1|navigator-perception-map|navigator-production-cleanup-v1|navigator-overview-clarity|navigator-trend-fix|navigator-visual-special-v2)\.css[^\"]*"[^>]*>`)
 var legacyCompetitionPaintGuard = regexp.MustCompile(`(?s)<style[^>]+id="blisCompetitionPaintGuard"[^>]*>.*?</style>`)
 var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
+var navigatorLiveRefreshEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-live-refresh-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 
 func init() {
 	if authProxy == nil { return }
@@ -35,13 +36,17 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260902-readable-small-type-1"></script>`)
+		// The mention stream must start only after the canonical Navigator 3
+		// entrypoint has assembled the page. Remove the legacy early tag and
+		// re-inject a cache-busted stream immediately after production entry.
+		body = navigatorLiveRefreshEntrypoint.ReplaceAll(body, nil)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-live4"></script><script src="/navigator-live-refresh-v1.js?v=20260913-live4"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260902-readable-small-type-1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260913-live4")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
