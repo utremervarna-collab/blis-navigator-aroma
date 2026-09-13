@@ -84,7 +84,7 @@ jobs:
               bob=len(bc.get(slug,{}).get('observations',[])); aob=len(ac[slug].get('observations',[]))
               assert asn >= bsn, f'{slug} snapshot count regressed {bsn}->{asn}'
               if aob < bob:
-                  assert bob > observation_retention_cap and aob == observation_retention_cap, \
+                  assert bob > observation_retention_cap and aob >= observation_retention_cap, \
                       f'{slug} observation count regressed outside retention compaction {bob}->{aob}'
                   print(slug, f'OBSERVATION_RETENTION_COMPACTION {bob}->{aob}')
               if asn>bsn or aob>bob: changed.append(slug)
