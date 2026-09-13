@@ -19,6 +19,7 @@ func init() {
 			if err := previous(resp); err != nil {
 				return err
 			}
+		}
 		return applyNavigatorSpeedFinal(resp)
 	}
 }
