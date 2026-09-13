@@ -25,9 +25,31 @@ func init() {
 }
 
 func applyNavigatorSpeedFinal(resp *http.Response) error {
-	if resp == nil || resp.Request == nil || resp.Body == nil || resp.Request.URL.Path != "/navigator-production-entry-v1.js" {
+	if resp == nil || resp.Request == nil || resp.Body == nil {
 		return nil
 	}
+	path := resp.Request.URL.Path
+
+	// The optimized production assets are versioned and browser-cacheable. Bump
+	// the injected version so an already open Navigator cannot keep the slower
+	// pre-optimization entrypoint for the cache window.
+	if path == "/dashboard.html" {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		_ = resp.Body.Close()
+		body = bytes.ReplaceAll(body, []byte("20260913-fastboot1"), []byte("20260913-fastboot2"))
+		resp.Body = io.NopCloser(bytes.NewReader(body))
+		resp.ContentLength = int64(len(body))
+		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
+		resp.Header.Set("X-BLIS-Navigator-Speed", "fastboot2")
+		return nil
+	}
+	if path != "/navigator-production-entry-v1.js" {
+		return nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
