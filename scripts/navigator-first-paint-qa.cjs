@@ -152,7 +152,8 @@ async function checkMentionStreams(browser) {
       const url = new URL(route.request().url());
       const scope = url.searchParams.get('scope');
       const client = url.searchParams.get('client');
-      const base = {source: 'Public test source', url: 'https://example.org/report', detected_at: new Date().toISOString()};
+      const now = new Date().toISOString();
+      const base = {source: 'Public test source', url: 'https://example.org/report', published_at: now, detected_at: now};
       const rows = client === 'aroma' && scope === 'brand' ? [
         {...base, client: 'aroma', scope: 'external', title: 'Aroma verified mention', fingerprint: 'brand-aroma'},
         {...base, client: 'bolyarka', scope: 'external', title: 'Wrong client mention', fingerprint: 'brand-bolyarka'}
@@ -181,10 +182,9 @@ async function checkMentionStreams(browser) {
       throw new Error('wrong-client publication leaked into visible competitor chronology');
     if (tickerText.includes('Wrong competitor mention') || tickerText.includes('Archived competitor article'))
       throw new Error('wrong-client or archived publication leaked into current competitor ticker');
+    if (competitorText.includes('Archived competitor article'))
+      throw new Error('publication older than three months leaked into competitor chronology');
 
-    // Simulate a late canonical body rewrite without manufacturing a route change.
-    // The targeted mount guard must restore the chronology/ticker on the already
-    // visible Competition page without putting Navigator back into a loading state.
     await page.evaluate(() => {
       document.querySelector('#competitionBody').replaceChildren(document.createElement('div'));
     });
