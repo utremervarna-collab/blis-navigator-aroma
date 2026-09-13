@@ -14,7 +14,11 @@ import (
 // extends the same discovery principles to every other real Navigator profile:
 // fast news discovery, direct publisher polling, stable article identity,
 // durable observations and strict per-client separation.
-const universalRealtimeMentionInterval = 15 * time.Second
+//
+// The non-KUB lane intentionally runs at a lower cadence than the dedicated KUB
+// crisis collector. This keeps the production gateway responsive while still
+// providing a continuous mention stream for every standard client profile.
+const universalRealtimeMentionInterval = 60 * time.Second
 
 type universalDirectPublisherTarget struct {
 	Label    string
@@ -279,9 +283,9 @@ func universalDirectTargets(clients []*Client) []universalDirectPublisherTarget 
 }
 
 func universalDirectDue(t universalDirectPublisherTarget) bool {
-	interval := 90 * time.Second
+	interval := 5 * time.Minute
 	if t.Priority {
-		interval = 30 * time.Second
+		interval = 90 * time.Second
 	}
 	now := time.Now()
 	universalDirectStateMu.Lock()
@@ -411,7 +415,7 @@ func collectUniversalDirectMentions(clients []*Client) map[string][]Signal {
 	}
 
 	type result struct{ rows map[string][]Signal }
-	sem := make(chan struct{}, 6)
+	sem := make(chan struct{}, 3)
 	ch := make(chan result, len(due))
 	var wg sync.WaitGroup
 	for _, target := range due {
@@ -463,17 +467,21 @@ func runUniversalRealtimeMentionCycle() {
 		totalFresh += len(fresh)
 		totalNew += mergeSignals(c.Slug, fresh)
 	}
-	sanitizeKnownSignalFalsePositives()
-	saveSignalStateFile()
-	saveStore()
+	// Full state persistence is the expensive part of the pass. Do it only when
+	// the public signal set actually changed; idle discovery cycles stay read-only.
+	if totalNew > 0 {
+		sanitizeKnownSignalFalsePositives()
+		saveSignalStateFile()
+		saveStore()
+	}
 	log.Printf("BLIS_MENTION_REALTIME clients=%d fresh=%d new=%d", len(clients), totalFresh, totalNew)
 }
 
 func init() {
 	go func() {
-		// Run shortly after startup, then keep discovering while the Navigator
-		// process is alive. The separate availability probe keeps production warm.
-		time.Sleep(5 * time.Second)
+		// Give the HTTP gateway time to become healthy before the first broad pass.
+		// KUB keeps its separate near-real-time crisis collector.
+		time.Sleep(15 * time.Second)
 		for {
 			runUniversalRealtimeMentionCycle()
 			time.Sleep(universalRealtimeMentionInterval)
