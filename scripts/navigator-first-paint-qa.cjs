@@ -67,8 +67,6 @@ async function check(page, client, first, width) {
     if (!state.frames.some(frame => frame.visible && frame.id === id && frame.final))
       throw new Error(`${client}/${id}/${width}: no visible canonical frame`);
     if (client === 'aroma' && width === 1440 && id === 'social') {
-      // Legacy intelligence modules can rewrite socialBody after route change.
-      // The canonical radar must stay mounted in its independently owned host.
       const survived = await page.evaluate(() => {
         const legacy = document.getElementById('socialBody');
         if (!legacy) return false;
@@ -108,8 +106,6 @@ async function checkSlowBootstrap(browser) {
       await route.continue();
     });
     const started = Date.now();
-    // DOMContentLoaded waits for this intentionally delayed blocking script.
-    // Observe the page from response commit so the 16-second sample is real.
     await page.goto(`${origin}/dashboard.html?client=aroma&page=overview`, {waitUntil: 'commit', timeout: 30000});
     await page.waitForTimeout(Math.max(0, 16000 - (Date.now() - started)));
     const pending = await page.evaluate(() => ({
@@ -186,9 +182,11 @@ async function checkMentionStreams(browser) {
     if (tickerText.includes('Wrong competitor mention') || tickerText.includes('Archived competitor article'))
       throw new Error('wrong-client or archived publication leaked into current competitor ticker');
 
+    // Simulate a late canonical body rewrite without manufacturing a route change.
+    // The targeted mount guard must restore the chronology/ticker on the already
+    // visible Competition page without putting Navigator back into a loading state.
     await page.evaluate(() => {
       document.querySelector('#competitionBody').replaceChildren(document.createElement('div'));
-      window.dispatchEvent(new CustomEvent('blis:routechange', {detail: {page: 'competition'}}));
     });
     await page.waitForFunction(() => document.querySelector('#blisCompetitorMentionTimeline')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
     if (await page.evaluate(() => document.documentElement.classList.contains('blis-route-pending')))
