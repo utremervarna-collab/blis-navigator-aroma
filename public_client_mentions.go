@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // publicClientMention contains only the source-backed fields displayed by the
@@ -27,11 +28,9 @@ type publicClientMention struct {
 	Fingerprint string `json:"fingerprint"`
 }
 
-// persistedMentionSignals reads only durable source-backed signal observations
-// for one client. This is intentionally a fallback/union source for the public
-// chronology: the in-memory collector keeps a bounded 500-row working set, so
-// older competitor mentions must not disappear merely because newer brand
-// mentions fill that working set or because the process has just restarted.
+// persistedMentionSignals reads durable source-backed signal observations for
+// one client. The public endpoint unions these with the bounded live set and
+// then applies the exact rolling three-calendar-month publication window.
 func persistedMentionSignals(slug string) []Signal {
 	mu.Lock()
 	c := store.Clients[slug]
@@ -61,6 +60,17 @@ func persistedMentionSignals(slug string) []Signal {
 	return rows
 }
 
+func publicMentionInRecentWindow(s Signal) bool {
+	published, ok := parseCompetitorPublished(s.PublishedAt)
+	if !ok {
+		// A newly detected old page must never masquerade as a current mention.
+		// Publication date is therefore mandatory in the public 3-month stream.
+		return false
+	}
+	now := time.Now().UTC()
+	return !published.Before(competitorRecentCutoff()) && !published.After(now.Add(48*time.Hour))
+}
+
 func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 	if s.Client != slug || (scope == "competitor") != (s.Scope == "competitor") {
 		return false
@@ -68,11 +78,19 @@ func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 	if scope == "brand" && s.Scope != "external" && s.Scope != "owned" {
 		return false
 	}
+	if !publicMentionInRecentWindow(s) {
+		return false
+	}
 	if scope == "brand" && c != nil && !brandMentionContextAcceptable(c, s.Title, s.Text) {
 		return false
 	}
-	if scope == "competitor" && zagorkaParkOnly(s.Brand, s.Title, s.Text) {
-		return false
+	if scope == "competitor" {
+		if zagorkaParkOnly(s.Brand, s.Title, s.Text) {
+			return false
+		}
+		if slug == "bolyarka" && bolyarkaCompetitorNoiseV2(s.Brand, s.Title, s.Text) {
+			return false
+		}
 	}
 	u, err := url.Parse(s.URL)
 	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" &&
@@ -150,10 +168,14 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 				candidates = append(candidates, s)
 			}
 		}
-		// DetectedAt is RFC3339/UTC in collector data, so lexical ordering is a
-		// stable newest-first ordering for the public API. The browser additionally
-		// orders the visible chronology by PublishedAt when that field is present.
+		// The public chronology is publication-first. DetectedAt is used only as
+		// a deterministic tie-breaker after the mandatory publication date.
 		sort.SliceStable(candidates, func(i, j int) bool {
+			iPub, iOK := parseCompetitorPublished(candidates[i].PublishedAt)
+			jPub, jOK := parseCompetitorPublished(candidates[j].PublishedAt)
+			if iOK && jOK && !iPub.Equal(jPub) {
+				return iPub.After(jPub)
+			}
 			return candidates[i].DetectedAt > candidates[j].DetectedAt
 		})
 		if len(candidates) > limit {
@@ -163,5 +185,5 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 			rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: s.Title, Text: s.Text, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
 		}
 	}
-	collectorWriteJSON(w, map[string]interface{}{"client": slug, "scope": scope, "updated_at": updated, "signals": rows})
+	collectorWriteJSON(w, map[string]interface{}{"client": slug, "scope": scope, "window_months": 3, "updated_at": updated, "signals": rows})
 }
