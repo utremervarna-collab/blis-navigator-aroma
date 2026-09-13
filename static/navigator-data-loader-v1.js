@@ -15,7 +15,7 @@ function key(input){
   return 'aroma';
 }
 async function json(url,fallback){try{const r=await fetch(url,{cache:'no-store',credentials:'same-origin'});if(!r.ok)return fallback;return await r.json()}catch(_){return fallback}}
-function publish(k,d,s,q,a,h){
+function publish(k,d,s,q,a,h,emit=true){
   const signature=JSON.stringify([k,d,s,q,a,h]);
   const changed=signature!==lastPublishedSignature;
   window.slug=k;window.D=d||{};window.S=Array.isArray(s)?s:[];window.Q=q||{};window.A=Array.isArray(a)?a:[];window.H=Array.isArray(h)?h:[];
@@ -23,13 +23,14 @@ function publish(k,d,s,q,a,h){
   const sel=document.getElementById('clientSel');if(sel&&sel.value!==k)sel.value=k;
   const note=document.getElementById('clientNote');if(note)note.textContent=window.D?.note||'';
   const sync=document.getElementById('lastSync');if(sync){const raw=window.D?.data_updated||window.D?.updated_at||'';const dt=new Date(raw);sync.textContent=raw&&!Number.isNaN(dt.getTime())?dt.toLocaleString('bg-BG'):'—'}
-  if(changed){lastPublishedSignature=signature;window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:k,dashboard:window.D,sources:window.S,quality:window.Q,activity:window.A,history:window.H,canonical:true}}))}
+  if(changed&&emit){lastPublishedSignature=signature;window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:k,dashboard:window.D,sources:window.S,quality:window.Q,activity:window.A,history:window.H,canonical:true}}))}
+  else if(changed){lastPublishedSignature=signature}
 }
 async function load(input,force=false){
   const k=key(input),now=Date.now();
   if(!force){
     const hit=cache.get(k);
-    if(hit&&now-hit.at<CACHE_MS){const v=hit.value;publish(k,v.D,v.S,v.Q,v.A,v.H);return v}
+    if(hit&&now-hit.at<CACHE_MS){const v=hit.value;publish(k,v.D,v.S,v.Q,v.A,v.H,true);return v}
     if(busy&&current===k)return busy;
   }
   const my=++seq;current=k;
@@ -43,12 +44,15 @@ async function load(input,force=false){
     const d=await dashboardP;
     if(my!==seq)return null;
     const same=window.slug===k;
-    publish(k,d,same?window.S:[],same?window.Q:{},same?window.A:[],same?window.H:[]);
+    publish(k,d,same?window.S:[],same?window.Q:{},same?window.A:[],same?window.H:[],true);
     const [s,q,a,h]=await Promise.all([sourcesP,qualityP,activityP,historyP]);
     if(my!==seq)return null;
     const value={client:k,D:d,S:s,Q:q,A:a,H:h};
     cache.set(k,{at:Date.now(),value});
-    publish(k,d,s,q,a,h);
+    // Hydrate the auxiliary globals without firing a second canonical render.
+    // Route renderers read these globals when opened, while the active page stays stable.
+    publish(k,d,s,q,a,h,false);
+    window.dispatchEvent(new CustomEvent('blis:clientaux',{detail:{client:k,sources:s,quality:q,activity:a,history:h,canonical:true}}));
     return value;
   })().catch(e=>{console.error('BLIS canonical data load failed',e);return null}).finally(()=>{if(my===seq)busy=null});
   return busy;
