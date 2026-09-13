@@ -34,9 +34,11 @@ func applyNavigatorSpeedFinal(resp *http.Response) error {
 	}
 	_ = resp.Body.Close()
 
-	// Navigation is synchronous once its canonical visual exists. The old 600ms
-	// guard made every click feel slow even when the page was already ready.
-	body = bytes.ReplaceAll(body, []byte("Date.now()-started>=600"), []byte("Date.now()-started>=120"))
+	// Once the canonical visual is present there is no reason to keep a route
+	// behind an artificial timer. This also prevents late chronology remounts from
+	// putting an already visible page back into the pending state.
+	body = bytes.ReplaceAll(body, []byte("Date.now()-started>=600"), []byte("Date.now()-started>=0"))
+	body = bytes.ReplaceAll(body, []byte("root.classList.add('blis-route-pending');\n setTimeout(()=>settleRoute(id,token,Date.now()),50);"), []byte("if(finalShellReady()&&document.body?.dataset.blisLoading!=='true'){root.classList.remove('blis-route-pending');root.removeAttribute('data-blis-pending-route');return}\n root.classList.add('blis-route-pending');\n setTimeout(()=>settleRoute(id,token,Date.now()),0);"))
 	body = bytes.ReplaceAll(body, []byte("setTimeout(()=>waitForFinalPaint(),120);"), []byte("setTimeout(()=>waitForFinalPaint(),20);"))
 	body = bytes.ReplaceAll(body, []byte("setTimeout(()=>cover.remove(),120)"), []byte("setTimeout(()=>cover.remove(),40)"))
 
@@ -51,6 +53,6 @@ func applyNavigatorSpeedFinal(resp *http.Response) error {
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	resp.ContentLength = int64(len(body))
 	resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
-	resp.Header.Set("X-BLIS-Navigator-Speed", "route-120ms-early-data")
+	resp.Header.Set("X-BLIS-Navigator-Speed", "route-immediate-early-data")
 	return nil
 }
