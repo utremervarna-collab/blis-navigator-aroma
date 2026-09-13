@@ -20,12 +20,30 @@ func competitorRecentCutoff() time.Time {
 	return time.Now().UTC().AddDate(0, -3, 0)
 }
 
+// The deep three-month query is intentionally broader than the realtime query.
+// Relevance is enforced after retrieval. This prevents a recent article from
+// disappearing just because its headline is about an event, investment or
+// campaign rather than repeating a sector keyword used by the fast lane.
 func competitorRecentQuery(c *Client, t competitorSignalTarget) string {
-	base := strings.TrimSpace(competitorQuery(c, t))
-	if base == "" {
+	aliases := t.Aliases
+	if len(aliases) > 4 {
+		aliases = aliases[:4]
+	}
+	parts := make([]string, 0, len(aliases))
+	seen := map[string]bool{}
+	for _, alias := range aliases {
+		alias = strings.TrimSpace(alias)
+		key := strings.ToLower(alias)
+		if alias == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		parts = append(parts, `"`+alias+`"`)
+	}
+	if len(parts) == 0 {
 		return ""
 	}
-	return base + " after:" + competitorRecentCutoff().Format("2006-01-02")
+	return "(" + strings.Join(parts, " OR ") + ") after:" + competitorRecentCutoff().Format("2006-01-02")
 }
 
 func parseCompetitorPublished(raw string) (time.Time, bool) {
@@ -37,6 +55,7 @@ func parseCompetitorPublished(raw string) (time.Time, bool) {
 		time.RFC1123Z,
 		time.RFC1123,
 		time.RFC3339,
+		"2006-01-02",
 		"Mon, 2 Jan 2006 15:04:05 MST",
 		"Mon, 02 Jan 2006 15:04:05 MST",
 	}
@@ -56,8 +75,9 @@ func explicitZagorkaCompanyMention(title, text string) bool {
 	for _, evidence := range []string{
 		"загорка ад", "загорка а.д.", "пивоварна загорка", "пивоварната загорка",
 		"zagorka ad", "zagorka brewery", "zagorka company",
-		"организиран от загорка", "организира от загорка", "организатор загорка",
-		"съорганизатор загорка", "партньор загорка", "с подкрепата на загорка",
+		"организиран от загорка", "организира от загорка", "организирано от загорка",
+		"организатор загорка", "съорганизатор загорка", "съорганизира загорка",
+		"партньор загорка", "с подкрепата на загорка",
 	} {
 		if strings.Contains(low, evidence) {
 			return true
@@ -163,16 +183,19 @@ type competitorRecentResult struct {
 	rows []Signal
 }
 
-func runCompetitorRecentLookback() {
+// runCompetitorRecentLookback returns false only when another monitoring pass
+// currently owns the collector mutex. Startup retries use that signal so the
+// first three-month backfill cannot silently be postponed for 15 minutes.
+func runCompetitorRecentLookback() bool {
 	if !continuousMonitoringMu.TryLock() {
-		return
+		return false
 	}
 	defer continuousMonitoringMu.Unlock()
 
 	restoreSignalsFromObservations()
 	tasks := universalRealtimeCompetitorTasks()
 	if len(tasks) == 0 {
-		return
+		return true
 	}
 
 	sem := make(chan struct{}, 3)
@@ -223,17 +246,25 @@ func runCompetitorRecentLookback() {
 		saveStore()
 	}
 	log.Printf("BLIS_COMPETITOR_3M_LOOKBACK tasks=%d fresh=%d new=%d cutoff=%s", len(tasks), totalFresh, totalNew, competitorRecentCutoff().Format("2006-01-02"))
+	return true
 }
 
 func init() {
 	go func() {
-		// One deeper pass shortly after startup, then a low-frequency refresh.
+		// Guarantee an initial backfill even if the first attempt overlaps the
+		// normal realtime competitor cycle. Retries remain bounded and spaced.
 		time.Sleep(70 * time.Second)
-		runCompetitorRecentLookback()
+		for attempt := 1; attempt <= 8; attempt++ {
+			if runCompetitorRecentLookback() {
+				break
+			}
+			log.Printf("BLIS_COMPETITOR_3M_LOOKBACK_BUSY retry=%d", attempt)
+			time.Sleep(20 * time.Second)
+		}
 		ticker := time.NewTicker(competitorRecentLookbackInterval)
 		defer ticker.Stop()
 		for range ticker.C {
-			runCompetitorRecentLookback()
+			_ = runCompetitorRecentLookback()
 		}
 	}()
 }
