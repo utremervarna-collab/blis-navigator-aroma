@@ -145,21 +145,33 @@ func competitorAliasHit(t competitorSignalTarget, low string) bool {
 	return false
 }
 
-// Zagorka is also the name of a park. A beer festival held there is not by
-// itself a mention of the brewery, even when the article contains beer terms.
+// Zagorka is also the name of a park. Park/lake/location-only results are
+// excluded, but event coverage is retained when the same item explicitly ties
+// Zagorka to the brewery/company as organizer, partner or beer producer.
 func zagorkaParkOnly(name, title, body string) bool {
 	if !strings.EqualFold(strings.TrimSpace(name), "Загорка") {
 		return false
 	}
 	low := strings.ToLower(title + " " + body)
 	plain := strings.NewReplacer("„", " ", "“", " ", `"`, " ", "'", " ", "«", " ", "»", " ").Replace(low)
-	if !strings.Contains(strings.Join(strings.Fields(plain), " "), "парк загорка") {
+	plain = strings.Join(strings.Fields(plain), " ")
+	if !strings.Contains(plain, "парк загорка") {
 		return false
 	}
-	for _, evidence := range []string{"пивоварна загорка", "пивоварната загорка", "загорка ад", "загорка а.д.", "бира загорка", "бирата загорка", "загорка beer", "загорка пивовар"} {
+	for _, evidence := range []string{
+		"пивоварна загорка", "пивоварната загорка", "загорка ад", "загорка а.д.",
+		"бира загорка", "бирата загорка", "загорка beer", "загорка пивовар",
+		"организиран от загорка", "организира от загорка", "организирано от загорка",
+		"организатор загорка", "съорганизатор загорка", "съорганизира загорка",
+		"партньор загорка", "с подкрепата на загорка", "zagorka brewery", "zagorka company",
+	} {
 		if strings.Contains(plain, evidence) {
 			return false
 		}
+	}
+	if strings.Contains(plain, "загорка") && strings.Contains(plain, "организ") &&
+		(strings.Contains(plain, "бира") || strings.Contains(plain, "beer") || strings.Contains(plain, "пивовар")) {
+		return false
 	}
 	return true
 }
