@@ -4,7 +4,9 @@
 'use strict';
 if(window.__BLIS_DATA_LOADER_V1)return;window.__BLIS_DATA_LOADER_V1=true;
 const valid=new Set(['aroma','bolyarka','varna-towers','mollox','wirello','everbet','astor-garden']);
+const CACHE_MS=30000;
 let seq=0,busy=null,current='',lastPublishedSignature='';
+const cache=new Map();
 function key(input){
   if(valid.has(input))return input;
   try{const q=new URLSearchParams(location.search).get('client');if(valid.has(q))return q}catch(_){}
@@ -24,15 +26,31 @@ function publish(k,d,s,q,a,h){
   if(changed){lastPublishedSignature=signature;window.dispatchEvent(new CustomEvent('blis:clientdata',{detail:{client:k,dashboard:window.D,sources:window.S,quality:window.Q,activity:window.A,history:window.H,canonical:true}}))}
 }
 async function load(input,force=false){
-  const k=key(input);const my=++seq;
-  if(!force&&busy&&current===k)return busy;current=k;
-  busy=Promise.all([
-    json(`/api/clients/${encodeURIComponent(k)}/dashboard`,{}),
-    json(`/api/clients/${encodeURIComponent(k)}/sources`,[]),
-    json(`/api/clients/${encodeURIComponent(k)}/data-quality`,{}),
-    json(`/api/clients/${encodeURIComponent(k)}/activity`,[]),
-    json(`/api/clients/${encodeURIComponent(k)}/history`,[])
-  ]).then(([d,s,q,a,h])=>{if(my!==seq)return null;publish(k,d,s,q,a,h);busy=null;return{client:k,D:d,S:s,Q:q,A:a,H:h}}).catch(e=>{busy=null;console.error('BLIS canonical data load failed',e);return null});
+  const k=key(input),now=Date.now();
+  if(!force){
+    const hit=cache.get(k);
+    if(hit&&now-hit.at<CACHE_MS){const v=hit.value;publish(k,v.D,v.S,v.Q,v.A,v.H);return v}
+    if(busy&&current===k)return busy;
+  }
+  const my=++seq;current=k;
+  const enc=encodeURIComponent(k);
+  const dashboardP=json(`/api/clients/${enc}/dashboard`,{});
+  const sourcesP=json(`/api/clients/${enc}/sources`,[]);
+  const qualityP=json(`/api/clients/${enc}/data-quality`,{});
+  const activityP=json(`/api/clients/${enc}/activity`,[]);
+  const historyP=json(`/api/clients/${enc}/history`,[]);
+  busy=(async()=>{
+    const d=await dashboardP;
+    if(my!==seq)return null;
+    const same=window.slug===k;
+    publish(k,d,same?window.S:[],same?window.Q:{},same?window.A:[],same?window.H:[]);
+    const [s,q,a,h]=await Promise.all([sourcesP,qualityP,activityP,historyP]);
+    if(my!==seq)return null;
+    const value={client:k,D:d,S:s,Q:q,A:a,H:h};
+    cache.set(k,{at:Date.now(),value});
+    publish(k,d,s,q,a,h);
+    return value;
+  })().catch(e=>{console.error('BLIS canonical data load failed',e);return null}).finally(()=>{if(my===seq)busy=null});
   return busy;
 }
 function bind(){const sel=document.getElementById('clientSel');if(sel&&!sel.dataset.canonicalDataLoader){sel.dataset.canonicalDataLoader='1';sel.addEventListener('change',e=>load(e.target.value,true))}}
