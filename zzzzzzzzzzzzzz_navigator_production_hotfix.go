@@ -14,6 +14,7 @@ var legacyNavigatorUIStyles = regexp.MustCompile(`<link[^>]+href="/(?:navigator-
 var legacyCompetitionPaintGuard = regexp.MustCompile(`(?s)<style[^>]+id="blisCompetitionPaintGuard"[^>]*>.*?</style>`)
 var navigatorProductionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-production-entry-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 var navigatorLiveRefreshEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-live-refresh-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
+var navigatorMentionMountGuardEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-mention-mount-guard-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 
 func init() {
 	if authProxy == nil { return }
@@ -36,17 +37,18 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
-		// The mention stream must start only after the canonical Navigator 3
-		// entrypoint has assembled the page. Remove the legacy early tag and
-		// re-inject a cache-busted stream immediately after production entry.
+		// Mention UI is intentionally after the canonical Navigator entrypoint.
+		// This keeps first paint independent from monitoring network calls and
+		// prevents a page renderer from deleting chronology/ticker on startup.
 		body = navigatorLiveRefreshEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-live4"></script><script src="/navigator-live-refresh-v1.js?v=20260913-live4"></script>`)
+		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-live5"></script><script src="/navigator-live-refresh-v1.js?v=20260913-live5"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-live5"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260913-live4")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260913-live5")
 	} else {
 		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
 		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
