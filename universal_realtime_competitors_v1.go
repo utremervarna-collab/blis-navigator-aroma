@@ -10,7 +10,9 @@ import (
 // principle to every real client profile. The broad web/social collectors still
 // run on their bounded cycle; this lane checks Google News frequently so a new
 // competitor mention can reach Navigator without waiting for the full pass.
-const universalRealtimeCompetitorInterval = 60 * time.Second
+// The standard-client lane is deliberately slower than the dedicated KUB crisis
+// collector so production health always has priority over sub-minute discovery.
+const universalRealtimeCompetitorInterval = 120 * time.Second
 
 type universalCompetitorTask struct {
 	client *Client
@@ -46,7 +48,7 @@ func runUniversalRealtimeCompetitorCycle() {
 
 	// Bound upstream concurrency. This gives fast discovery without reproducing
 	// the intermittent 503 pressure that an unbounded all-client sweep can cause.
-	sem := make(chan struct{}, 4)
+	sem := make(chan struct{}, 3)
 	results := make(chan universalCompetitorResult, len(tasks))
 	var wg sync.WaitGroup
 	for _, task := range tasks {
@@ -77,17 +79,21 @@ func runUniversalRealtimeCompetitorCycle() {
 		totalFresh += len(rows)
 		totalNew += mergeSignals(slug, rows)
 	}
-	sanitizeKnownSignalFalsePositives()
-	saveSignalStateFile()
-	saveStore()
+	// Avoid rewriting the full signal/store state on idle passes. This is the
+	// main write-amplification guard for the continuous competitor stream.
+	if totalNew > 0 {
+		sanitizeKnownSignalFalsePositives()
+		saveSignalStateFile()
+		saveStore()
+	}
 	log.Printf("BLIS_COMPETITOR_REALTIME tasks=%d fresh=%d new=%d", len(tasks), totalFresh, totalNew)
 }
 
 func init() {
 	go func() {
-		// Let the fast brand lane finish its cold-start pass first, then begin a
-		// separate competitor stream. Sleep after each pass to avoid ticker backlog.
-		time.Sleep(20 * time.Second)
+		// Let the gateway and brand lane settle before the first competitor pass.
+		// Sleep after each pass to avoid ticker backlog.
+		time.Sleep(45 * time.Second)
 		for {
 			runUniversalRealtimeCompetitorCycle()
 			time.Sleep(universalRealtimeCompetitorInterval)
