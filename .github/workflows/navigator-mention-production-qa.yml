@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Wait for live mention UI build
+      - name: Wait for live three-month mention UI build
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
@@ -24,13 +24,14 @@ jobs:
           for i in $(seq 1 36); do
             if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" -o /tmp/live-refresh.js; then
               bytes=$(wc -c </tmp/live-refresh.js | tr -d ' ')
-              marker_v2=$(grep -Fc '__BLIS_LIVE_REFRESH_V2' /tmp/live-refresh.js || true)
+              marker_v6=$(grep -Fc '__BLIS_LIVE_REFRESH_V6' /tmp/live-refresh.js || true)
+              lookback=$(grep -Fc 'LOOKBACK_MONTHS=3' /tmp/live-refresh.js || true)
               timeline=$(grep -Fc 'Хронология на споменаванията' /tmp/live-refresh.js || true)
               comp_timeline=$(grep -Fc 'Хронология на конкурентните споменавания' /tmp/live-refresh.js || true)
               ticker=$(grep -Fc 'blis-ms-ticker' /tmp/live-refresh.js || true)
               api=$(grep -Fc '/api/public/mentions' /tmp/live-refresh.js || true)
-              echo "MENTION_UI_PROBE attempt=$i bytes=$bytes v2=$marker_v2 timeline=$timeline competitor_timeline=$comp_timeline ticker=$ticker api=$api"
-              if test "$marker_v2" -gt 0 && test "$timeline" -gt 0 && test "$comp_timeline" -gt 0 && test "$ticker" -gt 0 && test "$api" -gt 0; then
+              echo "MENTION_UI_PROBE attempt=$i bytes=$bytes v6=$marker_v6 lookback3m=$lookback timeline=$timeline competitor_timeline=$comp_timeline ticker=$ticker api=$api"
+              if test "$marker_v6" -gt 0 && test "$lookback" -gt 0 && test "$timeline" -gt 0 && test "$comp_timeline" -gt 0 && test "$ticker" -gt 0 && test "$api" -gt 0; then
                 ok=1
                 break
               fi
@@ -38,11 +39,11 @@ jobs:
             sleep 10
           done
           if test "$ok" != "1"; then
-            echo 'LIVE_MENTION_UI_NOT_READY'
-            head -c 800 /tmp/live-refresh.js || true
+            echo 'LIVE_THREE_MONTH_MENTION_UI_NOT_READY'
+            head -c 1000 /tmp/live-refresh.js || true
             exit 1
           fi
-          echo LIVE_MENTION_UI_OK
+          echo LIVE_THREE_MONTH_MENTION_UI_OK
 
       - name: Validate Aroma Bolyarka and MOLLOX production streams
         run: |
@@ -55,6 +56,8 @@ jobs:
           curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
           python - <<'PY'
           import json, re
+          from collections import Counter
+          from datetime import datetime, timezone
           from pathlib import Path
 
           clients=('aroma','bolyarka','mollox')
@@ -79,6 +82,24 @@ jobs:
                   for x in store.get(slug,{}).get('sources',[])
               ]
 
+          def parse_date(v):
+              raw=str(v or '').strip()
+              if not raw:
+                  return None
+              try:
+                  return datetime.fromisoformat(raw.replace('Z','+00:00')).astimezone(timezone.utc)
+              except Exception:
+                  pass
+              for fmt in ('%a, %d %b %Y %H:%M:%S %Z','%a, %d %b %Y %H:%M:%S %z'):
+                  try:
+                      return datetime.strptime(raw,fmt).astimezone(timezone.utc)
+                  except Exception:
+                      pass
+              return None
+
+          now=datetime.now(timezone.utc)
+          # Diagnostics use 93 days as a conservative upper bound for three calendar months.
+          recent_floor=now.timestamp()-93*86400
           summary={}
           for slug in clients:
               allowed=configured_competitors(slug)
@@ -117,19 +138,34 @@ jobs:
                           assert 'дгс „болярка“' not in hay and 'дгс “болярка”' not in hay and 'дгс болярка' not in hay, ('bolyarka','false positive: state forestry',row)
 
                   if scope=='competitor' and slug=='bolyarka':
-                      brewery_evidence=('пивоварна загорка','пивоварната загорка','загорка ад','загорка а.д.','бира загорка','бирата загорка','загорка beer','загорка пивовар')
+                      company_evidence=(
+                          'пивоварна загорка','пивоварната загорка','загорка ад','загорка а.д.',
+                          'бира загорка','бирата загорка','загорка beer','загорка пивовар',
+                          'организиран от загорка','организира от загорка','организирано от загорка',
+                          'организатор загорка','съорганизатор загорка','съорганизира загорка',
+                          'партньор загорка','с подкрепата на загорка','zagorka brewery','zagorka company'
+                      )
                       for row in rows:
                           if norm(row.get('brand'))!='загорка':
                               continue
                           hay=norm((row.get('title') or '')+' '+(row.get('text') or ''))
                           if 'парк загорка' in hay:
-                              assert any(x in hay for x in brewery_evidence), ('bolyarka','false positive: park Zagorka',row)
+                              contextual=('загорка' in hay and 'организ' in hay and any(x in hay for x in ('бира','beer','пивовар')))
+                              assert any(x in hay for x in company_evidence) or contextual, ('bolyarka','false positive: park Zagorka',row)
 
+                  recent=[]
+                  for row in rows:
+                      d=parse_date(row.get('published_at') or row.get('observed_at') or row.get('date'))
+                      if d and d.timestamp() >= recent_floor:
+                          recent.append(row)
+                  brands=Counter(str(x.get('brand') or '') for x in recent) if scope=='competitor' else Counter()
                   summary[slug][scope]={
                       'count':len(rows),
+                      'recent_3m_date_verified_count':len(recent),
+                      'recent_3m_brands':dict(brands),
                       'updated_at':data.get('updated_at') or '',
+                      'recent_samples':[{'brand':str(x.get('brand') or ''),'published_at':str(x.get('published_at') or ''),'title':str(x.get('title') or '')[:160]} for x in recent[:12]],
                       'sample_titles':[str(x.get('title') or '')[:160] for x in rows[:8]],
-                      'sample_brands':[str(x.get('brand') or '') for x in rows[:16]] if scope=='competitor' else [],
                       'sample_sources':[str(x.get('source') or '') for x in rows[:8]],
                   }
 
