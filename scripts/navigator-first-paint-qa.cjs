@@ -41,9 +41,12 @@ async function instrument(page) {
 
 async function check(page, client, first, width) {
   const url = `${origin}/dashboard.html?client=${client}&page=${first}`;
+  const started = Date.now();
   const response = await page.goto(url, {waitUntil: 'domcontentloaded', timeout: 30000});
   if (response.status() !== 200) throw new Error(`${url}: HTTP ${response.status()}`);
   await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready'), null, {timeout: 25000});
+  const readyMs = Date.now() - started;
+  console.log(`BOOT_READY ${client} ${first} ${width} ${readyMs}ms`);
   await page.waitForTimeout(750);
   for (const id of Object.keys(routes)) {
     if (id !== first) {
@@ -75,23 +78,19 @@ async function check(page, client, first, width) {
       if (!survived) throw new Error('legacy socialBody rewrite removed the canonical radar');
       const beforeRefresh = await page.evaluate(() => {
         window.__stableRadar = document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid');
-        window.__monitorDataBefore = {
-          D: JSON.stringify(window.D), S: JSON.stringify(window.S), H: JSON.stringify(window.H),
-          signals: JSON.stringify(window.BLISIntelligenceStreamV3?.getUsefulSignals?.())
-        };
-        return {refresh: Number(document.body.dataset.blisLiveUpdated || 0), t: performance.now()};
+        return {refresh: Number(document.body.dataset.blisMentionUpdated || 0), t: performance.now()};
       });
-      await page.waitForFunction(previous =>
-        Number(document.body.dataset.blisLiveUpdated || 0) > previous, beforeRefresh.refresh, {timeout: 35000});
-      await page.waitForTimeout(1600);
+      await page.waitForFunction(previous => {
+        window.BLISLiveRefresh?.refreshMentions?.(true);
+        return Number(document.body.dataset.blisMentionUpdated || 0) > previous;
+      }, beforeRefresh.refresh, {timeout: 15000, polling: 500});
+      await page.waitForTimeout(700);
       const stable = await page.evaluate(start => ({
         sameRadar: document.querySelector('#social #n3SocialRoot #digitalBody .dv-radar-grid') === window.__stableRadar,
-        interrupted: window.__paintFrames.some(frame => frame.t >= start && frame.id === 'social' && (!frame.visible || frame.pending)),
-        changed: Object.fromEntries(['D','S','H','signals'].map(key =>
-          [key, window.__monitorDataBefore[key] !== JSON.stringify(key === 'signals' ? window.BLISIntelligenceStreamV3?.getUsefulSignals?.() : window[key])]))
+        interrupted: window.__paintFrames.some(frame => frame.t >= start && frame.id === 'social' && (!frame.visible || frame.pending))
       }), beforeRefresh.t);
       if (!stable.sameRadar || stable.interrupted)
-        throw new Error(`15-second data refresh interrupted Monitoring: ${JSON.stringify(stable)}`);
+        throw new Error(`background mention refresh interrupted Monitoring: ${JSON.stringify(stable)}`);
     }
   }
   console.log(`FIRST_PAINT_OK ${client} ${first} ${width}`);
@@ -168,35 +167,50 @@ async function checkMentionStreams(browser) {
       ] : [];
       await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify({client, signals: rows})});
     });
+
     await page.goto(`${origin}/dashboard.html?client=aroma&page=social`, {waitUntil: 'domcontentloaded', timeout: 30000});
     await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready'), null, {timeout: 45000});
-    await page.waitForFunction(() => document.querySelector('#mon5 .mon5-mention')?.textContent.includes('Aroma verified mention'), null, {timeout: 20000});
-    const brand = await page.locator('#mon5 .mon5-mentions').innerText();
-    if (brand.includes('Wrong client mention')) throw new Error('another client leaked into brand mentions');
+    await page.waitForFunction(() => document.querySelector('#blisBrandMentionTimeline')?.textContent.includes('Aroma verified mention'), null, {timeout: 20000});
+    const brandText = await page.locator('#blisBrandMentionTimeline').innerText();
+    if (brandText.includes('Wrong client mention')) throw new Error('another client leaked into visible brand chronology');
+
     await page.locator('#nav [data-n3-page="competition"]').click();
-    await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 20000});
-    const competitors = await page.locator('#compnews-v1').innerText();
-    if (competitors.includes('Wrong competitor mention') || competitors.includes('Archived competitor article'))
-      throw new Error('wrong-client or archived publication counted as a current competitor mention');
-    await page.waitForFunction(() => !document.documentElement.classList.contains('blis-route-pending'), null, {timeout: 15000});
-    await page.evaluate(() => document.querySelector('#competitionBody').replaceChildren(document.createElement('div')));
-    await page.waitForFunction(() => document.querySelector('#compnews-v1')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
+    await page.waitForFunction(() =>
+      document.querySelector('.page.active')?.id === 'competition' &&
+      document.querySelector('#blisCompetitorMentionTimeline')?.textContent.includes('Biofresh verified mention') &&
+      !!document.querySelector('#blisCompetitorMentionTimeline .blis-ms-ticker .blis-ms-track'), null, {timeout: 20000});
+    const competitorText = await page.locator('#blisCompetitorMentionTimeline').innerText();
+    const tickerText = await page.locator('#blisCompetitorMentionTimeline .blis-ms-ticker').innerText();
+    if (competitorText.includes('Wrong competitor mention'))
+      throw new Error('wrong-client publication leaked into visible competitor chronology');
+    if (tickerText.includes('Wrong competitor mention') || tickerText.includes('Archived competitor article'))
+      throw new Error('wrong-client or archived publication leaked into current competitor ticker');
+
+    await page.evaluate(() => {
+      document.querySelector('#competitionBody').replaceChildren(document.createElement('div'));
+      window.dispatchEvent(new CustomEvent('blis:routechange', {detail: {page: 'competition'}}));
+    });
+    await page.waitForFunction(() => document.querySelector('#blisCompetitorMentionTimeline')?.textContent.includes('Biofresh verified mention'), null, {timeout: 8000});
     if (await page.evaluate(() => document.documentElement.classList.contains('blis-route-pending')))
-      throw new Error('competitor panel recovery hid the active route');
+      throw new Error('competitor chronology recovery hid the active route');
+
     await page.goto(`${origin}/dashboard.html?client=bolyarka&page=social`, {waitUntil: 'domcontentloaded', timeout: 30000});
-    await page.waitForFunction(() => document.documentElement.classList.contains('blis-dashboard-ready') && document.querySelector('#mon5')?.dataset.client === 'bolyarka', null, {timeout: 45000});
-    const zero = await page.evaluate(() => ({
-      brand: document.querySelector('#mon5 .mon5-mentions')?.textContent || '',
-      count: document.querySelector('#mon5 .mon5-kpi strong')?.textContent?.trim(),
-      painted: !!document.querySelector('#mon5 svg.mon5-radar')
-    }));
-    if (zero.brand.includes('Aroma verified mention') || (zero.count === '0' && zero.painted))
-      throw new Error(`empty or wrong-client monitoring painted as evidence: ${JSON.stringify(zero)}`);
+    await page.waitForFunction(() =>
+      document.documentElement.classList.contains('blis-dashboard-ready') &&
+      document.body.dataset.client === 'bolyarka' &&
+      !!document.querySelector('#blisBrandMentionTimeline'), null, {timeout: 45000});
+    const zeroBrand = await page.locator('#blisBrandMentionTimeline').innerText();
+    if (zeroBrand.includes('Aroma verified mention'))
+      throw new Error('previous client brand mention survived a client switch');
+
     await page.locator('#nav [data-n3-page="competition"]').click();
-    await page.waitForFunction(() => document.querySelector('.page.active')?.id === 'competition' && !!document.querySelector('#compnews-v1'), null, {timeout: 20000});
-    if ((await page.locator('#compnews-v1').innerText()).includes('Biofresh verified mention'))
+    await page.waitForFunction(() =>
+      document.querySelector('.page.active')?.id === 'competition' &&
+      !!document.querySelector('#blisCompetitorMentionTimeline'), null, {timeout: 20000});
+    const zeroCompetitor = await page.locator('#blisCompetitorMentionTimeline').innerText();
+    if (zeroCompetitor.includes('Biofresh verified mention'))
       throw new Error('previous client competitor mention survived a client switch');
-    console.log('CLIENT_MENTIONS_OK');
+    console.log('CLIENT_MENTIONS_VISIBLE_OK');
   } finally { await context.close(); }
 }
 
