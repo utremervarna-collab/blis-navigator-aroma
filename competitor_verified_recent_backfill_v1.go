@@ -45,6 +45,22 @@ func verifiedRecentBolyarkaBackfillV1() []verifiedRecentMentionV1 {
 			Text:   "Материалът за откриването на BEERфест 2026 посочва, че събитието е организирано съвместно от Община Стара Загора и „Загорка“ АД.",
 			PublishedAt: "2026-09-03T15:19:00+03:00",
 		},
+		{
+			Brand:  "Каменица",
+			Source: "Economy.bg",
+			URL:    "https://economy.bg/management/view/64814/Silniyat-HR-ne-upravlyava-samo-horata-%E2%80%93-toj-podgotvya-biznesa-za-bydeshteto",
+			Title:  "Силният HR не управлява само хората – той подготвя бизнеса за бъдещето",
+			Text:   "Материалът на Economy.bg представя Владан Матич, изпълнителен директор на „Каменица“, и Румяна Петева, директор „Човешки ресурси“ в „Каменица“ АД, в разговор за развитието на компанията.",
+			PublishedAt: "2026-08-24T09:47:00+03:00",
+		},
+		{
+			Brand:  "Шуменско",
+			Source: "Economy.bg",
+			URL:    "https://www.economy.bg/economy/view/64759/Zhenite-v-proizvodstvoto-Zapoznajte-se-s-Mariya-Stoeva-Stoyanova-Majstor-pivovar-v-Pivovarna-Shumensko",
+			Title:  "Жените в производството: Запознайте се с Мария Стоева-Стоянова, Майстор пивовар в Пивоварна Шуменско",
+			Text:   "Economy.bg представя Мария Стоева-Стоянова, Майстор пивовар в Пивоварна Шуменско, и професионалния ѝ път в пивоварната индустрия и Carlsberg България.",
+			PublishedAt: "2026-08-13T14:08:00+03:00",
+		},
 	}
 }
 
