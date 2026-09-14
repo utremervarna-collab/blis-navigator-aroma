@@ -56,7 +56,11 @@ jobs:
           test "$code" = "200"
           grep -q 'Корпорация КУБ' /tmp/kub.html
           ! grep -Eqi 'MOLLOX|Varna Towers|Everbet|Aroma Cosmetics' /tmp/kub.html
-          grep -Fq 'kub-live-feed-v4.js' /tmp/kub.html
+
+          fetch_retry "$BASE/kub-crisis.html?smoke=$(date +%s%N)" /tmp/kub-crisis.html
+          grep -q 'Корпорация КУБ' /tmp/kub-crisis.html
+          grep -Fq 'kub-live-feed-v4.js' /tmp/kub-crisis.html
+          ! grep -Fq 'kub-live-feed-v3.js' /tmp/kub-crisis.html
 
           code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview")
           test "$code" = "302"
