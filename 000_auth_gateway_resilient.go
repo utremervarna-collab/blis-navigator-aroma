@@ -189,10 +189,14 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// Aroma, so the shared Navigator can keep serving the other client profiles
 	// without exposing them through this link.
 	if (path == "/aroma" || path == "/aroma/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		r2 := r.Clone(r.Context())
-		r2.URL.Path = "/aroma.html"
-		r2.URL.RawQuery = ""
-		authProxy.ServeHTTP(w, r2)
+		body, err := staticFS.ReadFile("static/aroma.html")
+		if err != nil {
+			http.Error(w, "Aroma profile unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		_, _ = w.Write(body)
 		return
 	}
 	if (path == "/aroma/dashboard" || path == "/aroma/dashboard/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
@@ -202,6 +206,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		q.Set("client", "aroma")
 		q.Set("page", canonicalNavigatorPage(q.Get("page")))
 		q.Del("key")
+		q.Del("lang")
 		r2.URL.RawQuery = q.Encode()
 		r2.Header.Set("X-BLIS-Client-Scope", "aroma")
 		r2.Header.Set("X-BLIS-Public-Aroma", "1")

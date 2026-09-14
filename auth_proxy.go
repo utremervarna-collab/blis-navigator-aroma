@@ -14,6 +14,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -391,7 +392,16 @@ func serveClientLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func scopeDashboardResponse(resp *http.Response) error {
-	if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
+	if resp == nil || resp.Request == nil {
+		return nil
+	}
+	assetPath := resp.Request.URL.Path
+	if resp.StatusCode == http.StatusOK && resp.Request.URL.Query().Get("v") != "" && (strings.HasSuffix(assetPath, ".js") || strings.HasSuffix(assetPath, ".css")) {
+		resp.Header.Set("Cache-Control", "public, max-age=604800, immutable")
+		resp.Header.Del("Pragma")
+		resp.Header.Del("Expires")
+	}
+	if assetPath != "/dashboard.html" {
 		return nil
 	}
 	scope := resp.Request.Header.Get("X-BLIS-Client-Scope")
@@ -404,6 +414,16 @@ func scopeDashboardResponse(resp *http.Response) error {
 		return err
 	}
 	resp.Body.Close()
+	if publicAroma {
+		// The shared dashboard carries language packs and client-specific modules
+		// for every profile. The Aroma presentation is Bulgarian and locked to one
+		// client, so those assets only delay first paint without adding capability.
+		// Keeping the filtering here leaves the canonical dashboard unchanged.
+		removeScripts := regexp.MustCompile(`(?is)<script\b[^>]*\bsrc=["'][^"']*(/kub-|blis-i18n|(competition|visual-owners)-en-native|navigator-en-native|varna-towers-runtime|navigator-mollox-signals-truth|navigator-metric-intelligence-v33|navigator-client-intelligence-content-v2)[^"']*["'][^>]*>\s*</script>`)
+		removeStyles := regexp.MustCompile(`(?is)<link\b[^>]*\bhref=["'][^"']*/varna-towers-theme\.css[^"']*["'][^>]*>`)
+		body = removeScripts.ReplaceAll(body, nil)
+		body = removeStyles.ReplaceAll(body, nil)
+	}
 
 	earlyScript := fmt.Sprintf(`window.BLIS_CLIENT_SCOPE=%q;window.BLIS_INITIAL_CLIENT=%q;`, scope, scope)
 	lateExtras := ""
