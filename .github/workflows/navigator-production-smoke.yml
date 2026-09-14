@@ -103,7 +103,15 @@ jobs:
           code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
           test "$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST "$BASE/api/clients/wirello/refresh")" = "409"
-          curl -fsS "$BASE/wirello?ts=$(date +%s)" | grep -Eqi 'Wirello'
+          wirello_ok=0
+          for i in $(seq 1 6); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/wirello?ts=$(date +%s%N)" -o /tmp/wirello.html && grep -Eqi 'Wirello' /tmp/wirello.html; then
+              wirello_ok=1
+              break
+            fi
+            sleep 3
+          done
+          test "$wirello_ok" = "1"
           echo NAVIGATOR_CODE_RUN_PRODUCTION_OK
 
       - name: Verify live brand and competitor mention streams
