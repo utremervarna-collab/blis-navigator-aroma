@@ -3,7 +3,7 @@ package main
 import "bytes"
 
 func init() {
-	const feedTag = `<script defer src="/kub-live-feed-v4.js?v=20260914-chronology2"></script>`
+	const feedTag = `<script defer src="/kub-live-feed-v4.js?v=20260914-chronology3"></script>`
 	const dynamicsTag = `<script defer src="/kub-crisis-dynamics-v1.js?v=20260903-dynamics1"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("kub-live-feed-v4.js")) {
 		// The public KUB chronology uses the read-only public mentions endpoint.
