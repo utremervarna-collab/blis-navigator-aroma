@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,41 @@ type publicClientMention struct {
 	Severity    string `json:"severity,omitempty"`
 	Sentiment   string `json:"sentiment,omitempty"`
 	Fingerprint string `json:"fingerprint"`
+}
+
+type publicMentionCacheEntry struct {
+	created time.Time
+	updated string
+	rows    []publicClientMention
+}
+
+const publicMentionCacheTTL = 45 * time.Second
+
+var (
+	publicMentionCacheMu      sync.RWMutex
+	publicMentionCacheBuildMu sync.Mutex
+	publicMentionCache        = map[string]publicMentionCacheEntry{}
+)
+
+func publicMentionCacheGet(key string) (publicMentionCacheEntry, bool) {
+	publicMentionCacheMu.RLock()
+	entry, ok := publicMentionCache[key]
+	publicMentionCacheMu.RUnlock()
+	if !ok || time.Since(entry.created) > publicMentionCacheTTL {
+		return publicMentionCacheEntry{}, false
+	}
+	entry.rows = append([]publicClientMention(nil), entry.rows...)
+	return entry, true
+}
+
+func publicMentionCachePut(key, updated string, rows []publicClientMention) {
+	publicMentionCacheMu.Lock()
+	publicMentionCache[key] = publicMentionCacheEntry{
+		created: time.Now(),
+		updated: updated,
+		rows:    append([]publicClientMention(nil), rows...),
+	}
+	publicMentionCacheMu.Unlock()
 }
 
 // persistedMentionSignals reads durable source-backed signal observations for
@@ -100,6 +136,69 @@ func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 		strings.TrimSpace(s.Source) != "" && strings.TrimSpace(s.Title) != ""
 }
 
+func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMention) {
+	updated := ""
+	var clientSnapshot *Client
+	if scope == "brand" {
+		clientSnapshot = signalClientSnapshot(slug)
+	}
+	if slug == "wirello" { // A synthetic demo has no verified web mentions.
+		return updated, nil
+	}
+
+	restoreSignalsFromObservations()
+
+	// Snapshot the bounded live set without holding the lock while reading the
+	// durable observation history. This also avoids lock-order inversions.
+	signalMu.RLock()
+	updated = signalState.UpdatedAt
+	live := append([]Signal(nil), signalState.Signals[slug]...)
+	signalMu.RUnlock()
+
+	// Union live + durable history by stable fingerprint. Live rows win because
+	// they can contain the freshest normalization for the same publication.
+	byFP := make(map[string]Signal, len(live)+256)
+	for _, s := range live {
+		if s.Fingerprint != "" {
+			byFP[s.Fingerprint] = s
+		}
+	}
+	for _, s := range persistedMentionSignals(slug) {
+		if s.Fingerprint == "" {
+			continue
+		}
+		if _, exists := byFP[s.Fingerprint]; !exists {
+			byFP[s.Fingerprint] = s
+		}
+	}
+
+	candidates := make([]Signal, 0, len(byFP))
+	for _, s := range byFP {
+		if publicMentionSignalValid(slug, scope, clientSnapshot, s) {
+			candidates = append(candidates, s)
+		}
+	}
+	// The public chronology is publication-first. DetectedAt is used only as
+	// a deterministic tie-breaker after the mandatory publication date.
+	sort.SliceStable(candidates, func(i, j int) bool {
+		iPub, iOK := parseCompetitorPublished(candidates[i].PublishedAt)
+		jPub, jOK := parseCompetitorPublished(candidates[j].PublishedAt)
+		if iOK && jOK && !iPub.Equal(jPub) {
+			return iPub.After(jPub)
+		}
+		return candidates[i].DetectedAt > candidates[j].DetectedAt
+	})
+	if len(candidates) > 300 {
+		candidates = candidates[:300]
+	}
+
+	rows := make([]publicClientMention, 0, len(candidates))
+	for _, s := range candidates {
+		rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: s.Title, Text: s.Text, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
+	}
+	return updated, rows
+}
+
 func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -132,61 +231,25 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rows := make([]publicClientMention, 0, limit)
-	updated := ""
-	var clientSnapshot *Client
-	if scope == "brand" {
-		clientSnapshot = signalClientSnapshot(slug)
+	cacheKey := slug + "|" + scope
+	entry, ok := publicMentionCacheGet(cacheKey)
+	if !ok {
+		// Collapse simultaneous first-load requests from the competition page and
+		// live-refresh lane into one durable-history scan.
+		publicMentionCacheBuildMu.Lock()
+		entry, ok = publicMentionCacheGet(cacheKey)
+		if !ok {
+			updated, rows := buildPublicMentionTimeline(slug, scope)
+			publicMentionCachePut(cacheKey, updated, rows)
+			entry = publicMentionCacheEntry{created: time.Now(), updated: updated, rows: rows}
+		}
+		publicMentionCacheBuildMu.Unlock()
 	}
-	if slug != "wirello" { // A synthetic demo has no verified web mentions.
-		restoreSignalsFromObservations()
 
-		// Snapshot the bounded live set without holding the lock while reading the
-		// durable observation history. This also avoids lock-order inversions.
-		signalMu.RLock()
-		updated = signalState.UpdatedAt
-		live := append([]Signal(nil), signalState.Signals[slug]...)
-		signalMu.RUnlock()
-
-		// Union live + durable history by stable fingerprint. Live rows win because
-		// they can contain the freshest normalization for the same publication.
-		byFP := make(map[string]Signal, len(live)+256)
-		for _, s := range live {
-			if s.Fingerprint != "" {
-				byFP[s.Fingerprint] = s
-			}
-		}
-		for _, s := range persistedMentionSignals(slug) {
-			if s.Fingerprint == "" {
-				continue
-			}
-			if _, exists := byFP[s.Fingerprint]; !exists {
-				byFP[s.Fingerprint] = s
-			}
-		}
-
-		candidates := make([]Signal, 0, len(byFP))
-		for _, s := range byFP {
-			if publicMentionSignalValid(slug, scope, clientSnapshot, s) {
-				candidates = append(candidates, s)
-			}
-		}
-		// The public chronology is publication-first. DetectedAt is used only as
-		// a deterministic tie-breaker after the mandatory publication date.
-		sort.SliceStable(candidates, func(i, j int) bool {
-			iPub, iOK := parseCompetitorPublished(candidates[i].PublishedAt)
-			jPub, jOK := parseCompetitorPublished(candidates[j].PublishedAt)
-			if iOK && jOK && !iPub.Equal(jPub) {
-				return iPub.After(jPub)
-			}
-			return candidates[i].DetectedAt > candidates[j].DetectedAt
-		})
-		if len(candidates) > limit {
-			candidates = candidates[:limit]
-		}
-		for _, s := range candidates {
-			rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: s.Title, Text: s.Text, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
-		}
+	rows := entry.rows
+	if len(rows) > limit {
+		rows = rows[:limit]
 	}
-	collectorWriteJSON(w, map[string]interface{}{"client": slug, "scope": scope, "window_months": 3, "updated_at": updated, "signals": rows})
+	w.Header().Set("Cache-Control", "private, max-age=20, stale-while-revalidate=45")
+	collectorWriteJSON(w, map[string]interface{}{"client": slug, "scope": scope, "window_months": 3, "updated_at": entry.updated, "signals": rows})
 }
