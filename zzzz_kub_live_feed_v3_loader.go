@@ -3,11 +3,12 @@ package main
 import "bytes"
 
 func init() {
-	const feedTag = `<script defer src="/kub-live-feed-v3.js?v=20260911-live8"></script>`
+	const feedTag = `<script defer src="/kub-live-feed-v4.js?v=20260914-public1"></script>`
 	const dynamicsTag = `<script defer src="/kub-crisis-dynamics-v1.js?v=20260903-dynamics1"></script>`
-	if !bytes.Contains(blisI18NScripts, []byte("kub-live-feed-v3.js")) {
-		// Append so v3 executes after the older KUB feed helpers and becomes the
-		// final sorter/renderer without changing the approved page geometry.
+	if !bytes.Contains(blisI18NScripts, []byte("kub-live-feed-v4.js")) {
+		// The public KUB chronology uses the read-only public mentions endpoint.
+		// It executes after the older helpers and becomes the canonical renderer
+		// without exposing the authenticated /api/signals route.
 		blisI18NScripts = append(blisI18NScripts, []byte(feedTag)...)
 	}
 	if !bytes.Contains(blisI18NScripts, []byte("kub-crisis-dynamics-v1.js")) {
