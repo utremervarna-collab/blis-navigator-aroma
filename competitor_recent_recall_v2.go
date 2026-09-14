@@ -14,11 +14,17 @@ import (
 // This companion pass closes two quality gaps in the three-month competitor
 // stream: ambiguous geographic uses of beer-brand names and missed recent
 // publisher pages that are not ranked by the normal realtime queries.
-const competitorRecentRecallV2Interval = 20 * time.Minute
+//
+// The recall lane is intentionally incremental. Realtime competitor discovery
+// keeps running independently; the deeper three-month sweep advances one
+// competitor at a time so it cannot starve the public Navigator gateway.
+const competitorRecentRecallV2Interval = 15 * time.Minute
 
 var (
 	recallVisibleDateDMY = regexp.MustCompile(`(?is)(?:публикувано\s+на|публикувано|от|published(?:\s+on)?|date)\s*:?\s*(\d{1,2}[./-]\d{1,2}[./-]20\d{2})(?:\s*[,г\.]*\s*(\d{1,2}:\d{2}))?`)
 	recallVisibleDateISO = regexp.MustCompile(`(?is)(?:публикувано\s+на|публикувано|published(?:\s+on)?|date)\s*:?\s*(20\d{2}-\d{2}-\d{2})(?:[T\s]+(\d{1,2}:\d{2}))?`)
+	recentRecallCursorMu sync.Mutex
+	recentRecallCursor   int
 )
 
 func normalizedCompetitorTextV2(v string) string {
@@ -142,16 +148,6 @@ func recentRecallQueriesV2(c *Client, t competitorSignalTarget) []string {
 	}
 	if c != nil && c.Slug == "bolyarka" {
 		queries = append(queries, base+" (бира OR пивоварна OR beer OR brewery OR фестивал OR BEERфест OR организатор OR партньор OR инвестиция)")
-		if strings.EqualFold(strings.TrimSpace(t.Name), "Загорка") {
-			// These bounded discovery queries target publishers that have current
-			// source-backed BEERfest coverage. They do not bypass page/date checks.
-			queries = append(queries,
-				`site:bta.bg "Загорка" BEERфест`,
-				`site:nbp.bg "Загорка" BEERфест`,
-				`site:zagora.bg "Загорка" BEERфест`,
-				`site:actualno.com "Загорка" BEERфест`,
-			)
-		}
 	}
 	seen := map[string]bool{}
 	out := make([]string, 0, len(queries))
@@ -171,12 +167,12 @@ func recentRecallBingCandidatesV2(query string) []recentWebCandidate {
 	if strings.TrimSpace(query) == "" {
 		return nil
 	}
-	rawURL := "https://www.bing.com/search?q=" + url.QueryEscape(query) + "&count=50&setlang=bg"
-	status, body, _, err := timedFetch(rawURL, 4*1024*1024)
+	rawURL := "https://www.bing.com/search?q=" + url.QueryEscape(query) + "&count=20&setlang=bg"
+	status, body, _, err := timedFetch(rawURL, 2*1024*1024)
 	if err != nil || status < 200 || status >= 400 {
 		return nil
 	}
-	out := make([]recentWebCandidate, 0, 20)
+	out := make([]recentWebCandidate, 0, 8)
 	seen := map[string]bool{}
 	for _, block := range collectorBlockRE.FindAllStringSubmatch(body, -1) {
 		if len(block) < 2 {
@@ -205,7 +201,7 @@ func recentRecallBingCandidatesV2(query string) []recentWebCandidate {
 			snippet = cleanPostSnippet(pm[1])
 		}
 		out = append(out, recentWebCandidate{URL: candidateURL, Title: cleanPostSnippet(lm[2]), Snippet: snippet})
-		if len(out) >= 20 {
+		if len(out) >= 8 {
 			break
 		}
 	}
@@ -255,7 +251,7 @@ func visiblePublishedDateV2(raw string) (time.Time, bool) {
 }
 
 func verifyRecentRecallCandidateV2(c *Client, t competitorSignalTarget, candidate recentWebCandidate) (Signal, bool) {
-	status, raw, _, err := timedFetch(candidate.URL, 4*1024*1024)
+	status, raw, _, err := timedFetch(candidate.URL, 2*1024*1024)
 	if err != nil || status < 200 || status >= 400 || raw == "" {
 		return Signal{}, false
 	}
@@ -269,8 +265,8 @@ func verifyRecentRecallCandidateV2(c *Client, t competitorSignalTarget, candidat
 	canonical := recentWebCanonical(raw, candidate.URL)
 	title := recentWebTitle(raw, candidate.Title)
 	pageText := recentWebText(raw)
-	if len(pageText) > 16000 {
-		pageText = pageText[:16000]
+	if len(pageText) > 12000 {
+		pageText = pageText[:12000]
 	}
 	combined := strings.TrimSpace(candidate.Snippet + " " + pageText)
 	if c != nil && c.Slug == "bolyarka" && bolyarkaCompetitorNoiseV2(t.Name, title, combined) {
@@ -319,20 +315,27 @@ func collectRecentRecallV2(c *Client, t competitorSignalTarget) []Signal {
 		candidates = append(candidates, recentRecallBingCandidatesV2(query)...)
 	}
 	seenURL := map[string]bool{}
-	out := make([]Signal, 0, 40)
+	out := make([]Signal, 0, 20)
+	checked := 0
 	for _, candidate := range candidates {
 		key := strings.ToLower(strings.TrimRight(strings.TrimSpace(candidate.URL), "/"))
 		if key == "" || seenURL[key] {
 			continue
 		}
 		seenURL[key] = true
+		checked++
 		if s, ok := verifyRecentRecallCandidateV2(c, t, candidate); ok {
 			out = append(out, s)
 		}
+		// Bound publisher fetches per incremental pass. Later cycles continue the
+		// rolling sweep without competing with interactive dashboard requests.
+		if checked >= 18 {
+			break
+		}
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].PublishedAt > out[j].PublishedAt })
-	if len(out) > 80 {
-		out = out[:80]
+	if len(out) > 40 {
+		out = out[:40]
 	}
 	return out
 }
@@ -342,44 +345,33 @@ type recentRecallResultV2 struct {
 	rows []Signal
 }
 
+func nextRecentRecallTaskV2(tasks []universalCompetitorTask) (universalCompetitorTask, bool) {
+	if len(tasks) == 0 {
+		return universalCompetitorTask{}, false
+	}
+	recentRecallCursorMu.Lock()
+	idx := recentRecallCursor % len(tasks)
+	recentRecallCursor = (recentRecallCursor + 1) % len(tasks)
+	recentRecallCursorMu.Unlock()
+	return tasks[idx], true
+}
+
 func runCompetitorRecentRecallV2() bool {
 	if !continuousMonitoringMu.TryLock() {
 		return false
 	}
 	defer continuousMonitoringMu.Unlock()
 
-	tasks := universalRealtimeCompetitorTasks()
-	if len(tasks) == 0 {
+	allTasks := universalRealtimeCompetitorTasks()
+	task, ok := nextRecentRecallTaskV2(allTasks)
+	if !ok {
 		return true
 	}
-	sem := make(chan struct{}, 2)
-	results := make(chan recentRecallResultV2, len(tasks))
-	var wg sync.WaitGroup
-	for _, task := range tasks {
-		task := task
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			rows := collectRecentRecallV2(task.client, task.target)
-			<-sem
-			results <- recentRecallResultV2{slug: task.client.Slug, rows: rows}
-		}()
-	}
-	wg.Wait()
-	close(results)
 
-	byClient := map[string][]Signal{}
-	for result := range results {
-		byClient[result.slug] = append(byClient[result.slug], result.rows...)
-	}
-	totalVerified, totalNew := 0, 0
-	for slug, rows := range byClient {
-		rows = dedupeCompetitorSignals(rows)
-		totalVerified += len(rows)
-		if len(rows) > 0 {
-			totalNew += mergeSignals(slug, rows)
-		}
+	rows := dedupeCompetitorSignals(collectRecentRecallV2(task.client, task.target))
+	totalVerified, totalNew := len(rows), 0
+	if len(rows) > 0 {
+		totalNew = mergeSignals(task.client.Slug, rows)
 	}
 	sanitizeKnownSignalFalsePositives()
 	sanitizeBolyarkaCompetitorNoiseV2()
@@ -387,16 +379,17 @@ func runCompetitorRecentRecallV2() bool {
 		saveSignalStateFile()
 		saveStore()
 	}
-	log.Printf("BLIS_COMPETITOR_3M_RECALL_V2 tasks=%d verified=%d new=%d cutoff=%s", len(tasks), totalVerified, totalNew, competitorRecentCutoff().Format("2006-01-02"))
+	log.Printf("BLIS_COMPETITOR_3M_RECALL_V2 task=%s/%s verified=%d new=%d cutoff=%s", task.client.Slug, task.target.Name, totalVerified, totalNew, competitorRecentCutoff().Format("2006-01-02"))
 	return true
 }
 
 func init() {
 	go func() {
-		// Purge already-persisted geographic collisions promptly after startup.
-		time.Sleep(12 * time.Second)
+		// Purge already-persisted geographic collisions promptly after startup,
+		// but do not keep rescanning the state every few seconds.
+		time.Sleep(15 * time.Second)
 		sanitizeBolyarkaCompetitorNoiseV2()
-		qualityTicker := time.NewTicker(20 * time.Second)
+		qualityTicker := time.NewTicker(5 * time.Minute)
 		defer qualityTicker.Stop()
 		go func() {
 			for range qualityTicker.C {
@@ -404,13 +397,13 @@ func init() {
 			}
 		}()
 
-		// Run a source-backed recall early, then keep it fresh at a bounded rate.
-		time.Sleep(18 * time.Second)
-		for attempt := 1; attempt <= 8; attempt++ {
+		// Keep boot and first interactive requests clear of deep web recall.
+		time.Sleep(3 * time.Minute)
+		for attempt := 1; attempt <= 3; attempt++ {
 			if runCompetitorRecentRecallV2() {
 				break
 			}
-			time.Sleep(20 * time.Second)
+			time.Sleep(30 * time.Second)
 		}
 		ticker := time.NewTicker(competitorRecentRecallV2Interval)
 		defer ticker.Stop()
