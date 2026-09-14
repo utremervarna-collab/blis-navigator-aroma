@@ -1,39 +1,24 @@
-# BLIS Navigator – Aroma public demo
+# BLIS Navigator
 
-Готов публичен demo build за Render.
+Production repository for BLIS™ Navigator.
 
-## Какво съдържа
-- само профил **Aroma**;
-- няма смяна към Astor Garden;
-- Go backend + вграден клиентски интерфейс;
-- публични източници, индекси, конкурентно позициониране и методология;
-- месечни анализи с работещ download;
-- backend refresh и snapshots;
-- endpoint за health check: `/api/health`.
+## Production
 
-## Render deployment
+- Branch: `main`
+- Public origin: `https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run/`
+- Health endpoint: `/api/health`
+- Runtime: Go backend with embedded client interface
+- Production deployment is triggered from `main`.
 
-1. Създайте нов GitHub repository, например `blis-navigator-aroma`.
-2. Качете **всички файлове от тази папка** в repository root.
-3. В Render: **New → Web Service**.
-4. Свържете GitHub и изберете repository `blis-navigator-aroma`.
-5. Render ще разпознае `render.yaml`. Ако настройвате ръчно:
-   - Language: `Go`
-   - Build Command: `go build -tags netgo -ldflags '-s -w' -o app .`
-   - Start Command: `./app`
-   - Health Check Path: `/api/health`
-6. Изберете име, например `blis-navigator-aroma`.
-7. Натиснете **Create Web Service**.
-8. След успешен deploy ще получите публичен адрес от вида:
-   `https://blis-navigator-aroma.onrender.com`
+## Build
 
-## Важно за данните
-Тази демо версия използва локален JSON store на Render инстанцията. На безплатен/ефемерен web service snapshots могат да се загубят при рестарт или redeploy. За постоянна клиентска версия следва да се добави PostgreSQL или persistent disk.
+```bash
+go build -tags netgo -ldflags '-s -w' -o app .
+./app
+```
 
-## Custom domain по-късно
-След активиране на `brandlab.bg` може да се свърже например:
-`navigator.brandlab.bg`
-към същия Render service.
+## Architecture
 
-## UI update — 11 Aug 2026
-Desktop interface restyled to the BLIS Navigator mobile visual system. Backend/API, data model, sources, history snapshots, refresh workflow, competitor calculations, methodology and monthly report endpoints are unchanged.
+BLIS™ Navigator serves client-specific intelligence views, APIs, monitoring, historical data and recurring analytical workflows from one canonical production codebase.
+
+Production health, routing and persistence are validated through GitHub Actions. The daily intelligence engine and client-specific data flows are maintained against the same canonical production deployment.
