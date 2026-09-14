@@ -27,7 +27,24 @@ type universalCompetitorResult struct {
 func universalRealtimeCompetitorTasks() []universalCompetitorTask {
 	out := []universalCompetitorTask{}
 	for _, c := range universalRealtimeClients() {
-		for _, target := range competitorSignalTargets(c) {
+		targets := competitorSignalTargets(c)
+		// Aroma's canonical competitor definitions live in aromaCompetitors and
+		// historically were not represented as Source rows. Merge those existing
+		// definitions here so both the realtime lane and the 3-month lookback can
+		// discover their real public mentions.
+		if c != nil && c.Slug == "aroma" {
+			seen := map[string]bool{}
+			for _, target := range targets {
+				seen[target.Key] = true
+			}
+			for _, target := range aromaConfiguredCompetitorTargets(c) {
+				if !seen[target.Key] {
+					targets = append(targets, target)
+					seen[target.Key] = true
+				}
+			}
+		}
+		for _, target := range targets {
 			out = append(out, universalCompetitorTask{client: c, target: target})
 		}
 	}
