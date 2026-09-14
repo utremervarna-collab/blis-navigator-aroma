@@ -118,12 +118,25 @@ jobs:
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
+          fetch_retry() {
+            local url="$1"
+            local out="$2"
+            local ok=0
+            for i in $(seq 1 6); do
+              if curl -fsS --connect-timeout 15 --max-time 30 "$url" -o "$out"; then
+                ok=1
+                break
+              fi
+              sleep 3
+            done
+            test "$ok" = "1"
+          }
           for CLIENT in aroma bolyarka mollox; do
-            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-brand.json"
-            curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-competitor.json"
+            fetch_retry "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" "/tmp/${CLIENT}-brand.json"
+            fetch_retry "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" "/tmp/${CLIENT}-competitor.json"
           done
-          curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
-          curl -fsS "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" -o /tmp/live-refresh.js
+          fetch_retry "$BASE/api/store/export?ts=$(date +%s%N)" /tmp/mentions-store.json
+          fetch_retry "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" /tmp/live-refresh.js
           grep -Fq 'Хронология на споменаванията' /tmp/live-refresh.js
           grep -Fq 'Хронология на конкурентните споменавания' /tmp/live-refresh.js
           grep -Fq 'blis-ms-ticker' /tmp/live-refresh.js
