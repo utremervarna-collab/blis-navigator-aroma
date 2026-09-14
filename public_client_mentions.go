@@ -91,6 +91,9 @@ func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 		if slug == "bolyarka" && bolyarkaCompetitorNoiseV2(s.Brand, s.Title, s.Text) {
 			return false
 		}
+		if slug == "bolyarka" && bolyarkaCompetitorGeographicNoiseV3(s.Brand, s.Title, s.Text) {
+			return false
+		}
 	}
 	u, err := url.Parse(s.URL)
 	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" &&
