@@ -224,6 +224,15 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "restricted client", http.StatusForbidden)
 		return
 	}
+
+	if slug == "kub" && scope == "brand" {
+		// KUB crisis monitoring needs the dedicated source-backed chronology.
+		// Institutional and owner-led developments can be relevant even when
+		// they do not fit the generic brand scope used by other clients.
+		publicKUBChronology(w, r)
+		return
+	}
+
 	limit := 300
 	if raw := r.URL.Query().Get("limit"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n > 0 && n <= 300 {
