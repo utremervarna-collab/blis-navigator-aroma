@@ -56,6 +56,7 @@ jobs:
           python - <<'PY'
           import datetime as dt
           import json
+          from email.utils import parsedate_to_datetime
 
           data=json.load(open('/tmp/kub-public.json',encoding='utf-8'))
           assert data.get('client')=='kub', data.get('client')
@@ -65,17 +66,25 @@ jobs:
           def stamp(row):
               raw=str(row.get('published_at') or '').strip()
               assert raw, ('missing published_at', row.get('title'))
-              return dt.datetime.fromisoformat(raw.replace('Z','+00:00'))
+              try:
+                  value=dt.datetime.fromisoformat(raw.replace('Z','+00:00'))
+              except ValueError:
+                  value=parsedate_to_datetime(raw)
+              if value.tzinfo is None:
+                  value=value.replace(tzinfo=dt.timezone.utc)
+              return value.astimezone(dt.timezone.utc)
 
           stamps=[stamp(r) for r in rows]
           assert all(stamps[i] >= stamps[i+1] for i in range(len(stamps)-1)), 'KUB chronology is not publication-descending'
-          assert stamps[0] >= dt.datetime.fromisoformat('2026-09-13T23:00:00+03:00'), stamps[0]
+          threshold=dt.datetime.fromisoformat('2026-09-13T23:00:00+03:00').astimezone(dt.timezone.utc)
+          assert stamps[0] >= threshold, stamps[0]
           assert any('различните правни ситуации' in str(r.get('title') or '').lower() for r in rows), '13 Sep KUB signal missing'
-          assert any(str(r.get('published_at') or '').startswith('2026-09-12') for r in rows), '12 Sep KUB signal missing'
+          sofia=dt.timezone(dt.timedelta(hours=3))
+          assert any(s.astimezone(sofia).date()==dt.date(2026,9,12) for s in stamps), '12 Sep KUB signal missing'
           print('KUB_PUBLIC_CHRONOLOGY_OK', rows[0].get('published_at'), rows[0].get('title'))
           print('KUB_PUBLIC_TOP5')
-          for r in rows[:5]:
-              print(r.get('published_at'), '|', r.get('source'), '|', r.get('title'))
+          for r,s in zip(rows[:5],stamps[:5]):
+              print(s.isoformat(), '| raw=', r.get('published_at'), '|', r.get('source'), '|', r.get('title'))
           PY
           echo 'STAGE_2_PUBLIC_FEED_OK'
 
