@@ -19,6 +19,19 @@ type verifiedRecentMentionV1 struct {
 	PublishedAt string
 }
 
+func verifiedRecentAromaBackfillV1() []verifiedRecentMentionV1 {
+	return []verifiedRecentMentionV1{
+		{
+			Brand:       "Alteya Organics",
+			Source:      "Darik Business Review",
+			URL:         "https://lnkd.in/dudmfYn4",
+			Title:       "Alteya Organics: Как 100-годишна традиция от Розовата долина се превърна в световен бранд",
+			Text:        "Darik Business Review представя развитието на Alteya Organics от биосертифицирани розови градини и собствено производство до продукти с висока добавена стойност и международно присъствие. Alteya Organics публично потвърждава материала и споделя линка към него.",
+			PublishedAt: "2026-07-25T10:00:00+03:00",
+		},
+	}
+}
+
 func verifiedRecentBolyarkaBackfillV1() []verifiedRecentMentionV1 {
 	return []verifiedRecentMentionV1{
 		{
@@ -95,10 +108,10 @@ func buildVerifiedRecentSignalV1(slug string, row verifiedRecentMentionV1) (Sign
 	}, true
 }
 
-func mergeVerifiedRecentBolyarkaBackfillV1() int {
-	rows := make([]Signal, 0, 8)
-	for _, row := range verifiedRecentBolyarkaBackfillV1() {
-		if s, ok := buildVerifiedRecentSignalV1("bolyarka", row); ok {
+func mergeVerifiedRecentBackfillV1(slug string, source []verifiedRecentMentionV1) int {
+	rows := make([]Signal, 0, len(source))
+	for _, row := range source {
+		if s, ok := buildVerifiedRecentSignalV1(slug, row); ok {
 			rows = append(rows, s)
 		}
 	}
@@ -107,15 +120,25 @@ func mergeVerifiedRecentBolyarkaBackfillV1() int {
 	}
 	continuousMonitoringMu.Lock()
 	defer continuousMonitoringMu.Unlock()
-	added := mergeSignals("bolyarka", rows)
+	added := mergeSignals(slug, rows)
 	if added > 0 {
-		sanitizeKnownSignalFalsePositives()
-		sanitizeBolyarkaCompetitorNoiseV2()
+		if slug == "bolyarka" {
+			sanitizeKnownSignalFalsePositives()
+			sanitizeBolyarkaCompetitorNoiseV2()
+		}
 		saveSignalStateFile()
 		saveStore()
 	}
-	log.Printf("BLIS_VERIFIED_RECENT_BACKFILL client=bolyarka verified=%d added=%d cutoff=%s", len(rows), added, competitorRecentCutoff().Format("2006-01-02"))
+	log.Printf("BLIS_VERIFIED_RECENT_BACKFILL client=%s verified=%d added=%d cutoff=%s", slug, len(rows), added, competitorRecentCutoff().Format("2006-01-02"))
 	return added
+}
+
+func mergeVerifiedRecentAromaBackfillV1() int {
+	return mergeVerifiedRecentBackfillV1("aroma", verifiedRecentAromaBackfillV1())
+}
+
+func mergeVerifiedRecentBolyarkaBackfillV1() int {
+	return mergeVerifiedRecentBackfillV1("bolyarka", verifiedRecentBolyarkaBackfillV1())
 }
 
 func init() {
@@ -124,6 +147,7 @@ func init() {
 		// retries cover a concurrent collector owning the persistence path.
 		time.Sleep(8 * time.Second)
 		for i := 0; i < 3; i++ {
+			mergeVerifiedRecentAromaBackfillV1()
 			mergeVerifiedRecentBolyarkaBackfillV1()
 			time.Sleep(12 * time.Second)
 		}
