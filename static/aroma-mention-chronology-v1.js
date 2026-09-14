@@ -18,7 +18,11 @@ function aromaOnly(){return currentClient()==='aroma'}
 function ts(row){const t=Date.parse(row?.published_at||row?.detected_at||'');return Number.isFinite(t)?t:0}
 function fp(row){return String(row?.fingerprint||row?.url||`${row?.brand||''}|${row?.title||''}|${row?.published_at||row?.detected_at||''}`)}
 function fmt(t){return t?new Date(t).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
-function valid(row,scope){return row&&N(row.client)==='aroma'&&N(row.scope)===(scope==='competitor'?'competitor':N(row.scope))&&/^https?:\/\//i.test(String(row.url||''))&&String(row.source||'').trim()&&String(row.title||'').trim()}
+function valid(row,scope){
+  if(!row||N(row.client)!=='aroma'||!/^https?:\/\//i.test(String(row.url||''))||!String(row.source||'').trim()||!String(row.title||'').trim())return false;
+  const actual=N(row.scope);
+  return scope==='competitor'?actual==='competitor':(actual==='external'||actual==='owned');
+}
 function filterPeriod(rows){const cut=Date.now()-periodDays()*864e5;return rows.filter(r=>{const t=ts(r);return !t||t>=cut})}
 function unique(rows){const seen=new Set();return filterPeriod(rows).filter(r=>{const k=fp(r);if(!k||seen.has(k))return false;seen.add(k);return true}).sort((a,b)=>ts(b)-ts(a))}
 
@@ -80,6 +84,11 @@ function panelHTML(scope,state){
   const status=state.ok?`${state.rows.length} проверени · последни ${periodDays()} дни`:'Потокът е временно недостъпен';
   return `<div class="aroma-chronology-head"><div><${competitor?'h3':'h4'}>${title}</${competitor?'h3':'h4'}><p>${desc} Всеки запис води към първоизточника.</p></div><span class="aroma-chronology-status">${E(status)}</span></div>${rows.length?`<div class="aroma-chronology-list">${rows.map(r=>rowHTML(r,scope)).join('')}</div>`:`<div class="aroma-chronology-empty">${state.ok?'Няма проверени споменавания за избрания период.':'Не може да се зареди потокът в момента; не се показват непроверени или синтетични записи.'}</div>`}`;
 }
+function render(panel,html){
+  if(panel.dataset.aromaChronologyHTML===html)return;
+  panel.dataset.aromaChronologyHTML=html;
+  panel.innerHTML=html;
+}
 
 function activateCompetitionBar(){
   if(!aromaOnly())return;
@@ -97,14 +106,14 @@ async function mountCompetition(force=false){
   if(!root)return;
   let panel=root.querySelector('#aromaCompetitorChronology');
   if(!panel){panel=document.createElement('section');panel.id='aromaCompetitorChronology';panel.className='aroma-chronology aroma-chronology--competitor';panel.setAttribute('aria-label','Хронология на споменаванията на конкурентите');root.appendChild(panel)}
-  const state=await load('competitor',force);if(panel.isConnected)panel.innerHTML=panelHTML('competitor',state);
+  const state=await load('competitor',force);if(panel.isConnected)render(panel,panelHTML('competitor',state));
 }
 async function mountMonitoring(force=false){
   if(!aromaOnly())return;
   const social=document.getElementById('social')||document.getElementById('socialBody');if(!social)return;
   let panel=social.querySelector('#aromaBrandChronology');
   if(!panel){panel=document.createElement('section');panel.id='aromaBrandChronology';panel.className='aroma-chronology aroma-chronology--brand';panel.setAttribute('aria-label','Хронология на споменаванията на Aroma');const anchor=social.querySelector('.mon5-mentions');if(anchor)anchor.insertAdjacentElement('afterend',panel);else social.appendChild(panel)}
-  const state=await load('brand',force);if(panel.isConnected)panel.innerHTML=panelHTML('brand',state);
+  const state=await load('brand',force);if(panel.isConnected)render(panel,panelHTML('brand',state));
 }
 
 let timer=0;
@@ -118,7 +127,7 @@ function sync(force=false){
 function schedule(force=false){clearTimeout(timer);timer=setTimeout(()=>sync(force),70)}
 function start(){
   css();sync();
-  const mo=new MutationObserver(()=>schedule(false));mo.observe(document.body,{childList:true,subtree:true});
+  const mo=new MutationObserver(muts=>{if(muts.every(m=>m.target.closest?.('.aroma-chronology')))return;schedule(false)});mo.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target.closest?.('[data-page="competition"],[data-page="social"],[data-page="monitoring"],.cmpv5-seg button'))setTimeout(()=>sync(false),120)},true);
   window.addEventListener('blis:clientdata',()=>schedule(true));
   window.addEventListener('blis:periodchange',()=>schedule(true));
