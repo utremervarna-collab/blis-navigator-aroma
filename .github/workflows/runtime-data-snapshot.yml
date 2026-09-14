@@ -38,6 +38,9 @@ jobs:
             if curl -fsS --connect-timeout 15 --max-time 60 "$BASE/api/store/export?runtime-snapshot=1&ts=$(date +%s)" -o /tmp/live_store.json; then
               if python - <<'PY'
           import json,sys
+          from datetime import datetime, timezone
+          from email.utils import parsedate_to_datetime
+
           d=json.load(open('/tmp/live_store.json',encoding='utf-8'))
           clients=d.get('clients',{})
           for slug in ('aroma','bolyarka','mollox','astor-garden','kub'):
@@ -61,12 +64,28 @@ jobs:
                       return {}
               return {}
 
+          def parse_published_at(raw):
+              text=str(raw or '').strip()
+              if not text:
+                  return datetime.min.replace(tzinfo=timezone.utc)
+              try:
+                  dt=datetime.fromisoformat(text.replace('Z','+00:00'))
+              except ValueError:
+                  try:
+                      dt=parsedate_to_datetime(text)
+                  except Exception:
+                      return datetime.min.replace(tzinfo=timezone.utc)
+              if dt.tzinfo is None:
+                  dt=dt.replace(tzinfo=timezone.utc)
+              return dt.astimezone(timezone.utc)
+
           decorated=[]
           for o in sig:
               payload=signal_payload(o)
-              decorated.append((str(payload.get('published_at') or payload.get('PublishedAt') or ''),o,payload))
+              published=str(payload.get('published_at') or payload.get('PublishedAt') or '')
+              decorated.append((parse_published_at(published),published,o,payload))
           decorated.sort(key=lambda row: row[0])
-          published,latest,payload=decorated[-1]
+          _,published,latest,payload=decorated[-1]
           print('RUNTIME_SNAPSHOT_READY',{'kub_signal_observations':len(sig),'kub_observations':len(kub.get('observations',[]))})
           print('KUB_RUNTIME_LATEST',{
               'published_at':published,
