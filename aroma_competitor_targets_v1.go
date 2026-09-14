@@ -32,12 +32,12 @@ func aromaConfiguredCompetitorTargets(c *Client) []competitorSignalTarget {
 func quotedCompetitorAliases(q string) []string {
 	out := []string{}
 	for {
-		start := strings.Index(q, `"`)
+		start := strings.Index(q, "\"")
 		if start < 0 {
 			break
 		}
 		q = q[start+1:]
-		end := strings.Index(q, `"`)
+		end := strings.Index(q, "\"")
 		if end < 0 {
 			break
 		}
