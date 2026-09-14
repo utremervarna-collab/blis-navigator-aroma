@@ -1,0 +1,50 @@
+name: Aroma Client Send Acceptance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'static/navigator-aroma-empty-measurement-guard-v1.js'
+      - 'static/navigator-aroma-competitor-dossiers-v3.js'
+      - 'static/navigator-3-competitor-dossier-v2.js'
+      - 'static/navigator-competitor-dossiers-data-v2.js'
+      - 'zzzzzzzzzzzzzzzzzzz_aroma_mention_chronology_loader.go'
+      - 'scripts/aroma-client-send-acceptance.cjs'
+      - '.github/workflows/aroma-client-send-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aroma-client-send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and start Navigator
+        run: |
+          set -euo pipefail
+          go build -o app .
+          PORT=10000 ./app >/tmp/aroma-client-send.log 2>&1 &
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:10000/api/health >/dev/null; then ok=1; break; fi
+            sleep 1
+          done
+          if [ "$ok" != "1" ]; then cat /tmp/aroma-client-send.log || true; exit 1; fi
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Verify Aroma client-facing additions
+        run: node scripts/aroma-client-send-acceptance.cjs
+      - name: Diagnostics on failure
+        if: failure()
+        run: tail -150 /tmp/aroma-client-send.log || true
