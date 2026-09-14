@@ -15,18 +15,35 @@ env:
 jobs:
   kub-route:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
-      - name: Verify exact production build and public KUB isolation
+      - name: Verify exact production build, public KUB isolation and live chronology
         shell: bash
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
+
+          fetch_retry() {
+            local url="$1"
+            local out="$2"
+            local ok=0
+            for i in $(seq 1 8); do
+              if curl -fsS --connect-timeout 15 --max-time 30 "$url" -o "$out"; then
+                ok=1
+                break
+              fi
+              sleep 3
+            done
+            test "$ok" = "1"
+          }
+
           ok=0
-          for i in $(seq 1 36); do
+          for i in $(seq 1 48); do
             if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?kub-route=1&ts=$(date +%s)" -o /tmp/migration-build.js && grep -q "$MIGRATION_BUILD" /tmp/migration-build.js; then
-              ok=1
-              break
+              if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/kub-live-feed-v4.js?ts=$(date +%s%N)" -o /tmp/kub-live-feed-v4.js && grep -Fq '/api/public/mentions?client=kub&scope=brand' /tmp/kub-live-feed-v4.js; then
+                ok=1
+                break
+              fi
             fi
             sleep 10
           done
@@ -39,10 +56,39 @@ jobs:
           test "$code" = "200"
           grep -q 'Корпорация КУБ' /tmp/kub.html
           ! grep -Eqi 'MOLLOX|Varna Towers|Everbet|Aroma Cosmetics' /tmp/kub.html
+          grep -Fq 'kub-live-feed-v4.js' /tmp/kub.html
 
           code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+
+          # The authenticated signal API must remain closed on the public KUB page.
+          code=$(curl -sS -o /tmp/kub-private-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s%N)")
+          test "$code" = "401" -o "$code" = "403"
+
+          # The public read-only chronology is the canonical source for Monitoring.
+          fetch_retry "$BASE/api/public/mentions?client=kub&scope=brand&limit=300&ts=$(date +%s%N)" /tmp/kub-public.json
+          python - <<'PY'
+          import datetime as dt
+          import json
+
+          data=json.load(open('/tmp/kub-public.json',encoding='utf-8'))
+          assert data.get('client')=='kub', data.get('client')
+          rows=data.get('signals') or []
+          assert rows, 'empty KUB public chronology'
+
+          def stamp(row):
+              raw=str(row.get('published_at') or '').strip()
+              assert raw, ('missing published_at', row.get('title'))
+              return dt.datetime.fromisoformat(raw.replace('Z','+00:00'))
+
+          stamps=[stamp(r) for r in rows]
+          assert all(stamps[i] >= stamps[i+1] for i in range(len(stamps)-1)), 'KUB chronology is not publication-descending'
+          assert stamps[0] >= dt.datetime.fromisoformat('2026-09-13T23:00:00+03:00'), stamps[0]
+          assert any('различните правни ситуации' in str(r.get('title') or '').lower() for r in rows), '13 Sep KUB signal missing'
+          assert any(str(r.get('published_at') or '').startswith('2026-09-12') for r in rows), '12 Sep KUB signal missing'
+          print('KUB_PUBLIC_CHRONOLOGY_OK', rows[0].get('published_at'), rows[0].get('title'))
+          PY
 
           code=$(curl -sS -o /tmp/kub-en.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=en")
           test "$code" = "200"
