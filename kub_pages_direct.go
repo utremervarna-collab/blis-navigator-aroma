@@ -99,7 +99,7 @@ func serveKUBHTML(file string, injectRuntime bool) http.HandlerFunc {
 <script defer src="/kub-i18n-full-v1.js?v=20260908-direct23"></script>
 <script defer src="/kub-i18n-polish-v1.js?v=20260908-direct23"></script>
 <script defer src="/kub-i18n-final-fragments-v1.js?v=20260908-direct23"></script>
-<script defer src="/kub-live-feed-v3.js?v=20260911-live9"></script>
+<script defer src="/kub-live-feed-v4.js?v=20260914-chronology2"></script>
 <script>
 (function(){
  function placeKUBMap(){
