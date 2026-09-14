@@ -398,14 +398,29 @@ func scopeDashboardResponse(resp *http.Response) error {
 	if scope == "" {
 		return nil
 	}
+	publicAroma := resp.Request.Header.Get("X-BLIS-Public-Aroma") == "1" && scope == "aroma"
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	resp.Body.Close()
 
-	early := fmt.Sprintf(`<script>window.BLIS_CLIENT_SCOPE=%q;window.BLIS_INITIAL_CLIENT=%q;</script><style>.client-switch-chevron,.client-switch-menu{display:none!important}.client-switch-button{cursor:default!important}.client-switch-button:hover{transform:none!important}</style>`, scope, scope)
-	late := fmt.Sprintf(`<script>(function(){const scope=%q;function lock(){const s=document.getElementById('clientSel');if(s){[...s.options].forEach(o=>{if(o.value!==scope)o.remove()});s.value=scope;s.disabled=true;}document.querySelectorAll('.client-option').forEach(o=>{if(o.dataset.clientKey!==scope)o.remove();});const btn=document.querySelector('.client-switch-button');if(btn){btn.setAttribute('aria-expanded','false');btn.style.pointerEvents='none';}try{if(typeof slug!=='undefined'&&slug!==scope){slug=scope;window.load&&window.load();}}catch(e){}if(!document.getElementById('blisClientLogout')){const top=document.querySelector('.toptools')||document.querySelector('.topbar');if(top){const a=document.createElement('a');a.id='blisClientLogout';a.href='/api/client-logout';a.textContent='Изход';a.style.cssText='height:40px;display:inline-flex;align-items:center;padding:0 13px;border:1px solid #d8e0e7;border-radius:8px;background:#fff;color:#17324c;text-decoration:none;font-size:11px;font-weight:750;margin-left:8px';top.appendChild(a);}}}lock();setTimeout(lock,250);setTimeout(lock,900);})();</script>`, scope)
+	earlyScript := fmt.Sprintf(`window.BLIS_CLIENT_SCOPE=%q;window.BLIS_INITIAL_CLIENT=%q;`, scope, scope)
+	lateExtras := ""
+	if publicAroma {
+		earlyScript += `(function(){const nativeFetch=window.fetch.bind(window);window.fetch=function(input,init){try{const raw=typeof input==='string'?input:(input&&input.url)||'';const u=new URL(raw,location.origin);if(u.origin===location.origin&&(u.pathname==='/api/clients'||u.pathname.indexOf('/api/clients/')===0)){u.pathname='/aroma'+u.pathname;input=typeof input==='string'?u.pathname+u.search+u.hash:new Request(u.toString(),input);}}catch(e){}return nativeFetch(input,init)};})();`
+		lateExtras = `const home=document.querySelector('.dashboard-home-link');if(home){home.href='/aroma';home.setAttribute('aria-label','Към началната страница на Aroma');}window.download=function(type,format){location.href='/aroma/api/clients/aroma/generate?type='+encodeURIComponent(type)+'&format='+encodeURIComponent(format)};`
+	}
+	early := `<script>` + earlyScript + `</script><style>.client-switch-chevron,.client-switch-menu{display:none!important}.client-switch-button{cursor:default!important}.client-switch-button:hover{transform:none!important}`
+	if publicAroma {
+		early += `.blis-commerce-launch,[data-blis-commerce-open],button[onclick*="refreshNow"]{display:none!important}`
+	}
+	early += `</style>`
+	logout := `if(!document.getElementById('blisClientLogout')){const top=document.querySelector('.toptools')||document.querySelector('.topbar');if(top){const a=document.createElement('a');a.id='blisClientLogout';a.href='/api/client-logout';a.textContent='Изход';a.style.cssText='height:40px;display:inline-flex;align-items:center;padding:0 13px;border:1px solid #d8e0e7;border-radius:8px;background:#fff;color:#17324c;text-decoration:none;font-size:11px;font-weight:750;margin-left:8px';top.appendChild(a);}}`
+	if publicAroma {
+		logout = ""
+	}
+	late := fmt.Sprintf(`<script>(function(){const scope=%q;function lock(){const s=document.getElementById('clientSel');if(s){[...s.options].forEach(o=>{if(o.value!==scope)o.remove()});s.value=scope;s.disabled=true;}document.querySelectorAll('.client-option').forEach(o=>{if(o.dataset.clientKey!==scope)o.remove();});const btn=document.querySelector('.client-switch-button');if(btn){btn.setAttribute('aria-expanded','false');btn.style.pointerEvents='none';}try{if(typeof slug!=='undefined'&&slug!==scope){slug=scope;window.load&&window.load();}}catch(e){}%s%s}lock();setTimeout(lock,250);setTimeout(lock,900);})();</script>`, scope, logout, lateExtras)
 
 	body = bytes.Replace(body, []byte("</head>"), []byte(early+"</head>"), 1)
 	body = bytes.Replace(body, []byte("</body>"), []byte(late+"</body>"), 1)

@@ -184,6 +184,60 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	// Public Aroma presentation used for direct sharing with Aroma Cosmetics.
+	// It has its own landing page and an API namespace that is hard-scoped to
+	// Aroma, so the shared Navigator can keep serving the other client profiles
+	// without exposing them through this link.
+	if (path == "/aroma" || path == "/aroma/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/aroma.html"
+		r2.URL.RawQuery = ""
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+	if (path == "/aroma/dashboard" || path == "/aroma/dashboard/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		q.Set("client", "aroma")
+		q.Set("page", canonicalNavigatorPage(q.Get("page")))
+		q.Del("key")
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Set("X-BLIS-Client-Scope", "aroma")
+		r2.Header.Set("X-BLIS-Public-Aroma", "1")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+	if strings.HasPrefix(path, "/aroma/api/clients") {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_, _ = w.Write([]byte(`{"error":"Публичният профил на Aroma е само за преглед"}`))
+			return
+		}
+		if path == "/aroma/api/clients" || path == "/aroma/api/clients/" {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			_, _ = w.Write([]byte(`[{"slug":"aroma","name":"Aroma Cosmetics","sector":"Козметика / бързооборотни стоки","note":"Публичен аналитичен профил"}]`))
+			return
+		}
+		if !strings.HasPrefix(path, "/aroma/api/clients/aroma/") {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"Този публичен линк е ограничен до профила на Aroma"}`))
+			return
+		}
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = strings.TrimPrefix(path, "/aroma")
+		r2.Header.Set("X-BLIS-Client-Scope", "aroma")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+	if path == "/aroma/services" || path == "/aroma/services/" {
+		http.Redirect(w, r, "/aroma", http.StatusFound)
+		return
+	}
+
 	// Dedicated KUB routes are canonical and deliberately bypass the shared dashboard.
 	// There must never be a dashboard -> KUB -> dashboard redirect cycle.
 	if path == "/kub" || path == "/kub/" {
