@@ -37,6 +37,7 @@ jobs:
             test "$ok" = "1"
           }
 
+          echo 'STAGE_1_WAIT_FOR_V4_ASSET'
           ok=0
           for i in $(seq 1 48); do
             if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?kub-route=1&ts=$(date +%s)" -o /tmp/migration-build.js && grep -q "$MIGRATION_BUILD" /tmp/migration-build.js; then
@@ -48,29 +49,9 @@ jobs:
             sleep 10
           done
           test "$ok" = "1"
+          echo 'STAGE_1_V4_ASSET_OK'
 
-          url="$BASE/kub-client?smoke=$(date +%s)"
-          code=$(curl -sS --max-time 30 -o /tmp/kub.html -w '%{http_code}' "$url")
-          echo "ORIGIN=$BASE"
-          echo "HTTP=$code"
-          test "$code" = "200"
-          grep -q 'Корпорация КУБ' /tmp/kub.html
-          ! grep -Eqi 'MOLLOX|Varna Towers|Everbet|Aroma Cosmetics' /tmp/kub.html
-
-          fetch_retry "$BASE/kub-crisis.html?smoke=$(date +%s%N)" /tmp/kub-crisis.html
-          grep -q 'Корпорация КУБ' /tmp/kub-crisis.html
-          grep -Fq 'kub-live-feed-v4.js' /tmp/kub-crisis.html
-          ! grep -Fq 'kub-live-feed-v3.js' /tmp/kub-crisis.html
-
-          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview")
-          test "$code" = "302"
-          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
-
-          # The authenticated signal API must remain closed on the public KUB page.
-          code=$(curl -sS -o /tmp/kub-private-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s%N)")
-          test "$code" = "401" -o "$code" = "403"
-
-          # The public read-only chronology is the canonical source for Monitoring.
+          echo 'STAGE_2_PUBLIC_FEED'
           fetch_retry "$BASE/api/public/mentions?client=kub&scope=brand&limit=300&ts=$(date +%s%N)" /tmp/kub-public.json
           python - <<'PY'
           import datetime as dt
@@ -92,8 +73,45 @@ jobs:
           assert any('различните правни ситуации' in str(r.get('title') or '').lower() for r in rows), '13 Sep KUB signal missing'
           assert any(str(r.get('published_at') or '').startswith('2026-09-12') for r in rows), '12 Sep KUB signal missing'
           print('KUB_PUBLIC_CHRONOLOGY_OK', rows[0].get('published_at'), rows[0].get('title'))
+          print('KUB_PUBLIC_TOP5')
+          for r in rows[:5]:
+              print(r.get('published_at'), '|', r.get('source'), '|', r.get('title'))
           PY
+          echo 'STAGE_2_PUBLIC_FEED_OK'
 
+          echo 'STAGE_3_PUBLIC_KUB_ROUTE'
+          url="$BASE/kub-client?smoke=$(date +%s)"
+          code=$(curl -sS --max-time 30 -o /tmp/kub.html -w '%{http_code}' "$url")
+          echo "ORIGIN=$BASE"
+          echo "KUB_CLIENT_HTTP=$code"
+          test "$code" = "200"
+          grep -q 'Корпорация КУБ' /tmp/kub.html
+          ! grep -Eqi 'MOLLOX|Varna Towers|Everbet|Aroma Cosmetics' /tmp/kub.html
+          echo 'STAGE_3_PUBLIC_KUB_ROUTE_OK'
+
+          echo 'STAGE_4_CRISIS_PAGE_INTEGRATION'
+          fetch_retry "$BASE/kub-crisis.html?smoke=$(date +%s%N)" /tmp/kub-crisis.html
+          echo "KUB_CRISIS_BYTES=$(wc -c < /tmp/kub-crisis.html)"
+          echo 'KUB_CRISIS_SCRIPT_REFS:'
+          grep -Eo '<script[^>]+src=["'"'][^"'"']+["'"']' /tmp/kub-crisis.html | grep -E 'kub|crisis|blis' || true
+          echo 'KUB_CRISIS_FEED_MARKERS:'
+          grep -En 'kub-live-feed-v[34]|Корпорация КУБ' /tmp/kub-crisis.html | head -20 || true
+          grep -q 'Корпорация КУБ' /tmp/kub-crisis.html
+          grep -Fq 'kub-live-feed-v4.js' /tmp/kub-crisis.html
+          ! grep -Fq 'kub-live-feed-v3.js' /tmp/kub-crisis.html
+          echo 'STAGE_4_CRISIS_PAGE_INTEGRATION_OK'
+
+          echo 'STAGE_5_SECURITY_AND_REDIRECTS'
+          code=$(curl -sS -D /tmp/kub-dashboard.headers -o /tmp/kub-dashboard.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview")
+          test "$code" = "302"
+          grep -Eqi '^location: /kub-crisis\.html' /tmp/kub-dashboard.headers
+
+          # The authenticated signal API must remain closed on the public KUB page.
+          code=$(curl -sS -o /tmp/kub-private-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s%N)")
+          test "$code" = "401" -o "$code" = "403"
+          echo 'STAGE_5_SECURITY_AND_REDIRECTS_OK'
+
+          echo 'STAGE_6_LOCALIZED_ROUTES'
           code=$(curl -sS -o /tmp/kub-en.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=en")
           test "$code" = "200"
           grep -Eqi 'KUB|crisis' /tmp/kub-en.html
@@ -101,5 +119,6 @@ jobs:
           code=$(curl -sS -o /tmp/kub-ru.html -w '%{http_code}' "$BASE/kub-crisis.html?lang=ru")
           test "$code" = "200"
           grep -Eqi 'КУБ|криз' /tmp/kub-ru.html
+          echo 'STAGE_6_LOCALIZED_ROUTES_OK'
 
           echo 'KUB_ROUTE_SMOKE_OK'
