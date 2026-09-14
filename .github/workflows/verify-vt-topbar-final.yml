@@ -1,0 +1,19 @@
+name: Capture Varna Towers Production JPEG
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download production JPEG
+        run: |
+          curl -fsSL 'https://blis-navigator-aroma.onrender.com/varna-towers-profile-hero-header-v2.jpg?v=20260818-direct2' -o vt-current.jpg
+          file vt-current.jpg
+          identify vt-current.jpg || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vt-current-jpeg
+          path: vt-current.jpg
