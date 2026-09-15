@@ -24,7 +24,7 @@ env:
 jobs:
   availability:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - name: Verify exact production migration and Navigator health
         shell: bash
@@ -81,5 +81,30 @@ jobs:
             --connect-timeout 20 --max-time 90 \
             "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
+
+          # Sustained-health soak. Do not retry these requests: a single 503 is a
+          # real availability failure and must not be hidden by curl retries.
+          for i in $(seq 1 6); do
+            TS=$(date +%s%N)
+            echo "SOAK_SAMPLE=$i timestamp=$TS"
+
+            curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
+              "$BASE/api/health?soak=$i&ts=$TS" -o "/tmp/soak-health-$i.json"
+            grep -q '"ok":true' "/tmp/soak-health-$i.json"
+
+            curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
+              "$BASE/?soak=$i&ts=$TS" -o "/tmp/soak-home-$i.html"
+            grep -Eqi 'BLIS Navigator|Brand Lab Intelligence System' "/tmp/soak-home-$i.html"
+
+            curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
+              "$BASE/dashboard.html?client=aroma&page=overview&soak=$i&ts=$TS" -o "/tmp/soak-aroma-$i.html"
+            grep -Fq 'blisDashboardPrepaintV5' "/tmp/soak-aroma-$i.html"
+
+            curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
+              "$BASE/kub-home.html?soak=$i&ts=$TS" -o "/tmp/soak-kub-$i.html"
+            grep -q 'Корпорация КУБ' "/tmp/soak-kub-$i.html"
+
+            if [ "$i" -lt 6 ]; then sleep 15; fi
+          done
 
           echo 'NAVIGATOR_24_7_PRODUCTION_OK'
