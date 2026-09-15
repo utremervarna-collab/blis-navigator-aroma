@@ -6,6 +6,7 @@ on:
     paths:
       - 'Dockerfile'
       - 'main.go'
+      - 'production_runtime_guard.go'
       - 'data/live_store.json'
       - '.github/workflows/persistence-redeploy-gate.yml'
   workflow_dispatch:
@@ -13,6 +14,10 @@ on:
 permissions:
   contents: read
   statuses: write
+
+concurrency:
+  group: production-persistence-restore
+  cancel-in-progress: true
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
@@ -46,27 +51,28 @@ jobs:
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           ok=0
-          # A successful comparison proves the running container restored the
-          # repository snapshot rather than falling back to seedStore().
+          # Compare only tiny counters. Downloading the full multi-megabyte store
+          # from a live web instance is intentionally forbidden in this gate.
           for i in $(seq 1 60); do
-            if curl -fsS --connect-timeout 15 --max-time 60 "$BASE/api/store/export?restore-gate=1&ts=$(date +%s)" -o /tmp/live.json; then
+            if curl -fsS --connect-timeout 10 --max-time 20 "$BASE/api/store/meta?restore-gate=1&ts=$(date +%s)" -o /tmp/live-meta.json; then
               if python - <<'PY'
           import json,sys
           floor=json.load(open('/tmp/floor.json',encoding='utf-8'))
-          live=json.load(open('/tmp/live.json',encoding='utf-8')).get('clients',{})
+          meta=json.load(open('/tmp/live-meta.json',encoding='utf-8'))
+          live=meta.get('clients',{})
           failures=[]
           for slug,f in floor.items():
               c=live.get(slug)
               if not c:
                   failures.append(f'{slug}:missing')
                   continue
-              s=len(c.get('snapshots',[])); o=len(c.get('observations',[]))
+              s=int(c.get('snapshots',0)); o=int(c.get('observations',0))
               if s < f['snapshots'] or o < f['observations']:
                   failures.append(f"{slug}: live=({s},{o}) floor=({f['snapshots']},{f['observations']})")
           if failures:
               print('NOT_RESTORED', ' | '.join(failures))
               sys.exit(1)
-          print('PERSISTENCE_RESTORE_OK', {k:(len(v.get('snapshots',[])),len(v.get('observations',[]))) for k,v in live.items()})
+          print('PERSISTENCE_RESTORE_OK', {k:(v.get('snapshots',0),v.get('observations',0)) for k,v in live.items()})
           PY
               then ok=1; break; fi
             fi
