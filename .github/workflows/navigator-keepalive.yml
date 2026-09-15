@@ -38,7 +38,7 @@ jobs:
             local url="$1"
             local out="$2"
             curl --fail --silent --show-error \
-              --connect-timeout 20 --max-time 90 \
+              --connect-timeout 20 --max-time 45 \
               --retry 4 --retry-delay 4 --retry-all-errors \
               "$url" -o "$out"
           }
@@ -53,19 +53,20 @@ jobs:
           grep -Eqi 'BLIS|client|клиент' /tmp/client-login.html
 
           request "$BASE/migration-build.js?probe=1&ts=$(date +%s)" /tmp/migration-build.js
-          cat /tmp/migration-build.js
           grep -q "$MIGRATION_BUILD" /tmp/migration-build.js
 
           request "$BASE/api/health?probe=1&ts=$(date +%s)" /tmp/app-health.json
-          cat /tmp/app-health.json
           grep -q '"ok":true' /tmp/app-health.json
 
-          request "$BASE/api/store/export?probe=1&ts=$(date +%s)" /tmp/store.json
+          # Availability monitoring must never download/encode the full multi-MB
+          # store. Use the lightweight production metadata route instead.
+          request "$BASE/api/store/meta?probe=1&ts=$(date +%s)" /tmp/store-meta.json
           python - <<'PY'
           import json
-          d=json.load(open('/tmp/store.json',encoding='utf-8'))
-          for slug in ('aroma','bolyarka','mollox','astor-garden'):
-              assert slug in d.get('clients',{}), f'{slug} missing from production store'
+          d=json.load(open('/tmp/store-meta.json',encoding='utf-8'))
+          assert d.get('ok') is True
+          for slug in ('aroma','bolyarka','mollox','astor-garden','kub'):
+              assert slug in d.get('clients',{}), f'{slug} missing from production store metadata'
           PY
 
           # KUB's crisis surface is reachable, but signal data is intentionally protected.
@@ -73,18 +74,18 @@ jobs:
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
 
           code=$(curl -sS -o /tmp/kub-health.json -w '%{http_code}' \
-            --connect-timeout 20 --max-time 90 \
+            --connect-timeout 20 --max-time 45 \
             "$BASE/api/signals/health?client=kub&probe=1&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
 
           code=$(curl -sS -o /tmp/signals.json -w '%{http_code}' \
-            --connect-timeout 20 --max-time 90 \
+            --connect-timeout 20 --max-time 45 \
             "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
 
           # Sustained-health soak. Do not retry these requests: a single 503 is a
           # real availability failure and must not be hidden by curl retries.
-          for i in $(seq 1 6); do
+          for i in $(seq 1 8); do
             TS=$(date +%s%N)
             echo "SOAK_SAMPLE=$i timestamp=$TS"
 
@@ -104,7 +105,7 @@ jobs:
               "$BASE/kub-home.html?soak=$i&ts=$TS" -o "/tmp/soak-kub-$i.html"
             grep -q 'Корпорация КУБ' "/tmp/soak-kub-$i.html"
 
-            if [ "$i" -lt 6 ]; then sleep 15; fi
+            if [ "$i" -lt 8 ]; then sleep 15; fi
           done
 
           echo 'NAVIGATOR_24_7_PRODUCTION_OK'
