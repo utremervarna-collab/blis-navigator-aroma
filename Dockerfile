@@ -11,6 +11,12 @@ COPY . .
 RUN grep -q '^[[:space:]]*startEngineScheduler()[[:space:]]*$' main.go \
     && sed -i 's/^[[:space:]]*startEngineScheduler()[[:space:]]*$/\tif os.Getenv("BLIS_ENABLE_INPROCESS_SCHEDULER") == "1" { startEngineScheduler() }/' main.go \
     && grep -q 'BLIS_ENABLE_INPROCESS_SCHEDULER' main.go
+# In production, route through the runtime guard. It serves heavyweight store
+# exports from the persisted snapshot under an independent lock instead of
+# holding the live store mutex for the duration of a multi-megabyte response.
+RUN grep -q 'http.ListenAndServe(addr, http.HandlerFunc(handler))' main.go \
+    && sed -i 's/http.ListenAndServe(addr, http.HandlerFunc(handler))/http.ListenAndServe(addr, http.HandlerFunc(productionHandler))/' main.go \
+    && grep -q 'http.HandlerFunc(productionHandler)' main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -tags netgo -ldflags '-s -w' -o /out/app .
 
 FROM alpine:3.20
@@ -26,7 +32,7 @@ COPY --from=builder /src/data /app/data
 ENV BLIS_ENABLE_INPROCESS_SCHEDULER=0
 # Recovery label intentionally changes the final runtime image digest so the
 # existing production service replaces the unstable image without changing URL.
-LABEL blis.navigator.recovery="2026-09-15-web-runtime-stability-2"
+LABEL blis.navigator.recovery="2026-09-15-nonblocking-store-export"
 ENV PORT=8080
 ENV DATA_DIR=/tmp/blis-navigator
 EXPOSE 8080
