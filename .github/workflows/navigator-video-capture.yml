@@ -11,19 +11,33 @@ on:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Build and start current Navigator
+        run: |
+          set -euo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          PORT=10000 ./app >/tmp/navigator-video-server.log 2>&1 &
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --max-time 3 -fsS http://127.0.0.1:10000/api/health >/tmp/navigator-video-health.json; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != "1" ]; then cat /tmp/navigator-video-server.log || true; exit 1; fi
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
-      - name: Capture live Navigator and Wirello
+      - name: Capture Navigator and Wirello
         env:
-          ORIGIN: https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run
+          ORIGIN: http://127.0.0.1:10000
         run: |
           mkdir -p /tmp/navigator-video
           cat >/tmp/capture.cjs <<'NODE'
@@ -31,32 +45,19 @@ jobs:
           const path = require('path');
           const origin = process.env.ORIGIN;
           const out = '/tmp/navigator-video';
-          const sleep = ms => new Promise(r => setTimeout(r, ms));
-          async function gotoRetry(p,url,tries=12){
-            let last;
-            for(let i=0;i<tries;i++){
-              try{
-                const r=await p.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
-                if(r && r.status() < 500){ return r; }
-                last=new Error('HTTP '+(r?.status()||'no response'));
-              }catch(e){ last=e; }
-              await sleep(5000);
-            }
-            throw last;
-          }
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
               const home=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:1});
-              await gotoRetry(home,origin+'/');
-              await home.waitForTimeout(3500);
+              await home.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:25000});
+              await home.waitForTimeout(2500);
               await home.screenshot({path:path.join(out,'01-home.png'),fullPage:false});
               await home.close();
 
               const p=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:1});
-              await gotoRetry(p,origin+'/dashboard.html?client=wirello&page=overview');
-              await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1,{timeout:20000}).catch(()=>{});
-              await p.waitForTimeout(3000);
+              await p.goto(origin+'/dashboard.html?client=wirello&page=overview',{waitUntil:'domcontentloaded',timeout:25000});
+              await p.waitForFunction(()=>window.__BLIS_NAVIGATOR_3_ARCHITECTURE_V1,null,{timeout:18000}).catch(()=>{});
+              await p.waitForTimeout(2500);
               const pages=[
                 ['overview','02-wirello-overview.png'],
                 ['social','03-wirello-monitoring.png'],
@@ -65,10 +66,9 @@ jobs:
                 ['history','06-wirello-reports.png']
               ];
               for(const [id,file] of pages){
-                if(typeof await p.evaluate(()=>typeof window.refGo)==='string'){}
                 await p.evaluate(id=>{ if(typeof window.refGo==='function') window.refGo(id); },id);
                 await p.waitForFunction(id=>document.querySelector('.page.active')?.id===id,id,{timeout:12000}).catch(()=>{});
-                await p.waitForTimeout(2200);
+                await p.waitForTimeout(1800);
                 await p.screenshot({path:path.join(out,file),fullPage:false});
               }
               await p.close();
@@ -80,7 +80,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: navigator-wirello-video-shots
+          name: navigator-wirello-video-shots-local
           path: /tmp/navigator-video/*.png
           if-no-files-found: error
           retention-days: 7
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/navigator-video-server.log || true
