@@ -16,6 +16,7 @@ import (
 
 const runtimeDataSnapshotURL = "https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/runtime-data/data/live_store.json"
 const runtimeDataSnapshotLimit = int64(64 << 20)
+const runtimeRestoreStartupGate = "http_ready_v2"
 
 type runtimeDataRestoreStatus struct {
 	Attempted             bool   `json:"attempted"`
@@ -25,14 +26,19 @@ type runtimeDataRestoreStatus struct {
 	RemoteObservations    int    `json:"remote_observations"`
 	KUBSignalObservations int    `json:"kub_signal_observations"`
 	RestoredAt            string `json:"restored_at,omitempty"`
+	StartupGate           string `json:"startup_gate"`
 }
 
 var (
-	runtimeRestoreMu sync.RWMutex
-	runtimeRestore   = runtimeDataRestoreStatus{Reason: "not_attempted"}
+	runtimeRestoreMu        sync.RWMutex
+	runtimeRestoreStartOnce sync.Once
+	runtimeRestore          = runtimeDataRestoreStatus{Reason: "not_attempted", StartupGate: runtimeRestoreStartupGate}
 )
 
 func setRuntimeRestoreStatus(s runtimeDataRestoreStatus) {
+	if s.StartupGate == "" {
+		s.StartupGate = runtimeRestoreStartupGate
+	}
 	runtimeRestoreMu.Lock()
 	runtimeRestore = s
 	runtimeRestoreMu.Unlock()
@@ -83,10 +89,6 @@ func clonePersistenceClient(c *Client) *Client {
 	return &clone
 }
 
-// mergeKUBPersistenceClients returns a copy of preferred that contains the union
-// of durable KUB signal observations from both stores. Non-signal observations
-// remain owned by preferred. This prevents a restore from ever rolling the KUB
-// crisis timeline back merely because another client has more observations.
 func mergeKUBPersistenceClients(preferred, other *Client) (*Client, int) {
 	if preferred == nil && other == nil {
 		return nil, 0
@@ -123,12 +125,8 @@ func mergeKUBPersistenceClients(preferred, other *Client) (*Client, int) {
 	return &clone, added
 }
 
-// walkRuntimeSnapshot decodes one client at a time. The previous restore decoded
-// the entire multi-megabyte snapshot into a second Store while the live Store was
-// still resident, then marshalled the whole result again. On constrained web
-// containers that transient duplication can exhaust memory and remove the
-// instance from the upstream pool. Streaming keeps peak memory bounded to one
-// decoded client plus the live store.
+// walkRuntimeSnapshot decodes one client at a time so the web process never
+// needs a second complete Store resident in memory during restore.
 func walkRuntimeSnapshot(path string, fn func(string, *Client) error) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -204,8 +202,62 @@ func walkRuntimeSnapshot(path string, fn func(string, *Client) error) error {
 	return nil
 }
 
+// waitForLocalHTTPReady is the cold-start barrier. Package init runs before
+// main(), so starting the restore on a fixed 80 ms timer could overlap with
+// ensureStore() while it was reading/unmarshalling the bundled live store. That
+// duplicated memory pressure and could make the instance disappear from the
+// provider's upstream pool. We now wait until the actual HTTP server answers two
+// consecutive health probes before any remote snapshot work starts.
+func waitForLocalHTTPReady() bool {
+	port := strings.TrimSpace(os.Getenv("PORT"))
+	if port == "" {
+		port = "10000"
+	}
+	url := "http://127.0.0.1:" + port + "/api/health"
+	client := &http.Client{Timeout: 750 * time.Millisecond}
+	consecutive := 0
+	for i := 0; i < 120; i++ {
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err == nil {
+			resp, doErr := client.Do(req)
+			if doErr == nil {
+				_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+				_ = resp.Body.Close()
+				if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+					consecutive++
+					if consecutive >= 2 {
+						return true
+					}
+				} else {
+					consecutive = 0
+				}
+			} else {
+				consecutive = 0
+			}
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return false
+}
+
+func startRuntimeDataRestore() {
+	runtimeRestoreStartOnce.Do(func() {
+		go func() {
+			if !waitForLocalHTTPReady() {
+				setRuntimeRestoreStatus(runtimeDataRestoreStatus{Reason: "http_server_not_ready", StartupGate: runtimeRestoreStartupGate})
+				log.Printf("RUNTIME_DATA_RESTORE skipped: local HTTP server did not become ready")
+				return
+			}
+			// Give the provider health checker a short stable window after bind before
+			// downloading and decoding persistence data.
+			time.Sleep(2 * time.Second)
+			restoreLatestRuntimeSnapshot()
+		}()
+	})
+}
+
 func restoreLatestRuntimeSnapshot() {
-	status := runtimeDataRestoreStatus{Attempted: true, Reason: "starting"}
+	status := runtimeDataRestoreStatus{Attempted: true, Reason: "starting", StartupGate: runtimeRestoreStartupGate}
 	setRuntimeRestoreStatus(status)
 
 	for i := 0; i < 50 && dataPath == ""; i++ {
@@ -353,10 +405,6 @@ func restoreLatestRuntimeSnapshot() {
 	status.KUBSignalObservations = kubSignalObservationCount(store)
 	mu.Unlock()
 
-	// Do not immediately marshal the complete store again here. Production export
-	// streams the live store through a temporary file, and later intentional data
-	// mutations persist through the normal save path. Avoiding a second full-store
-	// marshal is what keeps cold-start memory bounded.
 	if useRemote {
 		status.Applied = true
 		status.Reason = "remote_snapshot_applied_streaming_kub_merged"
@@ -386,8 +434,5 @@ func runtimeDataStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	http.HandleFunc("/api/runtime-data/status", runtimeDataStatusHandler)
-	go func() {
-		time.Sleep(80 * time.Millisecond)
-		restoreLatestRuntimeSnapshot()
-	}()
+	startRuntimeDataRestore()
 }
