@@ -85,7 +85,7 @@ jobs:
           set -euo pipefail
           cd /tmp/navigator-video
           curl -fL --retry 5 --retry-delay 2 -o source.mp4 'https://files2.heygen.ai/aws_pacific/avatar_tmp/56bb2dba4ea9426ab00e28480fe17604/v321a258598cc458bace1dba16c0e2c3a/900f5693344a4a25baa8dd053fcdadd9.mp4?Expires=1790082070&Signature=QDNe-dulKwUTyuUsvGh8WixJOfnU~iPW7sH119TraX~25TzJe5~xsETytmWgqIQUtMD2zuSlXBSeUDjRwF7uAPDZiBxTCTgNuVf~RlYw-oHdFuTCiaLhki6cPmctJ8-TIqL9coIvigSsc-7by79CMB3UktO8jQ0UDRFBYtho5XJk2K4O-pi4JgOnLYpMIlaz9jb5YYB-ySWeGUQsu3SksPNt-tugjbTNHk2d51EijbtQtX6fftCssBvIeAROip00i1JqBDJzrKpUg5I6HNX0GV6QyL8hyRvm7nTZctUibJ6pP~KVgkohFC3yDkW2LRiEZ3FhBNq43VD5Mmb~a54Dww__&Key-Pair-Id=K38HBHX5LX3X2H'
-          curl -fL --retry 5 --retry-delay 2 -o source.srt 'https://files2.heygen.ai/aws_pacific/avatar_tmp/56bb2dba4ea9426ab00e28480fe17604/subtitles_ba22ac6aeba349f0b4495f4fffbe98aa.srt?Expires=1790153243&Signature=d87CMYU4g3Pe9vRbbDhILG1QVdFKs3C6HshnwK51qwZoTq7Upy99bjPvucQyyKNSofSa6Jw~dm2kBKJC4O7YE8I6rZEZHaYIyGAbsny6oMol2ayUlCcRoAYbPU4~jFlZY5XaAraxjz45Y7MTFvkRDacF9gXzkE-EJsgmChDEEVnXFNDSJwLUNQwEbTURFbkurVrEE0PMlzRwdtILWNgXjcRXjtIToVJ5bHDBJSL4KAulaYlOB~nmxRWnu-uK28UYmN58adPi3sIew~hgYFh86mdGZf9WSg8bc4wWisIb4q1A7PPgzJc02XmMudf0IjLcnxyZ6qoP7jtcHgaQx5TkmQ__&Key-Pair-Id=K38HBHX5LX3X2H' || true
+          curl -fL --retry 5 --retry-delay 2 -o source.srt 'https://files2.heygen.ai/aws_pacific/avatar_tmp/56bb2dba4ea9426ab00e28480fe17604/subtitles_900f5693344a4a25baa8dd053fcdadd9.srt?Expires=1790082070&Signature=mV45G9msstitKySreWvu-m~S7FQUVumgaUmyTA1x3RnFse-7gwEcTohP2sYkicnej9y8jxA1oD3RQSeSXSRmhcV3Ue33D0rK1LtMzDfU0awr2Eayt-N3Mvzrsxtx1x2Fv2afPKOfemcBRegL-L3GY1L-NTdzEOqup-F2yNzYzD1s9MX0YGs8SLqy1b24541MicJOLk6nJWbh9yysDqXoS6cEwLrbNdrh8nDK3qGG5cSYv7iYMhs0xMj3rzohIHc5GBOAMX0rh9bxaGFyqKk-gVu6QAKNL6rbMlb1dsJ4wHZQkMvT1IJCPD2DaoPorec-0NyTtVsBRknxwljymjvwyQ__&Key-Pair-Id=K38HBHX5LX3X2H'
           curl -fL --retry 5 --retry-delay 2 -o narration.wav 'https://resource2.heygen.ai/text_to_speech/56bb2dba4ea9426ab00e28480fe17604/7js2Tntc0JyqG6CouDIq/id=8b930e32-0227-454d-b578-e7784e891a67.wav'
 
       - name: Determine original intro cut
@@ -111,13 +111,13 @@ jobs:
                           break
           print(f'cut={cut:.3f}')
           PY
-          echo "Intro cut: ${{ steps.cut.outputs.cut }} sec"
 
       - name: Render corrected video
         run: |
           set -euo pipefail
           cd /tmp/navigator-video
           CUT='${{ steps.cut.outputs.cut }}'
+          echo "Using intro cut: $CUT sec"
 
           ffmpeg -y -i source.mp4 -t "$CUT" \
             -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,fps=30" \
