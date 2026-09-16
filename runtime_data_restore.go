@@ -2,14 +2,20 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
 const runtimeDataSnapshotURL = "https://raw.githubusercontent.com/utremervarna-collab/blis-navigator-aroma/runtime-data/data/live_store.json"
+const runtimeDataSnapshotLimit = int64(64 << 20)
 
 type runtimeDataRestoreStatus struct {
 	Attempted             bool   `json:"attempted"`
@@ -68,6 +74,15 @@ func kubSignalObservationCount(s Store) int {
 	return n
 }
 
+func clonePersistenceClient(c *Client) *Client {
+	if c == nil {
+		return nil
+	}
+	clone := *c
+	clone.Observations = append([]Observation(nil), c.Observations...)
+	return &clone
+}
+
 // mergeKUBPersistenceClients returns a copy of preferred that contains the union
 // of durable KUB signal observations from both stores. Non-signal observations
 // remain owned by preferred. This prevents a restore from ever rolling the KUB
@@ -108,24 +123,91 @@ func mergeKUBPersistenceClients(preferred, other *Client) (*Client, int) {
 	return &clone, added
 }
 
-func runtimeSnapshotValid(s Store) bool {
-	if len(s.Clients) == 0 {
-		return false
+// walkRuntimeSnapshot decodes one client at a time. The previous restore decoded
+// the entire multi-megabyte snapshot into a second Store while the live Store was
+// still resident, then marshalled the whole result again. On constrained web
+// containers that transient duplication can exhaust memory and remove the
+// instance from the upstream pool. Streaming keeps peak memory bounded to one
+// decoded client plus the live store.
+func walkRuntimeSnapshot(path string, fn func(string, *Client) error) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
 	}
-	for _, slug := range []string{"aroma", "bolyarka", "mollox", "astor-garden"} {
-		if s.Clients[slug] == nil {
-			return false
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+		return fmt.Errorf("runtime snapshot root is not an object")
+	}
+
+	foundClients := false
+	for dec.More() {
+		keyToken, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		key, ok := keyToken.(string)
+		if !ok {
+			return fmt.Errorf("runtime snapshot has invalid key token")
+		}
+		if key != "clients" {
+			var discard json.RawMessage
+			if err := dec.Decode(&discard); err != nil {
+				return err
+			}
+			continue
+		}
+
+		foundClients = true
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		if delim, ok := tok.(json.Delim); !ok || delim != '{' {
+			return fmt.Errorf("runtime snapshot clients is not an object")
+		}
+		for dec.More() {
+			slugToken, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			slug, ok := slugToken.(string)
+			if !ok || strings.TrimSpace(slug) == "" {
+				return fmt.Errorf("runtime snapshot has invalid client key")
+			}
+			var c Client
+			if err := dec.Decode(&c); err != nil {
+				return err
+			}
+			if c.Slug == "" {
+				c.Slug = slug
+			}
+			if err := fn(slug, &c); err != nil {
+				return err
+			}
+		}
+		if _, err := dec.Token(); err != nil {
+			return err
 		}
 	}
-	return true
+	if _, err := dec.Token(); err != nil {
+		return err
+	}
+	if !foundClients {
+		return fmt.Errorf("runtime snapshot has no clients object")
+	}
+	return nil
 }
 
 func restoreLatestRuntimeSnapshot() {
 	status := runtimeDataRestoreStatus{Attempted: true, Reason: "starting"}
 	setRuntimeRestoreStatus(status)
 
-	// main.ensureStore() initializes dataPath synchronously. Wait briefly rather
-	// than racing it from init-time goroutines.
 	for i := 0; i < 50 && dataPath == ""; i++ {
 		time.Sleep(20 * time.Millisecond)
 	}
@@ -135,7 +217,7 @@ func restoreLatestRuntimeSnapshot() {
 		return
 	}
 
-	client := &http.Client{Timeout: 12 * time.Second}
+	client := &http.Client{Timeout: 20 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, runtimeDataSnapshotURL+"?ts="+time.Now().UTC().Format("20060102150405"), nil)
 	if err != nil {
 		status.Reason = "request_build_failed"
@@ -157,41 +239,106 @@ func restoreLatestRuntimeSnapshot() {
 		return
 	}
 
-	var remote Store
-	if err := json.NewDecoder(resp.Body).Decode(&remote); err != nil || !runtimeSnapshotValid(remote) {
+	if err := os.MkdirAll(filepath.Dir(dataPath), 0755); err != nil {
+		status.Reason = "snapshot_temp_dir_failed"
+		setRuntimeRestoreStatus(status)
+		return
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(dataPath), "runtime-restore-*.json")
+	if err != nil {
+		status.Reason = "snapshot_temp_failed"
+		setRuntimeRestoreStatus(status)
+		return
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+
+	n, copyErr := io.Copy(tmp, io.LimitReader(resp.Body, runtimeDataSnapshotLimit+1))
+	closeErr := tmp.Close()
+	if copyErr != nil || closeErr != nil || n == 0 || n > runtimeDataSnapshotLimit {
+		status.Reason = "snapshot_download_invalid"
+		setRuntimeRestoreStatus(status)
+		log.Printf("RUNTIME_DATA_RESTORE download invalid bytes=%d copyErr=%v closeErr=%v", n, copyErr, closeErr)
+		return
+	}
+
+	required := map[string]bool{"aroma": false, "bolyarka": false, "mollox": false, "astor-garden": false}
+	remoteSnapshots := 0
+	remoteObservations := 0
+	remoteKUBCount := 0
+	var remoteKUB *Client
+	err = walkRuntimeSnapshot(tmpPath, func(slug string, c *Client) error {
+		remoteSnapshots += len(c.Snapshots)
+		remoteObservations += len(c.Observations)
+		if _, ok := required[slug]; ok {
+			required[slug] = true
+		}
+		if slug == "kub" {
+			remoteKUB = clonePersistenceClient(c)
+			remoteKUBCount = kubSignalObservationCount(Store{Clients: map[string]*Client{"kub": remoteKUB}})
+		}
+		return nil
+	})
+	if err != nil {
 		status.Reason = "snapshot_invalid"
 		setRuntimeRestoreStatus(status)
 		log.Printf("RUNTIME_DATA_RESTORE invalid err=%v", err)
 		return
 	}
+	for slug, seen := range required {
+		if !seen {
+			status.Reason = "snapshot_invalid"
+			setRuntimeRestoreStatus(status)
+			log.Printf("RUNTIME_DATA_RESTORE missing required client=%s", slug)
+			return
+		}
+	}
 
-	remoteSnapshots, remoteObservations := storeDurabilityWeight(remote)
 	status.RemoteSnapshots = remoteSnapshots
 	status.RemoteObservations = remoteObservations
 
 	mu.Lock()
 	localSnapshots, localObservations := storeDurabilityWeight(store)
-	localKUBCount := kubSignalObservationCount(store)
-	remoteKUBCount := kubSignalObservationCount(remote)
+	localKUB := clonePersistenceClient(store.Clients["kub"])
+	localKUBCount := kubSignalObservationCount(Store{Clients: map[string]*Client{"kub": localKUB}})
+	mu.Unlock()
 
-	// Keep the existing whole-store preference rule, but make KUB non-regressive:
-	// whichever whole store wins receives the union of KUB signal observations.
 	useRemote := remoteObservations >= localObservations && remoteSnapshots >= localSnapshots &&
-		(remoteObservations > localObservations || remoteSnapshots > localSnapshots || (store.Clients["kub"] == nil && remote.Clients["kub"] != nil))
+		(remoteObservations > localObservations || remoteSnapshots > localSnapshots || (localKUB == nil && remoteKUB != nil))
 
 	kubMerged := false
 	if useRemote {
-		merged, added := mergeKUBPersistenceClients(remote.Clients["kub"], store.Clients["kub"])
-		if merged != nil {
-			if remote.Clients == nil {
-				remote.Clients = map[string]*Client{}
+		applied := 0
+		err = walkRuntimeSnapshot(tmpPath, func(slug string, c *Client) error {
+			chosen := c
+			if slug == "kub" {
+				merged, added := mergeKUBPersistenceClients(c, localKUB)
+				if merged != nil {
+					chosen = merged
+				}
+				kubMerged = added > 0 || remoteKUBCount < localKUBCount
 			}
-			remote.Clients["kub"] = merged
+			mu.Lock()
+			if store.Clients == nil {
+				store.Clients = map[string]*Client{}
+			}
+			store.Clients[slug] = chosen
+			mu.Unlock()
+			applied++
+			if applied%2 == 0 {
+				runtime.GC()
+			}
+			return nil
+		})
+		if err != nil {
+			status.Reason = "snapshot_apply_failed"
+			setRuntimeRestoreStatus(status)
+			log.Printf("RUNTIME_DATA_RESTORE apply failed err=%v", err)
+			return
 		}
-		kubMerged = added > 0 || remoteKUBCount < localKUBCount
-		store = remote
-	} else {
-		merged, added := mergeKUBPersistenceClients(store.Clients["kub"], remote.Clients["kub"])
+	} else if remoteKUB != nil {
+		mu.Lock()
+		merged, added := mergeKUBPersistenceClients(store.Clients["kub"], remoteKUB)
 		if merged != nil {
 			if store.Clients == nil {
 				store.Clients = map[string]*Client{}
@@ -199,19 +346,23 @@ func restoreLatestRuntimeSnapshot() {
 			store.Clients["kub"] = merged
 		}
 		kubMerged = added > 0 || localKUBCount < remoteKUBCount
+		mu.Unlock()
 	}
+
+	mu.Lock()
 	status.KUBSignalObservations = kubSignalObservationCount(store)
 	mu.Unlock()
 
-	if useRemote || kubMerged {
-		saveStore()
-	}
+	// Do not immediately marshal the complete store again here. Production export
+	// streams the live store through a temporary file, and later intentional data
+	// mutations persist through the normal save path. Avoiding a second full-store
+	// marshal is what keeps cold-start memory bounded.
 	if useRemote {
 		status.Applied = true
-		status.Reason = "remote_snapshot_applied_kub_merged"
+		status.Reason = "remote_snapshot_applied_streaming_kub_merged"
 		status.RestoredAt = nowISO()
 		setRuntimeRestoreStatus(status)
-		log.Printf("RUNTIME_DATA_RESTORE ok snapshots=%d observations=%d kub_signals=%d", remoteSnapshots, remoteObservations, status.KUBSignalObservations)
+		log.Printf("RUNTIME_DATA_RESTORE ok streaming snapshots=%d observations=%d kub_signals=%d", remoteSnapshots, remoteObservations, status.KUBSignalObservations)
 		return
 	}
 	if kubMerged {
@@ -236,7 +387,6 @@ func runtimeDataStatusHandler(w http.ResponseWriter, r *http.Request) {
 func init() {
 	http.HandleFunc("/api/runtime-data/status", runtimeDataStatusHandler)
 	go func() {
-		// Restore before the first delayed KUB discovery pass whenever possible.
 		time.Sleep(80 * time.Millisecond)
 		restoreLatestRuntimeSnapshot()
 	}()
