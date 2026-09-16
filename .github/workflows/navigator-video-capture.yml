@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  capture:
+  render:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -20,6 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Build and start current Navigator
         run: |
           set -euo pipefail
@@ -31,20 +32,22 @@ jobs:
             sleep 1
           done
           if [ "$ready" != "1" ]; then cat /tmp/navigator-video-server.log || true; exit 1; fi
+
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install chromium
-      - name: Capture Navigator and Wirello
+
+      - name: Capture Navigator and Wirello frames
         env:
           ORIGIN: http://127.0.0.1:10000
         run: |
-          mkdir -p /tmp/navigator-video
+          mkdir -p /tmp/navigator-video/frames
           cat >/tmp/capture.cjs <<'NODE'
           const { chromium } = require(process.env.GITHUB_WORKSPACE + '/node_modules/playwright');
           const path = require('path');
           const origin = process.env.ORIGIN;
-          const out = '/tmp/navigator-video';
+          const out = '/tmp/navigator-video/frames';
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             try{
@@ -76,14 +79,94 @@ jobs:
           })().catch(e=>{ console.error(e); process.exit(1); });
           NODE
           node /tmp/capture.cjs
-      - name: Upload video screenshots
+
+      - name: Download original HeyGen video, subtitles and new narration
+        run: |
+          set -euo pipefail
+          cd /tmp/navigator-video
+          curl -fL --retry 5 --retry-delay 2 -o source.mp4 'https://files2.heygen.ai/aws_pacific/avatar_tmp/56bb2dba4ea9426ab00e28480fe17604/v321a258598cc458bace1dba16c0e2c3a/900f5693344a4a25baa8dd053fcdadd9.mp4?Expires=1790082070&Signature=QDNe-dulKwUTyuUsvGh8WixJOfnU~iPW7sH119TraX~25TzJe5~xsETytmWgqIQUtMD2zuSlXBSeUDjRwF7uAPDZiBxTCTgNuVf~RlYw-oHdFuTCiaLhki6cPmctJ8-TIqL9coIvigSsc-7by79CMB3UktO8jQ0UDRFBYtho5XJk2K4O-pi4JgOnLYpMIlaz9jb5YYB-ySWeGUQsu3SksPNt-tugjbTNHk2d51EijbtQtX6fftCssBvIeAROip00i1JqBDJzrKpUg5I6HNX0GV6QyL8hyRvm7nTZctUibJ6pP~KVgkohFC3yDkW2LRiEZ3FhBNq43VD5Mmb~a54Dww__&Key-Pair-Id=K38HBHX5LX3X2H'
+          curl -fL --retry 5 --retry-delay 2 -o source.srt 'https://files2.heygen.ai/aws_pacific/avatar_tmp/56bb2dba4ea9426ab00e28480fe17604/subtitles_ba22ac6aeba349f0b4495f4fffbe98aa.srt?Expires=1790153243&Signature=d87CMYU4g3Pe9vRbbDhILG1QVdFKs3C6HshnwK51qwZoTq7Upy99bjPvucQyyKNSofSa6Jw~dm2kBKJC4O7YE8I6rZEZHaYIyGAbsny6oMol2ayUlCcRoAYbPU4~jFlZY5XaAraxjz45Y7MTFvkRDacF9gXzkE-EJsgmChDEEVnXFNDSJwLUNQwEbTURFbkurVrEE0PMlzRwdtILWNgXjcRXjtIToVJ5bHDBJSL4KAulaYlOB~nmxRWnu-uK28UYmN58adPi3sIew~hgYFh86mdGZf9WSg8bc4wWisIb4q1A7PPgzJc02XmMudf0IjLcnxyZ6qoP7jtcHgaQx5TkmQ__&Key-Pair-Id=K38HBHX5LX3X2H' || true
+          curl -fL --retry 5 --retry-delay 2 -o narration.wav 'https://resource2.heygen.ai/text_to_speech/56bb2dba4ea9426ab00e28480fe17604/7js2Tntc0JyqG6CouDIq/id=8b930e32-0227-454d-b578-e7784e891a67.wav'
+
+      - name: Determine original intro cut
+        id: cut
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import re, pathlib
+          p=pathlib.Path('/tmp/navigator-video/source.srt')
+          cut=7.0
+          if p.exists() and p.stat().st_size:
+              s=p.read_text('utf-8-sig',errors='ignore')
+              blocks=re.split(r'\n\s*\n',s.strip())
+              def sec(t):
+                  h,m,rest=t.replace('.',',').split(':')
+                  ss,ms=rest.split(',')
+                  return int(h)*3600+int(m)*60+int(ss)+int(ms)/1000
+              for b in blocks:
+                  lines=[x.strip() for x in b.splitlines() if x.strip()]
+                  if len(lines)>=3 and '-->' in lines[1]:
+                      text=' '.join(lines[2:])
+                      if 'BLIS' in text.upper():
+                          cut=max(0.1,sec(lines[1].split('-->')[0].strip())-0.04)
+                          break
+          print(f'cut={cut:.3f}')
+          PY
+          echo "Intro cut: ${{ steps.cut.outputs.cut }} sec"
+
+      - name: Render corrected video
+        run: |
+          set -euo pipefail
+          cd /tmp/navigator-video
+          CUT='${{ steps.cut.outputs.cut }}'
+
+          ffmpeg -y -i source.mp4 -t "$CUT" \
+            -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,fps=30" \
+            -af "aresample=48000" -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k intro.mp4
+
+          cat >frames.txt <<'EOF'
+          file 'frames/01-home.png'
+          duration 11.82
+          file 'frames/02-wirello-overview.png'
+          duration 6.68
+          file 'frames/03-wirello-monitoring.png'
+          duration 6.34
+          file 'frames/04-wirello-environment.png'
+          duration 5.98
+          file 'frames/05-wirello-competition.png'
+          duration 4.84
+          file 'frames/06-wirello-reports.png'
+          duration 7.73
+          file 'frames/06-wirello-reports.png'
+          EOF
+
+          ffmpeg -y -f concat -safe 0 -i frames.txt -i narration.wav \
+            -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xf5f7fa,fps=30,fade=t=in:st=0:d=0.25" \
+            -af "aresample=48000" -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest body.mp4
+
+          ffmpeg -y -i intro.mp4 -i body.mp4 \
+            -filter_complex "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]" \
+            -map '[v]' -map '[a]' -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart \
+            Navigator_Wirello_Corrected.mp4
+
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 Navigator_Wirello_Corrected.mp4
+
+      - name: Upload corrected video
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigator-wirello-corrected-video
+          path: /tmp/navigator-video/Navigator_Wirello_Corrected.mp4
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload source frames for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: navigator-wirello-video-shots-local
-          path: /tmp/navigator-video/*.png
-          if-no-files-found: error
+          name: navigator-wirello-final-frames
+          path: /tmp/navigator-video/frames/*.png
+          if-no-files-found: warn
           retention-days: 7
+
       - name: Show server log on failure
         if: failure()
         run: cat /tmp/navigator-video-server.log || true
