@@ -318,6 +318,10 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		publicClientMentions(w, r)
 		return
 	}
+	if path == "/api/public/home-tape" {
+		publicHomeTape(w, r)
+		return
+	}
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && (path == "/api/clients" || strings.HasPrefix(path, "/api/clients/")) {
 		if authProxy == nil {
 			http.Error(w, "Gateway unavailable", http.StatusServiceUnavailable)

@@ -98,6 +98,21 @@ jobs:
               assert slug in clients, f'{slug} missing from production store metadata'
           print('PRODUCTION_STORE_META_OK', {k:(v.get('snapshots',0),v.get('observations',0)) for k,v in clients.items()})
           PY
+          for round in 1 2 3; do
+            test "$(curl -sS -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curl -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            python - <<'PY'
+          import json
+          d=json.load(open('/tmp/home-tape.json',encoding='utf-8'))
+          assert d.get('ok') is True
+          items=d.get('items') or []
+          assert items, 'home tape returned no persisted metrics'
+          assert all('client' in x and 'metric' in x and 'value' in x for x in items)
+          PY
+            test "$(curl -sS -o /tmp/home-return-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            grep -Fq 'blisDashboardPrepaintV5' /tmp/home-return-dashboard.html
+          done
+          echo HOME_DASHBOARD_ROUNDTRIP_OK
           test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
           grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
           test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
