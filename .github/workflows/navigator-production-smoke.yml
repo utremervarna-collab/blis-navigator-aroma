@@ -99,7 +99,11 @@ jobs:
           print('PRODUCTION_STORE_META_OK', {k:(v.get('snapshots',0),v.get('observations',0)) for k,v in clients.items()})
           PY
           for round in 1 2 3; do
-            test "$(curl -sS -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curl -sS -o /tmp/home-before-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip-before=$round&ts=$(date +%s%N)")" = "200"
+            grep -Fq 'blisDashboardPrepaintV5' /tmp/home-before-dashboard.html
+            test "$(curl -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            grep -Eqi '^x-blis-home-origin: gateway' /tmp/home.headers
+            grep -Fq 'BLIS™' /tmp/home.html
             test "$(curl -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             python - <<'PY'
           import json
@@ -112,7 +116,7 @@ jobs:
             test "$(curl -sS -o /tmp/home-return-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Fq 'blisDashboardPrepaintV5' /tmp/home-return-dashboard.html
           done
-          echo HOME_DASHBOARD_ROUNDTRIP_OK
+          echo DASHBOARD_HOME_DASHBOARD_ROUNDTRIP_OK
           test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
           grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
           test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
