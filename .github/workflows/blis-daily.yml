@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: blis-daily-engine
+  cancel-in-progress: true
+
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
   MIGRATION_BUILD: code-run-migration-2026-09-09-v1
@@ -95,14 +99,79 @@ jobs:
               print('NO_NEW_DATA: refresh completed successfully; persistent counts are unchanged or retention-capped')
           PY
 
-      - name: Commit daily data snapshot
+      - name: Publish daily data snapshot to runtime-data
         run: |
+          set -euo pipefail
+
+          # Keep runtime data off main. Northflank deploys main, so committing
+          # data/live_store.json there would restart the production web service.
+          cp data/live_store.json /tmp/daily-live-store.json
+
           git config user.name "BLIS Engine"
           git config user.email "actions@users.noreply.github.com"
+          git fetch origin runtime-data
+          git reset --hard HEAD
+          git clean -fd
+          git checkout -B runtime-data origin/runtime-data
+
+          mkdir -p data
+          if [ -f data/live_store.json ]; then
+            cp data/live_store.json /tmp/runtime-data-before.json
+          fi
+          cp /tmp/daily-live-store.json data/live_store.json
+
+          python - <<'PY'
+          import json, os
+
+          path='data/live_store.json'
+          candidate=json.load(open(path,encoding='utf-8'))
+          clients=candidate.get('clients',{})
+          for slug in ('aroma','bolyarka','astor-garden','mollox','kub'):
+              if slug not in clients:
+                  raise SystemExit(f'daily snapshot refused: {slug} missing')
+
+          prev_path='/tmp/runtime-data-before.json'
+          if os.path.exists(prev_path):
+              previous=json.load(open(prev_path,encoding='utf-8'))
+              pc=previous.get('clients',{})
+
+              # Snapshot history must never move backwards relative to runtime-data.
+              for slug in ('aroma','bolyarka','astor-garden','mollox'):
+                  if slug in pc:
+                      old=len(pc[slug].get('snapshots',[]))
+                      new=len(clients[slug].get('snapshots',[]))
+                      if new < old:
+                          raise SystemExit(f'daily snapshot regression refused: {slug} snapshots {old}->{new}')
+
+              # Preserve any KUB signal observations that reached runtime-data
+              # between the production export and this publish step.
+              def is_kub_signal(o):
+                  return o.get('source_key') == 'signal_collector' and str(o.get('metric_key','')).startswith('signal_event_')
+
+              prev_kub=pc.get('kub',{})
+              cand_kub=clients['kub']
+              cand_obs=cand_kub.setdefault('observations',[])
+              keys={o.get('metric_key') for o in cand_obs if is_kub_signal(o)}
+              restored=0
+              for o in prev_kub.get('observations',[]):
+                  if not is_kub_signal(o):
+                      continue
+                  key=o.get('metric_key')
+                  if key and key not in keys:
+                      cand_obs.append(o)
+                      keys.add(key)
+                      restored += 1
+              print('KUB_RUNTIME_HISTORY_PRESERVED', restored)
+
+          with open(path,'w',encoding='utf-8') as f:
+              json.dump(candidate,f,ensure_ascii=False,separators=(',',':'))
+          print('DAILY_RUNTIME_DATA_READY')
+          PY
+
           git add data/live_store.json
           if git diff --cached --quiet; then
-            echo "No data changes"
+            echo "No runtime-data changes"
           else
-            git commit -m "BLIS daily multi-client data $(date -u +%F)"
-            git push
+            git commit -m "runtime: daily multi-client data $(date -u +%F)"
+            git push origin HEAD:runtime-data
           fi
