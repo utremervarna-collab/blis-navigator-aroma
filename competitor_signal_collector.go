@@ -57,6 +57,29 @@ func competitorAliases(name string) []string {
 			}
 		}
 	}
+	// MOLLOX competitors use several public spellings. These are aliases of
+	// the already configured companies/brands, not new competitors.
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "хигиенно-медицинска индустрия":
+		addAlias("Хигиенно медицинска индустрия")
+		addAlias("ХМИ")
+	case "hagleitner българия":
+		addAlias("Hagleitner")
+		addAlias("Хаглайтнер")
+	case "булклийн":
+		addAlias("Bulclean")
+	case "pachico":
+		addAlias("Pa Chico")
+	case "албис":
+		addAlias("Albis")
+		addAlias("Албис ЕООД")
+	case "калватис хигиене българия (calgonit)":
+		addAlias("Calvatis")
+		addAlias("Калватис")
+		addAlias("Calgonit")
+		addAlias("Калгонит")
+		addAlias("Калватис Хигиене България")
+	}
 	if len(out) == 0 {
 		addAlias(name)
 	}

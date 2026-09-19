@@ -53,6 +53,28 @@ jobs:
             curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-brand.json"
             curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-competitor.json"
           done
+
+          # MOLLOX has source-verified publications in the rolling 3-month
+          # window. A 0/0 stream is therefore a pipeline failure, not a valid
+          # empty result. Give the post-restore backfill a short bounded window.
+          mollox_ok=0
+          for i in $(seq 1 18); do
+            curl -fsS "$BASE/api/public/mentions?client=mollox&scope=brand&limit=300&ts=$(date +%s%N)" -o /tmp/mollox-brand.json
+            curl -fsS "$BASE/api/public/mentions?client=mollox&scope=competitor&limit=300&ts=$(date +%s%N)" -o /tmp/mollox-competitor.json
+            if python - <<'PY'
+          import json
+          brand=json.load(open('/tmp/mollox-brand.json',encoding='utf-8')).get('signals') or []
+          competitor=json.load(open('/tmp/mollox-competitor.json',encoding='utf-8')).get('signals') or []
+          raise SystemExit(0 if len(brand)>=4 and len(competitor)>=1 else 1)
+          PY
+            then
+              mollox_ok=1
+              break
+            fi
+            sleep 5
+          done
+          test "$mollox_ok" = "1"
+          echo MOLLOX_VERIFIED_RECENT_MINIMUM_OK
           curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
           python - <<'PY'
           import json, re
