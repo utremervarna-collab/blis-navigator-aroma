@@ -203,8 +203,8 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 
 	rows := make([]publicClientMention, 0, len(candidates))
 	for _, s := range candidates {
-		displayTitle := strings.TrimSpace(s.Title)
-		displayText := strings.TrimSpace(s.Text)
+		displayTitle := cleanCompetitorDisplayText(strings.TrimSpace(s.Title))
+		displayText := cleanCompetitorDisplayText(strings.TrimSpace(s.Text))
 		if competitorLooksLikeCode(displayTitle) {
 			displayTitle = strings.TrimSpace(s.Brand)
 			if displayTitle == "" {
