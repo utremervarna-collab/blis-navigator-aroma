@@ -373,6 +373,70 @@ func varnaTowersKeywords(c *Client) []map[string]interface{} {
 	}
 }
 
+
+func varnaTowersVerifiedCompetitorObservations() []Signal {
+	rows := []struct {
+		brand  string
+		source string
+		url    string
+		title  string
+		text   string
+	}{
+		{
+			brand:  "Business Park Varna",
+			source: "LinkedIn · iCard",
+			url:    "https://bg.linkedin.com/company/icardofficial",
+			title:  "iCard посочва Business Park Varna, Building B1 като основна локация във Варна",
+			text:   "Публичният LinkedIn профил на iCard посочва Business Park Varna, Building B1, Varna 9009 като primary location. Това е текущо външно tenant/location споменаване на Business Park Varna.",
+		},
+		{
+			brand:  "Landmark Centre Varna",
+			source: "JOBS.BG · Cargill Bulgaria",
+			url:    "https://www.jobs.bg/en/company/cargill?job=8370926",
+			title:  "Cargill Bulgaria посочва офиса си във Варна в Landmark Centre",
+			text:   "Публичният профил на Cargill Bulgaria в JOBS.BG посочва Varna Ocean Transportation office на 24 Slivnitsa Blvd., Landmark Centre, Varna. Страницата съдържа текущи обяви от август 2026.",
+		},
+		{
+			brand:  "Black Sea Capital Center",
+			source: "Sutherland Bulgaria",
+			url:    "https://www.sutherlandglobal.bg/contact/",
+			title:  "Sutherland Bulgaria посочва Black Sea Capital Center като локация на офиса си във Варна",
+			text:   "Публичната контактна страница на Sutherland Bulgaria посочва офиса във Варна в Black Sea Capital Center и описва сградата като бизнес център в централния бизнес район.",
+		},
+		{
+			brand:  "Комфорт Бизнес Център",
+			source: "Bulgarian Dredging Company",
+			url:    "https://www.bdrc.bg/contact",
+			title:  "Bulgarian Dredging Company посочва Central Point building като офис локация във Варна",
+			text:   "Публичната контактна страница на Bulgarian Dredging Company посочва адрес 54 Osmi Primorski polk Blvd., Central Point building, 6th floor, Varna. Central Point е свързан административен актив в конкурентния клъстер на Комфорт.",
+		},
+	}
+	out := make([]Signal, 0, len(rows))
+	for _, row := range rows {
+		sentiment, risk := signalSentimentAndRisk(row.title + " " + row.text)
+		fp := signalHash("varna-towers|competitor|verified-observed|"+strings.ToLower(row.brand), row.url, row.title, row.text)
+		out = append(out, Signal{
+			ID:          fp[:16],
+			Client:      "varna-towers",
+			Brand:       row.brand,
+			Source:      row.source,
+			SourceType:  "web",
+			Scope:       "competitor",
+			URL:         row.url,
+			Title:       row.title,
+			Text:        row.text,
+			DetectedAt:  nowISO(),
+			Relevance:   100,
+			Sentiment:   sentiment,
+			Topic:       signalTopic(row.title + " " + row.text),
+			RiskScore:   risk,
+			Severity:    signalSeverity(risk),
+			Fingerprint: fp,
+		})
+	}
+	return out
+}
+
 func bootstrapVarnaTowersLiveMonitoring() {
 	c := ensureVarnaTowersLiveClient()
 	if c == nil {
@@ -380,7 +444,7 @@ func bootstrapVarnaTowersLiveMonitoring() {
 	}
 	// Keep the May ownership event in the durable history even after it falls
 	// outside the rolling three-month public mention window.
-	mergeSignals("varna-towers", []Signal{varnaTowersVerifiedOwnershipSignal()})
+	mergeSignals("varna-towers", append([]Signal{varnaTowersVerifiedOwnershipSignal()}, varnaTowersVerifiedCompetitorObservations()...))
 	saveSignalStateFile()
 	saveStore()
 
