@@ -38,6 +38,8 @@ var (
 	competitorStyleRE  = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
 	competitorNoScriptRE = regexp.MustCompile(`(?is)<noscript[^>]*>.*?</noscript>`)
 	competitorTagRE    = regexp.MustCompile(`(?is)<[^>]+>`)
+	competitorURLRE    = regexp.MustCompile(`(?i)https?://[^\s]+|www\.[^\s]+`)
+	competitorMediaRE  = regexp.MustCompile(`(?i)\b[^\s]+\.(?:png|jpe?g|webp|svg|gif|woff2?|ttf)(?:\?[^\s]*)?`)
 )
 
 func competitorPageText(body string) (string, string) {
@@ -55,6 +57,14 @@ func competitorPageText(body string) (string, string) {
 		plain = string(r[:6000])
 	}
 	return title, plain
+}
+
+func cleanCompetitorDisplayText(v string) string {
+	v = competitorURLRE.ReplaceAllString(v, " ")
+	v = competitorMediaRE.ReplaceAllString(v, " ")
+	v = strings.NewReplacer("\\n", " ", "\\t", " ", "\\r", " ").Replace(v)
+	v = strings.Join(strings.Fields(v), " ")
+	return strings.TrimSpace(v)
 }
 
 func competitorLooksLikeCode(v string) bool {
@@ -299,13 +309,13 @@ func competitorRelevance(c *Client, t competitorSignalTarget, title, text string
 }
 
 func buildCompetitorSignal(c *Client, t competitorSignalTarget, source, sourceType, rawURL, title, text, published string) (Signal, bool) {
-	title = cleanPostSnippet(title)
-	text = cleanPostSnippet(text)
-	if competitorLooksLikeCode(title) {
+	title = cleanCompetitorDisplayText(cleanPostSnippet(title))
+	text = cleanCompetitorDisplayText(cleanPostSnippet(text))
+	if competitorLooksLikeCode(title) || len([]rune(title)) < 3 {
 		title = t.Name
 	}
 	if competitorLooksLikeCode(text) {
-		text = title
+		text = ""
 	}
 	if text == "" {
 		text = title
