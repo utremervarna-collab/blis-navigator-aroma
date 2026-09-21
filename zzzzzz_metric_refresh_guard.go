@@ -16,7 +16,7 @@ type metricRefreshGuardTransport struct {
 
 func supportsDedicatedMetricEngine(slug string) bool {
 	switch strings.TrimSpace(strings.ToLower(slug)) {
-	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet":
+	case "aroma", "bolyarka", "astor-garden", "mollox", "everbet", "varna-towers":
 		return true
 	default:
 		return false
