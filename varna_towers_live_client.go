@@ -437,6 +437,13 @@ func varnaTowersVerifiedCompetitorObservations() []Signal {
 	return out
 }
 
+func invalidateVarnaTowersMentionCache() {
+	publicMentionCacheMu.Lock()
+	delete(publicMentionCache, "varna-towers|brand")
+	delete(publicMentionCache, "varna-towers|competitor")
+	publicMentionCacheMu.Unlock()
+}
+
 func bootstrapVarnaTowersLiveMonitoring() {
 	c := ensureVarnaTowersLiveClient()
 	if c == nil {
@@ -468,6 +475,7 @@ func bootstrapVarnaTowersLiveMonitoring() {
 		}
 		continuousMonitoringMu.Unlock()
 	}
+	invalidateVarnaTowersMentionCache()
 }
 
 func init() {
@@ -481,6 +489,15 @@ func init() {
 			mu.Unlock()
 			if ready {
 				bootstrapVarnaTowersLiveMonitoring()
+				// Runtime persistence restore can land shortly after HTTP readiness.
+				// Re-apply the Varna Towers live profile after that window so the
+				// verified competitor stream cannot be overwritten by an older snapshot.
+				go func() {
+					for _, delay := range []time.Duration{8 * time.Second, 25 * time.Second} {
+						time.Sleep(delay)
+						bootstrapVarnaTowersLiveMonitoring()
+					}
+				}()
 				return
 			}
 		}
