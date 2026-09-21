@@ -45,11 +45,24 @@ jobs:
           fi
           echo LIVE_THREE_MONTH_MENTION_UI_OK
 
+          # Varna Towers must be on the live backend runtime, not the old static
+          # fetch-intercept bootstrap.
+          varna_ok=0
+          for i in $(seq 1 36); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/varna-towers-runtime.js?ts=$(date +%s%N)" -o /tmp/varna-runtime.js && grep -Fq '__varnaLiveFetch' /tmp/varna-runtime.js; then
+              varna_ok=1
+              break
+            fi
+            sleep 10
+          done
+          test "$varna_ok" = "1"
+          echo VARNA_TOWERS_LIVE_RUNTIME_OK
+
       - name: Validate Aroma Bolyarka and MOLLOX production streams
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          for CLIENT in aroma bolyarka mollox; do
+          for CLIENT in aroma bolyarka mollox varna-towers; do
             curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=brand&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-brand.json"
             curl -fsS "$BASE/api/public/mentions?client=$CLIENT&scope=competitor&limit=300&ts=$(date +%s%N)" -o "/tmp/${CLIENT}-competitor.json"
           done
@@ -82,7 +95,7 @@ jobs:
           from datetime import datetime, timezone
           from pathlib import Path
 
-          clients=('aroma','bolyarka','mollox')
+          clients=('aroma','bolyarka','mollox','varna-towers')
           store=json.load(open('/tmp/mentions-store.json',encoding='utf-8')).get('clients',{})
 
           def norm(v):
@@ -92,7 +105,8 @@ jobs:
               out=set()
               for src in store.get(slug,{}).get('sources',[]):
                   key=norm(src.get('key'))
-                  if key.startswith('cmp_') or key.startswith('competitor_'):
+                  special_varna=slug=='varna-towers' and key in ('bpv','varna115','landmark','chayka')
+                  if key.startswith('cmp_') or key.startswith('competitor_') or special_varna:
                       label=str(src.get('label') or '').strip()
                       if label:
                           out.add(norm(label))
@@ -129,6 +143,12 @@ jobs:
                   'configured_competitors':sorted(allowed),
                   'source_inventory':source_inventory(slug),
               }
+              if slug=='varna-towers':
+                  src_keys={norm(x.get('key')) for x in store.get(slug,{}).get('sources',[])}
+                  required={'official_site','building','tenants','news','linkedin','google_business','google_news','bpv','varna115','landmark','chayka'}
+                  assert required.issubset(src_keys), ('varna-towers','missing live sources',sorted(required-src_keys))
+                  observations=store.get(slug,{}).get('observations',[])
+                  assert any(norm(x.get('source_key'))=='ownership_2026' and norm(x.get('metric_key'))=='reported_owner_change' for x in observations), ('varna-towers','verified 2026 ownership event missing from durable store')
               for scope in ('brand','competitor'):
                   data=json.loads(Path(f'/tmp/{slug}-{scope}.json').read_text(encoding='utf-8'))
                   assert data.get('client')==slug, (slug,scope,'wrong response client',data.get('client'))
