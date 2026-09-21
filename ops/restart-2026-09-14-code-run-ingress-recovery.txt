@@ -5,3 +5,5 @@ No application logic changes.
 2026-09-21 competitor-monitoring recovery trigger.
 Reason: production runtime remained behind main after Varna Towers competitor collector fixes.
 Expected result: clean redeploy of current main only; canonical service and URL unchanged.
+
+2026-09-21 mobile-nav recovery: force clean redeploy after live 503 / load failure. Keep current Navigator routes and data intact.
