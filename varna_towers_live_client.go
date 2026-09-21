@@ -38,6 +38,15 @@ func canonicalVarnaTowersSources() []Source {
 		{Key: "landmark", Label: "Landmark Centre Varna", URL: "https://www.landmark.bg/landmark-centre-varna", Method: "пряк конкурент · Class A офиси, площи, parking и leasing позициониране", Reliability: .97},
 		{Key: "blacksea_capital", Label: "Black Sea Capital Center", URL: "https://www.blackseacapital.com/", Method: "пряк конкурент · Class A+ офиси, услуги, tenant activity и централна локация", Reliability: .97},
 		{Key: "komfort_business", Label: "Комфорт Бизнес Център", URL: "https://www.komfortbg.com/bg/portfolio/komfort-biznes-tsentr", Method: "пряк конкурент · административни/офис площи, корпоративна видимост и tenant activity", Reliability: .96},
+
+		// External public evidence for the direct competitor set. These sources
+		// keep the competitor timeline populated even when search-engine HTML
+		// changes or temporarily returns no parseable results.
+		{Key: "cmp_bpv_officemap", Label: "Business Park Varna", URL: "https://www.officemap.bg/office/business-park-varna", Method: "външен източник · офис клас, площи, availability и наемни условия", Reliability: .90},
+		{Key: "cmp_landmark_officemap", Label: "Landmark Centre Varna", URL: "https://www.officemap.bg/office/landmark-centre-varna", Method: "външен източник · Class A профил, площи и leasing информация", Reliability: .90},
+		{Key: "cmp_blacksea_sutherland", Label: "Black Sea Capital Center", URL: "https://www.sutherlandglobal.bg/contact/", Method: "външен tenant източник · потвърдена офис локация на Sutherland във Варна", Reliability: .94},
+		{Key: "cmp_komfort_centralpoint_bdc", Label: "Комфорт Бизнес Център", URL: "https://www.bdrc.bg/contact", Method: "външен tenant/location източник · Central Point, Варна", Reliability: .90},
+
 		{Key: "cmp_secondary_varna115", Label: "Varna 115", URL: "https://varna115.com/", Method: "втори конкурентен кръг · офиси, availability и услуги", Reliability: .95},
 		{Key: "cmp_secondary_chayka", Label: "Chaika Center", URL: "https://www.chayka-center.com/bg/", Method: "втори конкурентен кръг · бизнес/търговски площи и tenant mix", Reliability: .93},
 	}
