@@ -97,14 +97,19 @@ func persistedMentionSignals(slug string) []Signal {
 }
 
 func publicMentionInRecentWindow(s Signal) bool {
-	published, ok := parseCompetitorPublished(s.PublishedAt)
-	if !ok {
-		// A newly detected old page must never masquerade as a current mention.
-		// Publication date is therefore mandatory in the public 3-month stream.
+	now := time.Now().UTC()
+	if published, ok := parseCompetitorPublished(s.PublishedAt); ok {
+		return !published.Before(competitorRecentCutoff()) && !published.After(now.Add(48*time.Hour))
+	}
+	// Some public web/social pages expose no machine-readable publication date.
+	// Do not invent one. For those rows, allow the item only when the monitor
+	// itself actually detected it inside the rolling three-month window.
+	detected, err := time.Parse(time.RFC3339, strings.TrimSpace(s.DetectedAt))
+	if err != nil {
 		return false
 	}
-	now := time.Now().UTC()
-	return !published.Before(competitorRecentCutoff()) && !published.After(now.Add(48*time.Hour))
+	detected = detected.UTC()
+	return !detected.Before(competitorRecentCutoff()) && !detected.After(now.Add(48*time.Hour))
 }
 
 func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
@@ -178,15 +183,19 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 			candidates = append(candidates, s)
 		}
 	}
-	// The public chronology is publication-first. DetectedAt is used only as
-	// a deterministic tie-breaker after the mandatory publication date.
-	sort.SliceStable(candidates, func(i, j int) bool {
-		iPub, iOK := parseCompetitorPublished(candidates[i].PublishedAt)
-		jPub, jOK := parseCompetitorPublished(candidates[j].PublishedAt)
-		if iOK && jOK && !iPub.Equal(jPub) {
-			return iPub.After(jPub)
+	// Prefer verified publication time. When a source exposes no publication
+	// timestamp, order by the real monitor detection time instead.
+	effectiveTime := func(s Signal) time.Time {
+		if t, ok := parseCompetitorPublished(s.PublishedAt); ok {
+			return t
 		}
-		return candidates[i].DetectedAt > candidates[j].DetectedAt
+		if t, err := time.Parse(time.RFC3339, strings.TrimSpace(s.DetectedAt)); err == nil {
+			return t.UTC()
+		}
+		return time.Time{}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool {
+		return effectiveTime(candidates[i]).After(effectiveTime(candidates[j]))
 	})
 	if len(candidates) > 300 {
 		candidates = candidates[:300]
