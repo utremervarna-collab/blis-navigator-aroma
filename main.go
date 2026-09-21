@@ -727,6 +727,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return wirelloDashboard(c)
 	case "everbet":
 		return everbetDashboard(c)
+	case "varna-towers":
+		return varnaTowersDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1497,6 +1499,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return runMolloxEngine(c, snapshot)
 	case "everbet":
 		return runEverbetEngine(c, snapshot)
+	case "varna-towers":
+		return runUniversalClientEngineV34(c, snapshot)
 	default:
 		return runAromaEngine(c, snapshot)
 	}
@@ -1583,6 +1587,8 @@ func keywordAnalysis(c *Client) []map[string]interface{} {
 		if reviews > 0 {
 			add("Публични отзиви", "Общ брой видими отзиви в наблюдаваните туристически платформи.", fmt.Sprintf("%.0f отзива", reviews), "Google Hotels, Booking.com, Tripadvisor", "Налични данни", "reputation", reviews)
 		}
+	} else if c.Slug == "varna-towers" {
+		return varnaTowersKeywords(c)
 	} else {
 		news := f(latest(c, "google_search", "news_mentions_30d"))
 		if news > 0 {
