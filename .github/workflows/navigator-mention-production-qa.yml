@@ -105,7 +105,7 @@ jobs:
               out=set()
               for src in store.get(slug,{}).get('sources',[]):
                   key=norm(src.get('key'))
-                  special_varna=slug=='varna-towers' and key in ('bpv','varna115','landmark','chayka')
+                  special_varna=slug=='varna-towers' and key in ('bpv','landmark','blacksea_capital','komfort_business','cmp_secondary_varna115','cmp_secondary_chayka')
                   if key.startswith('cmp_') or key.startswith('competitor_') or special_varna:
                       label=str(src.get('label') or '').strip()
                       if label:
@@ -145,7 +145,7 @@ jobs:
               }
               if slug=='varna-towers':
                   src_keys={norm(x.get('key')) for x in store.get(slug,{}).get('sources',[])}
-                  required={'official_site','building','tenants','news','linkedin','google_business','google_news','bpv','varna115','landmark','chayka'}
+                  required={'official_site','building','tenants','news','linkedin','google_business','google_news','bpv','landmark','blacksea_capital','komfort_business','cmp_secondary_varna115','cmp_secondary_chayka'}
                   assert required.issubset(src_keys), ('varna-towers','missing live sources',sorted(required-src_keys))
                   observations=store.get(slug,{}).get('observations',[])
                   assert any(norm(x.get('source_key'))=='ownership_2026' and norm(x.get('metric_key'))=='reported_owner_change' for x in observations), ('varna-towers','verified 2026 ownership event missing from durable store')
