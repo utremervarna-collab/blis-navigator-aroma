@@ -33,8 +33,11 @@ type competitorRSS struct {
 }
 
 var (
-	competitorTitleRE = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
-	competitorTagRE   = regexp.MustCompile(`(?is)<[^>]+>`)
+	competitorTitleRE  = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
+	competitorScriptRE = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	competitorStyleRE  = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
+	competitorNoScriptRE = regexp.MustCompile(`(?is)<noscript[^>]*>.*?</noscript>`)
+	competitorTagRE    = regexp.MustCompile(`(?is)<[^>]+>`)
 )
 
 func competitorPageText(body string) (string, string) {
@@ -42,13 +45,34 @@ func competitorPageText(body string) (string, string) {
 	if m := competitorTitleRE.FindStringSubmatch(body); len(m) > 1 {
 		title = cleanPostSnippet(html.UnescapeString(m[1]))
 	}
-	plain := html.UnescapeString(competitorTagRE.ReplaceAllString(body, " "))
+	cleaned := competitorScriptRE.ReplaceAllString(body, " ")
+	cleaned = competitorStyleRE.ReplaceAllString(cleaned, " ")
+	cleaned = competitorNoScriptRE.ReplaceAllString(cleaned, " ")
+	plain := html.UnescapeString(competitorTagRE.ReplaceAllString(cleaned, " "))
 	plain = strings.Join(strings.Fields(plain), " ")
 	r := []rune(plain)
 	if len(r) > 6000 {
 		plain = string(r[:6000])
 	}
 	return title, plain
+}
+
+func competitorLooksLikeCode(v string) bool {
+	low := strings.ToLower(strings.TrimSpace(v))
+	if low == "" {
+		return false
+	}
+	codeHits := 0
+	for _, token := range []string{
+		"function(", "function ", "=>", "document.", "window.", "var ", "const ", "let ",
+		"webpack", "__next", "application/ld+json", "font-family:", "background-color:",
+		"display:", "margin:", "padding:", "{", "};", "@media", "stylesheet",
+	} {
+		if strings.Contains(low, token) {
+			codeHits++
+		}
+	}
+	return codeHits >= 2
 }
 
 func competitorAliases(name string) []string {
@@ -277,6 +301,12 @@ func competitorRelevance(c *Client, t competitorSignalTarget, title, text string
 func buildCompetitorSignal(c *Client, t competitorSignalTarget, source, sourceType, rawURL, title, text, published string) (Signal, bool) {
 	title = cleanPostSnippet(title)
 	text = cleanPostSnippet(text)
+	if competitorLooksLikeCode(title) {
+		title = t.Name
+	}
+	if competitorLooksLikeCode(text) {
+		text = title
+	}
 	if text == "" {
 		text = title
 	}
