@@ -34,10 +34,12 @@ func canonicalVarnaTowersSources() []Source {
 
 		// Canonical direct competitors. These keys are already recognized by the
 		// competitor collector and therefore feed news/web/social discovery.
-		{Key: "bpv", Label: "Business Park Varna", URL: "https://www.bpv.bg/", Method: "конкурент · официален сайт, услуги, площи, tenant activity", Reliability: .97},
-		{Key: "varna115", Label: "Varna 115", URL: "https://varna115.com/", Method: "конкурент · официален сайт, офиси, availability и услуги", Reliability: .97},
-		{Key: "landmark", Label: "Landmark Centre Varna", URL: "https://www.landmark.bg/landmark-centre-varna", Method: "конкурент · Class A офиси, площи и leasing позициониране", Reliability: .97},
-		{Key: "chayka", Label: "Chaika Center", URL: "https://www.chayka-center.com/bg/", Method: "конкурент · търговски/бизнес площи, tenant mix и услуги", Reliability: .95},
+		{Key: "bpv", Label: "Business Park Varna", URL: "https://www.bpv.bg/", Method: "пряк конкурент · официален сайт, офис площи, tenant activity, услуги и инвестиции", Reliability: .97},
+		{Key: "landmark", Label: "Landmark Centre Varna", URL: "https://www.landmark.bg/landmark-centre-varna", Method: "пряк конкурент · Class A офиси, площи, parking и leasing позициониране", Reliability: .97},
+		{Key: "blacksea_capital", Label: "Black Sea Capital Center", URL: "https://www.blackseacapital.com/", Method: "пряк конкурент · Class A+ офиси, услуги, tenant activity и централна локация", Reliability: .97},
+		{Key: "komfort_business", Label: "Комфорт Бизнес Център", URL: "https://www.komfortbg.com/bg/portfolio/komfort-biznes-tsentr", Method: "пряк конкурент · административни/офис площи, корпоративна видимост и tenant activity", Reliability: .96},
+		{Key: "cmp_secondary_varna115", Label: "Varna 115", URL: "https://varna115.com/", Method: "втори конкурентен кръг · офиси, availability и услуги", Reliability: .95},
+		{Key: "cmp_secondary_chayka", Label: "Chaika Center", URL: "https://www.chayka-center.com/bg/", Method: "втори конкурентен кръг · бизнес/търговски площи и tenant mix", Reliability: .93},
 	}
 }
 
@@ -305,7 +307,7 @@ func varnaTowersDashboard(c *Client) map[string]interface{} {
 			idx("presence", "Индекс на присъствието", 84.6, "Базова оценка от публичния onboarding; текущите споменавания и източниковата активност се обновяват отделно в live мониторинга.", []interface{}{comp("Brand mentions · 90 дни", brand90, "live"), comp("Позитивни · 90 дни", positive90, "live"), comp("Негативни · 90 дни", negative90, "live")}, "Приет onboarding benchmark + live evidence", []string{"Varna Towers", "Google News", "публичен web"}),
 			idx("reputation", "Индекс на репутацията", 73.1, "Базова репутационна оценка от onboarding; текущият информационен поток и Google listing несъответствието се показват като отделни проверими сигнали.", []interface{}{comp("Google Maps rating", 3.9, "публично"), comp("Google Maps reviews", 355, "публично"), comp("Негативни сигнали · 90 дни", negative90, "live")}, "Измерени публични показатели", []string{"Google Maps", "публични източници"}),
 			idx("digital", "Индекс на дигиталната видимост", 83.2, "Базова оценка на официалния сайт и публичните профили; source health се обновява от live engine.", []interface{}{comp("Официален сайт", "наблюдава се", "live"), comp("LinkedIn", "наблюдава се", "live"), comp("Новини и web", brand90, "90 дни")}, "Публични дигитални източници", []string{"varnatowers.bg", "LinkedIn", "Google News"}),
-			idx("competitive", "Индекс на конкурентната позиция", 76.2, "Сравнителният benchmark е фиксиран към onboarding датата; текущите конкурентни споменавания и развития се обновяват непрекъснато.", []interface{}{comp("Конкурентни сигнали · 90 дни", comp90, "live"), comp("Сравнявани конкуренти", 4, "постоянно наблюдение")}, "Onboarding benchmark + live competitor stream", []string{"Business Park Varna", "Varna 115", "Landmark Centre Varna", "Chaika Center"}),
+			idx("competitive", "Индекс на конкурентната позиция", 76.2, "Сравнителният benchmark е фиксиран към onboarding датата; текущите конкурентни споменавания и развития се обновяват непрекъснато.", []interface{}{comp("Конкурентни сигнали · 90 дни", comp90, "live"), comp("Сравнявани преки конкуренти", 4, "постоянно наблюдение")}, "Onboarding benchmark + live competitor stream", []string{"Business Park Varna", "Landmark Centre Varna", "Black Sea Capital Center", "Комфорт Бизнес Център"}),
 		},
 		"metrics": []interface{}{
 			met("Основно предназначение", "Главно офис център"),
@@ -329,9 +331,9 @@ func varnaTowersDashboard(c *Client) map[string]interface{} {
 		"competitors": []interface{}{
 			vtCompetitorRow("Varna Towers", 76.2),
 			vtCompetitorRow("Business Park Varna", 84.0),
-			vtCompetitorRow("Varna 115", 87.5),
 			vtCompetitorRow("Landmark Centre Varna", 85.5),
-			vtCompetitorRow("Chaika Center", 81.5),
+			vtCompetitorRow("Black Sea Capital Center", 82.0),
+			vtCompetitorRow("Комфорт Бизнес Център", 80.5),
 		},
 		"live_summary": map[string]interface{}{
 			"brand_mentions_90d": brand90,
