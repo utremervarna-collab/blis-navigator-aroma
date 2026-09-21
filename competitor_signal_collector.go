@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"html"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +30,25 @@ type competitorRSS struct {
 			Source      string `xml:"source"`
 		} `xml:"item"`
 	} `xml:"channel"`
+}
+
+var (
+	competitorTitleRE = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
+	competitorTagRE   = regexp.MustCompile(`(?is)<[^>]+>`)
+)
+
+func competitorPageText(body string) (string, string) {
+	title := ""
+	if m := competitorTitleRE.FindStringSubmatch(body); len(m) > 1 {
+		title = cleanPostSnippet(html.UnescapeString(m[1]))
+	}
+	plain := html.UnescapeString(competitorTagRE.ReplaceAllString(body, " "))
+	plain = strings.Join(strings.Fields(plain), " ")
+	r := []rune(plain)
+	if len(r) > 6000 {
+		plain = string(r[:6000])
+	}
+	return title, plain
 }
 
 func competitorAliases(name string) []string {
@@ -376,8 +396,33 @@ func competitorBingSearch(c *Client, t competitorSignalTarget, query, sourceType
 	return parseCompetitorBing(c, t, body, sourceType, platform)
 }
 
+func collectCompetitorDirectSource(c *Client, t competitorSignalTarget) []Signal {
+	raw := strings.TrimSpace(t.URL)
+	if raw == "" {
+		return nil
+	}
+	status, body, _, err := timedFetch(raw, 3*1024*1024)
+	if err != nil || status < 200 || status >= 400 {
+		return nil
+	}
+	title, text := competitorPageText(body)
+	if title == "" {
+		title = t.Name
+	}
+	source := "web"
+	if u, e := url.Parse(raw); e == nil && u.Host != "" {
+		source = strings.TrimPrefix(strings.ToLower(u.Host), "www.")
+	}
+	if s, ok := buildCompetitorSignal(c, t, source, "web", raw, title, text, ""); ok {
+		return []Signal{s}
+	}
+	return nil
+}
+
 func collectCompetitorWeb(c *Client, t competitorSignalTarget) []Signal {
-	return competitorBingSearch(c, t, competitorQuery(c, t), "web", "")
+	out := collectCompetitorDirectSource(c, t)
+	out = append(out, competitorBingSearch(c, t, competitorQuery(c, t), "web", "")...)
+	return out
 }
 
 func collectCompetitorSocial(c *Client, t competitorSignalTarget) []Signal {
