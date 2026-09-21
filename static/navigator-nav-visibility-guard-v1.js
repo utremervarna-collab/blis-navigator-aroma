@@ -31,8 +31,10 @@ function ensureMobileStyle(){
    #blisMobileNav button{min-height:44px;border:1px solid #dfe6ee;border-radius:10px;background:#fff;color:#53657a;padding:8px 10px;display:flex;align-items:center;gap:8px;text-align:left;font-size:11px;font-weight:750;box-shadow:0 1px 2px rgba(16,24,40,.02)}
    #blisMobileNav button.active{border-color:#cbdcff;background:#eef4ff;color:#1766e8}
    #blisMobileNav .navico{width:22px;height:22px;display:grid;place-items:center;flex:0 0 22px;font-size:13px}
-   #blisMobileNav .navtxt{line-height:1.2}
+   #blisMobileNav .navtxt{display:block!important;visibility:visible!important;opacity:1!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:11px!important;font-weight:800!important;color:inherit!important}
+   #blisMobileNav button{grid-template-columns:22px minmax(0,1fr)!important}
  }
+
  `;document.head.appendChild(s);
 }
 function ensureMobileNav(){
