@@ -370,7 +370,9 @@ func bootstrapVarnaTowersLiveMonitoring() {
 		if snapshot != nil {
 			fresh := collectClientSignals(snapshot)
 			for _, target := range competitorSignalTargets(snapshot) {
-				fresh = append(fresh, collectCompetitorSignals(snapshot, target)...)
+				fresh = append(fresh, collectCompetitorNews(snapshot, target)...)
+				fresh = append(fresh, collectCompetitorWeb(snapshot, target)...)
+				fresh = append(fresh, collectCompetitorSocial(snapshot, target)...)
 			}
 			fresh = dedupeSignals(fresh)
 			mergeSignals("varna-towers", fresh)
