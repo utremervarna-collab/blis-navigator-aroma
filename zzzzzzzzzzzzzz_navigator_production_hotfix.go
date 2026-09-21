@@ -90,7 +90,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		// prevents a page renderer from deleting chronology/ticker on startup.
 		body = navigatorLiveRefreshEntrypoint.ReplaceAll(body, nil)
 		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260921-nav1"></script><script src="/navigator-live-refresh-v1.js?v=20260913-fastboot1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260921-nav3"></script><script src="/navigator-live-refresh-v1.js?v=20260913-fastboot1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
