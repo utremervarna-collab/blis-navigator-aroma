@@ -28,7 +28,7 @@ function valid(s,scope,c){const sc=N(s?.scope);return N(s?.client)===c&&(scope==
 function merge(prev,next,scope,c){const m=new Map();for(const s of A(prev)){if(valid(s,scope,c)){const k=key(s);if(k)m.set(k,s)}}for(const s of A(next)){if(!valid(s,scope,c))continue;const k=key(s);if(!k)continue;const old=m.get(k);if(!old||ts(s)>=ts(old))m.set(k,s)}return [...m.values()].sort((a,b)=>ts(b)-ts(a)).slice(0,MAX_ROWS)}
 function state(c){if(!states.has(c))states.set(c,{brand:[],competitor:[],updated:0,error:false});return states.get(c)}
 function cutoff3m(){const d=new Date();d.setMonth(d.getMonth()-LOOKBACK_MONTHS);return d.getTime()}
-function recent3m(rows){const cut=cutoff3m();return A(rows).filter(s=>{const t=publishedTs(s);return t&&t>=cut}).sort((a,b)=>publishedTs(b)-publishedTs(a))}
+function recent3m(rows){const cut=cutoff3m();return A(rows).filter(s=>{const t=ts(s);return t&&t>=cut}).sort((a,b)=>ts(b)-ts(a))}
 function fmt(t){return t?new Date(t).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'без потвърдена дата'}
 function day(t){return t?new Date(t).toLocaleDateString('bg-BG',{day:'2-digit',month:'long',year:'numeric'}):'Без дата'}
 function title(s){return String(s?.title||'Споменаване').replace(/\s+/g,' ').trim()}
@@ -60,15 +60,15 @@ async function refreshMentions(force=false){
 
 function status(st){const x=st.error?'Потокът временно се възстановява':st.updated?`На живо · проверка на 30 сек. · ${fmt(st.updated)}`:'Свързване с потока…';return `<span class="blis-ms-status ${st.error?'warn':'live'}">${E(x)}</span>`}
 function timeline(rows,scope){
-  if(!rows.length)return '<div class="blis-ms-empty">Няма потвърдени споменавания с дата в последните 3 месеца. Потокът остава активен.</div>';
+  if(!rows.length)return '<div class="blis-ms-empty">Няма открити публични споменавания в последните 3 месеца. Потокът остава активен.</div>';
   let ld='';
-  return rows.slice(0,MAX_ROWS).map(s=>{const t=publishedTs(s),d=day(t),newDay=d!==ld;ld=d;const summary=body(s);return `${newDay?`<div class="blis-ms-day">${E(d)}</div>`:''}<article class="blis-ms-event"><i></i><div><div class="blis-ms-meta">${scope==='competitor'?`<span class="blis-ms-brand">${E(brand(s))}</span>`:''}<span>${E(source(s))}</span><time>${E(fmt(t))}</time></div><strong>${E(title(s))}</strong>${summary&&summary!==title(s)?`<p>${E(summary.slice(0,300))}</p>`:''}</div><a href="${E(s.url)}" target="_blank" rel="noopener noreferrer">ИЗТОЧНИК ↗</a></article>`}).join('')
+  return rows.slice(0,MAX_ROWS).map(s=>{const p=publishedTs(s),t=p||ts(s),d=day(t),newDay=d!==ld;ld=d;const summary=body(s),kind=p?'публикувано':'открито';return `${newDay?`<div class="blis-ms-day">${E(d)}</div>`:''}<article class="blis-ms-event"><i></i><div><div class="blis-ms-meta">${scope==='competitor'?`<span class="blis-ms-brand">${E(brand(s))}</span>`:''}<span>${E(source(s))}</span><span>${kind}</span><time>${E(fmt(t))}</time></div><strong>${E(title(s))}</strong>${summary&&summary!==title(s)?`<p>${E(summary.slice(0,300))}</p>`:''}</div><a href="${E(s.url)}" target="_blank" rel="noopener noreferrer">ИЗТОЧНИК ↗</a></article>`}).join('')
 }
 function ticker(rows){
-  if(!rows.length)return '<div class="blis-ms-ticker blis-ms-ticker-empty"><div>Няма потвърдени конкурентни споменавания с дата в последните 3 месеца.</div></div>';
+  if(!rows.length)return '<div class="blis-ms-ticker blis-ms-ticker-empty"><div>Няма открити конкурентни споменавания в последните 3 месеца.</div></div>';
   const groups=new Map();
   for(const s of A(rows)){const b=N(brand(s))||'конкурент';if(!groups.has(b))groups.set(b,[]);groups.get(b).push(s)}
-  const names=[...groups.keys()].sort((a,b)=>publishedTs(groups.get(b)[0])-publishedTs(groups.get(a)[0]));
+  const names=[...groups.keys()].sort((a,b)=>ts(groups.get(b)[0])-ts(groups.get(a)[0]));
   const balanced=[];let round=0,added=true;
   while(balanced.length<24&&added){added=false;for(const n of names){const s=groups.get(n)[round];if(!s)continue;balanced.push(s);added=true;if(balanced.length>=24)break}round++}
   const item=s=>`<a class="blis-ms-ticker-item" href="${E(s.url)}" target="_blank" rel="noopener noreferrer"><b>${E(brand(s))}</b><span>${E(title(s))}</span><small>${E(source(s))}</small></a>`;
@@ -99,7 +99,7 @@ function renderCompetition(){
   const c=client(),st=state(c),rows=recent3m(st.competitor),p=panel('blisCompetitorMentionTimeline','competition');
   if(!mountInPage('competition',p))return;
   const sig=[c,st.updated,st.error,rows.map(key).join('|')].join('::');if(p.dataset.signature===sig)return;p.dataset.signature=sig;
-  p.innerHTML=`<div class="blis-ms-head"><div><h3>Хронология на конкурентните споменавания</h3><p>Проверими публикации за конфигурираните конкуренти само от последните 3 месеца. По-стари публикации не се показват.</p></div>${status(st)}</div>${ticker(rows)}<div class="blis-ms-count" style="padding-top:13px"><b>${rows.length}</b> потвърдени конкурентни споменавания през последните 3 месеца</div><div class="blis-ms-timeline">${timeline(rows,'competitor')}</div>`
+  p.innerHTML=`<div class="blis-ms-head"><div><h3>Хронология на конкурентните споменавания</h3><p>Публични споменавания, публикувани или открити от мониторинга през последните 3 месеца. Когато източникът не дава дата на публикация, се показва датата на откриване.</p></div>${status(st)}</div>${ticker(rows)}<div class="blis-ms-count" style="padding-top:13px"><b>${rows.length}</b> конкурентни споменавания през последните 3 месеца</div><div class="blis-ms-timeline">${timeline(rows,'competitor')}</div>`
 }
 function renderStreams(){css();renderMonitoring();renderCompetition()}
 function scheduleMount(delay=80){clearTimeout(mountTimer);mountTimer=setTimeout(renderStreams,delay)}
