@@ -17,7 +17,7 @@ const ITEMS=[
 function current(){try{return new URLSearchParams(location.search).get('page')||document.querySelector('.page.active')?.id||'overview'}catch(_){return'overview'}}
 function canon(id){const a={signals:'social',live:'social',digital:'social',opportunities:'social',risk:'social',reputation:'market','market-reputation':'market',reports:'history',timeline:'history',development:'history',intelligence:'hub',events:'calendar'};return a[id]||id}
 function navButtons(active){
- return ITEMS.map(x=>'<button type="button" data-n3-page="'+x[0]+'" class="'+(x[0]===active?'active':'')+'"><span class="navico">'+x[1]+'</span><span class="navtxt">'+x[2]+'</span></button>').join('');
+ return ITEMS.map(x=>'<button type="button" data-n3-page="'+x[0]+'" class="'+(x[0]===active?'active':'')+'"><span class="navico">'+x[1]+'</span><span class="blis-mobile-label">'+x[2]+'</span></button>').join('');
 }
 function ensureMobileStyle(){
  if(document.getElementById('blisMobileNavStyle'))return;
@@ -31,7 +31,7 @@ function ensureMobileStyle(){
    #blisMobileNav button{min-height:44px;border:1px solid #dfe6ee;border-radius:10px;background:#fff;color:#53657a;padding:8px 10px;display:flex;align-items:center;gap:8px;text-align:left;font-size:11px;font-weight:750;box-shadow:0 1px 2px rgba(16,24,40,.02)}
    #blisMobileNav button.active{border-color:#cbdcff;background:#eef4ff;color:#1766e8}
    #blisMobileNav .navico{width:22px;height:22px;display:grid;place-items:center;flex:0 0 22px;font-size:13px}
-   #blisMobileNav .navtxt{display:block!important;visibility:visible!important;opacity:1!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:11px!important;font-weight:800!important;color:inherit!important}
+   #blisMobileNav .blis-mobile-label{display:block!important;visibility:visible!important;opacity:1!important;position:static!important;width:auto!important;height:auto!important;max-width:none!important;clip:auto!important;clip-path:none!important;transform:none!important;line-height:1.25!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:11px!important;font-weight:800!important;color:inherit!important;text-indent:0!important}
    #blisMobileNav button{grid-template-columns:22px minmax(0,1fr)!important}
  }
 
