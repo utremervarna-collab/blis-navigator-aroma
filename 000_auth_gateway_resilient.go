@@ -259,6 +259,23 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+	// Public Varna Towers profile. The client stays hidden from the shared
+	// selector, while this canonical route opens the existing Navigator profile
+	// without authentication and locks the rendered dashboard to Varna Towers.
+	if (path == "/varna-towers" || path == "/varna-towers/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		q.Set("client", "varna-towers")
+		q.Set("page", canonicalNavigatorPage(q.Get("page")))
+		q.Del("key")
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Set("X-BLIS-Client-Scope", "varna-towers")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+
 	// Dedicated KUB routes are canonical and deliberately bypass the shared dashboard.
 	// There must never be a dashboard -> KUB -> dashboard redirect cycle.
 	if path == "/kub" || path == "/kub/" {
