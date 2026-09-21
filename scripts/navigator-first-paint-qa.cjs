@@ -50,7 +50,8 @@ async function check(page, client, first, width) {
   await page.waitForTimeout(750);
   for (const id of Object.keys(routes)) {
     if (id !== first) {
-      await page.locator(`#nav [data-n3-page="${id}"]`).click();
+      const navSelector = width <= 820 ? `#blisMobileNav [data-n3-page="${id}"]` : `#nav [data-n3-page="${id}"]`;
+      await page.locator(navSelector).click();
       await page.waitForFunction((wanted) =>
         document.querySelector('.page.active')?.id === wanted &&
         !document.documentElement.classList.contains('blis-route-pending'), id, {timeout: 15000});
@@ -90,6 +91,16 @@ async function check(page, client, first, width) {
       if (!stable.sameRadar || stable.interrupted)
         throw new Error(`background mention refresh interrupted Monitoring: ${JSON.stringify(stable)}`);
     }
+  }
+  if (width <= 820) {
+    const mobileNav = await page.evaluate(() => {
+      const n = document.getElementById('blisMobileNav');
+      if (!n) return {exists:false, visible:false, count:0};
+      const cs = getComputedStyle(n);
+      return {exists:true, visible:cs.display!=='none' && cs.visibility!=='hidden' && cs.opacity!=='0', count:n.querySelectorAll('[data-n3-page]').length};
+    });
+    if (!mobileNav.exists || !mobileNav.visible || mobileNav.count !== 7)
+      throw new Error(`${client}/${width}: mobile navigation unavailable ${JSON.stringify(mobileNav)}`);
   }
   console.log(`FIRST_PAINT_OK ${client} ${first} ${width}`);
 }
@@ -241,7 +252,10 @@ async function checkPublicMentionsContract() {
   try {
     for (const width of [1440, 390]) {
       const context = await browser.newContext({viewport: {width, height: 900}, deviceScaleFactor: 1});
-      for (const [client, first] of [['aroma', 'overview'], ['mollox', 'social']]) {
+      const cases = width <= 820
+        ? [['aroma', 'overview'], ['mollox', 'social'], ['varna-towers', 'overview']]
+        : [['aroma', 'overview'], ['mollox', 'social']];
+      for (const [client, first] of cases) {
         const page = await context.newPage();
         await instrument(page);
         await check(page, client, first, width);
