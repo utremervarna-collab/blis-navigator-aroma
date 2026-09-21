@@ -2,7 +2,9 @@
 (function(){
   'use strict';
 
-  /* Preserve the isolated Varna Towers data runtime, but do not execute its obsolete ticker override. */
+  /* Preserve legacy Varna Towers reference data, but never let the old
+     bootstrap replace live API responses. The backend is now canonical. */
+  const __varnaLiveFetch=window.fetch;
   try{
     const xhr=new XMLHttpRequest();
     xhr.open('GET','/varna-towers-data-v18.js?v=20260819-1329',false);
@@ -15,6 +17,12 @@
       (0,eval)(src);
     }
   }catch(e){console.warn('Varna Towers bootstrap:',e)}
+  finally{
+    // varna-towers-data-v18.js monkey-patched fetch for the old static profile.
+    // Restore the real browser fetch so Monitoring, Competition, history,
+    // sources, refresh and public mention APIs all come from production.
+    if(__varnaLiveFetch)window.fetch=__varnaLiveFetch;
+  }
 
   if(typeof document==='undefined')return;
 
