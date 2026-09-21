@@ -79,6 +79,24 @@ func competitorAliases(name string) []string {
 		addAlias("Calgonit")
 		addAlias("Калгонит")
 		addAlias("Калватис Хигиене България")
+	case "business park varna":
+		addAlias("Бизнес Парк Варна")
+		addAlias("Бизнес парк Варна")
+		addAlias("Business Park Varna")
+	case "landmark centre varna":
+		addAlias("Landmark Center Varna")
+		addAlias("Landmark Centre Varna")
+		addAlias("Лендмарк Център Варна")
+	case "black sea capital center":
+		addAlias("Black Sea Capital Center")
+		addAlias("Black Sea Capital")
+		addAlias("Блек Сий Капитал Център")
+		addAlias("Блек Сий Капитал")
+	case "комфорт бизнес център":
+		addAlias("Комфорт Бизнес Център")
+		addAlias("Komfort Business Center")
+		addAlias("Central Point")
+		addAlias("Central Point Varna")
 	}
 	if len(out) == 0 {
 		addAlias(name)
