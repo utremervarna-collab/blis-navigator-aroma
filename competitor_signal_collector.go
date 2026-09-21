@@ -94,7 +94,14 @@ func competitorSignalTargets(c *Client) []competitorSignalTarget {
 	seen := map[string]bool{}
 	for _, src := range c.Sources {
 		key := strings.ToLower(strings.TrimSpace(src.Key))
-		if !(strings.HasPrefix(key, "cmp_") || strings.HasPrefix(key, "competitor_")) {
+		isCompetitorSource := strings.HasPrefix(key, "cmp_") || strings.HasPrefix(key, "competitor_")
+		if c.Slug == "varna-towers" {
+			switch key {
+			case "bpv", "varna115", "landmark", "chayka":
+				isCompetitorSource = true
+			}
+		}
+		if !isCompetitorSource {
 			continue
 		}
 		// Product-level comparable sources (for example Booking or Untappd)
