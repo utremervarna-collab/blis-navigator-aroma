@@ -26,6 +26,8 @@ func canonicalVarnaTowersSources() []Source {
 		{Key: "google_business", Label: "Google Maps · Varna Towers", URL: "https://www.google.com/maps/search/?api=1&query=Varna+Towers+Varna", Method: "публична локална видимост, статус, оценки и отзиви", Reliability: .90},
 		{Key: "google_news", Label: "Google News · Varna Towers", URL: "https://news.google.com/search?q=Varna%20Towers&hl=bg&gl=BG&ceid=BG%3Abg", Method: "новинарски споменавания", Reliability: .91},
 		{Key: "officemap", Label: "OfficeMAP · Varna Towers", URL: "https://www.officemap.bg/office/varna-towers", Method: "офис клас, площи и паркинг", Reliability: .88},
+		{Key: "ownership_2026", Label: "Mediapool · сделка Varna Towers 2026", URL: "https://www.mediapool.bg/varna-tauars-e-s-nov-sobstvenik-a-na-balgarskiya-pazar-vleze-nov-sporten-brand-news383840.html", Method: "проверена публикация за собственост и пазарен контекст", Reliability: .94},
+		{Key: "bultrako_2025", Label: "Varna Towers · Bultrako Motors showroom", URL: "https://www.varnatowers.bg/en/news/bultrako-motors-returns-to-varna-honda-subaru-moto-morini", Method: "официална новина за tenant/showroom развитие", Reliability: .98},
 		{Key: "registry", Label: "Търговски регистър", URL: "https://portal.registryagency.bg/", Method: "официални фирмени вписвания", Reliability: 1.0},
 		{Key: "municipality", Label: "Община Варна", URL: "https://www.varna.bg/", Method: "градска и институционална среда", Reliability: .95},
 		{Key: "airport", Label: "Летище Варна", URL: "https://varna-airport.bg/", Method: "транспортна достъпност и среда", Reliability: .95},
@@ -90,6 +92,12 @@ func seedVarnaTowersVerifiedFacts(c *Client) {
 	vtSeedObservation(c, "officemap", "office_area_including_common_m2", 18900.0, stamp)
 	vtSeedObservation(c, "officemap", "open_parking_spaces", 250.0, stamp)
 	vtSeedObservation(c, "officemap", "underground_parking_spaces", 550.0, stamp)
+
+	// Official tenant page / official Bultrako Motors news.
+	vtSeedObservation(c, "tenants", "public_tenant_mix", "Honda; Subaru; Moto Morini; AutoUnion; BYV games; Paysafe; Naval Technology Bulgaria; Concentrix; Dance Bulgaria; DXC; Kamenitza; Karate club Nihonto; Yes Rent a Car; Florin Ballet School; Restaurant Tabla; Kramer Confectionery; Rowers Gym; Cafe Bar City; Phone Arena; Tek Experts; Studio Reshovski; MJ Autobox; K-Industria; Art Dance; House Of Steel GYM", stamp)
+	vtSeedObservation(c, "bultrako_2025", "multibrand_showroom_m2", 450.0, stamp)
+	vtSeedObservation(c, "bultrako_2025", "nearby_service_facility_m2", 920.0, stamp)
+	vtSeedObservation(c, "bultrako_2025", "brands", "Honda; Subaru; Moto Morini", stamp)
 
 	// Google currently exposes contradictory index states for the same place:
 	// one result says "Permanently closed", while a fresh Maps result exposes
@@ -310,6 +318,10 @@ func varnaTowersDashboard(c *Client) map[string]interface{} {
 			met("Заетост търговски площи · официален сайт", "8%"),
 			met("Собственост · публично съобщена 28.05.2026", "Двама местни частни инвеститори"),
 			met("Google Maps", "3.9 · 355 отзива · противоречив статус"),
+			met("Автомобилен tenant mix", "Honda · Subaru · Moto Morini · AutoUnion"),
+			met("Корпоративни/технологични наематели", "Paysafe · Naval Technology Bulgaria · Concentrix · DXC · Kamenitza · Tek Experts · K-Industria"),
+			met("Услуги и активности", "BYV games · Dance Bulgaria · Karate Nihonto · Yes Rent a Car · Florin Ballet School · Tabla · Kramer · Rowers · House Of Steel · Art Dance"),
+			met("Bultrako multi-brand showroom", "450 m² · Honda · Subaru · Moto Morini"),
 			met("Адрес", "бул. „Владислав Варненчик“ 256, Варна"),
 			met("Контакт", "+359 89 555 8025 · managervt@ipc.bg"),
 		},
