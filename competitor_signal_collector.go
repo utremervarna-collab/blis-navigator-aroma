@@ -97,7 +97,7 @@ func competitorSignalTargets(c *Client) []competitorSignalTarget {
 		isCompetitorSource := strings.HasPrefix(key, "cmp_") || strings.HasPrefix(key, "competitor_")
 		if c.Slug == "varna-towers" {
 			switch key {
-			case "bpv", "varna115", "landmark", "chayka":
+			case "bpv", "landmark", "blacksea_capital", "komfort_business", "cmp_secondary_varna115", "cmp_secondary_chayka":
 				isCompetitorSource = true
 			}
 		}
@@ -131,7 +131,7 @@ func competitorContextTerms(c *Client) []string {
 	case "mollox":
 		return []string{"хигиена", "почистване", "почистващ", "дезинфекция", "дезинфектант", "hygiene", "cleaning", "disinfection", "detergent"}
 	case "varna-towers":
-		return []string{"варна", "бизнес център", "офиси", "имоти", "real estate", "office", "business center"}
+		return []string{"варна", "бизнес център", "офиси", "офис площи", "наем", "наемател", "имоти", "real estate", "office", "office space", "tenant", "business center"}
 	default:
 		return nil
 	}
