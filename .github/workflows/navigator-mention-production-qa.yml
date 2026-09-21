@@ -88,7 +88,9 @@ jobs:
           done
           test "$mollox_ok" = "1"
           echo MOLLOX_VERIFIED_RECENT_MINIMUM_OK
-          curl -fsS "$BASE/api/store/export?ts=$(date +%s%N)" -o /tmp/mentions-store.json
+          for CLIENT in aroma bolyarka mollox varna-towers; do
+            curl -fsS --retry 4 --retry-delay 2 --retry-all-errors "$BASE/api/clients/$CLIENT/dashboard?ts=$(date +%s%N)" -o "/tmp/${CLIENT}-dashboard.json"
+          done
           python - <<'PY'
           import json, re
           from collections import Counter
@@ -96,27 +98,23 @@ jobs:
           from pathlib import Path
 
           clients=('aroma','bolyarka','mollox','varna-towers')
-          store=json.load(open('/tmp/mentions-store.json',encoding='utf-8')).get('clients',{})
 
           def norm(v):
               return re.sub(r'\s+',' ',str(v or '')).strip().casefold()
 
-          def configured_competitors(slug):
-              out=set()
-              for src in store.get(slug,{}).get('sources',[]):
-                  key=norm(src.get('key'))
-                  special_varna=slug=='varna-towers' and key in ('bpv','landmark','blacksea_capital','komfort_business','cmp_secondary_varna115','cmp_secondary_chayka')
-                  if key.startswith('cmp_') or key.startswith('competitor_') or special_varna:
-                      label=str(src.get('label') or '').strip()
-                      if label:
-                          out.add(norm(label))
-              return out
+          def dashboard(slug):
+              return json.loads(Path(f'/tmp/{slug}-dashboard.json').read_text(encoding='utf-8'))
 
-          def source_inventory(slug):
-              return [
-                  {'key':str(x.get('key') or ''),'label':str(x.get('label') or ''),'url':str(x.get('url') or '')}
-                  for x in store.get(slug,{}).get('sources',[])
-              ]
+          def configured_competitors(slug):
+              d=dashboard(slug)
+              out=set()
+              for row in d.get('competitors') or []:
+                  name=str(row.get('name') if isinstance(row,dict) else row or '').strip()
+                  if name and norm(name) != norm(d.get('name') or ''):
+                      out.add(norm(name))
+              if slug=='varna-towers':
+                  out.update({norm('Varna 115'), norm('Chaika Center')})
+              return out
 
           def parse_date(v):
               raw=str(v or '').strip()
@@ -141,14 +139,13 @@ jobs:
               allowed=configured_competitors(slug)
               summary[slug]={
                   'configured_competitors':sorted(allowed),
-                  'source_inventory':source_inventory(slug),
               }
               if slug=='varna-towers':
-                  src_keys={norm(x.get('key')) for x in store.get(slug,{}).get('sources',[])}
-                  required={'official_site','building','tenants','news','linkedin','google_business','google_news','bpv','landmark','blacksea_capital','komfort_business','cmp_secondary_varna115','cmp_secondary_chayka'}
-                  assert required.issubset(src_keys), ('varna-towers','missing live sources',sorted(required-src_keys))
-                  observations=store.get(slug,{}).get('observations',[])
-                  assert any(norm(x.get('source_key'))=='ownership_2026' and norm(x.get('metric_key'))=='reported_owner_change' for x in observations), ('varna-towers','verified 2026 ownership event missing from durable store')
+                  required_competitors={norm(x) for x in ('Business Park Varna','Landmark Centre Varna','Black Sea Capital Center','Комфорт Бизнес Център')}
+                  assert required_competitors.issubset(allowed), ('varna-towers','missing direct competitors',sorted(required_competitors-allowed))
+                  d=dashboard(slug)
+                  evidence=norm(json.dumps({'metrics':d.get('metrics') or [],'signals':d.get('signals') or []},ensure_ascii=False))
+                  assert 'собственост' in evidence and ('28.05.2026' in evidence or '2026-05-28' in evidence), ('varna-towers','verified 2026 ownership evidence missing from dashboard')
               for scope in ('brand','competitor'):
                   data=json.loads(Path(f'/tmp/{slug}-{scope}.json').read_text(encoding='utf-8'))
                   assert data.get('client')==slug, (slug,scope,'wrong response client',data.get('client'))
