@@ -203,7 +203,18 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 
 	rows := make([]publicClientMention, 0, len(candidates))
 	for _, s := range candidates {
-		rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: s.Title, Text: s.Text, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
+		displayTitle := strings.TrimSpace(s.Title)
+		displayText := strings.TrimSpace(s.Text)
+		if competitorLooksLikeCode(displayTitle) {
+			displayTitle = strings.TrimSpace(s.Brand)
+			if displayTitle == "" {
+				displayTitle = "Конкурентно споменаване"
+			}
+		}
+		if competitorLooksLikeCode(displayText) {
+			displayText = ""
+		}
+		rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: displayTitle, Text: displayText, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
 	}
 	return updated, rows
 }
