@@ -1814,6 +1814,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		// same canonical dashboard assembly to this vanity route as /dashboard.html.
 		if os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") != "1" { b = assembleNavigatorDashboard(b) }
 		b = injectBLISI18N(b)
+		if path == "varna-towers-dashboard" {
+			// Hard isolation is applied at the route source so this page never depends
+			// on gateway/runtime timing to hide navigation outside Varna Towers.
+			isolationHead := []byte(`<style id="vt-dashboard-isolation-source">.dashboard-home-link,.client-switch-menu,#clientSel{display:none!important;visibility:hidden!important;pointer-events:none!important}.client-switch-button{pointer-events:none!important;cursor:default!important}.client-switch-chevron{display:none!important}</style>`)
+			b = bytes.Replace(b, []byte("</head>"), append(isolationHead, []byte("</head>")...), 1)
+			isolationBody := []byte(`<script id="vt-dashboard-isolation-source-script">(function(){function lock(){document.querySelectorAll('.dashboard-home-link,.client-switch-menu,#clientSel').forEach(function(el){el.remove()});var b=document.querySelector('.client-switch-button');if(b){b.setAttribute('aria-expanded','false');b.removeAttribute('aria-haspopup');b.style.setProperty('pointer-events','none','important')}var c=document.querySelector('.client-switch-chevron');if(c)c.remove()}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock,{once:true});else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
+			b = bytes.Replace(b, []byte("</body>"), append(isolationBody, []byte("</body>")...), 1)
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		_, _ = w.Write(b)
