@@ -1,6 +1,7 @@
 const { chromium } = require('playwright');
 
 const origin = process.env.BLIS_QA_ORIGIN || 'http://127.0.0.1:10000';
+const forbiddenPublicKeys = /\b(?:signal_event_|competitor_page_state_|metric_key|source_key|runtime_|internal_|collector_|cmp_(?:primary|secondary)_)[a-z0-9_-]*\b/i;
 const routes = {
   overview: '#overview .ovh-gauge svg',
   social: '#social #digitalBody .dv-radar-wrap .dv-radar-grid',
@@ -63,6 +64,9 @@ async function check(page, client, first, width) {
       error: document.documentElement.classList.contains('blis-dashboard-error')
     }));
     if (state.client !== client || state.error) throw new Error(`${client}/${id}/${width}: wrong client or loading error`);
+    const visibleText = await page.locator('body').innerText();
+    const forbidden = visibleText.match(forbiddenPublicKeys);
+    if (forbidden) throw new Error(`${client}/${id}/${width}: internal key visible in public UI: ${forbidden[0]}`);
     const bad = state.frames.find(frame => frame.visible && (!frame.final || frame.pending));
     if (bad) throw new Error(`${client}/${id}/${width}: intermediate frame ${JSON.stringify(bad)}`);
     if (!state.frames.some(frame => frame.visible && frame.id === id && frame.final))
