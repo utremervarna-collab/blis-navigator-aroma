@@ -78,12 +78,12 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		return nil
 	}
 
-	if path != "/dashboard.html" && path != "/varna-towers" && path != "/" && path != "/index.html" { return nil }
+	if path != "/dashboard.html" && path != "/varna-towers" && path != "/varna-towers-dashboard" && path != "/" && path != "/index.html" { return nil }
 	body, err := io.ReadAll(resp.Body)
 	if err != nil { return err }
 	_ = resp.Body.Close()
-	if path == "/dashboard.html" || path == "/varna-towers" {
-		if path == "/varna-towers" {
+	if path == "/dashboard.html" || path == "/varna-towers" || path == "/varna-towers-dashboard" {
+		if path == "/varna-towers" || path == "/varna-towers-dashboard" {
 			isolation := []byte(`<style id="blis-varna-towers-isolation-v2">.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script id="blis-varna-towers-isolation-v2-script">(function(){function lock(){document.querySelectorAll('.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel').forEach(function(el){try{el.remove()}catch(e){el.style.setProperty('display','none','important')}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock,{once:true});else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(isolation, []byte("</body>")...), 1)
 		}
