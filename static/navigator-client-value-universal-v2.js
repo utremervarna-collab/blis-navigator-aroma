@@ -7,10 +7,13 @@ if(window.__BLIS_CLIENT_VALUE_UNIVERSAL_V2)return;window.__BLIS_CLIENT_VALUE_UNI
 if(!/\/dashboard\.html$/i.test(location.pathname))return;
 const A=v=>Array.isArray(v)?v:[], E=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const num=v=>Number.isFinite(Number(v))?Number(v):null, fmt=v=>num(v)==null?'няма надеждна стойност':num(v).toLocaleString('bg-BG',{maximumFractionDigits:1});
-const tech=/(website_active|profile_active|reachable|response_ms|source_key|metric_key|sitemap_|follower_count|followers|public_platform_profiles|historical observations|snapshots?)/i;
+const tech=/(website_active|profile_active|reachable|response_ms|source_key|metric_key|sitemap_|follower_count|followers|public_platform_profiles|historical observations|snapshots?|signal_event_|competitor_page_state_|runtime_|internal_|collector_|cmp_(?:primary|secondary)_)/i;
+const internalKey=/^(?:signal_event_|competitor_page_state_|runtime_|internal_|collector_|cmp_(?:primary|secondary)_)[a-z0-9_-]*$/i;
+const snakeKey=/^[a-z][a-z0-9]*(?:_[a-z0-9]+){2,}$/i;
 const client=()=>{try{return window.BLISClientUIV3?.current?.()||document.body?.dataset?.client||new URLSearchParams(location.search).get('client')||window.BLIS_INITIAL_CLIENT||'aroma'}catch(_){return' aroma'.trim()}};
 const stamp=x=>{const v=x?.published_at||x?.detected_at||x?.observed_at||x?.created_at||x?.time||x?.date;const t=Date.parse(v||'');return Number.isFinite(t)?t:null};
-const text=x=>[x?.title,x?.label,x?.description,x?.detail,x?.topic,x?.category,x?.kind,x?.metric_key,x?.metric].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+function publicPart(v){const s=String(v||'').replace(/\s+/g,' ').trim();if(!s||internalKey.test(s)||snakeKey.test(s)||tech.test(s))return'';return s}
+const text=x=>[x?.title,x?.label,x?.description,x?.detail,x?.topic,x?.category,x?.kind].map(publicPart).filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
 const indexValue=(p,k)=>{p=p?.payload||p||{};if(k==='blis')return num(p.blis_index);return num(A(p.indices).find(x=>x.key===k)?.value)};
 let cache={k:'',at:0,p:null,data:null};
 async function load(force=false){const k=client();if(!force&&cache.k===k&&cache.data&&Date.now()-cache.at<45000)return cache.data;if(cache.p&&cache.k===k)return cache.p;cache.k=k;cache.p=Promise.all([
@@ -21,7 +24,7 @@ async function load(force=false){const k=client();if(!force&&cache.k===k&&cache.
  fetch(`/api/signals?client=${encodeURIComponent(k)}&limit=500&_=${Date.now()}`,{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}))
  ]).then(([d,s,a,h,g])=>{const sig=[...A(d.signals),...A(g.signals)].filter((x,i,z)=>z.findIndex(y=>(y.id||y.url||text(y))===(x.id||x.url||text(x)))===i);cache.data={k,d,s:A(s),a:A(a),h:A(h),sig};cache.at=Date.now();cache.p=null;return cache.data});return cache.p}
 function previous(d){const xs=d.h.map(x=>({t:stamp(x),p:x.payload||x})).filter(x=>x.t).sort((a,b)=>a.t-b.t);if(!xs.length)return null;const target=Date.now()-30*864e5;return xs.reduce((best,x)=>Math.abs(x.t-target)<Math.abs(best.t-target)?x:best,xs[0])}
-function usefulRows(d){return [...d.sig,...d.a].filter(x=>{const t=text(x);return t&&!tech.test(t)}).sort((a,b)=>(stamp(b)||0)-(stamp(a)||0))}
+function usefulRows(d){return [...d.sig,...d.a].filter(x=>{const t=text(x);return !!t}).sort((a,b)=>(stamp(b)||0)-(stamp(a)||0))}
 const patterns={social:/social|facebook|instagram|linkedin|youtube|tiktok|публикац|engagement|реакц|коментар/i,digital:/digital|search|site|web|ecommerce|търсен|откриваем|продуктова страница/i,reputation:/reputation|rating|review|репутац|отзив|оценк|жалб|sentiment/i,market:/market|пазар|категор|интерес|регулац|сектор|цена|търсене/i,competition:/compet|конкур|campaign|кампан|промоц|share of voice/i};
 function rowsFor(d,page){const re=patterns[page];return re?usefulRows(d).filter(x=>re.test(text(x))):usefulRows(d)}
 function delta(d,k){const p=previous(d),now=indexValue(d.d,k),old=indexValue(p?.p,k);return now!=null&&old!=null?now-old:null}
