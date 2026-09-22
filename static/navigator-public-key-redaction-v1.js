@@ -39,9 +39,22 @@ function cleanElement(el){
    el.setAttribute('aria-hidden','true');
  }
 }
+function cleanupContainers(root=document){
+ root.querySelectorAll?.('.cvu2-row').forEach(row=>{
+   const value=row.querySelector('span');
+   if(!value||!(value.textContent||'').trim())row.remove();
+ });
+ root.querySelectorAll?.('.cvu2-cell p').forEach(p=>{
+   let t=(p.textContent||'').replace(/\s+/g,' ').trim();
+   if(/^Най-новото релевантно наблюдение е\s*[„"']?\s*[”"']?[.!]?\s*(?:Още\s+\d+\s+релевантни сигнала.*)?$/i.test(t)){
+     p.textContent='Няма достатъчно съдържателно публично наблюдение за защитим извод.';
+   }
+ });
+}
 function scan(root=document){
  if(root.nodeType===1)cleanElement(root);
  root.querySelectorAll?.('*').forEach(cleanElement);
+ cleanupContainers(root);
 }
 function init(){
  scan();
