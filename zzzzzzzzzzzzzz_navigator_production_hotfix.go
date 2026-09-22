@@ -94,7 +94,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
 		body = navigatorClientValueUniversalEntrypoint.ReplaceAll(body, nil)
 		body = navigatorPublicKeyRedactionEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260921-nav3"></script><script src="/navigator-live-refresh-v1.js?v=20260922-cleancompetitor1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260922-vthome1"></script><script src="/navigator-live-refresh-v1.js?v=20260922-cleancompetitor1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
@@ -102,9 +102,12 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		}
 		resp.Header.Set("X-BLIS-Navigator-Build", "20260913-fastboot1")
 	} else {
-		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
-		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
-		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="/dashboard.html?client=aroma&page=overview"`))
+		homeTarget := "/dashboard.html?client=aroma&page=overview"
+		if strings.EqualFold(resp.Request.URL.Query().Get("client"), "varna-towers") { homeTarget = "/varna-towers" }
+		body = bytes.ReplaceAll(body, []byte(`href="/client-access.html?v=20260829-neutral2"`), []byte(`href="`+homeTarget+`"`))
+		body = bytes.ReplaceAll(body, []byte(`href="/client-login?generic=1"`), []byte(`href="`+homeTarget+`"`))
+		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html"`), []byte(`href="`+homeTarget+`"`))
+		body = bytes.ReplaceAll(body, []byte(`href="/dashboard.html?client=aroma&page=overview"`), []byte(`href="`+homeTarget+`"`))
 	}
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	resp.ContentLength = int64(len(body))
