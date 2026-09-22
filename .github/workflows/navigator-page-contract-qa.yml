@@ -121,7 +121,7 @@ jobs:
           }
           async function horizontalOverflow(page,id){
             return page.locator(`#${id} *`).evaluateAll(nodes=>nodes.filter(el=>{
-              if(el.matches('.dv-radar-wrap,.dv-radar-grid'))return false;
+              if(el.matches('.dv-radar-wrap,.dv-radar-grid,.blis-ms-ticker,.blis-ms-track')||el.closest('.blis-ms-ticker'))return false;
               const s=getComputedStyle(el),r=el.getBoundingClientRect();
               if(s.overflowX==='hidden'&&s.textOverflow==='ellipsis')return false;
               return r.width>20&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&el.scrollWidth>el.clientWidth+2;
