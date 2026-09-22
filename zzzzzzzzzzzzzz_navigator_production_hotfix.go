@@ -78,11 +78,11 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		return nil
 	}
 
-	if path != "/dashboard.html" && path != "/" && path != "/index.html" { return nil }
+	if path != "/dashboard.html" && path != "/varna-towers" && path != "/" && path != "/index.html" { return nil }
 	body, err := io.ReadAll(resp.Body)
 	if err != nil { return err }
 	_ = resp.Body.Close()
-	if path == "/dashboard.html" {
+	if path == "/dashboard.html" || path == "/varna-towers" {
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
