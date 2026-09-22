@@ -84,8 +84,8 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	_ = resp.Body.Close()
 	if path == "/dashboard.html" || path == "/varna-towers" {
 		if path == "/varna-towers" {
-			body = bytes.ReplaceAll(body, []byte(`<a class="dashboard-home-link" href="/" aria-label="Към началния екран"><span class="home-arrow">←</span><span>Начален екран</span></a>`), nil)
-			body = bytes.ReplaceAll(body, []byte(`<div class="client-switch">`), []byte(`<div class="client-switch" style="display:none!important" aria-hidden="true">`))
+			isolation := []byte(`<style id="blis-varna-towers-isolation-v2">.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script id="blis-varna-towers-isolation-v2-script">(function(){function lock(){document.querySelectorAll('.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel').forEach(function(el){try{el.remove()}catch(e){el.style.setProperty('display','none','important')}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock,{once:true});else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
+			body = bytes.Replace(body, []byte("</body>"), append(isolation, []byte("</body>")...), 1)
 		}
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
