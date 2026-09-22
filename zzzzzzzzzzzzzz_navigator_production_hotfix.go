@@ -97,7 +97,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
 		body = navigatorClientValueUniversalEntrypoint.ReplaceAll(body, nil)
 		body = navigatorPublicKeyRedactionEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260922-vthome1"></script><script src="/navigator-live-refresh-v1.js?v=20260922-cleancompetitor2"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260913-fastboot1"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260922-vthome2"></script><script src="/navigator-live-refresh-v1.js?v=20260922-cleancompetitor2"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
