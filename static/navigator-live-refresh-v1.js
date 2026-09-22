@@ -52,22 +52,11 @@ function cleanBody(s){
     /\bКарта и Локация\b/gi,/\bОфертни наемни нива\b/gi
   ];
   junk.forEach(r=>{x=x.replace(r,' ')});
-  x=x.replace(/https?:\/\/\S+/gi,' ').replace(/\b(?:Telephone|Phone|E-mail|web):?\s*[^,;|]+/gi,' ');
-  const t=cleanTitle(s),b=brand(s);
-  [t,b].filter(Boolean).sort((a,b)=>b.length-a.length).forEach(v=>{
-    const esc=v.replace(/[.*+?^$()|[\]\\{}]/g,'\\function title(s){return String(s?.title||'Споменаване').replace(/\s+/g,' ').trim()}
-function body(s){return String(s?.text||'').replace(/\s+/g,' ').trim()}
-function source(s){return String(s?.source||'Неуточнен източник').replace(/\s+/g,' ').trim()}
-function brand(s){return String(s?.brand||'Конкурент').replace(/\s+/g,' ').trim()}');
-    x=x.replace(new RegExp(esc,'gi'),' ');
-  });
+  x=x.replace(/https?:\/\/\S+/gi,' ');
+  x=x.replace(/\b(?:Telephone|Phone|E-mail|web):?\s*[^,;|]+/gi,' ');
   x=x.replace(/\s*\|\s*/g,' · ').replace(/\s{2,}/g,' ').replace(/^[·,;:\-–—\s]+|[·,;:\-–—\s]+$/g,'').trim();
   if(x.length<45)return'';
-  const words=x.split(' ');
-  const seen=new Set(),out=[];
-  for(const w of words){const k=N(w).replace(/[^a-zа-я0-9]+/gi,'');if(k&&seen.has(k)&&w.length>5)continue;if(k)seen.add(k);out.push(w)}
-  x=out.join(' ').replace(/\s+/g,' ').trim();
-  return x.length>=45?x.slice(0,240).replace(/\s+\S*$/,'').trim():'';
+  return x.slice(0,240).replace(/\s+\S*$/,'').trim();
 }
 function title(s){return cleanTitle(s)}
 function body(s){return cleanBody(s)}
