@@ -6,6 +6,7 @@ if(window.__BLIS_PUBLIC_KEY_REDACTION_V1)return;
 window.__BLIS_PUBLIC_KEY_REDACTION_V1=true;
 
 const exact=/^(?:competitor_page_state|signal_event|runtime_|internal_|collector_|source_key|metric_key|cmp_(?:primary|secondary))[_a-z0-9-]*$/i;
+const inlineInternal=/\b(?:signal_event|competitor_page_state|runtime|internal|collector|cmp_(?:primary|secondary))[_a-z0-9-]*\b/gi;
 const generic=/\b[a-z][a-z0-9]*(?:_[a-z0-9]+){3,}\b/gi;
 const protectedTags=new Set(['SCRIPT','STYLE','NOSCRIPT','CODE','PRE','TEXTAREA','INPUT','SELECT','OPTION']);
 
@@ -18,7 +19,7 @@ function internal(v){
 function cleanText(v){
  const s=String(v||'');
  if(internal(s))return '';
- return s.replace(generic,m=>internal(m)?'':m).replace(/[ \t]{2,}/g,' ').trim();
+ return s.replace(inlineInternal,'').replace(generic,m=>internal(m)?'':m).replace(/[ \t]{2,}/g,' ').replace(/„\s*“/g,'').trim();
 }
 function cleanElement(el){
  if(!el||el.nodeType!==1||protectedTags.has(el.tagName))return;
