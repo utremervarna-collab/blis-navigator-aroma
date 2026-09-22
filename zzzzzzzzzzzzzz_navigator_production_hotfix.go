@@ -83,6 +83,9 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 	if err != nil { return err }
 	_ = resp.Body.Close()
 	if path == "/dashboard.html" || path == "/varna-towers" {
+		if path == "/varna-towers" {
+			body = bytes.ReplaceAll(body, []byte(`href="/" aria-label="Към началния екран"`), []byte(`href="/?client=varna-towers" aria-label="Към началния екран"`))
+		}
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
