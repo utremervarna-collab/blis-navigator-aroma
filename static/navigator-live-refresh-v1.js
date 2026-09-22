@@ -31,10 +31,46 @@ function cutoff3m(){const d=new Date();d.setMonth(d.getMonth()-LOOKBACK_MONTHS);
 function recent3m(rows){const cut=cutoff3m();return A(rows).filter(s=>{const t=ts(s);return t&&t>=cut}).sort((a,b)=>ts(b)-ts(a))}
 function fmt(t){return t?new Date(t).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'без потвърдена дата'}
 function day(t){return t?new Date(t).toLocaleDateString('bg-BG',{day:'2-digit',month:'long',year:'numeric'}):'Без дата'}
-function title(s){return String(s?.title||'Споменаване').replace(/\s+/g,' ').trim()}
-function body(s){return String(s?.text||'').replace(/\s+/g,' ').trim()}
 function source(s){return String(s?.source||'Неуточнен източник').replace(/\s+/g,' ').trim()}
 function brand(s){return String(s?.brand||'Конкурент').replace(/\s+/g,' ').trim()}
+function cleanTitle(s){
+  let t=String(s?.title||'Споменаване').replace(/\s+/g,' ').trim();
+  const b=brand(s);
+  if(/^офиси под наем/i.test(t)&&b&&N(t).includes(N(b)))t='Офиси под наем — '+b;
+  t=t.replace(/\b(Home|Начало)\s*[-–—|:]?\s*(Black Sea Capital(?: Center)?|Business Park Varna|Landmark Centre Varna)\b/i,'$2');
+  return t||'Споменаване';
+}
+function cleanBody(s){
+  let x=String(s?.text||'').replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim();
+  if(!x)return'';
+  const junk=[
+    /\bВход\b/gi,/\bРегистрация\b/gi,/\bМоите предпочитания\b/gi,
+    /\bГенерирай карта\b/gi,/\bСравни\b/gi,/\bПопитай за избраните офис проекти\b/gi,
+    /\bДруги услуги\b/gi,/\bконтакт BG\s*\|\s*EN\b/gi,/\bСлед влизане\b/gi,
+    /\bНачало\b/gi,/\bПроекти\b/gi,/\bНовини\b/gi,/\bЗа нас\b/gi,
+    /\bПродажби\b/gi,/\bКонтакти\b/gi,/\bБългарски\b/gi,/\bEnglish\b/gi,/\bРусский\b/gi,
+    /\bКарта и Локация\b/gi,/\bОфертни наемни нива\b/gi
+  ];
+  junk.forEach(r=>{x=x.replace(r,' ')});
+  x=x.replace(/https?:\/\/\S+/gi,' ').replace(/\b(?:Telephone|Phone|E-mail|web):?\s*[^,;|]+/gi,' ');
+  const t=cleanTitle(s),b=brand(s);
+  [t,b].filter(Boolean).sort((a,b)=>b.length-a.length).forEach(v=>{
+    const esc=v.replace(/[.*+?^$()|[\]\\{}]/g,'\\function title(s){return String(s?.title||'Споменаване').replace(/\s+/g,' ').trim()}
+function body(s){return String(s?.text||'').replace(/\s+/g,' ').trim()}
+function source(s){return String(s?.source||'Неуточнен източник').replace(/\s+/g,' ').trim()}
+function brand(s){return String(s?.brand||'Конкурент').replace(/\s+/g,' ').trim()}');
+    x=x.replace(new RegExp(esc,'gi'),' ');
+  });
+  x=x.replace(/\s*\|\s*/g,' · ').replace(/\s{2,}/g,' ').replace(/^[·,;:\-–—\s]+|[·,;:\-–—\s]+$/g,'').trim();
+  if(x.length<45)return'';
+  const words=x.split(' ');
+  const seen=new Set(),out=[];
+  for(const w of words){const k=N(w).replace(/[^a-zа-я0-9]+/gi,'');if(k&&seen.has(k)&&w.length>5)continue;if(k)seen.add(k);out.push(w)}
+  x=out.join(' ').replace(/\s+/g,' ').trim();
+  return x.length>=45?x.slice(0,240).replace(/\s+\S*$/,'').trim():'';
+}
+function title(s){return cleanTitle(s)}
+function body(s){return cleanBody(s)}
 
 async function fetchScope(c,scope){
   const r=await nativeFetch(`/api/public/mentions?client=${encodeURIComponent(c)}&scope=${scope}&limit=${MAX_ROWS}&_=${Date.now()}`,{cache:'no-store',headers:{Accept:'application/json'},credentials:'same-origin'});
