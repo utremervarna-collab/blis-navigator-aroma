@@ -45,7 +45,15 @@ function ensureMobileNav(){
  const active=canon(current());
  m.innerHTML='<div class="blis-mobile-nav-title"><span>Профил</span><strong>'+((document.querySelector('.client-brand-name')?.textContent||'BLIS Navigator'))+'</strong></div><div class="blis-mobile-nav-grid">'+navButtons(active)+'</div>';
 }
+function preserveHomeContext(){
+ try{
+   const client=String(window.BLISClientUIV3?.current?.()||new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'').toLowerCase();
+   const home=document.querySelector('.dashboard-home-link');
+   if(home&&client==='varna-towers')home.setAttribute('href','/?client=varna-towers');
+ }catch(_){}
+}
 function paint(){
+ preserveHomeContext();
  const side=document.querySelector('.side'),nav=document.getElementById('nav');
  if(!side||!nav){ensureMobileNav();return false}
  side.style.setProperty('display','flex','important');
