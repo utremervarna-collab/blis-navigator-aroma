@@ -1807,6 +1807,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		signalHealthHandler(w, r)
 		return
 	}
+	if path == "varna-towers" {
+		b, err := staticFS.ReadFile("static/dashboard.html")
+		if err != nil { http.NotFound(w, r); return }
+		// Keep the public client URL clean. The production gateway applies the
+		// same canonical dashboard assembly to this vanity route as /dashboard.html.
+		if os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") != "1" { b = assembleNavigatorDashboard(b) }
+		b = injectBLISI18N(b)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		_, _ = w.Write(b)
+		return
+	}
 	if path == "" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(injectBLISI18N([]byte(indexHTML)))
