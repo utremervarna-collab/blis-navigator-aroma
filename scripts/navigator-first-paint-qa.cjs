@@ -67,6 +67,8 @@ async function check(page, client, first, width) {
     const visibleText = await page.locator('body').innerText();
     const forbidden = visibleText.match(forbiddenPublicKeys);
     if (forbidden) throw new Error(`${client}/${id}/${width}: internal key visible in public UI: ${forbidden[0]}`);
+    const rawFeedVisible = await page.locator('.cvu2-feed:visible,.cvu2-row:visible').count();
+    if (rawFeedVisible) throw new Error(`${client}/${id}/${width}: low-level client-value feed visible`);
     const bad = state.frames.find(frame => frame.visible && (!frame.final || frame.pending));
     if (bad) throw new Error(`${client}/${id}/${width}: intermediate frame ${JSON.stringify(bad)}`);
     if (!state.frames.some(frame => frame.visible && frame.id === id && frame.final))
