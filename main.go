@@ -1807,7 +1807,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		signalHealthHandler(w, r)
 		return
 	}
-	if path == "varna-towers" {
+	if path == "varna-towers" || path == "varna-towers-dashboard" {
 		b, err := staticFS.ReadFile("static/dashboard.html")
 		if err != nil { http.NotFound(w, r); return }
 		// Keep the public client URL clean. The production gateway applies the
