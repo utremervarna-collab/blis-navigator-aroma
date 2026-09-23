@@ -74,7 +74,7 @@ function go(id){
  if(window.BLISNavigator3ArchitectureV1?.go){window.BLISNavigator3ArchitectureV1.go(id);return}
  const u=new URL(location.href);u.searchParams.set('page',id);location.href=u.pathname+u.search;
 }
-document.addEventListener('click',e=>{const b=e.target.closest?.('#nav [data-n3-page],#blisMobileNav [data-n3-page]');if(!b)return;e.preventDefault();e.stopPropagation();go(b.dataset.n3Page);setTimeout(paint,30)},true);
+document.addEventListener('click',e=>{const home=e.target.closest?.('.dashboard-home-link');if(home){const client=String(window.BLISClientUIV3?.current?.()||new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'').toLowerCase();if(client==='delta-planet'){e.preventDefault();e.stopPropagation();location.href='/?client=delta-planet';return}}const b=e.target.closest?.('#nav [data-n3-page],#blisMobileNav [data-n3-page]');if(!b)return;e.preventDefault();e.stopPropagation();go(b.dataset.n3Page);setTimeout(paint,30)},true);
 function pulse(){paint();[120,400,1000,2200].forEach(ms=>setTimeout(paint,ms))}
 window.addEventListener('blis:production-ready',pulse);
 window.addEventListener('blis:clientdata',pulse);
