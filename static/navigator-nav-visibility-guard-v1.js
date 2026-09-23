@@ -49,7 +49,7 @@ function preserveHomeContext(){
  try{
    const client=String(window.BLISClientUIV3?.current?.()||new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'').toLowerCase();
    const home=document.querySelector('.dashboard-home-link');
-   if(home&&client==='varna-towers')home.setAttribute('href','/?client=varna-towers');
+   if(home&&client==='varna-towers')home.setAttribute('href','/?client=varna-towers');else if(home&&client==='delta-planet')home.setAttribute('href','/?client=delta-planet');
  }catch(_){}
 }
 function paint(){
