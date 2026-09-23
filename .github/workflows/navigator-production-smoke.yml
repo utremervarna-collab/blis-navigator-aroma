@@ -120,6 +120,10 @@ jobs:
           test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
           grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
           test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
+          test "$(curl -sS -D /tmp/delta.headers -o /tmp/delta.html -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")" = "200"
+          grep -Eqi 'Delta Planet Mall|delta-planet' /tmp/delta.html
+          test "$(curl -sS -o /tmp/delta.json -w '%{http_code}' "$BASE/api/clients/delta-planet/dashboard?ts=$(date +%s)")" = "200"
+          grep -q '"name":"Delta Planet Mall"' /tmp/delta.json
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
