@@ -124,6 +124,16 @@ jobs:
           grep -Eqi 'Delta Planet Mall|delta-planet' /tmp/delta.html
           test "$(curl -sS -o /tmp/delta.json -w '%{http_code}' "$BASE/api/clients/delta-planet/dashboard?ts=$(date +%s)")" = "200"
           grep -q '"name":"Delta Planet Mall"' /tmp/delta.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/delta.json',encoding='utf-8'))
+          assert float(d.get('blis_index',0))>0, f"Delta BLIS index must be > 0, got {d.get('blis_index')}"
+          assert d.get('client')=='delta-planet' or d.get('slug')=='delta-planet', d
+          print('DELTA_BLIS_OK', d.get('blis_index'), d.get('confidence'))
+          PY
+          test "$(curl -sS -o /tmp/delta-home.html -w '%{http_code}' "$BASE/?client=delta-planet&ts=$(date +%s)")" = "200"
+          grep -q 'blis-home-client-context' /tmp/delta-home.html
+          grep -q '/delta-planet' /tmp/delta-home.html
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
