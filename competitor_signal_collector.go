@@ -204,6 +204,8 @@ func competitorContextTerms(c *Client) []string {
 		return []string{"хигиена", "почистване", "почистващ", "дезинфекция", "дезинфектант", "hygiene", "cleaning", "disinfection", "detergent"}
 	case "varna-towers":
 		return []string{"варна", "бизнес център", "офиси", "офис площи", "наем", "наемател", "имоти", "real estate", "office", "office space", "tenant", "business center"}
+	case "delta-planet":
+		return []string{"варна", "мол", "търговски център", "магазин", "наемател", "retail", "shopping mall", "shopping center", "tenant", "кино", "развлечения", "промоции", "събития"}
 	default:
 		return nil
 	}
