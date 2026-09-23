@@ -22,7 +22,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "mollox", "wirello", "everbet", "kub", "black-sea-center":
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center":
 		return true
 	default:
 		return false
@@ -272,6 +272,21 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		q.Del("key")
 		r2.URL.RawQuery = q.Encode()
 		r2.Header.Set("X-BLIS-Client-Scope", "varna-towers")
+		authProxy.ServeHTTP(w, r2)
+		return
+	}
+
+	// Public Delta Planet Mall profile. Canonical vanity route mapped by the
+	// external gateway to the shared Navigator while hard-selecting Delta.
+	if (path == "/delta-planet" || path == "/delta-planet/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		q.Set("client", "delta-planet")
+		q.Set("page", canonicalNavigatorPage(q.Get("page")))
+		q.Del("key")
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Set("X-BLIS-Client-Scope", "delta-planet")
 		authProxy.ServeHTTP(w, r2)
 		return
 	}
