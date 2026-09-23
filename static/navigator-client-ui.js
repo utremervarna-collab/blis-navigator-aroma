@@ -12,12 +12,13 @@ const clients={
   bolyarka:{bg:'Болярка ВТ АД',en:'BOLYARKA',typeBg:'Пивоварна компания',typeEn:'Brewery',visible:true},
   'astor-garden':{bg:'Astor Garden Hotel',en:'Astor Garden Hotel',typeBg:'Хотелиерство',typeEn:'Hospitality',visible:false},
   'varna-towers':{bg:'Varna Towers',en:'Varna Towers',typeBg:'Недвижими имоти',typeEn:'Real estate',visible:false},
+  'delta-planet':{bg:'Delta Planet Mall',en:'Delta Planet Mall',typeBg:'Търговски център · retailtainment',typeEn:'Shopping centre · retailtainment',visible:true},
   mollox:{bg:'MOLLOX България',en:'MOLLOX Bulgaria',typeBg:'Професионална хигиена',typeEn:'Professional hygiene',visible:true},
   wirello:{bg:'Wirello Market',en:'Wirello Market',typeBg:'Модерен ритейл',typeEn:'Retail',visible:true},
   everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',visible:false},
   'black-sea-center':{bg:'Black Sea Center',en:'Black Sea Center',typeBg:'Бизнес и търговски комплекс',typeEn:'Business & retail complex',visible:false}
 };
-const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','wirello'];
+const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','wirello'];
 const valid=k=>!!clients[k];
 let ownerMode=false;
 let sessionClient='';
