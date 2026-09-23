@@ -8,7 +8,21 @@ function forceBulgarianEarly(){document.documentElement.lang='bg';document.docum
 forceBulgarianEarly();
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
+const requestedClient=urlClient();
 if(document.body){document.body.dataset.client=initialClient;document.body.dataset.navigatorBuild=VERSION}window.BLIS_INITIAL_CLIENT=initialClient;window.slug=initialClient;
+function enforceRequestedClient(){
+  if(!requestedClient||!document.body)return;
+  const live=urlClient();
+  if(live!==requestedClient)return;
+  if(document.body.dataset.client!==requestedClient)document.body.dataset.client=requestedClient;
+  if(window.BLIS_INITIAL_CLIENT!==requestedClient)window.BLIS_INITIAL_CLIENT=requestedClient;
+  if(window.slug!==requestedClient)window.slug=requestedClient;
+  const sel=document.getElementById('clientSel');if(sel&&[...sel.options].some(o=>o.value===requestedClient)&&sel.value!==requestedClient)sel.value=requestedClient;
+}
+if(requestedClient&&document.body){
+  enforceRequestedClient();
+  new MutationObserver(enforceRequestedClient).observe(document.body,{attributes:true,attributeFilter:['data-client']});
+}
 function reset(n){try{window[n]=false}catch(_){}}
 ['__BLIS_REFERENCE_V16','__BLIS_REFERENCE_V17','__BLIS_REFERENCE_V18','__BLIS_CLIENT_UI_V3','__BLIS_CLIENT_HEADER_V1','__BLIS_CLIENT_HEADER_V2','__BLIS_CLIENT_BRANDING_V3','__BLIS_CLIENT_BRANDING_V4','__BLIS_CLIENT_BRANDING_V5','__BLIS_DATA_LOADER_V1','__BLIS_INTELLIGENCE_STREAM_V3','__BLIS_CLIENT_PERSPECTIVE_CLASSIFIER_V1','__BLIS_RISK_PRIORITY_SYNC_V1','__BLIS_EXECUTIVE_DATA_V1','__BLIS_EXECUTIVE_REPORTS_V1','__BLIS_COLOR_SYSTEM_V1','__BLIS_VISUAL_SUITE_V1','__BLIS_VISUAL_SUITE_MOTION_V1','__BLIS_VISUAL_SPECIAL_V2','__BLIS_NO_PAGE_NUMBERS_V1','__BLIS_OVERVIEW_CLIENT_HOME_V1','__BLIS_OVERVIEW_MARKER_FIX_V1','__BLIS_LANGUAGE_CLEANUP_V1','__BLIS_SYSTEM_STRUCTURE_V3','__BLIS_SYSTEM_STRUCTURE_V4','__BLIS_SYSTEM_STRUCTURE_V5','__BLIS_NAVIGATOR_3_CLIENT_CLARITY_V1','__BLIS_NAVIGATOR_3_EVIDENCE_V1','__BLIS_NAVIGATOR_3_COMPETITOR_DOSSIER_V1','__BLIS_NAVIGATOR_3_CLIENT_PROOF_V1','__BLIS_NAVIGATOR_3_ARCHITECTURE_V1','__BLIS_NAVIGATOR_3_VISUAL_PRESERVATION_V1','__BLIS_NAVIGATOR_3_PAGE_CONTRACT_V1'].forEach(reset);
 function loadStyle(src){return new Promise((resolve,reject)=>{const l=document.createElement('link');l.rel='stylesheet';l.href=src+'?v='+VERSION;l.dataset.blisCanonicalStyle='1';l.onload=resolve;l.onerror=()=>reject(new Error('CSS: '+src));document.head.appendChild(l)})}
@@ -92,6 +106,7 @@ async function boot(){
  window.addEventListener('blis:clientdata',e=>{const next=e.detail?.client||document.body?.dataset.client;if(next&&next!==paintedClient){paintedClient=next;holdRoute();scheduleVisualContract()}});
  document.addEventListener('click',e=>{if(e.target.closest?.('.client-option'))holdRoute()},true);
  document.documentElement.dataset.navigatorUi='navigator3-globe-key-factors';
+ enforceRequestedClient();
  window.dispatchEvent(new CustomEvent('blis:production-ready',{detail:{client:initialClient,page:activeRoute(),version:VERSION}}));
  setTimeout(()=>{forceBulgarianEarly();window.BLISClientPerspectiveClassifierV1?.repaint?.();window.BLISClientBrandingV5?.paint?.();window.BLISOverviewMarkerFixV1?.align?.();window.BLISColorSystemV1?.decorate?.();window.BLISNoPageNumbersV1?.clean?.();window.BLISLanguageCleanupV1?.clean?.();window.BLISNavigator3ClientClarity?.decorate?.();window.BLISNavigator3ClientProofV1?.decorate?.();window.BLISNavigator3ArchitectureV1?.render?.();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();scheduleVisualContract();waitForFinalPaint()},120);
 }
