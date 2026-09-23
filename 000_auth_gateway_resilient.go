@@ -196,7 +196,12 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		_, _ = w.Write(injectBLISI18N([]byte(indexHTML)))
+		body := injectBLISI18N([]byte(indexHTML))
+		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "delta-planet") {
+			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='delta-planet';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0)a.setAttribute('href','/delta-planet')})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();})();</script>`)
+			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))
+		}
+		_, _ = w.Write(body)
 		return
 	}
 
