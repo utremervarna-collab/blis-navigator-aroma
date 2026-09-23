@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -86,28 +87,45 @@ func deltaRecent(scope string,days int)[]Signal{
 	return out
 }
 func deltaCompCount(name string,days int)int{n:=0;for _,s:=range deltaRecent("competitor",days){if strings.EqualFold(strings.TrimSpace(s.Brand),name){n++}};return n}
-func deltaCompRow(name string)map[string]interface{}{return map[string]interface{}{"name":name,"score":0.0,"news":float64(deltaCompCount(name,90)),"activity":float64(deltaCompCount(name,90)),"trend":float64(deltaCompCount(name,30)),"live_mentions_30d":deltaCompCount(name,30),"live_mentions_90d":deltaCompCount(name,90),"score_status":"Няма измислен benchmark · live evidence only"}}
+func deltaCompRow(name string,score float64)map[string]interface{}{status:="Няма достатъчно съпоставими данни за собствен индекс";if score>0{status="Измерено от live evidence"};return map[string]interface{}{"name":name,"score":score,"news":float64(deltaCompCount(name,90)),"activity":float64(deltaCompCount(name,90)),"trend":float64(deltaCompCount(name,30)),"live_mentions_30d":deltaCompCount(name,30),"live_mentions_90d":deltaCompCount(name,90),"score_status":status}}
 
 func deltaDashboard(c *Client)map[string]interface{}{
 	brand90,pos90,neg90:=0,0,0
 	for _,s:=range deltaRecent("",90){if s.Scope=="competitor"{continue};brand90++;if s.Sentiment=="positive"{pos90++};if s.Sentiment=="negative"{neg90++}}
 	comp90:=len(deltaRecent("competitor",90))
+	quality:=dataQuality(c)
+	coverage:=f(quality["coverage"])
+	freshness:=f(quality["freshness"])
+	mentionVolume:=0.0
+	if brand90>0{mentionVolume=clamp(math.Log10(float64(brand90)+1)/math.Log10(51)*100)}
+	presence:=r1(coverage*.55+mentionVolume*.45)
+	reputation:=0.0
+	if brand90>0{reputation=r1(clamp(50+50*float64(pos90-neg90)/float64(brand90)))}
+	digital:=r1(coverage*.65+freshness*.35)
+	competitive:=0.0
+	avgComp:=float64(comp90)/3.0
+	if float64(brand90)+avgComp>0{competitive=r1(float64(brand90)/(float64(brand90)+avgComp)*100)}
+	blis:=r1(presence*.30+reputation*.25+digital*.25+competitive*.20)
+	sampleConfidence:=clamp(float64(brand90+comp90)/20*100)
+	confidence:=r1(coverage*.55+freshness*.25+sampleConfidence*.20)
+	trend:=0.0
+	for i:=len(c.Snapshots)-1;i>=0;i--{if prev,ok:=numericObsV33(c.Snapshots[i].Payload["blis_index"]);ok&&prev>0{trend=r1(blis-prev);break}}
 	signals:=[]interface{}{}
 	for _,s:=range deltaSignals(){if s.Scope=="competitor"{continue};level:="info";if s.Severity=="critical"||s.Severity=="high"{level="watch"}else if s.Sentiment=="positive"{level="positive"};signals=append(signals,map[string]interface{}{"level":level,"title":s.Title,"text":s.Text,"source":s.Source,"url":s.URL,"published_at":s.PublishedAt,"detected_at":s.DetectedAt,"topic":s.Topic});if len(signals)>=30{break}}
 	return map[string]interface{}{
 		"client":c.Slug,"slug":c.Slug,"client_slug":c.Slug,"name":c.Name,"sector":c.Sector,"note":c.Note,
-		"blis_index":0.0,"benchmark":0.0,"relative":0.0,"confidence":0.0,"trend":0.0,"data_updated":latestObservedAt(c),
-		"index_status":"Индексите ще се формират след натрупване на измерими live наблюдения; не се използват демо стойности.",
+		"blis_index":blis,"benchmark":0.0,"relative":0.0,"confidence":confidence,"trend":trend,"data_updated":latestObservedAt(c),
+		"index_status":"BLIS индексът е изчислен само от измерени live данни: покритие и свежест на източниците, публични споменавания, тон на сигналите и конкурентен share-of-voice. Benchmark остава непубликуван до достатъчно съпоставими конкурентни показатели.",
 		"nav":[]interface{}{map[string]interface{}{"key":"overview","label":"Общ изглед","icon":"⌂"},map[string]interface{}{"key":"social","label":"Мониторинг","icon":"◉"},map[string]interface{}{"key":"market","label":"Среда","icon":"◎"},map[string]interface{}{"key":"competition","label":"Конкуренти","icon":"◇"},map[string]interface{}{"key":"history","label":"Развитие/Доклади","icon":"↗"}},
 		"indices":[]interface{}{
-			idx("presence","Публично присъствие",0,"Формира се от реални споменавания, официална активност и външна видимост след натрупване на live серия.",[]interface{}{comp("Споменавания · 90 дни",brand90,"live"),comp("Позитивни · 90 дни",pos90,"live"),comp("Негативни · 90 дни",neg90,"live")},"",[]string{"официален сайт","Google News","публичен web"}),
-			idx("reputation","Репутация",0,"Следи оценки, потребителски теми, оплаквания и позитивни сигнали; стойност ще се публикува след достатъчно наблюдения.",[]interface{}{comp("Негативни сигнали · 90 дни",neg90,"live")},"",[]string{"Google Maps","Tripadvisor","публични източници"}),
-			idx("digital","Дигитална видимост",0,"Следи официалния сайт, новини, промоции, събития и публични профили.",[]interface{}{comp("Официални източници",11,"configured")},"",[]string{"deltaplanet.bg","Google News"}),
-			idx("competitive","Конкурентна среда",0,"Съпоставя live активността на Grand Mall Varna, Mall Varna и Retail Park Varna без фиктивен benchmark.",[]interface{}{comp("Конкурентни сигнали · 90 дни",comp90,"live"),comp("Наблюдавани конкурентни формати",3,"configured")},"",[]string{"Grand Mall Varna","Mall Varna","Retail Park Varna"}),
+			idx("presence","Публично присъствие",presence,"Комбинира измереното покритие на източниците и нормализирания обем публични споменавания за 90 дни.",[]interface{}{comp("Покритие на източниците",coverage,"55%"),comp("Споменавания · 90 дни",brand90,"45%"),comp("Позитивни · 90 дни",pos90,"live"),comp("Негативни · 90 дни",neg90,"live")},"Покритие × 55% + нормализиран обем на споменаванията × 45%",[]string{"официален сайт","Google News","публичен web"}),
+			idx("reputation","Репутация",reputation,"Измерва баланса между позитивните и негативните класифицирани сигнали за Delta Planet Mall през последните 90 дни.",[]interface{}{comp("Позитивни сигнали · 90 дни",pos90,"live"),comp("Негативни сигнали · 90 дни",neg90,"live"),comp("Общо класифицирани сигнали",brand90,"live")},"50 + 50 × (позитивни − негативни) / всички сигнали",[]string{"Google Maps","Tripadvisor","публични източници"}),
+			idx("digital","Дигитална видимост",digital,"Оценява достъпността и актуалността на конфигурираните публични дигитални източници.",[]interface{}{comp("Покритие на източниците",coverage,"65%"),comp("Свежест · 48 часа",freshness,"35%")},"Покритие × 65% + свежест × 35%",[]string{"deltaplanet.bg","Google News","публични източници"}),
+			idx("competitive","Конкурентна среда",competitive,"Измерва share-of-voice на Delta Planet спрямо средния наблюдаван конкурентен обем за Grand Mall Varna, Mall Varna и Retail Park Varna.",[]interface{}{comp("Delta споменавания · 90 дни",brand90,"live"),comp("Конкурентни сигнали · 90 дни",comp90,"live"),comp("Наблюдавани конкурентни формати",3,"configured")},"Delta / (Delta + среден конкурентен обем) × 100",[]string{"Grand Mall Varna","Mall Varna","Retail Park Varna"}),
 		},
 		"metrics":[]interface{}{met("РЗП","над 120 000 m²"),met("Търговски площи","над 40 000 m²"),met("GLA · RetailMap","40 000 m²"),met("Паркоместа · RetailMap","1 300"),met("Марки","над 140"),met("Развлечения","над 4 000 m²"),met("Cinema City","12 зали · 4DX"),met("Публично посочена заетост · Visit Varna","94%"),met("Адрес","бул. „Сливница“ 185, Варна"),met("Контакт","052 810 232 · office@deltaplanet.bg"),met("Реклама и събития","Антоанета Тенева · antoaneta.teneva@deltaplanet.bg")},
 		"signals":signals,
-		"competitors":[]interface{}{deltaCompRow("Delta Planet Mall"),deltaCompRow("Grand Mall Varna"),deltaCompRow("Mall Varna"),deltaCompRow("Retail Park Varna")},
+		"competitors":[]interface{}{deltaCompRow("Delta Planet Mall",competitive),deltaCompRow("Grand Mall Varna",0),deltaCompRow("Mall Varna",0),deltaCompRow("Retail Park Varna",0)},
 		"competitor_dossiers":[]interface{}{
 			map[string]interface{}{"name":"Grand Mall Varna","tier":"пряк конкурент","format":"традиционен shopping mall","gla":"около 50 500 m²","parking":"около 1 700 места (исторически официално публикувана стойност)","anchors":"мода, техника, хипермаркет, Cineland/IMAX, Playground, Retro Museum","monitoring":"tenant mix; нови магазини; промоции; събития; кино/развлечения; F&B; leasing; репутация; кампании"},
 			map[string]interface{}{"name":"Mall Varna","tier":"втори конкурентен кръг","format":"търговски + офис площи","gla":"13 523.85 m² търговски площи по официалния профил","parking":"277 места","anchors":"офиси, свободни площи, спорт/развлечения и услуги","monitoring":"свободни помещения; наематели; промени в предназначението; услуги; събития; собственост"},
