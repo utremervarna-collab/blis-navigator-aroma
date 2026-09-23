@@ -16,6 +16,7 @@ func universalSignalSlugsV2() []string {
 		"bolyarka",
 		"mollox",
 		"varna-towers",
+		"delta-planet",
 		"wirello",
 		"everbet",
 		"astor-garden",
