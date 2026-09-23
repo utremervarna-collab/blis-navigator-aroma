@@ -89,19 +89,41 @@ func deltaRecent(scope string,days int)[]Signal{
 func deltaCompCount(name string,days int)int{n:=0;for _,s:=range deltaRecent("competitor",days){if strings.EqualFold(strings.TrimSpace(s.Brand),name){n++}};return n}
 func deltaCompRow(name string,score float64)map[string]interface{}{status:="Няма достатъчно съпоставими данни за собствен индекс";if score>0{status="Измерено от live evidence"};return map[string]interface{}{"name":name,"score":score,"news":float64(deltaCompCount(name,90)),"activity":float64(deltaCompCount(name,90)),"trend":float64(deltaCompCount(name,30)),"live_mentions_30d":deltaCompCount(name,30),"live_mentions_90d":deltaCompCount(name,90),"score_status":status}}
 
+func deltaObservedQuality(c *Client)(coverage,freshness float64,observedSources,recentObservations int){
+	if c==nil||len(c.Sources)==0{return 0,0,0,0}
+	seen:=map[string]bool{}
+	fresh:=map[string]bool{}
+	keys:=map[string]bool{}
+	for _,s:=range c.Sources{keys[s.Key]=true}
+	cut48:=time.Now().Add(-48*time.Hour)
+	cut90:=time.Now().Add(-90*24*time.Hour)
+	for _,o:=range c.Observations{
+		if !keys[o.SourceKey]{continue}
+		seen[o.SourceKey]=true
+		if t,e:=time.Parse(time.RFC3339,o.ObservedAt);e==nil{
+			if t.After(cut48){fresh[o.SourceKey]=true}
+			if t.After(cut90){recentObservations++}
+		}
+	}
+	observedSources=len(seen)
+	coverage=r1(float64(len(seen))/float64(len(c.Sources))*100)
+	freshness=r1(float64(len(fresh))/float64(len(c.Sources))*100)
+	return
+}
+
 func deltaDashboard(c *Client)map[string]interface{}{
 	brand90,pos90,neg90:=0,0,0
 	for _,s:=range deltaRecent("",90){if s.Scope=="competitor"{continue};brand90++;if s.Sentiment=="positive"{pos90++};if s.Sentiment=="negative"{neg90++}}
 	comp90:=len(deltaRecent("competitor",90))
-	quality:=dataQuality(c)
-	coverage:=f(quality["coverage"])
-	freshness:=f(quality["freshness"])
+	coverage,freshness,observedSources,recentObs:=deltaObservedQuality(c)
 	mentionVolume:=0.0
 	if brand90>0{mentionVolume=clamp(math.Log10(float64(brand90)+1)/math.Log10(51)*100)}
-	presence:=r1(coverage*.55+mentionVolume*.45)
+	observationActivity:=0.0
+	if recentObs>0{observationActivity=clamp(math.Log10(float64(recentObs)+1)/math.Log10(301)*100)}
+	presence:=r1(coverage*.45+mentionVolume*.30+observationActivity*.25)
 	reputation:=0.0
 	if brand90>0{reputation=r1(clamp(50+50*float64(pos90-neg90)/float64(brand90)))}
-	digital:=r1(coverage*.65+freshness*.35)
+	digital:=r1(coverage*.60+freshness*.40)
 	competitive:=0.0
 	avgComp:=float64(comp90)/3.0
 	if float64(brand90)+avgComp>0{competitive=r1(float64(brand90)/(float64(brand90)+avgComp)*100)}
@@ -115,12 +137,12 @@ func deltaDashboard(c *Client)map[string]interface{}{
 	return map[string]interface{}{
 		"client":c.Slug,"slug":c.Slug,"client_slug":c.Slug,"name":c.Name,"sector":c.Sector,"note":c.Note,
 		"blis_index":blis,"benchmark":0.0,"relative":0.0,"confidence":confidence,"trend":trend,"data_updated":latestObservedAt(c),
-		"index_status":"BLIS индексът е изчислен само от измерени live данни: покритие и свежест на източниците, публични споменавания, тон на сигналите и конкурентен share-of-voice. Benchmark остава непубликуван до достатъчно съпоставими конкурентни показатели.",
+		"index_status":"BLIS индексът е изчислен само от реално наблюдавани публични данни: покритие и свежест на източниците, активност на наблюденията, публични споменавания, тон на сигналите и конкурентен share-of-voice. Benchmark остава непубликуван до достатъчно съпоставими конкурентни показатели.",
 		"nav":[]interface{}{map[string]interface{}{"key":"overview","label":"Общ изглед","icon":"⌂"},map[string]interface{}{"key":"social","label":"Мониторинг","icon":"◉"},map[string]interface{}{"key":"market","label":"Среда","icon":"◎"},map[string]interface{}{"key":"competition","label":"Конкуренти","icon":"◇"},map[string]interface{}{"key":"history","label":"Развитие/Доклади","icon":"↗"}},
 		"indices":[]interface{}{
-			idx("presence","Публично присъствие",presence,"Комбинира измереното покритие на източниците и нормализирания обем публични споменавания за 90 дни.",[]interface{}{comp("Покритие на източниците",coverage,"55%"),comp("Споменавания · 90 дни",brand90,"45%"),comp("Позитивни · 90 дни",pos90,"live"),comp("Негативни · 90 дни",neg90,"live")},"Покритие × 55% + нормализиран обем на споменаванията × 45%",[]string{"официален сайт","Google News","публичен web"}),
+			idx("presence","Публично присъствие",presence,"Комбинира реално наблюдаваното покритие на източниците, публичните споменавания и активността на измерванията за последните 90 дни.",[]interface{}{comp("Наблюдавани източници",observedSources,"live"),comp("Покритие на източниците",coverage,"45%"),comp("Споменавания · 90 дни",brand90,"30%"),comp("Наблюдения · 90 дни",recentObs,"25%"),comp("Позитивни · 90 дни",pos90,"live"),comp("Негативни · 90 дни",neg90,"live")},"Покритие × 45% + нормализиран обем на споменаванията × 30% + активност на реалните наблюдения × 25%",[]string{"официален сайт","Google News","публичен web"}),
 			idx("reputation","Репутация",reputation,"Измерва баланса между позитивните и негативните класифицирани сигнали за Delta Planet Mall през последните 90 дни.",[]interface{}{comp("Позитивни сигнали · 90 дни",pos90,"live"),comp("Негативни сигнали · 90 дни",neg90,"live"),comp("Общо класифицирани сигнали",brand90,"live")},"50 + 50 × (позитивни − негативни) / всички сигнали",[]string{"Google Maps","Tripadvisor","публични източници"}),
-			idx("digital","Дигитална видимост",digital,"Оценява достъпността и актуалността на конфигурираните публични дигитални източници.",[]interface{}{comp("Покритие на източниците",coverage,"65%"),comp("Свежест · 48 часа",freshness,"35%")},"Покритие × 65% + свежест × 35%",[]string{"deltaplanet.bg","Google News","публични източници"}),
+			idx("digital","Дигитална видимост",digital,"Оценява реално наблюдаваното покритие и актуалността на конфигурираните публични дигитални източници.",[]interface{}{comp("Покритие на източниците",coverage,"60%"),comp("Свежест · 48 часа",freshness,"40%")},"Покритие × 60% + свежест × 40%",[]string{"deltaplanet.bg","Google News","публични източници"}),
 			idx("competitive","Конкурентна среда",competitive,"Измерва share-of-voice на Delta Planet спрямо средния наблюдаван конкурентен обем за Grand Mall Varna, Mall Varna и Retail Park Varna.",[]interface{}{comp("Delta споменавания · 90 дни",brand90,"live"),comp("Конкурентни сигнали · 90 дни",comp90,"live"),comp("Наблюдавани конкурентни формати",3,"configured")},"Delta / (Delta + среден конкурентен обем) × 100",[]string{"Grand Mall Varna","Mall Varna","Retail Park Varna"}),
 		},
 		"metrics":[]interface{}{met("РЗП","над 120 000 m²"),met("Търговски площи","над 40 000 m²"),met("GLA · RetailMap","40 000 m²"),met("Паркоместа · RetailMap","1 300"),met("Марки","над 140"),met("Развлечения","над 4 000 m²"),met("Cinema City","12 зали · 4DX"),met("Публично посочена заетост · Visit Varna","94%"),met("Адрес","бул. „Сливница“ 185, Варна"),met("Контакт","052 810 232 · office@deltaplanet.bg"),met("Реклама и събития","Антоанета Тенева · antoaneta.teneva@deltaplanet.bg")},
