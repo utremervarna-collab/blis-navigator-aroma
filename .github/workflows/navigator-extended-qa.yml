@@ -67,10 +67,10 @@ jobs:
           // Renderer QA deliberately uses the application behind the gateway.
           // The external public read-only contract is validated separately above.
           const origin='http://127.0.0.1:10001';
-          const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden'];
+          const clients=['aroma','bolyarka','mollox','varna-towers','delta-planet','everbet','astor-garden'];
           const pages=['overview','social','market','digital','reputation','competition','history','reports'];
-          const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const visible=['kub','mollox','aroma','bolyarka','wirello'];
+          const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers','delta-planet':'Delta Planet Mall',everbet:'Everbet','astor-garden':'Astor Garden'};
+          const visible=['kub','mollox','aroma','bolyarka','delta-planet','wirello'];
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
 
