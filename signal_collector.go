@@ -84,6 +84,8 @@ func signalBrandTerms(c *Client) []string {
 		return []string{"MOLLOX", "MOLLOX България", "Mollox Bulgaria", "Молокс"}
 	case "varna-towers":
 		return []string{"Varna Towers", "Варна Тауърс", "Варна Тауърс"}
+	case "delta-planet":
+		return []string{"Delta Planet Mall", "Delta Planet", "Делта Планет", "Делта Планет Мол"}
 	case "kub":
 		return []string{"Корпорация КУБ", "КУБ Корпорация", "КУБ", "Баба Алино", "Forest Club", "Forest Club Варна", "Форест Клуб"}
 	case "black-sea-center":
@@ -465,7 +467,7 @@ func signalClientSnapshot(slug string) *Client {
 }
 
 func signalEligibleSlugs() []string {
-	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "kub", "black-sea-center"}
+	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "delta-planet", "kub", "black-sea-center"}
 }
 
 func signalObservationExists(c *Client, metric string) bool {
