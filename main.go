@@ -730,6 +730,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return everbetDashboard(c)
 	case "varna-towers":
 		return varnaTowersDashboard(c)
+	case "delta-planet":
+		return deltaDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1501,6 +1503,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 	case "everbet":
 		return runEverbetEngine(c, snapshot)
 	case "varna-towers":
+		return runUniversalClientEngineV34(c, snapshot)
+	case "delta-planet":
 		return runUniversalClientEngineV34(c, snapshot)
 	default:
 		return runAromaEngine(c, snapshot)
