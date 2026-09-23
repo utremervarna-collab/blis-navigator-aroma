@@ -1812,6 +1812,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		signalHealthHandler(w, r)
 		return
 	}
+	if path == "delta-planet" {
+		b, err := staticFS.ReadFile("static/dashboard.html")
+		if err != nil { http.NotFound(w, r); return }
+		if os.Getenv("BLIS_NAVIGATOR_GATEWAY_BOOTSTRAPPED") != "1" { b = assembleNavigatorDashboard(b) }
+		b = injectBLISI18N(b)
+		lock := []byte(`<script id="blis-delta-planet-source-lock">(function(){var K='delta-planet';function lock(){try{window.BLIS_INITIAL_CLIENT=K;window.slug=K;if(document.body)document.body.dataset.client=K;var s=document.getElementById('clientSel');if(s&&[...s.options].some(function(o){return o.value===K}))s.value=K}catch(e){}}lock();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock,{once:true});new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['data-client']});window.addEventListener('blis:production-ready',function(){lock();try{window.BLISDataLoaderV1&&window.BLISDataLoaderV1.load&&window.BLISDataLoaderV1.load(K,true)}catch(e){}});window.addEventListener('blis:clientdata',function(e){if((new URL(location.href)).pathname==='/delta-planet')lock()});})();</script>`)
+		b = bytes.Replace(b, []byte("</body>"), append(lock, []byte("</body>")...), 1)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		_, _ = w.Write(b)
+		return
+	}
+
 	if path == "varna-towers" || path == "varna-towers-dashboard" {
 		b, err := staticFS.ReadFile("static/dashboard.html")
 		if err != nil { http.NotFound(w, r); return }
