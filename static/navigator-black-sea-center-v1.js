@@ -7,15 +7,15 @@ window.__BLIS_BLACK_SEA_CENTER_V2=true;
 window.__BLIS_BLACK_SEA_CENTER_V1=true;
 const KEY='black-sea-center';
 const NAME='Black Sea Center';
-const TYPE='Търговски и бизнес комплекс / офис площи';
-const DESC='Офис площи, търговска среда, локационна видимост и пазарни сигнали';
+const TYPE='Бизнес и офис комплекс / офис площи под наем';
+const DESC='Офис площи под наем, корпоративни наематели, конкурентна среда и пазарни сигнали';
 const LOGO='/client-logos/black-sea-center.png';
 const NAV={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
 const COMPETITORS=[
- {name:'Varna Towers',kind:'Бизнес и офис комплекс'},
- {name:'Business Park Varna',kind:'Офис и бизнес парк'},
- {name:'Delta Planet Mall',kind:'Търговски и градски комплекс'},
- {name:'Grand Mall Varna',kind:'Търговски комплекс'}
+ {name:'Varna Towers',kind:'Конкурент №1 · Class A офисен и бизнес комплекс'},
+ {name:'Business Park Varna',kind:'Пряк офисен конкурент'},
+ {name:'Landmark Centre Varna',kind:'Пряк Class A офисен конкурент'},
+ {name:'Комфорт Бизнес Център',kind:'Пряк офисен конкурент'}
 ];
 let raf=0;
 const current=()=>{try{return new URLSearchParams(location.search).get('client')||document.body?.dataset?.client||''}catch(_){return document.body?.dataset?.client||''}};
