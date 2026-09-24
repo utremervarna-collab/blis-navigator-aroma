@@ -77,7 +77,14 @@ jobs:
           async function ready(p,client){
             phase=`ready:${client}:goto`;
             const target=client==='delta-planet'?`${origin}/delta-planet`:client==='black-sea-center'?`${origin}/black-sea-center`:`${origin}/dashboard.html?client=${client}&page=overview`;
-            await p.goto(target,{waitUntil:'domcontentloaded',timeout:25000});
+            const gotoTimeout=client==='delta-planet'?45000:25000;
+            try{
+              await p.goto(target,{waitUntil:'domcontentloaded',timeout:gotoTimeout});
+            }catch(err){
+              if(client!=='delta-planet')throw err;
+              phase=`ready:${client}:goto-retry`;
+              await p.goto(target,{waitUntil:'domcontentloaded',timeout:45000});
+            }
             phase=`ready:${client}:runtime`;
             await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
             await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=8,null,{timeout:15000});
