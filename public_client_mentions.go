@@ -112,6 +112,57 @@ func publicMentionInRecentWindow(s Signal) bool {
 	return !detected.Before(competitorRecentCutoff()) && !detected.After(now.Add(48*time.Hour))
 }
 
+func deltaCompetitorDisplayName(v string) string {
+	v = strings.TrimSpace(v)
+	if strings.EqualFold(v, "Mall Varna") || strings.EqualFold(v, "MALL VARNA") || strings.EqualFold(v, "Варна Мол") {
+		return "Black Sea Center"
+	}
+	return v
+}
+
+func normalizeDeltaCompetitorCopy(v string) string {
+	r := strings.NewReplacer(
+		"Mall Varna", "Black Sea Center",
+		"MALL VARNA", "Black Sea Center",
+		"Варна Мол", "Black Sea Center",
+	)
+	return strings.TrimSpace(r.Replace(v))
+}
+
+func deltaCompetitorTimelineNoise(s Signal) bool {
+	u, _ := url.Parse(strings.TrimSpace(s.URL))
+	host := strings.ToLower(strings.TrimPrefix(u.Hostname(), "www."))
+	title := strings.ToLower(strings.TrimSpace(s.Title))
+	body := strings.ToLower(strings.TrimSpace(s.Text))
+	combined := strings.Join(strings.Fields(title+" "+body), " ")
+
+	// Static directory/about/home pages are reference sources, not dated
+	// competitive events. They must not appear as "mentions" just because the
+	// crawler discovered them today.
+	if host == "mall-varna.bg" {
+		if title == "mall varna" || title == "black sea center" || strings.Contains(title, "about us") || strings.Contains(title, "за нас") {
+			return true
+		}
+	}
+	if host == "retailmap.bg" {
+		if strings.Contains(combined, "бисквит") || strings.Contains(combined, "cookies") ||
+			strings.Contains(combined, "главни търговски улици") || strings.Contains(combined, "пазарни доклади") {
+			return true
+		}
+	}
+	for _, junk := range []string{
+		"copyright mall varna", "all rights reserved",
+		"начало за нас галерия новини контакти",
+		"със сърфирането на този уебсайт",
+		"вие приемате, че той използва",
+	} {
+		if strings.Contains(combined, junk) {
+			return true
+		}
+	}
+	return false
+}
+
 func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 	if s.Client != slug || (scope == "competitor") != (s.Scope == "competitor") {
 		return false
@@ -126,6 +177,9 @@ func publicMentionSignalValid(slug, scope string, c *Client, s Signal) bool {
 		return false
 	}
 	if scope == "competitor" {
+		if slug == "delta-planet" && deltaCompetitorTimelineNoise(s) {
+			return false
+		}
 		if zagorkaParkOnly(s.Brand, s.Title, s.Text) {
 			return false
 		}
@@ -214,7 +268,13 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 		if competitorLooksLikeCode(displayText) {
 			displayText = ""
 		}
-		rows = append(rows, publicClientMention{Client: slug, Brand: s.Brand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: displayTitle, Text: displayText, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
+		displayBrand := strings.TrimSpace(s.Brand)
+		if slug == "delta-planet" && scope == "competitor" {
+			displayBrand = deltaCompetitorDisplayName(displayBrand)
+			displayTitle = normalizeDeltaCompetitorCopy(displayTitle)
+			displayText = normalizeDeltaCompetitorCopy(displayText)
+		}
+		rows = append(rows, publicClientMention{Client: slug, Brand: displayBrand, Scope: s.Scope, Source: s.Source, URL: s.URL, Title: displayTitle, Text: displayText, PublishedAt: s.PublishedAt, DetectedAt: s.DetectedAt, Topic: s.Topic, Severity: s.Severity, Sentiment: s.Sentiment, Fingerprint: s.Fingerprint})
 	}
 	return updated, rows
 }
