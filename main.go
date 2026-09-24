@@ -732,6 +732,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return varnaTowersDashboard(c)
 	case "delta-planet":
 		return deltaDashboard(c)
+	case "black-sea-center":
+		return blackSeaCenterDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
@@ -1506,6 +1508,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return runUniversalClientEngineV34(c, snapshot)
 	case "delta-planet":
 		return runUniversalClientEngineV34(c, snapshot)
+	case "black-sea-center":
+		return runUniversalClientEngineV34(c, snapshot)
 	default:
 		return runAromaEngine(c, snapshot)
 	}
@@ -1594,6 +1598,8 @@ func keywordAnalysis(c *Client) []map[string]interface{} {
 		}
 	} else if c.Slug == "varna-towers" {
 		return varnaTowersKeywords(c)
+	} else if c.Slug == "black-sea-center" {
+		return blackSeaCenterKeywords(c)
 	} else {
 		news := f(latest(c, "google_search", "news_mentions_30d"))
 		if news > 0 {
