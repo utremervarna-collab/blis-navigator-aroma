@@ -194,10 +194,12 @@ func bscObservedQuality(c *Client)(coverage,freshness float64,observedSources,re
 	return r1(float64(len(seen))/math.Max(float64(len(c.Sources)),1)*100),
 		r1(float64(len(fresh))/math.Max(float64(len(c.Sources)),1)*100),len(seen),recentObs
 }
-func bscCompetitorRow(name string,priority int) map[string]interface{}{
+func bscCompetitorRow(name string,priority int,score float64) map[string]interface{}{
 	n90:=bscCompetitorCount(name,90);n30:=bscCompetitorCount(name,30)
+	status:="Няма достатъчно съпоставими данни за собствен индекс"
+	if score>0{status="Измерено от live evidence"}
 	return map[string]interface{}{
-		"name":name,"priority":priority,"score":0.0,"score_status":"Без изкуствен конкурентен индекс",
+		"name":name,"priority":priority,"score":score,"score_status":status,
 		"news":float64(n90),"activity":float64(n90),"trend":float64(n30),
 		"live_mentions_30d":n30,"live_mentions_90d":n90,
 	}
@@ -269,10 +271,11 @@ func blackSeaCenterDashboard(c *Client) map[string]interface{} {
 		},
 		"signals":signals,
 		"competitors":[]interface{}{
-			bscCompetitorRow("Varna Towers",1),
-			bscCompetitorRow("Business Park Varna",2),
-			bscCompetitorRow("Landmark Centre Varna",3),
-			bscCompetitorRow("Комфорт Бизнес Център",4),
+			bscCompetitorRow("Black Sea Center",0,competitive),
+			bscCompetitorRow("Varna Towers",1,0),
+			bscCompetitorRow("Business Park Varna",2,0),
+			bscCompetitorRow("Landmark Centre Varna",3,0),
+			bscCompetitorRow("Комфорт Бизнес Център",4,0),
 		},
 		"competitor_dossiers":[]interface{}{
 			map[string]interface{}{"name":"Varna Towers","priority":1,"tier":"пряк офисен конкурент","format":"Class A офисен и бизнес комплекс","focus":"офисна GLA, заетост, наематели, услуги, паркиране, leasing, публична активност","monitoring":"нови наематели; свободни площи; заетост; офисни предложения; услуги; собственост; репутация; комуникация"},
