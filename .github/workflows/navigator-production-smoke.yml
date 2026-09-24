@@ -123,7 +123,10 @@ jobs:
           test "$(curlr -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
           grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
           test "$(curlr -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
-          test "$(curlr -sS -D /tmp/delta.headers -o /tmp/delta.html -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")" = "200"
+          delta_code=$(curlr -sS -D /tmp/delta.headers -o /tmp/delta-route.body -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")
+          test "$delta_code" = "302"
+          grep -Eqi '^location: /dashboard\.html\?.*client=delta-planet.*page=overview|^location: /dashboard\.html\?.*page=overview.*client=delta-planet' /tmp/delta.headers
+          test "$(curlr -sS -o /tmp/delta.html -w '%{http_code}' "$BASE/dashboard.html?client=delta-planet&page=overview&ts=$(date +%s)")" = "200"
           grep -Eqi 'Delta Planet Mall|delta-planet' /tmp/delta.html
           test "$(curlr -sS -o /tmp/delta.json -w '%{http_code}' "$BASE/api/clients/delta-planet/dashboard?ts=$(date +%s)")" = "200"
           grep -q '"name":"Delta Planet Mall"' /tmp/delta.json
