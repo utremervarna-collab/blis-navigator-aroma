@@ -12,7 +12,7 @@ const DESC='Офис площи под наем, корпоративни нае
 const LOGO='/client-logos/black-sea-center.png';
 const NAV={overview:'Общ изглед',social:'Мониторинг',market:'Среда',competition:'Конкуренти',history:'Развитие/Доклади',hub:'Intelligence HUB',calendar:'Календар'};
 const COMPETITORS=[
- {name:'Varna Towers',kind:'Конкурент №1 · Class A офисен и бизнес комплекс'},
+ {name:'Varna Towers',kind:'Class A офисен и бизнес комплекс'},
  {name:'Business Park Varna',kind:'Пряк офисен конкурент'},
  {name:'Landmark Centre Varna',kind:'Пряк Class A офисен конкурент'},
  {name:'Комфорт Бизнес Център',kind:'Пряк офисен конкурент'}
