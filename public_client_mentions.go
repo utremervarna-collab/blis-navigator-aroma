@@ -290,12 +290,6 @@ func publicClientMentions(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "valid client and scope required", http.StatusBadRequest)
 		return
 	}
-	if slug == "black-sea-center" {
-		if _, ok := ownerSession(r); !ok {
-			http.Error(w, "restricted client", http.StatusForbidden)
-			return
-		}
-	}
 	if isWirelloDemo(r) && slug != "wirello" {
 		http.Error(w, "restricted demo", http.StatusForbidden)
 		return
