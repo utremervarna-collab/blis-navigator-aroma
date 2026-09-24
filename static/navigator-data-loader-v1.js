@@ -3,7 +3,7 @@
 (function(){
 'use strict';
 if(window.__BLIS_DATA_LOADER_V1)return;window.__BLIS_DATA_LOADER_V1=true;
-const valid=new Set(['aroma','bolyarka','varna-towers','delta-planet','mollox','wirello','everbet','astor-garden']);
+const valid=new Set(['aroma','bolyarka','varna-towers','delta-planet','black-sea-center','mollox','wirello','everbet','astor-garden']);
 const CACHE_MS=30000;
 let seq=0,busy=null,current='',lastPublishedSignature='';
 const cache=new Map();
