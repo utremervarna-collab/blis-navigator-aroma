@@ -146,6 +146,11 @@ func competitorAliases(name string) []string {
 		addAlias("Black Sea Capital")
 		addAlias("Блек Сий Капитал Център")
 		addAlias("Блек Сий Капитал")
+	case "black sea center":
+		addAlias("Black Sea Center")
+		addAlias("Mall Varna")
+		addAlias("MALL VARNA")
+		addAlias("Варна Мол")
 	case "комфорт бизнес център":
 		addAlias("Комфорт Бизнес Център")
 		addAlias("Komfort Business Center")
