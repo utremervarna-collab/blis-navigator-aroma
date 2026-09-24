@@ -87,7 +87,7 @@ jobs:
             overview:'#overview .ovh-gauge,#overview .vs-gauge-card,#overview .vs-gauge-svg',
             social:'#social .dv-radar-grid',
             market:'#market .pm-stage,#market .pm-canvas',
-            competition:'#competition .vs-comp-axis',
+            competition:'#competition .vs-comp-axis,#competition [data-bsc-competitors]',
             history:'#history .vs-history-board'
           };
           async function visible(page,selector){
