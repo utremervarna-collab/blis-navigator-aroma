@@ -213,8 +213,91 @@ func deltaVerifiedRecentMentions() []Signal {
 	}
 }
 
+func deltaVerifiedRecentCompetitorMentions() []Signal {
+	detected:=nowISO()
+	makeSignal:=func(brand,source,sourceType,url,title,text,published,topic,sentiment string,relevance,risk float64) Signal {
+		fp:=signalHash("delta-planet",url,title,text)
+		return Signal{
+			ID:fp[:16],Client:"delta-planet",Brand:brand,Source:source,SourceType:sourceType,Scope:"competitor",
+			URL:url,Title:title,Text:text,PublishedAt:published,DetectedAt:detected,Relevance:relevance,
+			Sentiment:sentiment,Topic:topic,RiskScore:risk,Severity:signalSeverity(risk),Fingerprint:fp,
+		}
+	}
+	return []Signal{
+		// Grand Mall Varna — tenant campaigns and entertainment activity.
+		makeSignal(
+			"Grand Mall Varna","Grand Mall Varna / публична социална публикация","social_web",
+			"https://www.globuya.com/BG/Varna/135929613089862/Grand-Mall-Varna",
+			"Pandora с предложение „Вземи 3, плати 2“ в Grand Mall Varna",
+			"Публична публикация за сезонна промоция на Pandora в Grand Mall Varna до 13 септември.",
+			"2026-09-08T12:00:00+03:00","campaign","neutral",94,5,
+		),
+		makeSignal(
+			"Grand Mall Varna","Grand Mall Varna / публична социална публикация","social_web",
+			"https://www.globuya.com/BG/Varna/135929613089862/Grand-Mall-Varna",
+			"JULIANY Back to School в Grand Mall Varna",
+			"Публична публикация за кампания с отстъпка за детски часовници и бижута в Grand Mall Varna.",
+			"2026-09-07T12:00:00+03:00","campaign","neutral",92,5,
+		),
+		makeSignal(
+			"Grand Mall Varna","Playground Grand Mall","social_web",
+			"https://www.evepla.com/BG/Varna/231368937624895/Playground-Grand-Mall",
+			"Playground Grand Mall промотира награди и активности",
+			"Публикация за развлекателни активности в Playground Grand Mall Varna на ниво 2.",
+			"2026-08-03T12:00:00+03:00","entertainment","neutral",90,5,
+		),
+
+		// Black Sea Center — rebranding, ownership and repositioning coverage.
+		makeSignal(
+			"Black Sea Center","Regal / Капитал","media",
+			"https://www.regal.bg/novini/targovci/2026/09/14/4955224_georgi_samuilov_kupi_mol_varna_koito_veche_shte_se/",
+			"Black Sea Center: нов собственик и нова концепция",
+			"Regal публикува материал на Капитал за придобиването и преобразяването на бившия Мол Варна в Black Sea Center.",
+			"2026-09-14T12:00:00+03:00","ownership","neutral",100,10,
+		),
+		makeSignal(
+			"Black Sea Center","Будна Варна","media",
+			"https://www.budnavarna.com/2026/09/12/mol-varna-s-nov-sobstvenik-veche-sthe-se-kazva-black-sea-center/",
+			"Black Sea Center влиза в нов етап на развитие",
+			"Публикация за новите собственици, ребрандирането и концепцията с търговски, офисни, спортни и развлекателни функции.",
+			"2026-09-12T12:00:00+03:00","repositioning","neutral",98,10,
+		),
+		makeSignal(
+			"Black Sea Center","КРИБ / в. Марица","media",
+			"https://krib.bg/%D0%BF%D1%80%D0%B5%D0%B3%D0%BB%D0%B5%D0%B4-%D0%BD%D0%B0-%D0%BC%D0%B5%D0%B4%D0%B8%D0%B8%D1%82%D0%B5-19-8-2026-%D1%81%D1%80%D1%8F%D0%B4%D0%B0/",
+			"Black Sea Center като ново поколение градско пространство",
+			"Медиен преглед отразява позиционирането на Black Sea Center като комплекс с офиси, търговия, ресторанти, спорт, услуги и развлечения.",
+			"2026-08-19T00:07:00+03:00","positioning","neutral",96,8,
+		),
+
+		// Retail Park Varna — dated tenant/activity signals.
+		makeSignal(
+			"Retail Park Varna","Next Level Retail Park Varna","tenant_web",
+			"https://retailparkvarna.nextlevelclub.bg/calendar?day=16.9.2026+%25u0433.&view=DayByHour",
+			"Next Level Retail Park Varna с активен график на 16 септември",
+			"Публичният календар показва групови занимания през деня в клуба на Retail Park Varna.",
+			"2026-09-16T12:00:00+03:00","tenant_activity","neutral",90,5,
+		),
+		makeSignal(
+			"Retail Park Varna","Next Level Retail Park Varna","tenant_web",
+			"https://retailparkvarna.nextlevelclub.bg/calendar?day=28.6.2049+%25u0433.&instructor=",
+			"Next Level Retail Park Varna публикува седмичен график за 14–20 септември",
+			"Публичният график показва ежедневна активност на фитнес клуба в Retail Park Varna през седмицата 14–20 септември.",
+			"2026-09-14T12:00:00+03:00","tenant_activity","neutral",88,5,
+		),
+		makeSignal(
+			"Retail Park Varna","Next Level Retail Park Varna","tenant_web",
+			"https://retailparkvarna.nextlevelclub.bg/calendar?day=6.3.2026+%25u0433.&instructor=",
+			"Next Level Retail Park Varna с програма през 20–26 юли",
+			"Публичният календар показва активна седмична програма, включително функционални тренировки за деца.",
+			"2026-07-20T12:00:00+03:00","tenant_activity","neutral",88,5,
+		),
+	}
+}
+
 func ensureDeltaVerifiedRecentMentions(){
 	rows:=deltaVerifiedRecentMentions()
+	rows=append(rows,deltaVerifiedRecentCompetitorMentions()...)
 	if len(rows)==0{return}
 	mergeSignals("delta-planet",rows)
 	saveSignalStateFile()
