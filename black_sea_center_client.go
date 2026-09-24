@@ -271,7 +271,6 @@ func blackSeaCenterDashboard(c *Client) map[string]interface{} {
 		},
 		"signals":signals,
 		"competitors":[]interface{}{
-			bscCompetitorRow("Black Sea Center",0,competitive),
 			bscCompetitorRow("Varna Towers",1,0),
 			bscCompetitorRow("Business Park Varna",2,0),
 			bscCompetitorRow("Landmark Centre Varna",3,0),
