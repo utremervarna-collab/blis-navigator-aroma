@@ -90,7 +90,7 @@ async function boot(){
  // bootstrap wait; the loader publishes late results through blis:clientdata.
  await Promise.race([window.BLISDataLoaderV1?.load?.(initialClient,true),new Promise(resolve=>setTimeout(resolve,3000))]);
  await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');
- await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-black-sea-center-v1.js?v=20260924-office1');await safe('/navigator-executive-reports-v1.js');
+ await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-black-sea-center-v1.js');await safe('/navigator-executive-reports-v1.js');
  await safe('/navigator-visual-suite-v1.js');await safe('/navigator-visual-suite-motion-v1.js');await safe('/navigator-visual-special-v2.js');await safe('/navigator-overview-client-home-v1.js');
  reset('__BLIS_REFERENCE_V18');await safe('/navigator-reference.js');
  await safe('/navigator-risk-priority-sync-v1.js');await safe('/navigator-overview-marker-fix-v1.js');await safe('/navigator-color-system-v1.js');await safe('/navigator-no-page-numbers-v1.js');await safe('/navigator-language-cleanup-v1.js');
