@@ -54,7 +54,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 
 	if path == "/navigator-production-entry-v1.js" {
 		err := rewriteNavigatorAsset(resp,
-			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20260913-fastboot-1';"},
+			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20260924-bscfix1';"},
 			[2]string{"await Promise.race([window.BLISDataLoaderV1?.load?.(initialClient,true),new Promise(resolve=>setTimeout(resolve,3000))]);", "const initialData=window.BLISDataLoaderV1?.load?.(initialClient,true);if(initialData&&typeof initialData.catch==='function')initialData.catch(()=>{});"},
 			[2]string{"await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');", "await Promise.all([safe('/navigator-intelligence-stream-v2.js'),safe('/navigator-client-perspective-classifier-v1.js'),safe('/navigator-executive-data-v1.js')]);"},
 			[2]string{"await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-executive-reports-v1.js');", "await Promise.all([safe('/navigator-digital-master.js'),safe('/navigator-client-ui.js'),safe('/navigator-executive-reports-v1.js')]);await safe('/navigator-client-branding-v3.js');"},
@@ -98,13 +98,13 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
 		body = navigatorClientValueUniversalEntrypoint.ReplaceAll(body, nil)
 		body = navigatorPublicKeyRedactionEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260923-delta3"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260924-bscfix1"></script><script src="/navigator-client-value-universal-v2.js?v=20260922-publiccopy2"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260913-fastboot1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260924-bscfix1")
 	} else {
 		homeTarget := "/dashboard.html?client=aroma&page=overview"
 		if strings.EqualFold(resp.Request.URL.Query().Get("client"), "varna-towers") { homeTarget = "/varna-towers" }
