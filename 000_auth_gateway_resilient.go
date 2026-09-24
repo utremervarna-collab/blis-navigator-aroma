@@ -285,18 +285,14 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Public Delta Planet Mall profile. Canonical vanity route mapped by the
-	// external gateway to the shared Navigator while hard-selecting Delta.
+	// Public Delta Planet Mall profile. Keep the vanity route lightweight:
+	// redirect to the canonical dashboard instead of holding an extra proxy
+	// request open during startup/data restoration.
 	if (path == "/delta-planet" || path == "/delta-planet/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		r2 := r.Clone(r.Context())
-		r2.URL.Path = "/dashboard.html"
-		q := r2.URL.Query()
+		q := url.Values{}
 		q.Set("client", "delta-planet")
-		q.Set("page", canonicalNavigatorPage(q.Get("page")))
-		q.Del("key")
-		r2.URL.RawQuery = q.Encode()
-		r2.Header.Set("X-BLIS-Client-Scope", "delta-planet")
-		authProxy.ServeHTTP(w, r2)
+		q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+		http.Redirect(w, r, "/dashboard.html?"+q.Encode(), http.StatusFound)
 		return
 	}
 
