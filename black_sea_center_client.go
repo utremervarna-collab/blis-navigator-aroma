@@ -27,7 +27,7 @@ func blackSeaCenterClient() *Client {
 			{Key: "babyplanet", Label: "BabyPlanet - Black Sea Center", URL: "https://babyplanet.bg/", Method: "публично потвърждение за действащ търговски обект и адрес в комплекса", Reliability: .94},
 			{Key: "companybook", Label: "CompanyBook - Black Sea Center BSC", URL: "https://companybook.bg/companies/205829188", Method: "публични фирмени и регистрационни промени", Reliability: .90},
 			{Key: "imot_bg", Label: "Imot.bg - локационни споменавания", URL: "https://www.imot.bg/", Method: "пазарни и локационни споменавания в имотни обяви", Reliability: .82},
-			{Key: "cmp_varna_towers", Label: "Varna Towers", URL: "https://www.varnatowers.bg/", Method: "конкурент №1 · Class A офисен и бизнес комплекс · площи, заетост, наематели, услуги и публична активност", Reliability: .98},
+			{Key: "cmp_varna_towers", Label: "Varna Towers", URL: "https://www.varnatowers.bg/", Method: "пряк конкурент · Class A офисен и бизнес комплекс · площи, заетост, наематели, услуги и публична активност", Reliability: .98},
 			{Key: "cmp_business_park_varna", Label: "Business Park Varna", URL: "https://www.bpv.bg/", Method: "пряк офисен конкурент · офис площи, наематели, услуги и инвестиции", Reliability: .97},
 			{Key: "cmp_landmark_centre_varna", Label: "Landmark Centre Varna", URL: "https://www.landmark.bg/landmark-centre-varna", Method: "пряк офисен конкурент · Class A офиси, площи и leasing позициониране", Reliability: .97},
 			{Key: "cmp_komfort_business", Label: "Комфорт Бизнес Център", URL: "https://www.komfortbg.com/bg/portfolio/komfort-biznes-tsentr", Method: "пряк офисен конкурент · административни и офис площи, корпоративна видимост и наематели", Reliability: .96},
@@ -263,7 +263,7 @@ func blackSeaCenterDashboard(c *Client) map[string]interface{} {
 			met("Планирани фитнес и СПА площи","5 000 m²"),
 			met("Планиран детски център","2 500 m²"),
 			met("Адрес","бул. „Владислав Варненчик“ 186, Варна"),
-			met("Конкурент №1","Varna Towers"),
+			met("Основен конкурент","Varna Towers"),
 			met("Публичен tenant proof","BabyPlanet · действащ обект в комплекса"),
 			met("Позициониране","офиси · търговия · услуги · спорт · свободно време"),
 		},
@@ -275,7 +275,7 @@ func blackSeaCenterDashboard(c *Client) map[string]interface{} {
 			bscCompetitorRow("Комфорт Бизнес Център",4),
 		},
 		"competitor_dossiers":[]interface{}{
-			map[string]interface{}{"name":"Varna Towers","priority":1,"tier":"конкурент №1","format":"Class A офисен и бизнес комплекс","focus":"офисна GLA, заетост, наематели, услуги, паркиране, leasing, публична активност","monitoring":"нови наематели; свободни площи; заетост; офисни предложения; услуги; собственост; репутация; комуникация"},
+			map[string]interface{}{"name":"Varna Towers","priority":1,"tier":"пряк офисен конкурент","format":"Class A офисен и бизнес комплекс","focus":"офисна GLA, заетост, наематели, услуги, паркиране, leasing, публична активност","monitoring":"нови наематели; свободни площи; заетост; офисни предложения; услуги; собственост; репутация; комуникация"},
 			map[string]interface{}{"name":"Business Park Varna","priority":2,"tier":"пряк офисен конкурент","format":"офисен и бизнес парк","focus":"офис площи, корпоративни наематели, campus логика, услуги","monitoring":"tenant activity; availability; инвестиции; employer presence; услуги"},
 			map[string]interface{}{"name":"Landmark Centre Varna","priority":3,"tier":"пряк офисен конкурент","format":"Class A офисен център","focus":"офис площи, международни корпоративни наематели, централна локация","monitoring":"availability; tenant wins; корпоративни наематели; leasing; услуги"},
 			map[string]interface{}{"name":"Комфорт Бизнес Център","priority":4,"tier":"пряк офисен конкурент","format":"административен и офисен център","focus":"офис площи, централна локация, корпоративни наематели","monitoring":"availability; tenant activity; корпоративни сигнали; услуги"},
@@ -291,13 +291,13 @@ func blackSeaCenterKeywords(c *Client) []map[string]interface{} {
 		{"title":"Публично наблюдавана площ","display":"65 000 m²","source":"Black Sea Center Offices","status":"Публична стойност","kind":"market","value":65000,"measured":true},
 		{"title":"Споменавания за Black Sea Center","display":fmt.Sprintf("%d публикации",brand90),"source":"BLIS public-source monitoring","status":"Live","kind":"media","value":brand90,"measured":true},
 		{"title":"Конкурентни споменавания","display":fmt.Sprintf("%d публикации",comp90),"source":"BLIS competitor monitoring","status":"Live","kind":"competition","value":comp90,"measured":true},
-		{"title":"Конкурент №1","display":"Varna Towers","source":"BLIS офисна конкурентна матрица","status":"Приоритетно наблюдение","kind":"competition","measured":true},
+		{"title":"Основен конкурент","display":"Varna Towers","source":"BLIS офисна конкурентна матрица","status":"Наблюдава се","kind":"competition","measured":true},
 	}
 }
 
 func blackSeaCenterVerifiedCompetitorObservations() []Signal {
 	rows:=[]struct{brand,source,url,title,text string}{
-		{"Varna Towers","Varna Towers · официален сайт","https://www.varnatowers.bg/en/tenants","Varna Towers поддържа активен публичен списък на корпоративни и услужващи наематели","Официалната страница на Varna Towers показва активна офисна и смесена tenant база. За Black Sea Center това е конкурент №1 по офисно позициониране във Варна."},
+		{"Varna Towers","Varna Towers · официален сайт","https://www.varnatowers.bg/en/tenants","Varna Towers поддържа активен публичен списък на корпоративни и услужващи наематели","Официалната страница на Varna Towers показва активна офисна и смесена tenant база. За Black Sea Center това е пряк конкурент в офисния сегмент във Варна."},
 		{"Business Park Varna","iCard / LinkedIn","https://bg.linkedin.com/company/icardofficial","iCard посочва Business Park Varna като основна локация във Варна","Публичният фирмен профил на iCard потвърждава текущо корпоративно присъствие в Business Park Varna."},
 		{"Landmark Centre Varna","JOBS.BG · Cargill Bulgaria","https://www.jobs.bg/en/company/cargill","Cargill посочва офис във Varna Landmark Centre","Публичният работодателски профил на Cargill потвърждава офисна локация в Landmark Centre Varna."},
 		{"Комфорт Бизнес Център","Bulgarian Dredging Company","https://www.bdrc.bg/contact","Central Point е посочен като офис локация във Варна","Публичната контактна страница потвърждава корпоративна офисна локация в конкурентния клъстер на Комфорт."},
