@@ -44,7 +44,7 @@ jobs:
       - name: Verify canonical visible catalogue
         run: |
           set -euo pipefail
-          grep -Fq "const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','wirello'];" static/navigator-client-ui.js
+          grep -Fq "const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','wirello'];" static/navigator-client-ui.js
           echo CANONICAL_VISIBLE_CATALOGUE_OK
 
       - name: Verify public read-only gateway contracts
