@@ -86,9 +86,12 @@ jobs:
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          curl -fsS "$BASE/api/health?ts=$(date +%s)" -o /tmp/health.json
+          curlr() {
+            curl --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 30 "$@"
+          }
+          curlr -fsS "$BASE/api/health?ts=$(date +%s)" -o /tmp/health.json
           grep -q '"ok":true' /tmp/health.json
-          curl -fsS "$BASE/api/store/meta?ts=$(date +%s)" -o /tmp/store-meta.json
+          curlr -fsS "$BASE/api/store/meta?ts=$(date +%s)" -o /tmp/store-meta.json
           python - <<'PY'
           import json
           d=json.load(open('/tmp/store-meta.json',encoding='utf-8'))
@@ -99,12 +102,12 @@ jobs:
           print('PRODUCTION_STORE_META_OK', {k:(v.get('snapshots',0),v.get('observations',0)) for k,v in clients.items()})
           PY
           for round in 1 2 3; do
-            test "$(curl -sS -o /tmp/home-before-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip-before=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curlr -sS -o /tmp/home-before-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip-before=$round&ts=$(date +%s%N)")" = "200"
             grep -Fq 'blisDashboardPrepaintV5' /tmp/home-before-dashboard.html
-            test "$(curl -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curlr -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Eqi '^x-blis-home-origin: gateway' /tmp/home.headers
             grep -Fq 'BLIS™' /tmp/home.html
-            test "$(curl -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curlr -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             python - <<'PY'
           import json
           d=json.load(open('/tmp/home-tape.json',encoding='utf-8'))
@@ -113,16 +116,16 @@ jobs:
           assert items, 'home tape returned no persisted metrics'
           assert all('client' in x and 'metric' in x and 'value' in x for x in items)
           PY
-            test "$(curl -sS -o /tmp/home-return-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            test "$(curlr -sS -o /tmp/home-return-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Fq 'blisDashboardPrepaintV5' /tmp/home-return-dashboard.html
           done
           echo DASHBOARD_HOME_DASHBOARD_ROUNDTRIP_OK
-          test "$(curl -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
           grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
-          test "$(curl -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
-          test "$(curl -sS -D /tmp/delta.headers -o /tmp/delta.html -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -D /tmp/delta.headers -o /tmp/delta.html -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")" = "200"
           grep -Eqi 'Delta Planet Mall|delta-planet' /tmp/delta.html
-          test "$(curl -sS -o /tmp/delta.json -w '%{http_code}' "$BASE/api/clients/delta-planet/dashboard?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/delta.json -w '%{http_code}' "$BASE/api/clients/delta-planet/dashboard?ts=$(date +%s)")" = "200"
           grep -q '"name":"Delta Planet Mall"' /tmp/delta.json
           python3 - <<'PY'
           import json
@@ -131,10 +134,10 @@ jobs:
           assert d.get('client')=='delta-planet' or d.get('slug')=='delta-planet', d
           print('DELTA_BLIS_OK', d.get('blis_index'), d.get('confidence'))
           PY
-          test "$(curl -sS -o /tmp/delta-home.html -w '%{http_code}' "$BASE/?client=delta-planet&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/delta-home.html -w '%{http_code}' "$BASE/?client=delta-planet&ts=$(date +%s)")" = "200"
           grep -q 'blis-home-client-context' /tmp/delta-home.html
           grep -q '/delta-planet' /tmp/delta-home.html
-          test "$(curl -sS -o /tmp/delta-brand-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=brand&limit=300&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/delta-brand-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=brand&limit=300&ts=$(date +%s)")" = "200"
           python3 - <<'PY'
           import json
           d=json.load(open('/tmp/delta-brand-mentions.json',encoding='utf-8'))
@@ -146,7 +149,7 @@ jobs:
               assert str(row.get('url') or '').startswith(('http://','https://')), row
           print('DELTA_RECENT_MENTIONS_OK', len(rows))
           PY
-          test "$(curl -sS -o /tmp/delta-competitor-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/delta-competitor-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
           python3 - <<'PY'
           import json
           from collections import Counter
@@ -159,14 +162,14 @@ jobs:
           assert len(rows)>=9, f"Delta competitor mentions must be >=9, got {len(rows)}"
           print('DELTA_COMPETITOR_MENTIONS_OK', dict(counts))
           PY
-          test "$(curl -sS -D /tmp/bsc.headers -o /tmp/bsc.html -w '%{http_code}' "$BASE/black-sea-center?ts=$(date +%s)")" = "200"
-          test "$(curl -sS -o /tmp/bsc-home.html -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -D /tmp/bsc.headers -o /tmp/bsc.html -w '%{http_code}' "$BASE/black-sea-center?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/bsc-home.html -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")" = "200"
           grep -q 'blis-home-active-client-v2' /tmp/bsc-home.html
           grep -q 'blis-home-bsc-context' /tmp/bsc-home.html
-          test "$(curl -sS -o /tmp/bsc.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/dashboard?ts=$(date +%s)")" = "200"
-          test "$(curl -sS -o /tmp/bsc-sources.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/sources?ts=$(date +%s)")" = "200"
-          test "$(curl -sS -o /tmp/bsc-brand.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=brand&limit=300&ts=$(date +%s)")" = "200"
-          test "$(curl -sS -o /tmp/bsc-competitor.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/bsc.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/dashboard?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/bsc-sources.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/sources?ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/bsc-brand.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=brand&limit=300&ts=$(date +%s)")" = "200"
+          test "$(curlr -sS -o /tmp/bsc-competitor.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
           python3 - <<'PY'
           import json
           from collections import Counter
@@ -193,15 +196,15 @@ jobs:
               assert counts[name]>=1, f'{name} missing from BSC competitor monitoring: {dict(counts)}'
           print('BSC_FULL_PROFILE_OK', {'blis':d.get('blis_index'),'confidence':d.get('confidence'),'brand_mentions':len(brand),'competitors':dict(counts)})
           PY
-          code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
+          code=$(curlr -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
-          code=$(curl -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
+          code=$(curlr -sS -o /tmp/kub-signals.json -w '%{http_code}' "$BASE/api/signals?client=kub&limit=3&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
-          test "$(curl -sS -o /tmp/refresh.body -w '%{http_code}' -X POST "$BASE/api/clients/wirello/refresh")" = "409"
+          test "$(curlr -sS -o /tmp/refresh.body -w '%{http_code}' -X POST "$BASE/api/clients/wirello/refresh")" = "409"
           wirello_ok=0
           for i in $(seq 1 6); do
-            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/wirello?ts=$(date +%s%N)" -o /tmp/wirello.html && grep -Eqi 'Wirello' /tmp/wirello.html; then
+            if curlr -fsS --connect-timeout 15 --max-time 30 "$BASE/wirello?ts=$(date +%s%N)" -o /tmp/wirello.html && grep -Eqi 'Wirello' /tmp/wirello.html; then
               wirello_ok=1
               break
             fi
