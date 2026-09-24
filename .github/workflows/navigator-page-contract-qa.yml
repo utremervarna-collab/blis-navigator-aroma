@@ -72,7 +72,7 @@ jobs:
           const { chromium }=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           const origin='http://127.0.0.1:10000';
-          const clients=['aroma','bolyarka','mollox','varna-towers','astor-garden','wirello','everbet'];
+          const clients=['aroma','bolyarka','mollox','varna-towers','black-sea-center','astor-garden','wirello','everbet'];
           const pages={
             overview:'Общ изглед',
             social:'Мониторинг',
@@ -123,7 +123,7 @@ jobs:
             return page.locator(`#${id} *`).evaluateAll(nodes=>nodes.filter(el=>{
               if(el.matches('.dv-radar-wrap,.dv-radar-grid,.blis-ms-ticker,.blis-ms-track')||el.closest('.blis-ms-ticker'))return false;
               const s=getComputedStyle(el),r=el.getBoundingClientRect();
-              if(s.overflowX==='hidden'&&s.textOverflow==='ellipsis')return false;
+              if(s.overflowX==='hidden'||s.overflowX==='clip')return false;
               return r.width>20&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'&&el.scrollWidth>el.clientWidth+2;
             }).slice(0,12).map(el=>({tag:el.tagName.toLowerCase(),class:el.getAttribute('class')||'',clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,text:String(el.textContent||'').trim().slice(0,80)})));
           }
