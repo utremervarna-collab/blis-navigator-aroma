@@ -158,6 +158,35 @@ jobs:
           assert len(rows)>=9, f"Delta competitor mentions must be >=9, got {len(rows)}"
           print('DELTA_COMPETITOR_MENTIONS_OK', dict(counts))
           PY
+          test "$(curl -sS -D /tmp/bsc.headers -o /tmp/bsc.html -w '%{http_code}' "$BASE/black-sea-center?ts=$(date +%s)")" = "200"
+          test "$(curl -sS -o /tmp/bsc.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/dashboard?ts=$(date +%s)")" = "200"
+          test "$(curl -sS -o /tmp/bsc-sources.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/sources?ts=$(date +%s)")" = "200"
+          test "$(curl -sS -o /tmp/bsc-brand.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=brand&limit=300&ts=$(date +%s)")" = "200"
+          test "$(curl -sS -o /tmp/bsc-competitor.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
+          python3 - <<'PY'
+          import json
+          from collections import Counter
+          d=json.load(open('/tmp/bsc.json',encoding='utf-8'))
+          assert d.get('client')=='black-sea-center' or d.get('slug')=='black-sea-center', d
+          assert d.get('name')=='Black Sea Center', d.get('name')
+          assert float(d.get('blis_index',0))>0, d.get('blis_index')
+          assert float(d.get('confidence',0))>0, d.get('confidence')
+          metrics=d.get('metrics') or []
+          assert len(metrics)>=8, len(metrics)
+          comps=d.get('competitors') or []
+          assert len(comps)>=4, comps
+          assert comps[0].get('name')=='Varna Towers', comps
+          assert int(comps[0].get('priority',0))==1, comps[0]
+          dossiers=d.get('competitor_dossiers') or []
+          assert dossiers and dossiers[0].get('name')=='Varna Towers', dossiers
+          brand=json.load(open('/tmp/bsc-brand.json',encoding='utf-8')).get('signals') or []
+          competitor=json.load(open('/tmp/bsc-competitor.json',encoding='utf-8')).get('signals') or []
+          assert len(brand)>=4, f'BSC brand monitoring too thin: {len(brand)}'
+          counts=Counter(str(x.get('brand') or '') for x in competitor)
+          for name in ('Varna Towers','Business Park Varna','Landmark Centre Varna','Комфорт Бизнес Център'):
+              assert counts[name]>=1, f'{name} missing from BSC competitor monitoring: {dict(counts)}'
+          print('BSC_FULL_PROFILE_OK', {'blis':d.get('blis_index'),'confidence':d.get('confidence'),'brand_mentions':len(brand),'competitors':dict(counts)})
+          PY
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
