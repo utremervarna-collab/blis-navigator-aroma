@@ -140,9 +140,10 @@ jobs:
           d=json.load(open('/tmp/delta-brand-mentions.json',encoding='utf-8'))
           rows=d.get('signals') or []
           assert len(rows)>=6, f"Delta must have at least 6 verified recent brand mentions, got {len(rows)}"
-          titles=' | '.join(str(x.get('title') or '') for x in rows)
-          assert 'Палитра от намаления' in titles, titles
-          assert 'Юли е месецът на ваканцията' in titles, titles
+          for row in rows:
+              assert str(row.get('title') or '').strip(), row
+              assert str(row.get('source') or '').strip(), row
+              assert str(row.get('url') or '').startswith(('http://','https://')), row
           print('DELTA_RECENT_MENTIONS_OK', len(rows))
           PY
           test "$(curl -sS -o /tmp/delta-competitor-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
