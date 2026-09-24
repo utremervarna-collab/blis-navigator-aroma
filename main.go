@@ -1935,7 +1935,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "api/clients" {
 		out := []map[string]string{}
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "delta-planet", "wirello"} {
+		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "delta-planet", "black-sea-center", "wirello"} {
 			if c := store.Clients[slug]; c != nil {
 				out = append(out, map[string]string{"slug": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note})
 			}
