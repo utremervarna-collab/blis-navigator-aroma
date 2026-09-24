@@ -28,16 +28,17 @@ function valid(s,scope,c){const sc=N(s?.scope);return N(s?.client)===c&&(scope==
 function merge(prev,next,scope,c){const m=new Map();for(const s of A(prev)){if(valid(s,scope,c)){const k=key(s);if(k)m.set(k,s)}}for(const s of A(next)){if(!valid(s,scope,c))continue;const k=key(s);if(!k)continue;const old=m.get(k);if(!old||ts(s)>=ts(old))m.set(k,s)}return [...m.values()].sort((a,b)=>ts(b)-ts(a)).slice(0,MAX_ROWS)}
 function state(c){if(!states.has(c))states.set(c,{brand:[],competitor:[],updated:0,error:false});return states.get(c)}
 function cutoff3m(){const d=new Date();d.setMonth(d.getMonth()-LOOKBACK_MONTHS);return d.getTime()}
-function recent3m(rows){const cut=cutoff3m();return A(rows).filter(s=>{const t=ts(s);return t&&t>=cut}).sort((a,b)=>ts(b)-ts(a))}
+function recent3m(rows){const cut=cutoff3m();return A(rows).filter(s=>{const t=ts(s);if(!(t&&t>=cut))return false;if(client()==='delta-planet'&&N(s?.scope)==='competitor'){const u=String(s?.url||'').toLowerCase(),tt=N(s?.title),tx=N(s?.text);if(u.includes('mall-varna.bg')&&(tt==='mall varna'||tt==='black sea center'||tt.includes('about us')||tt.includes('за нас')))return false;if(u.includes('retailmap.bg')&&(tx.includes('бисквит')||tx.includes('cookies')||tx.includes('главни търговски улици')||tx.includes('пазарни доклади')))return false}return true}).sort((a,b)=>ts(b)-ts(a))}
 function fmt(t){return t?new Date(t).toLocaleString('bg-BG',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'без потвърдена дата'}
 function day(t){return t?new Date(t).toLocaleDateString('bg-BG',{day:'2-digit',month:'long',year:'numeric'}):'Без дата'}
 function source(s){return String(s?.source||'Неуточнен източник').replace(/\s+/g,' ').trim()}
-function brand(s){return String(s?.brand||'Конкурент').replace(/\s+/g,' ').trim()}
+function brand(s){let b=String(s?.brand||'Конкурент').replace(/\s+/g,' ').trim();if(client()==='delta-planet'&&/^(mall varna|варна мол)$/i.test(b))b='Black Sea Center';return b}
 function cleanTitle(s){
   let t=String(s?.title||'Споменаване').replace(/\s+/g,' ').trim();
   const b=brand(s);
   if(/^офиси под наем/i.test(t)&&b&&N(t).includes(N(b)))t='Офиси под наем — '+b;
   t=t.replace(/\b(Home|Начало)\s*[-–—|:]?\s*(Black Sea Capital(?: Center)?|Business Park Varna|Landmark Centre Varna)\b/i,'$2');
+  if(client()==='delta-planet')t=t.replace(/Mall Varna|MALL VARNA|Варна Мол/gi,'Black Sea Center');
   return t||'Споменаване';
 }
 function cleanBody(s){
@@ -49,12 +50,19 @@ function cleanBody(s){
     /\bДруги услуги\b/gi,/\bконтакт BG\s*\|\s*EN\b/gi,/\bСлед влизане\b/gi,
     /\bНачало\b/gi,/\bПроекти\b/gi,/\bНовини\b/gi,/\bЗа нас\b/gi,
     /\bПродажби\b/gi,/\bКонтакти\b/gi,/\bБългарски\b/gi,/\bEnglish\b/gi,/\bРусский\b/gi,
-    /\bКарта и Локация\b/gi,/\bОфертни наемни нива\b/gi
+    /\bКарта и Локация\b/gi,/\bОфертни наемни нива\b/gi,
+    /Със сърфирането на този уебсайт[^.]*[.]?/gi,
+    /Вие приемате, че той използва[^.]*[.]?/gi,
+    /Научете повече[.]?/gi,
+    /Copyright\s+MALL\s+VARNA\s+2017[^.]*[.]?/gi,
+    /All Rights Reserved/gi,
+    /Главни търговски улици/gi,/Пазарни доклади/gi,/Имоти/gi
   ];
   junk.forEach(r=>{x=x.replace(r,' ')});
   x=x.replace(/https?:\/\/\S+/gi,' ');
   x=x.replace(/\b(?:Telephone|Phone|E-mail|web):?\s*[^,;|]+/gi,' ');
   x=x.replace(/\s*\|\s*/g,' · ').replace(/\s{2,}/g,' ').replace(/^[·,;:\-–—\s]+|[·,;:\-–—\s]+$/g,'').trim();
+  if(client()==='delta-planet')x=x.replace(/Mall Varna|MALL VARNA|Варна Мол/gi,'Black Sea Center');
   if(x.length<45)return'';
   return x.slice(0,240).replace(/\s+\S*$/,'').trim();
 }
