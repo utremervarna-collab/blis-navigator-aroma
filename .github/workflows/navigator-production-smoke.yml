@@ -134,6 +134,17 @@ jobs:
           test "$(curl -sS -o /tmp/delta-home.html -w '%{http_code}' "$BASE/?client=delta-planet&ts=$(date +%s)")" = "200"
           grep -q 'blis-home-client-context' /tmp/delta-home.html
           grep -q '/delta-planet' /tmp/delta-home.html
+          test "$(curl -sS -o /tmp/delta-brand-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=brand&limit=300&ts=$(date +%s)")" = "200"
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/delta-brand-mentions.json',encoding='utf-8'))
+          rows=d.get('signals') or []
+          assert len(rows)>=6, f"Delta must have at least 6 verified recent brand mentions, got {len(rows)}"
+          titles=' | '.join(str(x.get('title') or '') for x in rows)
+          assert 'Палитра от намаления' in titles, titles
+          assert 'Юли е месецът на ваканцията' in titles, titles
+          print('DELTA_RECENT_MENTIONS_OK', len(rows))
+          PY
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
