@@ -242,7 +242,7 @@ async function checkPublicMentionsContract() {
   }
   for (const [url, method, expected] of [
     [`${base}?client=aroma&scope=all`, 'GET', 400],
-    [`${base}?client=black-sea-center&scope=brand`, 'GET', 403],
+    [`${base}?client=black-sea-center&scope=brand`, 'GET', 200],
     [`${base}?client=aroma&scope=brand`, 'POST', 405],
     [`${origin}/api/signals?client=aroma`, 'GET', 401]
   ]) {
@@ -260,7 +260,7 @@ async function checkPublicMentionsContract() {
       const context = await browser.newContext({viewport: {width, height: 900}, deviceScaleFactor: 1});
       const cases = width <= 820
         ? [['aroma', 'overview'], ['mollox', 'social'], ['varna-towers', 'overview']]
-        : [['aroma', 'overview'], ['mollox', 'social']];
+        : [['aroma', 'overview'], ['mollox', 'social'], ['black-sea-center', 'overview']];
       for (const [client, first] of cases) {
         const page = await context.newPage();
         await instrument(page);
