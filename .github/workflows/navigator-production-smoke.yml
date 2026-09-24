@@ -145,6 +145,19 @@ jobs:
           assert 'Юли е месецът на ваканцията' in titles, titles
           print('DELTA_RECENT_MENTIONS_OK', len(rows))
           PY
+          test "$(curl -sS -o /tmp/delta-competitor-mentions.json -w '%{http_code}' "$BASE/api/public/mentions?client=delta-planet&scope=competitor&limit=300&ts=$(date +%s)")" = "200"
+          python3 - <<'PY'
+          import json
+          from collections import Counter
+          d=json.load(open('/tmp/delta-competitor-mentions.json',encoding='utf-8'))
+          rows=d.get('signals') or []
+          counts=Counter(str(x.get('brand') or '') for x in rows)
+          required={'Grand Mall Varna','Black Sea Center','Retail Park Varna'}
+          missing=[x for x in required if counts[x] < 1]
+          assert not missing, f"Missing Delta competitor mentions: {missing}; counts={dict(counts)}"
+          assert len(rows)>=9, f"Delta competitor mentions must be >=9, got {len(rows)}"
+          print('DELTA_COMPETITOR_MENTIONS_OK', dict(counts))
+          PY
           code=$(curl -sS -D /tmp/kub.headers -o /tmp/kub.body -w '%{http_code}' "$BASE/dashboard.html?client=kub&page=overview&ts=$(date +%s)")
           test "$code" = "302"
           grep -Eqi '^location: /kub-crisis\.html' /tmp/kub.headers
