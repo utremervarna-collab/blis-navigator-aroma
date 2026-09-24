@@ -86,6 +86,7 @@ function paint(){
  try{window.slug=KEY;window.BLIS_INITIAL_CLIENT=KEY}catch(_){}
  if(document.title!==`BLIS Navigator - ${NAME}`)document.title=`BLIS Navigator - ${NAME}`;
  ensureLockedClient();
+ const home=document.querySelector('.dashboard-home-link');if(home&&home.getAttribute('href')!=='/?client=black-sea-center')home.setAttribute('href','/?client=black-sea-center');
  document.querySelectorAll('.client-brand-name,.bch3-name').forEach(n=>{if(n.textContent!==NAME)n.textContent=NAME});
  document.querySelectorAll('.client-brand-type').forEach(n=>{if(n.textContent!==TYPE)n.textContent=TYPE});
  document.querySelectorAll('.bch3-desc').forEach(n=>{if(n.textContent!==DESC)n.textContent=DESC});
