@@ -157,9 +157,74 @@ func deltaDashboard(c *Client)map[string]interface{}{
 	}
 }
 
+func deltaVerifiedRecentMentions() []Signal {
+	detected:=nowISO()
+	makeSignal:=func(source,sourceType,scope,url,title,text,published,topic,sentiment string,relevance,risk float64) Signal {
+		fp:=signalHash("delta-planet",url,title,text)
+		return Signal{
+			ID:fp[:16],Client:"delta-planet",Brand:"Delta Planet Mall",Source:source,SourceType:sourceType,Scope:scope,
+			URL:url,Title:title,Text:text,PublishedAt:published,DetectedAt:detected,Relevance:relevance,
+			Sentiment:sentiment,Topic:topic,RiskScore:risk,Severity:signalSeverity(risk),Fingerprint:fp,
+		}
+	}
+	return []Signal{
+		makeSignal(
+			"Delta Planet Mall","official","owned",
+			"https://deltaplanet.bg/novini",
+			"Всички ваучери от кампанията „Палитра от намаления“ са изчерпани!",
+			"Delta Planet Mall съобщава за изчерпани ваучери от кампанията „Палитра от намаления“ след силен интерес.",
+			"2026-08-29T12:00:00+03:00","campaign","positive",100,5,
+		),
+		makeSignal(
+			"Cinema City / CineCity Guide","web","external",
+			"https://cinecity.guide/bg/varna?ezik=original&kino=cinema-city-varna",
+			"Програма на Cinema City в Delta Planet Mall",
+			"Публична кино програма за Cinema City в Delta Planet Mall, Варна.",
+			"2026-08-27T07:13:00+03:00","entertainment","neutral",88,8,
+		),
+		makeSignal(
+			"Marmaris Restaurant","social_web","external",
+			"https://www.restaurants10.com/BG/Varna/636788606963858/Turkish-Restaurant-Marmaris---Delta-Planet-Mall-Varna",
+			"Marmaris Restaurant публикува обедно меню от Delta Planet Mall",
+			"Публикация на ресторант Marmaris кани посетители в обекта в Delta Planet Mall – Варна.",
+			"2026-07-20T12:00:00+03:00","tenant_activity","neutral",90,5,
+		),
+		makeSignal(
+			"Tripadvisor","review","external",
+			"https://www.tripadvisor.com/Attraction_Review-g295392-d17513506-Reviews-Delta_Planet_Mall-Varna_Varna_Province.html",
+			"Потребителски отзив за Delta Planet Mall",
+			"Публикуван е потребителски отзив за посещение в Delta Planet Mall през юли 2026 г.",
+			"2026-07-13T12:00:00+03:00","reputation","neutral",94,15,
+		),
+		makeSignal(
+			"VR Varna","web","external",
+			"https://www.vrvarna.com/uslovia/",
+			"VR Varna посочва Delta Planet Mall като локация на обекта си",
+			"Актуализираната публична информация на VR Varna посочва обектите на ниво 1 и ниво -3 в Delta Planet Mall.",
+			"2026-07-09T12:00:00+03:00","tenant_activity","neutral",92,5,
+		),
+		makeSignal(
+			"Delta Planet Mall","official","owned",
+			"https://www.deltaplanet.bg/magazini/promocii",
+			"Юли е месецът на ваканцията",
+			"Delta Planet Mall публикува лятна комуникация за юли и активностите в търговския център.",
+			"2026-07-01T12:00:00+03:00","campaign","positive",100,5,
+		),
+	}
+}
+
+func ensureDeltaVerifiedRecentMentions(){
+	rows:=deltaVerifiedRecentMentions()
+	if len(rows)==0{return}
+	mergeSignals("delta-planet",rows)
+	saveSignalStateFile()
+	saveStore()
+}
+
 func bootstrapDeltaPlanet(){
 	c:=ensureDeltaPlanetClient()
 	if c==nil{return}
+	ensureDeltaVerifiedRecentMentions()
 	runUniversalClientEngineV34(c,true)
 	if continuousMonitoringMu.TryLock(){
 		snap:=signalClientSnapshot("delta-planet")
