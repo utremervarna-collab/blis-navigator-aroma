@@ -177,9 +177,11 @@ jobs:
           metrics=d.get('metrics') or []
           assert len(metrics)>=8, len(metrics)
           comps=d.get('competitors') or []
-          assert len(comps)>=4, comps
-          assert comps[0].get('name')=='Varna Towers', comps
-          assert int(comps[0].get('priority',0))==1, comps[0]
+          assert len(comps)>=5, comps
+          assert comps[0].get('name')=='Black Sea Center', comps
+          assert any(x.get('name')=='Varna Towers' for x in comps), comps
+          vt=next(x for x in comps if x.get('name')=='Varna Towers')
+          assert int(vt.get('priority',0))==1, vt
           dossiers=d.get('competitor_dossiers') or []
           assert dossiers and dossiers[0].get('name')=='Varna Towers', dossiers
           brand=json.load(open('/tmp/bsc-brand.json',encoding='utf-8')).get('signals') or []
