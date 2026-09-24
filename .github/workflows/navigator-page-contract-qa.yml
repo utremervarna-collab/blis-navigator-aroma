@@ -179,6 +179,21 @@ jobs:
                 await p.close();
               }
 
+              const bsc=await browser.newPage({viewport:{width:1440,height:1000}});
+              await bsc.goto(origin+'/dashboard.html?client=black-sea-center&page=overview',{waitUntil:'domcontentloaded',timeout:30000});
+              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center'&&document.querySelector('.dashboard-home-link'),null,{timeout:20000});
+              const bscHomeHref=await bsc.locator('.dashboard-home-link').getAttribute('href');
+              assert(bscHomeHref==='/?client=black-sea-center',`BSC Home backlink lost client context: ${bscHomeHref}`);
+              await bsc.locator('.dashboard-home-link').click();
+              await bsc.waitForURL(/\/\?client=black-sea-center(?:&.*)?$/,{timeout:10000});
+              await bsc.waitForSelector('#blis-home-active-client-v2',{timeout:10000});
+              const bscLogin=await bsc.locator('.actions .btn.login').getAttribute('href');
+              assert(/client=black-sea-center/.test(bscLogin||''),`BSC Home login target is ${bscLogin}`);
+              await bsc.locator('.actions .btn.login').click();
+              await bsc.waitForURL(/dashboard\.html\?.*client=black-sea-center/,{timeout:10000});
+              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:15000});
+              await bsc.close();
+
               const home=await browser.newPage({viewport:{width:1440,height:1000}});
               await home.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
               await home.waitForSelector('.hubNav .hubNavTrigger',{timeout:10000});
