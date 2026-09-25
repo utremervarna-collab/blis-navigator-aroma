@@ -178,20 +178,15 @@ jobs:
                 assert(errors.length===0,`${client}: runtime errors: ${errors.join(' | ')}`);
                 await p.close();
               }
-
               const bsc=await browser.newPage({viewport:{width:1440,height:1000}});
-              await bsc.goto(origin+'/dashboard.html?client=black-sea-center&page=overview',{waitUntil:'domcontentloaded',timeout:30000});
-              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center'&&document.querySelector('.dashboard-home-link'),null,{timeout:20000});
-              const bscHomeHref=await bsc.locator('.dashboard-home-link').getAttribute('href');
-              assert(bscHomeHref==='/?client=black-sea-center',`BSC Home backlink lost client context: ${bscHomeHref}`);
-              await bsc.locator('.dashboard-home-link').click();
-              await bsc.waitForURL(/\/\?client=black-sea-center(?:&.*)?$/,{timeout:10000});
-              await bsc.waitForSelector('#blis-home-active-client-v2',{timeout:10000});
-              const bscLogin=await bsc.locator('.actions .btn.login').getAttribute('href');
-              assert(/client=black-sea-center/.test(bscLogin||''),`BSC Home login target is ${bscLogin}`);
-              await bsc.locator('.actions .btn.login').click();
+              await bsc.goto(origin+'/black-sea-center',{waitUntil:'domcontentloaded',timeout:30000});
               await bsc.waitForURL(/dashboard\.html\?.*client=black-sea-center/,{timeout:10000});
               await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:15000});
+              assert(await bsc.locator('.dashboard-home-link').count()===0,'BSC dashboard must not expose Home navigation');
+              await bsc.goto(origin+'/?client=black-sea-center',{waitUntil:'domcontentloaded',timeout:30000});
+              await bsc.waitForURL(/dashboard\.html\?.*client=black-sea-center/,{timeout:10000});
+              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:15000});
+              assert(await bsc.locator('.dashboard-home-link').count()===0,'BSC client root must resolve to dashboard only');
               await bsc.close();
 
               const home=await browser.newPage({viewport:{width:1440,height:1000}});
