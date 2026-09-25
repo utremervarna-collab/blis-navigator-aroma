@@ -189,6 +189,10 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// keeps Dashboard -> Home navigation available even while the backend is
 	// briefly busy, restoring persistence, or being replaced by the provider.
 	if (path == "/" || path == "/index.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "black-sea-center") {
+			http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
+			return
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		w.Header().Set("X-BLIS-Home-Origin", "gateway")
@@ -199,10 +203,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		body := injectBLISI18N([]byte(indexHTML))
 		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "delta-planet") {
 			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='delta-planet';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href','/delta-planet')})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)){e.preventDefault();location.href='/delta-planet'}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',click,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
-			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))
-		}
-		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "black-sea-center") {
-			ctx := []byte(`<meta id="blis-home-bsc-active-client" data-client="black-sea-center"><script id="blis-home-bsc-context">(function(){var K='black-sea-center',T='/dashboard.html?client=black-sea-center&page=overview';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href',T)});document.querySelectorAll('[data-navigator-link],[data-client-login]').forEach(function(el){el.setAttribute('data-bsc-target',T)})}function go(e){var a=e.target&&e.target.closest?e.target.closest('a[href],[data-navigator-link],[data-client-login]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)||a.hasAttribute('data-navigator-link')||a.hasAttribute('data-client-login')){e.preventDefault();e.stopImmediatePropagation();location.assign(T)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',go,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
 			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))
 		}
 		_, _ = w.Write(body)
