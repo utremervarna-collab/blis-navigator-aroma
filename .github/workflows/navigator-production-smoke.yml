@@ -176,7 +176,7 @@ jobs:
           test "$(curlr -sS -o /tmp/bsc-home.html -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")" = "200"
           grep -q 'blis-home-active-client-v2' /tmp/bsc-home.html
           grep -q 'blis-home-bsc-context' /tmp/bsc-home.html
-          grep -q "T='/black-sea-center'" /tmp/bsc-home.html
+          grep -q "T='/dashboard.html?client=black-sea-center&page=overview'" /tmp/bsc-home.html
           test "$(curlr -sS -o /tmp/bsc.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/dashboard?ts=$(date +%s)")" = "200"
           test "$(curlr -sS -o /tmp/bsc-sources.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/sources?ts=$(date +%s)")" = "200"
           test "$(curlr -sS -o /tmp/bsc-brand.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=brand&limit=300&ts=$(date +%s)")" = "200"
