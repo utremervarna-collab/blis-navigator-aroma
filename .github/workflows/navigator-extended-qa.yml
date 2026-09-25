@@ -68,7 +68,7 @@ jobs:
           // The external public read-only contract is validated separately above.
           const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','delta-planet','black-sea-center','everbet','astor-garden'];
-          const pages=['overview','social','market','digital','reputation','competition','history','reports'];
+          const pages=['overview','social','market','competition','history','hub','calendar'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers','delta-planet':'Delta Planet Mall','black-sea-center':'Black Sea Center',everbet:'Everbet','astor-garden':'Astor Garden'};
           const visible=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','wirello'];
           let phase='startup';
@@ -80,13 +80,13 @@ jobs:
             await p.goto(target,{waitUntil:'domcontentloaded',timeout:30000});
             phase=`ready:${client}:runtime`;
             await p.waitForFunction(()=>typeof window.refGo==='function'&&!!window.BLISClientUIV5&&Array.isArray(window.BLIS_VISIBLE_CLIENTS),null,{timeout:25000});
-            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-page]').length>=8,null,{timeout:15000});
+            await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-n3-page]').length===7,null,{timeout:15000});
             await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:18000});
             await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
             const state=await p.evaluate(()=>({
               id:document.body.dataset.client||'',
               name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
-              nav:[...document.querySelectorAll('#nav button[data-page]')].map(x=>x.dataset.page),
+              nav:[...document.querySelectorAll('#nav button[data-n3-page]')].map(x=>x.dataset.n3Page),
               visible:[...(window.BLIS_VISIBLE_CLIENTS||[])],
               menu:[...document.querySelectorAll('.client-switch-menu .client-option[data-client-key]')].map(x=>x.dataset.clientKey),
               lang:document.documentElement.lang,
