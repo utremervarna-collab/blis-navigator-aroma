@@ -16,7 +16,7 @@ concurrency:
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
   MIGRATION_BUILD: code-run-migration-2026-09-09-v1
-  RELEASE_MARKER: bsc-home-2026-09-25-v1
+  RELEASE_MARKER: bsc-home-2026-09-25-v2
 
 jobs:
   local-regression:
