@@ -66,7 +66,7 @@ jobs:
           const assert=(ok,msg)=>{if(!ok)throw new Error(msg)};
           // Renderer QA deliberately uses the application behind the gateway.
           // The external public read-only contract is validated separately above.
-          const origin='http://127.0.0.1:10001';
+          const origin='http://127.0.0.1:10000';
           const clients=['aroma','bolyarka','mollox','varna-towers','delta-planet','black-sea-center','everbet','astor-garden'];
           const pages=['overview','social','market','digital','reputation','competition','history','reports'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers','delta-planet':'Delta Planet Mall','black-sea-center':'Black Sea Center',everbet:'Everbet','astor-garden':'Astor Garden'};
