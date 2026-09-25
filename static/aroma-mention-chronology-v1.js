@@ -116,10 +116,14 @@ async function mountMonitoring(force=false){
   const state=await load('brand',force);if(panel.isConnected)render(panel,panelHTML('brand',state));
 }
 
+function unmountAromaPanels(){
+  document.getElementById('aromaBrandChronology')?.remove();
+  document.getElementById('aromaCompetitorChronology')?.remove();
+}
 let timer=0;
 function sync(force=false){
   css();
-  if(!aromaOnly())return;
+  if(!aromaOnly()){unmountAromaPanels();return}
   activateCompetitionBar();
   if(document.getElementById('competition')||document.getElementById('competitionBody'))mountCompetition(force);
   if(document.getElementById('social')||document.getElementById('socialBody'))mountMonitoring(force);
