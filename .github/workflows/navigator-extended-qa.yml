@@ -83,6 +83,7 @@ jobs:
             await p.waitForFunction(()=>document.querySelectorAll('#nav button[data-n3-page]').length===7,null,{timeout:15000});
             await p.waitForFunction(()=>document.querySelector('.page.active')?.innerText.trim().length>20,null,{timeout:18000});
             await p.waitForFunction(()=>document.body.dataset.blisLoading!=='true',null,{timeout:15000});
+            await p.waitForFunction(()=>document.documentElement.dataset.navigatorPaint==='ready'&&!document.documentElement.classList.contains('blis-route-pending'),null,{timeout:20000});
             const state=await p.evaluate(()=>({
               id:document.body.dataset.client||'',
               name:document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'',
@@ -117,7 +118,10 @@ jobs:
               phase=`${client}:${page}`;
               await p.evaluate(x=>window.refGo(x),page);
               await p.waitForFunction(x=>document.querySelector('.page.active')?.id===x,page,{timeout:10000});
-              await p.waitForTimeout(250);
+              await p.waitForFunction(x=>{
+                const root=document.getElementById(x),cs=root?getComputedStyle(root):null;
+                return !!root&&!document.documentElement.classList.contains('blis-route-pending')&&cs?.display!=='none'&&cs?.visibility!=='hidden'&&Number(cs?.opacity||1)>.01&&(root.innerText||'').trim().length>20;
+              },page,{timeout:15000});
               const x=await inspect(p,page);
               assert(x.visible&&x.height>70&&x.text>20,`${client}/${page}: blank or collapsed ${JSON.stringify(x)}`);
               assert(!x.loading,`${client}/${page}: loading remained`);
