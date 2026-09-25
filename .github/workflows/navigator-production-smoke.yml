@@ -173,10 +173,9 @@ jobs:
           grep -q 'navigator-production-entry-v1.js' /tmp/bsc.html
           curlr -fsS "$BASE/navigator-production-entry-v1.js?ts=$(date +%s)" -o /tmp/production-entry.js
           grep -q 'navigator-black-sea-center-v1.js' /tmp/production-entry.js
-          test "$(curlr -sS -o /tmp/bsc-home.html -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")" = "200"
-          grep -q 'blis-home-active-client-v2' /tmp/bsc-home.html
-          grep -q 'blis-home-bsc-context' /tmp/bsc-home.html
-          grep -q "T='/dashboard.html?client=black-sea-center&page=overview'" /tmp/bsc-home.html
+          bsc_home_code=$(curlr -sS -D /tmp/bsc-home.headers -o /tmp/bsc-home.body -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")
+          test "$bsc_home_code" = "302"
+          grep -Eqi '^location: /dashboard\.html\?.*client=black-sea-center.*page=overview|^location: /dashboard\.html\?.*page=overview.*client=black-sea-center' /tmp/bsc-home.headers
           test "$(curlr -sS -o /tmp/bsc.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/dashboard?ts=$(date +%s)")" = "200"
           test "$(curlr -sS -o /tmp/bsc-sources.json -w '%{http_code}' "$BASE/api/clients/black-sea-center/sources?ts=$(date +%s)")" = "200"
           test "$(curlr -sS -o /tmp/bsc-brand.json -w '%{http_code}' "$BASE/api/public/mentions?client=black-sea-center&scope=brand&limit=300&ts=$(date +%s)")" = "200"
