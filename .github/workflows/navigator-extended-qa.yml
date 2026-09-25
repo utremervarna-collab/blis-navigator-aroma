@@ -163,6 +163,22 @@ jobs:
                 await m.close();
               }
 
+              phase='bsc-home-roundtrip';
+              const bsc=await browser.newPage({viewport:{width:1440,height:1000}});
+              await bsc.goto(origin+'/dashboard.html?client=black-sea-center&page=overview',{waitUntil:'domcontentloaded',timeout:30000});
+              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center'&&document.querySelector('.dashboard-home-link'),null,{timeout:20000});
+              const homeHref=await bsc.locator('.dashboard-home-link').getAttribute('href');
+              assert(homeHref==='/?client=black-sea-center',`BSC Home backlink lost client context: ${homeHref}`);
+              await bsc.locator('.dashboard-home-link').click();
+              await bsc.waitForURL(/\/\?client=black-sea-center(?:&.*)?$/,{timeout:10000});
+              await bsc.waitForSelector('#blis-home-active-client-v2',{timeout:10000});
+              const enter=bsc.locator('.actions .btn.login');
+              assert(await enter.count()===1,'BSC Home Navigator entry missing or duplicated');
+              await enter.click();
+              await bsc.waitForURL(/(?:\/black-sea-center|dashboard\.html\?.*client=black-sea-center)/,{timeout:10000});
+              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:20000});
+              await bsc.close();
+
               phase='done';
               clearTimeout(watchdog);
               console.log('NAVIGATOR_EXTENDED_CURRENT_QA_OK');
