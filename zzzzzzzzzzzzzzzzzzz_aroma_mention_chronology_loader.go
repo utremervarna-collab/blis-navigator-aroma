@@ -3,7 +3,7 @@ package main
 import "bytes"
 
 func init() {
-	const chronologyScript = `<script defer src="/aroma-mention-chronology-v1.js?v=20260914-2"></script>`
+	const chronologyScript = `<script defer src="/aroma-mention-chronology-v1.js?v=20260925-client-isolation1"></script>`
 	const activationScript = `<script defer src="/aroma-competition-activation-v1.js?v=20260914-1"></script>`
 	const dedupScript = `<script defer src="/aroma-chronology-semantic-dedup-v1.js?v=20260914-1"></script>`
 	const dossierDataScript = `<script defer src="/navigator-competitor-dossiers-data-v2.js?v=20260914-aroma3"></script>`
