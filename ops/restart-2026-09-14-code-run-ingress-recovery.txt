@@ -7,3 +7,5 @@ Reason: production runtime remained behind main after Varna Towers competitor co
 Expected result: clean redeploy of current main only; canonical service and URL unchanged.
 
 2026-09-21 mobile-nav recovery: force clean redeploy after live 503 / load failure. Keep current Navigator routes and data intact.
+
+2026-09-25 BSC Home v3 acceptance: force clean redeploy of current main after canonical code.run did not publish the exact release marker. Preserve the existing service, URL, routes, and persisted data.
