@@ -23,7 +23,8 @@ function client(){
 }
 function publishedTs(s){const t=Date.parse(s?.published_at||s?.observed_at||s?.date||'');return Number.isFinite(t)?t:0}
 function ts(s){const p=publishedTs(s);if(p)return p;const t=Date.parse(s?.detected_at||'');return Number.isFinite(t)?t:0}
-function key(s){return N(s?.fingerprint||s?.id||s?.url||`${s?.title||''}|${s?.source||''}|${ts(s)}`)}
+function canonicalUrl(v){try{const u=new URL(String(v||''),location.origin);u.hash='';['utm_source','utm_medium','utm_campaign','utm_term','utm_content','fbclid','gclid'].forEach(k=>u.searchParams.delete(k));u.pathname=u.pathname.replace(/\\/+$/,'')||'/';return N(u.toString())}catch(_){return N(v)}}
+function key(s){const u=canonicalUrl(s?.url);if(u)return 'url:'+u;const published=publishedTs(s)||ts(s);const semantic=N(`${s?.title||''}|${s?.source||''}|${published}`);return semantic?'semantic:'+semantic:N(s?.fingerprint||s?.id||'')}
 function valid(s,scope,c){const sc=N(s?.scope);return N(s?.client)===c&&(scope==='competitor'?sc==='competitor':(sc==='external'||sc==='owned'))&&/^https?:\/\//i.test(String(s?.url||''))&&String(s?.source||'').trim()&&String(s?.title||'').trim()}
 function merge(prev,next,scope,c){const m=new Map();for(const s of A(prev)){if(valid(s,scope,c)){const k=key(s);if(k)m.set(k,s)}}for(const s of A(next)){if(!valid(s,scope,c))continue;const k=key(s);if(!k)continue;const old=m.get(k);if(!old||ts(s)>=ts(old))m.set(k,s)}return [...m.values()].sort((a,b)=>ts(b)-ts(a)).slice(0,MAX_ROWS)}
 function state(c){if(!states.has(c))states.set(c,{brand:[],competitor:[],updated:0,error:false});return states.get(c)}
