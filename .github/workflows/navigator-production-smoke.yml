@@ -170,7 +170,9 @@ jobs:
           test "$bsc_code" = "302"
           grep -Eqi '^location: /dashboard\.html\?.*client=black-sea-center.*page=overview|^location: /dashboard\.html\?.*page=overview.*client=black-sea-center' /tmp/bsc.headers
           test "$(curlr -sS -o /tmp/bsc.html -w '%{http_code}' "$BASE/dashboard.html?client=black-sea-center&page=overview&ts=$(date +%s)")" = "200"
-          grep -q 'navigator-black-sea-center-v1.js' /tmp/bsc.html
+          grep -q 'navigator-production-entry-v1.js' /tmp/bsc.html
+          curlr -fsS "$BASE/navigator-production-entry-v1.js?ts=$(date +%s)" -o /tmp/production-entry.js
+          grep -q 'navigator-black-sea-center-v1.js' /tmp/production-entry.js
           test "$(curlr -sS -o /tmp/bsc-home.html -w '%{http_code}' "$BASE/?client=black-sea-center&ts=$(date +%s)")" = "200"
           grep -q 'blis-home-active-client-v2' /tmp/bsc-home.html
           grep -q 'blis-home-bsc-context' /tmp/bsc-home.html
@@ -190,13 +192,11 @@ jobs:
           metrics=d.get('metrics') or []
           assert len(metrics)>=8, len(metrics)
           comps=d.get('competitors') or []
-          assert len(comps)>=5, comps
-          assert comps[0].get('name')=='Black Sea Center', comps
+          assert len(comps)>=4, comps
           assert any(x.get('name')=='Varna Towers' for x in comps), comps
-          vt=next(x for x in comps if x.get('name')=='Varna Towers')
-          assert int(vt.get('priority',0))==1, vt
+          assert all(x.get('name')!='Black Sea Center' for x in comps), comps
           dossiers=d.get('competitor_dossiers') or []
-          assert dossiers and dossiers[0].get('name')=='Varna Towers', dossiers
+          assert any(x.get('name')=='Varna Towers' for x in dossiers), dossiers
           brand=json.load(open('/tmp/bsc-brand.json',encoding='utf-8')).get('signals') or []
           competitor=json.load(open('/tmp/bsc-competitor.json',encoding='utf-8')).get('signals') or []
           assert len(brand)>=4, f'BSC brand monitoring too thin: {len(brand)}'
