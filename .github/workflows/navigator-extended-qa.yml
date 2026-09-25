@@ -175,11 +175,11 @@ jobs:
               assert(homeHref==='/?client=black-sea-center',`BSC Home backlink lost client context: ${homeHref}`);
               await bsc.locator('.dashboard-home-link').click();
               await bsc.waitForURL(/\/\?client=black-sea-center(?:&.*)?$/,{timeout:10000});
-              await bsc.waitForSelector('#blis-home-active-client-v2',{timeout:10000});
+              await bsc.waitForFunction(()=>document.documentElement.dataset.clientContext==='black-sea-center'&&!!document.querySelector('#blis-home-bsc-context'),null,{timeout:10000});
               const enter=bsc.locator('.actions .btn.login');
               assert(await enter.count()===1,'BSC Home Navigator entry missing or duplicated');
               await enter.click();
-              await bsc.waitForURL(/(?:\/black-sea-center|dashboard\.html\?.*client=black-sea-center)/,{timeout:10000});
+              await bsc.waitForURL(/dashboard\.html\?.*client=black-sea-center/,{timeout:10000});
               await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:20000});
               await bsc.close();
 
