@@ -373,20 +373,42 @@ func homeSearchCompactTextV2(v string, limit int) string {
 	return v
 }
 
+func homeSearchPreviewV3(v string) string {
+	v = strings.TrimSpace(strings.Join(strings.Fields(cleanPostSnippet(v)), " "))
+	if v == "" {
+		return ""
+	}
+	r := []rune(v)
+	endings := 0
+	cut := len(r)
+	for i, ch := range r {
+		if ch == '.' || ch == '!' || ch == '?' {
+			endings++
+			if endings >= 2 {
+				cut = i + 1
+				break
+			}
+		}
+	}
+	if cut > 300 {
+		cut = 300
+	}
+	if cut < len(r) {
+		return strings.TrimSpace(string(r[:cut])) + "…"
+	}
+	return strings.TrimSpace(string(r[:cut]))
+}
+
 func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSourceV1) {
-	parts := []string{}
+	answer := ""
 	sources := []homeSearchAnswerSourceV1{}
-	seenText := map[string]bool{}
 	seenURL := map[string]bool{}
 	for _, r := range web {
-		text := homeSearchCompactTextV2(r.Snippet, 240)
-		if text == "" {
-			text = homeSearchCompactTextV2(r.Title, 180)
-		}
-		key := strings.ToLower(text)
-		if text != "" && !seenText[key] {
-			seenText[key] = true
-			parts = append(parts, text)
+		if answer == "" {
+			answer = homeSearchPreviewV3(r.Snippet)
+			if answer == "" {
+				answer = homeSearchPreviewV3(r.Title)
+			}
 		}
 		u := strings.TrimSpace(r.URL)
 		if u != "" && !seenURL[strings.ToLower(u)] {
@@ -397,18 +419,11 @@ func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSou
 				URL: u,
 			})
 		}
-		if len(parts) >= 2 && len(sources) >= 3 {
+		if answer != "" && len(sources) >= 3 {
 			break
 		}
 	}
-	answer := ""
-	if len(parts) > 0 {
-		answer = parts[0]
-		if len(parts) > 1 {
-			answer += " " + parts[1]
-		}
-	}
-	return homeSearchCompactTextV2(answer, 470), sources
+	return answer, sources
 }
 
 func homeSearchBusinessIntentV2(q string, nav []homeSearchResultV1) (bool, string) {
@@ -453,7 +468,7 @@ func homeSearchOfferV2(q string, nav []homeSearchResultV1) homeSearchOfferV1 {
 		Show: true,
 		Title: title,
 		Text: text,
-		CTA: "Заяви анализ с Navigator",
+		CTA: "Поръчай пълен анализ с Navigator",
 		URL: "/contact.html?analysis=1&topic=" + url.QueryEscape(q),
 	}
 }
