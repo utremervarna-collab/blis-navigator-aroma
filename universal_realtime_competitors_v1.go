@@ -110,7 +110,7 @@ func init() {
 	go func() {
 		// Let the gateway and brand lane settle before the first competitor pass.
 		// Sleep after each pass to avoid ticker backlog.
-		time.Sleep(45 * time.Second)
+		time.Sleep(120 * time.Second)
 		for {
 			runUniversalRealtimeCompetitorCycle()
 			time.Sleep(universalRealtimeCompetitorInterval)
