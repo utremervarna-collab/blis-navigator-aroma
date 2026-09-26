@@ -373,41 +373,53 @@ func homeSearchCompactTextV2(v string, limit int) string {
 	return v
 }
 
-func homeSearchPreviewV3(v string) string {
+func homeSearchPreviewV3(v string, maxRunes int) string {
 	v = strings.TrimSpace(strings.Join(strings.Fields(cleanPostSnippet(v)), " "))
 	if v == "" {
 		return ""
 	}
 	r := []rune(v)
-	endings := 0
+	if maxRunes <= 0 {
+		maxRunes = 420
+	}
 	cut := len(r)
+	endings := 0
 	for i, ch := range r {
 		if ch == '.' || ch == '!' || ch == '?' {
 			endings++
-			if endings >= 2 {
+			if endings >= 2 && i >= 150 {
 				cut = i + 1
 				break
 			}
 		}
 	}
-	if cut > 300 {
-		cut = 300
+	if cut > maxRunes {
+		cut = maxRunes
 	}
+	out := strings.TrimSpace(string(r[:cut]))
 	if cut < len(r) {
-		return strings.TrimSpace(string(r[:cut])) + "…"
+		out += "…"
 	}
-	return strings.TrimSpace(string(r[:cut]))
+	return out
 }
 
 func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSourceV1) {
-	answer := ""
+	parts := []string{}
 	sources := []homeSearchAnswerSourceV1{}
+	seenText := map[string]bool{}
 	seenURL := map[string]bool{}
+	total := 0
 	for _, r := range web {
-		if answer == "" {
-			answer = homeSearchPreviewV3(r.Snippet)
-			if answer == "" {
-				answer = homeSearchPreviewV3(r.Title)
+		text := homeSearchPreviewV3(r.Snippet, 300)
+		if text == "" {
+			text = homeSearchPreviewV3(r.Title, 180)
+		}
+		key := strings.ToLower(strings.TrimSpace(text))
+		if text != "" && !seenText[key] {
+			seenText[key] = true
+			if len([]rune(text)) >= 70 || len(parts) == 0 {
+				parts = append(parts, text)
+				total += len([]rune(text))
 			}
 		}
 		u := strings.TrimSpace(r.URL)
@@ -419,29 +431,58 @@ func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSou
 				URL: u,
 			})
 		}
-		if answer != "" && len(sources) >= 3 {
-			break
+		if (len(parts) >= 2 && total >= 180) || total >= 360 {
+			if len(sources) >= 2 {
+				break
+			}
 		}
+	}
+	answer := strings.TrimSpace(strings.Join(parts, " "))
+	if len([]rune(answer)) > 430 {
+		answer = homeSearchPreviewV3(answer, 430)
 	}
 	return answer, sources
 }
 
+func homeSearchContainsAnyV3(low string, terms []string) bool {
+	for _, term := range terms {
+		if strings.Contains(low, term) {
+			return true
+		}
+	}
+	return false
+}
+
+func homeSearchExplicitProfileV3(q string, nav []homeSearchResultV1) bool {
+	low := strings.ToLower(strings.TrimSpace(q))
+	if homeSearchContainsAnyV3(low, []string{"компания", "фирма", "марка", "бранд", "репутац", "кампания", "медия", "социалн", "company", "brand", "reputation"}) {
+		return true
+	}
+	for _, r := range nav {
+		if r.Kind != "profile" {
+			continue
+		}
+		name := strings.ToLower(strings.TrimSpace(firstNonEmptyV1(r.ClientName, r.Title)))
+		if len([]rune(name)) >= 4 && strings.Contains(low, name) {
+			return true
+		}
+	}
+	return false
+}
+
 func homeSearchBusinessIntentV2(q string, nav []homeSearchResultV1) (bool, string) {
 	low := strings.ToLower(q)
-	if len(nav) > 0 {
-		return true, "profile"
+	if homeSearchContainsAnyV3(low, []string{"криза", "риск", "скандал", "протест", "съд", "атака", "негатив", "crisis", "risk"}) {
+		return true, "risk"
 	}
-	groups := map[string][]string{
-		"market": {"пазар", "сектор", "индустр", "конкурент", "цена", "цени", "потребител", "търсене", "продажб", "офис", "имот", "retail", "fmcg", "market", "sector", "competitor", "price"},
-		"brand": {"компания", "фирма", "марка", "бранд", "репутац", "кампания", "медия", "социалн", "company", "brand", "reputation"},
-		"risk": {"криза", "риск", "скандал", "протест", "съд", "атака", "негатив", "crisis", "risk"},
+	if homeSearchContainsAnyV3(low, []string{"цена", "цени", "струва", "промо", "оферта", "намаление", "продукт", "артикул", "магазин", "lidl", "kaufland", "billa", "price", "prices", "promotion", "product"}) {
+		return true, "price"
 	}
-	for kind, terms := range groups {
-		for _, term := range terms {
-			if strings.Contains(low, term) {
-				return true, kind
-			}
-		}
+	if homeSearchContainsAnyV3(low, []string{"пазар", "сектор", "индустр", "конкурент", "потребител", "търсене", "продажб", "офис", "имот", "retail", "fmcg", "market", "sector", "competitor"}) {
+		return true, "market"
+	}
+	if homeSearchExplicitProfileV3(q, nav) {
+		return true, "brand"
 	}
 	return false, ""
 }
@@ -451,18 +492,21 @@ func homeSearchOfferV2(q string, nav []homeSearchResultV1) homeSearchOfferV1 {
 	if !ok {
 		return homeSearchOfferV1{}
 	}
-	title := "Искате по-дълбок анализ на тази тема?"
-	text := "BLIS™ Navigator може да превърне бързото търсене в структуриран анализ с проверени източници, контекст, конкуренти, тенденции, рискове и възможности."
+	title := "Искате по-задълбочен анализ?"
+	text := "BLIS™ Navigator може да разшири краткия отговор с повече проверени източници, контекст и аналитични изводи."
 	switch kind {
-	case "profile", "brand":
-		title = "Искате пълен профил и постоянен мониторинг?"
-		text = "Navigator може да следи компанията, конкурентите, публичните споменавания и ключовите промени във времето в постоянен клиентски профил."
+	case "brand":
+		title = "Искате задълбочен анализ на компанията?"
+		text = "Navigator може да изгради цялостен профил на компанията, конкурентната среда, публичните споменавания, репутацията и ключовите промени във времето."
 	case "market":
-		title = "Искате по-дълбок пазарен анализ?"
-		text = "Navigator може да разшири темата с конкурентен контекст, динамика, тенденции, сигнали и практически изводи."
+		title = "Искате пълен анализ на този пазар?"
+		text = "Navigator може да разшири темата с конкурентна картина, пазарна динамика, тенденции, сигнали, рискове и практически изводи."
+	case "price":
+		title = "Искате по-пълна картина на цените и конкуренцията?"
+		text = "Navigator може да сравни повече публични източници и конкуренти, да проследи промени в цените и промоциите и да постави резултата в пазарен контекст."
 	case "risk":
-		title = "Искате постоянен мониторинг на тази тема?"
-		text = "Navigator може да проследява развитието, източниците, тона, рисковете и новите сигнали в постоянен аналитичен профил."
+		title = "Искате пълен анализ и проследяване на развитието?"
+		text = "Navigator може да проследи източниците, динамиката, тона, рисковете и новите сигнали и да ги обедини в постоянен аналитичен профил."
 	}
 	return homeSearchOfferV1{
 		Show: true,
