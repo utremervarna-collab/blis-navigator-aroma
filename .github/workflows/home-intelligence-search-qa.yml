@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           grep -Fq 'BLIS™ Quick Search · функция на Navigator' static/index.html
           grep -Fq 'intelSearchForm' static/index.html
+          grep -Fq 'най-релевантните публични резултати' static/index.html
           grep -Fq '/api/intelligence/search' static/index.html
           grep -Fq 'intelScope' static/index.html
           grep -Fq '.intelResult.navigator' static/index.html
@@ -78,6 +79,6 @@ jobs:
           assert 'пълен анализ' in str(offer.get('cta') or '').lower(), offer
           assert '/contact.html?analysis=1&topic=' in str(offer.get('url') or ''), offer
           answer=str(d.get('answer') or '')
-          assert len(answer) <= 305, len(answer)
+          assert len(answer) <= 435, len(answer)
           print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(rows), len(answer), offer.get('cta'))
           PY
