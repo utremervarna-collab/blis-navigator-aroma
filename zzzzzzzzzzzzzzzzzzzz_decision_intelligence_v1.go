@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"sort"
 	"strconv"
@@ -458,21 +456,6 @@ func (t decisionTransportV1) RoundTrip(req *http.Request) (*http.Response, error
 	return transportJSONV3(req, http.StatusOK, decisionSummaryV1(slug))
 }
 
-func injectDecisionIntelligenceV1(body []byte) []byte {
-	if bytes.Contains(body, []byte("navigator-decision-intelligence-v1.js")) {
-		return body
-	}
-	css := []byte(`<link rel="stylesheet" href="/navigator-decision-intelligence-v1.css?v=20260926-1">`)
-	js := []byte(`<script src="/navigator-decision-intelligence-v1.js?v=20260926-1"></script>`)
-	if bytes.Contains(body, []byte("</head>")) {
-		body = bytes.Replace(body, []byte("</head>"), append(css, []byte("</head>")...), 1)
-	}
-	if bytes.Contains(body, []byte("</body>")) {
-		body = bytes.Replace(body, []byte("</body>"), append(js, []byte("</body>")...), 1)
-	}
-	return body
-}
-
 func init() {
 	if authProxy == nil {
 		return
@@ -482,27 +465,4 @@ func init() {
 		base = http.DefaultTransport
 	}
 	authProxy.Transport = decisionTransportV1{base: base}
-	previous := authProxy.ModifyResponse
-	authProxy.ModifyResponse = func(resp *http.Response) error {
-		if previous != nil {
-			if err := previous(resp); err != nil {
-				return err
-			}
-		}
-		if resp == nil || resp.Request == nil || resp.Request.URL.Path != "/dashboard.html" {
-			return nil
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		_ = resp.Body.Close()
-		body = injectDecisionIntelligenceV1(body)
-		resp.Body = io.NopCloser(bytes.NewReader(body))
-		resp.ContentLength = int64(len(body))
-		resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
-		resp.Header.Del("Content-Encoding")
-		resp.Header.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-		return nil
-	}
 }
