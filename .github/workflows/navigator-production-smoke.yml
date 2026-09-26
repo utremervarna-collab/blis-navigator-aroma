@@ -16,7 +16,7 @@ concurrency:
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
   MIGRATION_BUILD: code-run-migration-2026-09-09-v1
-  RELEASE_MARKER: bsc-dashboard-only-2026-09-25-v1
+  RELEASE_MARKER: lean-runtime-2026-09-26-v1
 
 jobs:
   local-regression:
@@ -104,7 +104,7 @@ jobs:
           PY
           for round in 1 2 3; do
             test "$(curlr -sS -o /tmp/home-before-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip-before=$round&ts=$(date +%s%N)")" = "200"
-            grep -Fq 'blisDashboardPrepaintV5' /tmp/home-before-dashboard.html
+            grep -Fq 'blisDashboardPrepaintLean' /tmp/home-before-dashboard.html
             test "$(curlr -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Eqi '^x-blis-home-origin: gateway' /tmp/home.headers
             grep -Fq 'BLIS™' /tmp/home.html
@@ -118,11 +118,11 @@ jobs:
           assert all('client' in x and 'metric' in x and 'value' in x for x in items)
           PY
             test "$(curlr -sS -o /tmp/home-return-dashboard.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&roundtrip=$round&ts=$(date +%s%N)")" = "200"
-            grep -Fq 'blisDashboardPrepaintV5' /tmp/home-return-dashboard.html
+            grep -Fq 'blisDashboardPrepaintLean' /tmp/home-return-dashboard.html
           done
           echo DASHBOARD_HOME_DASHBOARD_ROUNDTRIP_OK
           test "$(curlr -sS -o /tmp/aroma.html -w '%{http_code}' "$BASE/dashboard.html?client=aroma&page=overview&ts=$(date +%s)")" = "200"
-          grep -Fq 'blisDashboardPrepaintV5' /tmp/aroma.html
+          grep -Fq 'blisDashboardPrepaintLean' /tmp/aroma.html
           test "$(curlr -sS -o /tmp/aroma.json -w '%{http_code}' "$BASE/api/clients/aroma/dashboard?ts=$(date +%s)")" = "200"
           delta_code=$(curlr -sS -D /tmp/delta.headers -o /tmp/delta-route.body -w '%{http_code}' "$BASE/delta-planet?ts=$(date +%s)")
           test "$delta_code" = "302"
