@@ -198,10 +198,15 @@ func extractSocialSearchPostsV2(c *Client, src *Source, platform string) []socia
 }
 
 func runSocialSearchFallback() {
+	mu.Lock()
+	clients := make([]*Client, 0, len(store.Clients))
 	for _, c := range store.Clients {
-		if c == nil {
-			continue
+		if c != nil {
+			clients = append(clients, c)
 		}
+	}
+	mu.Unlock()
+	for _, c := range clients {
 		ensureKnownSocialSources(c)
 		for i := range c.Sources {
 			s := &c.Sources[i]
