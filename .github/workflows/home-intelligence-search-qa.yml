@@ -41,7 +41,7 @@ jobs:
           grep -Fq 'intelSearchForm' static/index.html
           grep -Fq '/api/intelligence/search' static/index.html
           grep -Fq 'intelScope' static/index.html
-          grep -Fq 'intelResult navigator' static/index.html
+          grep -Fq '.intelResult.navigator' static/index.html
           ! grep -Fq 'data-search-mode=' static/index.html
           grep -Fq '"/api/intelligence/search"' home_intelligence_search_v1.go
           echo HOME_SEARCH_SOURCE_CONTRACT_OK
@@ -61,7 +61,7 @@ jobs:
           test "$ok" = "1"
 
           curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?searchqa=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq 'Navigator Intelligence Search' /tmp/home.html
+          grep -Fq 'BLIS™ Quick Search · функция на Navigator' /tmp/home.html
           grep -Fq 'intelSearchForm' /tmp/home.html
 
           curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/api/intelligence/search?q=Aroma%20Cosmetics&mode=all&ts=$(date +%s%N)" -o /tmp/search.json
