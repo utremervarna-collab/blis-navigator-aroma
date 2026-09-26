@@ -19,7 +19,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-intelligence-search-2026-09-26-v2
+  RELEASE_MARKER: home-intelligence-search-2026-09-26-v3
 
 jobs:
   home-search:
@@ -64,14 +64,20 @@ jobs:
           grep -Fq 'Navigator Intelligence Search' /tmp/home.html
           grep -Fq 'intelSearchForm' /tmp/home.html
 
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/api/intelligence/search?q=Aroma%20Cosmetics&mode=navigator&ts=$(date +%s%N)" -o /tmp/search.json
+          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/api/intelligence/search?q=Aroma%20Cosmetics&mode=all&ts=$(date +%s%N)" -o /tmp/search.json
           python3 - <<'PY'
           import json
           d=json.load(open('/tmp/search.json',encoding='utf-8'))
           assert d.get('ok') is True, d
-          assert d.get('mode')=='navigator', d.get('mode')
+          assert d.get('mode')=='all', d.get('mode')
           rows=d.get('results') or []
           assert isinstance(rows,list)
-          assert rows, 'Navigator search returned no results for Aroma Cosmetics'
-          print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(rows), rows[0].get('title'))
+          assert rows, 'Home search returned no results for Aroma Cosmetics'
+          offer=d.get('analysis_offer') or {}
+          assert offer.get('show') is True, offer
+          assert 'пълен анализ' in str(offer.get('cta') or '').lower(), offer
+          assert '/contact.html?analysis=1&topic=' in str(offer.get('url') or ''), offer
+          answer=str(d.get('answer') or '')
+          assert len(answer) <= 305, len(answer)
+          print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(rows), len(answer), offer.get('cta'))
           PY
