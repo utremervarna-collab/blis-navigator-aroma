@@ -481,7 +481,7 @@ func init() {
 	go func() {
 		// Give the HTTP gateway time to become healthy before the first broad pass.
 		// KUB keeps its separate near-real-time crisis collector.
-		time.Sleep(15 * time.Second)
+		time.Sleep(90 * time.Second)
 		for {
 			runUniversalRealtimeMentionCycle()
 			time.Sleep(universalRealtimeMentionInterval)
