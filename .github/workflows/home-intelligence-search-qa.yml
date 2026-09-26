@@ -19,7 +19,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-intelligence-search-2026-09-26-v1
+  RELEASE_MARKER: home-intelligence-search-2026-09-26-v2
 
 jobs:
   home-search:
@@ -39,10 +39,10 @@ jobs:
           set -euo pipefail
           grep -Fq 'Navigator Intelligence Search' static/index.html
           grep -Fq 'intelSearchForm' static/index.html
-          grep -Fq 'data-search-mode="navigator"' static/index.html
-          grep -Fq 'data-search-mode="web"' static/index.html
-          grep -Fq 'data-search-mode="all"' static/index.html
           grep -Fq '/api/intelligence/search' static/index.html
+          grep -Fq 'intelScope' static/index.html
+          grep -Fq 'intelResult navigator' static/index.html
+          ! grep -Fq 'data-search-mode=' static/index.html
           grep -Fq '"/api/intelligence/search"' home_intelligence_search_v1.go
           echo HOME_SEARCH_SOURCE_CONTRACT_OK
 
