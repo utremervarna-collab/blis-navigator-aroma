@@ -26,7 +26,7 @@ func injectNavigatorProductionCleanup(resp *http.Response) error {
         return nil
     }
     path := resp.Request.URL.Path
-    if path != "/dashboard.html" && path != "/services.html" {
+    if path != "/services.html" {
         return nil
     }
     body, err := io.ReadAll(resp.Body)
