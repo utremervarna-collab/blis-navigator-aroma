@@ -3,4 +3,4 @@
 window.__BLIS_MIGRATION_BUILD__='code-run-migration-2026-09-09-final-v2';
 window.__BLIS_MIGRATION_COMPAT_BUILD__='code-run-migration-2026-09-09-v1';
 
-window.__BLIS_RELEASE__='bsc-dashboard-only-2026-09-25-v1';
+window.__BLIS_RELEASE__='lean-runtime-2026-09-26-v1';
