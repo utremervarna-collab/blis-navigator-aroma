@@ -17,6 +17,10 @@ on:
       - 'zzz_home_intelligence_hub_patch.go'
       - 'zzzz_home_hub_dropdown_loader.go'
       - 'zzzzzzzzzzzzzz_navigator_production_hotfix.go'
+      - 'zzzzzzzzzzzzzzzzzzzz_decision_intelligence_v1.go'
+      - 'static/navigator-decision-intelligence-v1.js'
+      - 'static/navigator-decision-intelligence-v1.css'
+      - 'static/navigator-route-lazy-v1.js'
       - '.github/workflows/navigator-page-contract-qa.yml'
   pull_request:
     branches:
@@ -31,6 +35,10 @@ on:
       - 'zzz_home_intelligence_hub_patch.go'
       - 'zzzz_home_hub_dropdown_loader.go'
       - 'zzzzzzzzzzzzzz_navigator_production_hotfix.go'
+      - 'zzzzzzzzzzzzzzzzzzzz_decision_intelligence_v1.go'
+      - 'static/navigator-decision-intelligence-v1.js'
+      - 'static/navigator-decision-intelligence-v1.css'
+      - 'static/navigator-route-lazy-v1.js'
       - '.github/workflows/navigator-page-contract-qa.yml'
   workflow_dispatch:
 
@@ -170,6 +178,27 @@ jobs:
                   assert(mainFrame.left>=0&&mainFrame.right<=mainFrame.viewport+1,`${client}/${id}: main layout exceeds viewport: ${JSON.stringify(mainFrame)}`);
                 }
 
+                if(client==='aroma'){
+                  await p.evaluate(()=>window.refGo('overview'));
+                  await p.waitForSelector('#overview [data-di="brief"]',{state:'visible',timeout:12000});
+                  await p.waitForSelector('#overview [data-di-why-open]',{state:'visible',timeout:12000});
+                  assert(await visible(p,'[data-di-ask-open]'),'aroma: Ask Navigator control missing');
+                  const summary=await p.evaluate(async()=>{const r=await fetch('/api/decision/summary?client=aroma');return{status:r.status,body:await r.json()}});
+                  assert(summary.status===200,'aroma: Decision summary API status '+summary.status);
+                  assert(Array.isArray(summary.body.brief)&&summary.body.brief.length>0,'aroma: Executive Brief missing from API');
+                  await p.locator('[data-di-ask-open]').first().click();
+                  await p.waitForSelector('#diAskDrawer.open',{state:'visible',timeout:5000});
+                  await p.fill('#diAskInput','Какво се промени?');
+                  await p.locator('#diAskForm button[type="submit"]').click();
+                  await p.waitForFunction(()=>document.querySelector('#diAskAnswer article b')?.textContent?.trim().length>10,null,{timeout:10000});
+                  await p.locator('[data-di-ask-close]').click();
+                  await p.evaluate(()=>window.refGo('market'));
+                  await p.waitForSelector('#market [data-di="market"] .di-opportunity',{state:'visible',timeout:12000});
+                  await p.waitForSelector('#market [data-di="market"] .di-ai',{state:'visible',timeout:12000});
+                  await p.evaluate(()=>window.refGo('competition'));
+                  await p.waitForSelector('#competition [data-di="moves"]',{state:'visible',timeout:12000});
+                  await p.screenshot({path:'/tmp/page-contract-shots/aroma-decision-intelligence.png',fullPage:true});
+                }
                 if(['aroma','mollox'].includes(client)){
                   await p.evaluate(()=>window.refGo('social'));
                   await p.waitForTimeout(800);
