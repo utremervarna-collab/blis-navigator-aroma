@@ -18,6 +18,7 @@ var navigatorLiveRefreshEntrypoint = regexp.MustCompile(`<script[^>]+src="/navig
 var navigatorMentionMountGuardEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-mention-mount-guard-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 var navigatorClientValueUniversalEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-client-value-universal-v2\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 var navigatorPublicKeyRedactionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-public-key-redaction-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
+var navigatorLeanSupersededScripts = regexp.MustCompile(`<script[^>]+src="/(?:navigator-intelligence-analysis-v3|navigator-deep-analytics-v31|navigator-metric-intelligence-v33|navigator-client-value-guard-v1|navigator-client-value-universal-v2|navigator-client-intelligence-content-v2|navigator-client-intelligence-content-v3|navigator-client-intelligence-content-v3-stability|navigator-editorial-cleanup-v1|navigator-route-lazy-v1|navigator-decision-intelligence-v1|navigator-competition-news-v1|navigator-competitor-dossiers-data-v2|navigator-competitor-dossiers-tune-v1|navigator-3-competitor-dossier-v2|navigator-monitoring-canonical-v5)\.js[^\"]*"[^>]*></script>`)
 
 func init() {
 	if authProxy == nil { return }
@@ -54,13 +55,15 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 
 	if path == "/navigator-production-entry-v1.js" {
 		err := rewriteNavigatorAsset(resp,
-			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20260925-bsc-dashboard-only1';"},
+			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20260926-lean1';"},
 			[2]string{"await Promise.race([window.BLISDataLoaderV1?.load?.(initialClient,true),new Promise(resolve=>setTimeout(resolve,3000))]);", "const initialData=window.BLISDataLoaderV1?.load?.(initialClient,true);if(initialData&&typeof initialData.catch==='function')initialData.catch(()=>{});"},
 			[2]string{"await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');", "await Promise.all([safe('/navigator-intelligence-stream-v2.js'),safe('/navigator-client-perspective-classifier-v1.js'),safe('/navigator-executive-data-v1.js')]);"},
 			[2]string{"await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-executive-reports-v1.js');", "await Promise.all([safe('/navigator-digital-master.js'),safe('/navigator-client-ui.js'),safe('/navigator-executive-reports-v1.js')]);await safe('/navigator-client-branding-v3.js');"},
 			[2]string{"await safe('/navigator-visual-suite-v1.js');await safe('/navigator-visual-suite-motion-v1.js');await safe('/navigator-visual-special-v2.js');await safe('/navigator-overview-client-home-v1.js');", "await safe('/navigator-visual-suite-v1.js');await Promise.all([safe('/navigator-visual-suite-motion-v1.js'),safe('/navigator-visual-special-v2.js'),safe('/navigator-overview-client-home-v1.js')]);"},
 			[2]string{"await safe('/navigator-risk-priority-sync-v1.js');await safe('/navigator-overview-marker-fix-v1.js');await safe('/navigator-color-system-v1.js');await safe('/navigator-no-page-numbers-v1.js');await safe('/navigator-language-cleanup-v1.js');", "await Promise.all([safe('/navigator-risk-priority-sync-v1.js'),safe('/navigator-overview-marker-fix-v1.js'),safe('/navigator-color-system-v1.js'),safe('/navigator-no-page-numbers-v1.js'),safe('/navigator-language-cleanup-v1.js')]);"},
 			[2]string{"await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');", "await Promise.all([safe('/navigator-3-client-clarity-v1.js'),safe('/navigator-3-evidence-v1.js'),safe('/navigator-3-competitor-dossier-v1.js'),safe('/navigator-3-client-proof-v1.js')]);"},
+			[2]string{"'/navigator-signal-current-marker-v1.css'", "'/navigator-signal-current-marker-v1.css','/navigator-decision-intelligence-v1.css'"},
+			[2]string{"await safe('/navigator-readable-type-v1.js');", "await safe('/navigator-readable-type-v1.js');await Promise.all([safe('/navigator-client-intelligence-content-v3.js'),safe('/navigator-client-intelligence-content-v3-stability.js'),safe('/navigator-editorial-cleanup-v1.js'),safe('/navigator-client-value-guard-v1.js'),safe('/navigator-decision-intelligence-v1.js')]);await safe('/navigator-route-lazy-v1.js');"},
 		)
 		if err != nil { return err }
 		resp.Header.Set("X-BLIS-Navigator-Asset", "fastboot-1")
@@ -91,19 +94,22 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIStyles.ReplaceAll(body, nil)
 		body = legacyCompetitionPaintGuard.ReplaceAll(body, nil)
+		body = navigatorLeanSupersededScripts.ReplaceAll(body, nil)
 		// Mention UI is intentionally after the canonical Navigator entrypoint.
 		// This keeps first paint independent from monitoring network calls and
 		// prevents a page renderer from deleting chronology/ticker on startup.
 		body = navigatorLiveRefreshEntrypoint.ReplaceAll(body, nil)
 		body = navigatorMentionMountGuardEntrypoint.ReplaceAll(body, nil)
 		body = navigatorPublicKeyRedactionEntrypoint.ReplaceAll(body, nil)
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260925-bsc-dashboard-only1"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		const leanHead = `<style id="blisDashboardPrepaintLean">html:not(.blis-dashboard-ready) body{background:#f4f7fb!important;overflow:hidden!important}html:not(.blis-dashboard-ready) .app,html:not(.blis-dashboard-ready) #modal{visibility:hidden!important;opacity:0!important;pointer-events:none!important}html:not(.blis-dashboard-ready) body:before{content:"BLIS Navigator";position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;background:#f4f7fb;color:#1d5fd0;font:700 22px/1.2 Arial,sans-serif}html.blis-route-pending.blis-dashboard-ready .main .page.active{visibility:hidden!important;opacity:0!important}</style>`
+		if !bytes.Contains(body, []byte("blisDashboardPrepaintLean")) { body = bytes.Replace(body, []byte("</head>"), []byte(leanHead+"</head>"), 1) }
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20260926-lean1"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
 			body = bytes.Replace(body, []byte("</body>"), append(tag, []byte("</body>")...), 1)
 		}
-		resp.Header.Set("X-BLIS-Navigator-Build", "20260925-bsc-dashboard-only1")
+		resp.Header.Set("X-BLIS-Navigator-Build", "20260926-lean1")
 	} else {
 		homeTarget := "/dashboard.html?client=aroma&page=overview"
 		if strings.EqualFold(resp.Request.URL.Query().Get("client"), "varna-towers") { homeTarget = "/varna-towers" }
