@@ -16,7 +16,7 @@ concurrency:
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
   MIGRATION_BUILD: code-run-migration-2026-09-09-v1
-  RELEASE_MARKER: lean-runtime-2026-09-26-v1
+  RELEASE_MARKER: home-intelligence-search-2026-09-26-v1
 
 jobs:
   local-regression:
@@ -108,6 +108,17 @@ jobs:
             test "$(curlr -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Eqi '^x-blis-home-origin: gateway' /tmp/home.headers
             grep -Fq 'BLIS™' /tmp/home.html
+            grep -Fq 'intelSearchForm' /tmp/home.html
+            grep -Fq 'Navigator Intelligence Search' /tmp/home.html
+            test "$(curlr -sS -o /tmp/home-search.json -w '%{http_code}' "$BASE/api/intelligence/search?q=Aroma&mode=navigator&roundtrip=$round&ts=$(date +%s%N)")" = "200"
+            python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/home-search.json',encoding='utf-8'))
+          assert d.get('ok') is True
+          assert d.get('mode')=='navigator'
+          assert isinstance(d.get('results'),list)
+          print('HOME_INTELLIGENCE_SEARCH_OK', len(d.get('results') or []))
+          PY
             test "$(curlr -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             python - <<'PY'
           import json
