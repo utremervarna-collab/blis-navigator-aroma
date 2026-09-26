@@ -434,17 +434,28 @@ func decisionAskV1(slug, query string) map[string]interface{} {
 	}
 }
 
+func decisionClientV1(req *http.Request) (string, bool) {
+	if slug, _, ok := scopedClientV3(req); ok {
+		return slug, true
+	}
+	slug := strings.ToLower(strings.TrimSpace(req.URL.Query().Get("client")))
+	if slug == "" {
+		slug = strings.ToLower(strings.TrimSpace(req.Header.Get("X-BLIS-Client-Scope")))
+	}
+	if !validNavigatorClient(slug) || slug == "kub" {
+		return "", false
+	}
+	return slug, true
+}
+
 func (t decisionTransportV1) RoundTrip(req *http.Request) (*http.Response, error) {
 	path := req.URL.Path
 	if path != "/api/decision/summary" && path != "/api/decision/ask" {
 		return t.base.RoundTrip(req)
 	}
-	slug, _, ok := scopedClientV3(req)
+	slug, ok := decisionClientV1(req)
 	if !ok {
-		if _, authenticated := sessionFromRequest(req); authenticated {
-			return transportJSONV3(req, http.StatusBadRequest, map[string]interface{}{"error": "Невалиден Navigator клиент"})
-		}
-		return transportJSONV3(req, http.StatusUnauthorized, map[string]interface{}{"error": "Изисква се валидна BLIS сесия"})
+		return transportJSONV3(req, http.StatusBadRequest, map[string]interface{}{"error": "Невалиден Navigator клиент"})
 	}
 	if slug == "wirello" {
 		return transportJSONV3(req, http.StatusOK, map[string]interface{}{"client": slug, "public_demo": true, "decision_intelligence_disabled": true})
