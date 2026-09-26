@@ -37,7 +37,7 @@ jobs:
       - name: Validate Home Search source contract
         run: |
           set -euo pipefail
-          grep -Fq 'Navigator Intelligence Search' static/index.html
+          grep -Fq 'BLIS™ Quick Search · функция на Navigator' static/index.html
           grep -Fq 'intelSearchForm' static/index.html
           grep -Fq '/api/intelligence/search' static/index.html
           grep -Fq 'intelScope' static/index.html
