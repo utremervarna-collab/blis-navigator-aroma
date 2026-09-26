@@ -26,15 +26,32 @@ type homeSearchResultV1 struct {
 	Published string  `json:"published,omitempty"`
 }
 
+type homeSearchAnswerSourceV1 struct {
+	Title  string `json:"title"`
+	Source string `json:"source,omitempty"`
+	URL    string `json:"url,omitempty"`
+}
+
+type homeSearchOfferV1 struct {
+	Show  bool   `json:"show"`
+	Title string `json:"title,omitempty"`
+	Text  string `json:"text,omitempty"`
+	CTA   string `json:"cta,omitempty"`
+	URL   string `json:"url,omitempty"`
+}
+
 type homeSearchPayloadV1 struct {
-	OK        bool                 `json:"ok"`
-	Query     string               `json:"query"`
-	Mode      string               `json:"mode"`
-	Summary   string               `json:"summary"`
-	Results   []homeSearchResultV1 `json:"results"`
-	Navigator int                  `json:"navigator_count"`
-	Web       int                  `json:"web_count"`
-	Generated string               `json:"generated_at"`
+	OK            bool                       `json:"ok"`
+	Query         string                     `json:"query"`
+	Mode          string                     `json:"mode"`
+	Summary       string                     `json:"summary"`
+	Answer        string                     `json:"answer,omitempty"`
+	AnswerSources []homeSearchAnswerSourceV1 `json:"answer_sources,omitempty"`
+	Offer         homeSearchOfferV1          `json:"analysis_offer"`
+	Results       []homeSearchResultV1       `json:"results"`
+	Navigator     int                        `json:"navigator_count"`
+	Web           int                        `json:"web_count"`
+	Generated     string                     `json:"generated_at"`
 }
 
 type homeSearchCacheEntryV1 struct {
@@ -343,6 +360,104 @@ func homeSearchSummaryV1(q, mode string, nav, web []homeSearchResultV1) string {
 	}
 }
 
+
+func homeSearchCompactTextV2(v string, limit int) string {
+	v = strings.TrimSpace(strings.Join(strings.Fields(cleanPostSnippet(v)), " "))
+	if v == "" {
+		return ""
+	}
+	r := []rune(v)
+	if len(r) > limit {
+		return strings.TrimSpace(string(r[:limit])) + "…"
+	}
+	return v
+}
+
+func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSourceV1) {
+	parts := []string{}
+	sources := []homeSearchAnswerSourceV1{}
+	seenText := map[string]bool{}
+	seenURL := map[string]bool{}
+	for _, r := range web {
+		text := homeSearchCompactTextV2(r.Snippet, 240)
+		if text == "" {
+			text = homeSearchCompactTextV2(r.Title, 180)
+		}
+		key := strings.ToLower(text)
+		if text != "" && !seenText[key] {
+			seenText[key] = true
+			parts = append(parts, text)
+		}
+		u := strings.TrimSpace(r.URL)
+		if u != "" && !seenURL[strings.ToLower(u)] {
+			seenURL[strings.ToLower(u)] = true
+			sources = append(sources, homeSearchAnswerSourceV1{
+				Title: homeSearchCompactTextV2(r.Title, 120),
+				Source: strings.TrimSpace(r.Source),
+				URL: u,
+			})
+		}
+		if len(parts) >= 2 && len(sources) >= 3 {
+			break
+		}
+	}
+	answer := ""
+	if len(parts) > 0 {
+		answer = parts[0]
+		if len(parts) > 1 {
+			answer += " " + parts[1]
+		}
+	}
+	return homeSearchCompactTextV2(answer, 470), sources
+}
+
+func homeSearchBusinessIntentV2(q string, nav []homeSearchResultV1) (bool, string) {
+	low := strings.ToLower(q)
+	if len(nav) > 0 {
+		return true, "profile"
+	}
+	groups := map[string][]string{
+		"market": {"пазар", "сектор", "индустр", "конкурент", "цена", "цени", "потребител", "търсене", "продажб", "офис", "имот", "retail", "fmcg", "market", "sector", "competitor", "price"},
+		"brand": {"компания", "фирма", "марка", "бранд", "репутац", "кампания", "медия", "социалн", "company", "brand", "reputation"},
+		"risk": {"криза", "риск", "скандал", "протест", "съд", "атака", "негатив", "crisis", "risk"},
+	}
+	for kind, terms := range groups {
+		for _, term := range terms {
+			if strings.Contains(low, term) {
+				return true, kind
+			}
+		}
+	}
+	return false, ""
+}
+
+func homeSearchOfferV2(q string, nav []homeSearchResultV1) homeSearchOfferV1 {
+	ok, kind := homeSearchBusinessIntentV2(q, nav)
+	if !ok {
+		return homeSearchOfferV1{}
+	}
+	title := "Искате по-дълбок анализ на тази тема?"
+	text := "BLIS™ Navigator може да превърне бързото търсене в структуриран анализ с проверени източници, контекст, конкуренти, тенденции, рискове и възможности."
+	switch kind {
+	case "profile", "brand":
+		title = "Искате пълен профил и постоянен мониторинг?"
+		text = "Navigator може да следи компанията, конкурентите, публичните споменавания и ключовите промени във времето в постоянен клиентски профил."
+	case "market":
+		title = "Искате по-дълбок пазарен анализ?"
+		text = "Navigator може да разшири темата с конкурентен контекст, динамика, тенденции, сигнали и практически изводи."
+	case "risk":
+		title = "Искате постоянен мониторинг на тази тема?"
+		text = "Navigator може да проследява развитието, източниците, тона, рисковете и новите сигнали в постоянен аналитичен профил."
+	}
+	return homeSearchOfferV1{
+		Show: true,
+		Title: title,
+		Text: text,
+		CTA: "Заяви анализ с Navigator",
+		URL: "/contact.html?analysis=1&topic=" + url.QueryEscape(q),
+	}
+}
+
 func buildHomeSearchPayloadV1(q, mode string) homeSearchPayloadV1 {
 	nav, web := []homeSearchResultV1{}, []homeSearchResultV1{}
 	if mode == "navigator" || mode == "all" {
@@ -371,8 +486,10 @@ func buildHomeSearchPayloadV1(q, mode string) homeSearchPayloadV1 {
 	} else {
 		results = web
 	}
+	answer, answerSources := homeSearchAnswerV2(web)
 	return homeSearchPayloadV1{
 		OK: true, Query: q, Mode: mode, Summary: homeSearchSummaryV1(q, mode, nav, web),
+		Answer: answer, AnswerSources: answerSources, Offer: homeSearchOfferV2(q, nav),
 		Results: results, Navigator: len(nav), Web: len(web), Generated: nowISO(),
 	}
 }
