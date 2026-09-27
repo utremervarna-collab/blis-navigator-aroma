@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
 	"html"
@@ -333,6 +334,40 @@ type homeNewsRSSV1 struct {
 	} `xml:"channel"`
 }
 
+func homeSearchResolveBingURLV4(raw string) string {
+	raw = html.UnescapeString(strings.TrimSpace(raw))
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	host := strings.ToLower(strings.TrimPrefix(u.Host, "www."))
+	if host != "bing.com" && !strings.HasSuffix(host, ".bing.com") {
+		return raw
+	}
+	for _, key := range []string{"u", "url", "r"} {
+		target := strings.TrimSpace(u.Query().Get(key))
+		if target == "" {
+			continue
+		}
+		if decoded, err := url.QueryUnescape(target); err == nil {
+			target = decoded
+		}
+		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+			return target
+		}
+		if strings.HasPrefix(target, "a1") {
+			enc := strings.TrimPrefix(target, "a1")
+			if b, err := base64.RawURLEncoding.DecodeString(enc); err == nil {
+				v := string(b)
+				if strings.HasPrefix(v, "http://") || strings.HasPrefix(v, "https://") {
+					return v
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
 	raw := "https://www.bing.com/search?q=" + url.QueryEscape(q) + "&count=20&setlang=bg-BG&mkt=bg-BG&cc=BG"
 	status, body, _, err := timedFetch(raw, 3*1024*1024)
@@ -353,7 +388,7 @@ func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
 		if len(lm) < 3 {
 			continue
 		}
-		rawURL := html.UnescapeString(strings.TrimSpace(lm[1]))
+		rawURL := homeSearchResolveBingURLV4(lm[1])
 		if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
 			continue
 		}
@@ -368,6 +403,9 @@ func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
 		source := ""
 		if u, err := url.Parse(rawURL); err == nil {
 			source = strings.TrimPrefix(strings.ToLower(u.Host), "www.")
+		}
+		if source == "bing.com" || strings.HasSuffix(source, ".bing.com") {
+			continue
 		}
 		if title == "" {
 			continue
