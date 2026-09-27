@@ -6,7 +6,6 @@ on:
     paths:
       - 'static/index.html'
       - 'static/home.html'
-      - 'static/home-approved-1to1.webp'
       - 'static/analyses.html'
       - 'static/migration-build.js'
       - '.github/workflows/home-intelligence-search-qa.yml'
@@ -21,7 +20,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: navigator-home-approved-1to1-2026-09-27-v3
+  RELEASE_MARKER: navigator-functional-home-2026-09-27-v4
 
 jobs:
   approved-home:
@@ -29,17 +28,25 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Validate approved source contract
+      - name: Validate functional Home source
         run: |
           set -euo pipefail
-          grep -Fq '/home-approved-1to1.webp' static/index.html
-          grep -Fq 'BLIS™' static/index.html
-          grep -Fq 'stepGlow s1' static/index.html
-          grep -Fq 'stepGlow s5' static/index.html
-          grep -Fq 'class="fx radar"' static/index.html
-          grep -Fq '@keyframes stepPulse' static/index.html
-          grep -Fq '@keyframes flow' static/index.html
-          grep -Fq '@keyframes shine' static/index.html
+          grep -Fq 'Информацията е предимство' static/index.html
+          grep -Fq 'използвайте вашето' static/index.html
+          grep -Fq 'Влез в Навигатор' static/index.html
+          grep -Fq 'Клиентски профил' static/index.html
+          grep -Fq 'Поръчай анализ' static/index.html
+          grep -Fq 'Интелиджънс Хъб' static/index.html
+          grep -Fq 'Последни анализи и статии' static/index.html
+          grep -Fq 'Събиране' static/index.html
+          grep -Fq 'Подреждане' static/index.html
+          grep -Fq 'Проследяване' static/index.html
+          grep -Fq '>Анализ<' static/index.html
+          grep -Fq '>Извод<' static/index.html
+          grep -Fq 'monitorScene' static/index.html
+          grep -Fq 'heroRadar' static/index.html
+          grep -Fq 'meeting reveal' static/index.html
+          grep -Fq 'analysisMedia reveal' static/index.html
           grep -Fq 'href="/navigator"' static/index.html
           grep -Fq 'href="/analyses.html#order"' static/index.html
           grep -Fq 'href="/intelligence-hub.html"' static/index.html
@@ -47,12 +54,12 @@ jobs:
           grep -Fq '/intelligence-ai-search.html' static/index.html
           grep -Fq '/intelligence-reputation-trust.html' static/index.html
           grep -Fq '/intelligence-retail-bulgaria-2026.html' static/index.html
+          grep -Fq 'navigator-functional-home-2026-09-27-v4' static/index.html
+          grep -Fq '/home-2026.css' static/index.html
+          grep -Fq '/home-2026.js' static/index.html
           cmp -s static/index.html static/home.html
-          test -s static/home-approved-1to1.webp
-          test "$(head -c 4 static/home-approved-1to1.webp)" = "RIFF"
-          test "$(dd if=static/home-approved-1to1.webp bs=1 skip=8 count=4 2>/dev/null)" = "WEBP"
           grep -Fq 'analysisOrder' static/analyses.html
-          echo APPROVED_HOME_SOURCE_OK
+          echo FUNCTIONAL_HOME_SOURCE_OK
       - name: Wait for approved production release
         run: |
           set -euo pipefail
@@ -66,23 +73,29 @@ jobs:
             sleep 8
           done
           test "$ok" = "1"
-      - name: Verify approved production home
+      - name: Verify functional production Home
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/?approved-home=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq '/home-approved-1to1.webp' /tmp/home.html
-          grep -Fq 'BLIS™' /tmp/home.html
-          grep -Fq 'stepGlow s1' /tmp/home.html
-          grep -Fq 'stepGlow s5' /tmp/home.html
-          grep -Fq 'class="fx radar"' /tmp/home.html
-          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS -D /tmp/approved.headers "$BASE/home-approved-1to1.webp?ts=$(date +%s%N)" -o /tmp/approved.webp
-          test -s /tmp/approved.webp
-          grep -Eiq '^content-type:[[:space:]]*image/webp([;[:space:]]|$)' /tmp/approved.headers
-          test "$(head -c 4 /tmp/approved.webp)" = "RIFF"
-          test "$(dd if=/tmp/approved.webp bs=1 skip=8 count=4 2>/dev/null)" = "WEBP"
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/?functional-home=$(date +%s%N)" -o /tmp/home.html
+          grep -Fq 'Информацията е предимство' /tmp/home.html
+          grep -Fq 'използвайте вашето' /tmp/home.html
+          grep -Fq 'Влез в Навигатор' /tmp/home.html
+          grep -Fq 'Клиентски профил' /tmp/home.html
+          grep -Fq 'Поръчай анализ' /tmp/home.html
+          grep -Fq 'Интелиджънс Хъб' /tmp/home.html
+          grep -Fq 'Последни анализи и статии' /tmp/home.html
+          grep -Fq 'monitorScene' /tmp/home.html
+          grep -Fq 'heroRadar' /tmp/home.html
+          grep -Fq 'navigator-functional-home-2026-09-27-v4' /tmp/home.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-2026.css?ts=$(date +%s%N)" -o /tmp/home.css
+          grep -Fq '.monitorScene' /tmp/home.css
+          grep -Fq '@keyframes flow' /tmp/home.css
+          grep -Fq '@keyframes radarSpin' /tmp/home.css
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-2026.js?ts=$(date +%s%N)" -o /tmp/home.js
+          grep -Fq 'is-active' /tmp/home.js
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home?ts=$(date +%s%N)" -o /tmp/home-mirror.html
-          grep -Fq '/home-approved-1to1.webp' /tmp/home-mirror.html
+          grep -Fq 'navigator-functional-home-2026-09-27-v4' /tmp/home-mirror.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
           grep -Fq 'analysisOrder' /tmp/analyses.html
-          echo APPROVED_HOME_PRODUCTION_OK
+          echo FUNCTIONAL_HOME_PRODUCTION_OK
