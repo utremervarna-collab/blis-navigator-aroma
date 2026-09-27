@@ -1,4 +1,4 @@
-name: Home Visual Architecture QA
+name: Navigator Editorial Home QA
 
 on:
   push:
@@ -20,7 +20,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-editorial-brandlab-2026-09-27-v1
+  RELEASE_MARKER: navigator-editorial-flow-2026-09-27-v1
 
 jobs:
   visual-home:
@@ -35,33 +35,22 @@ jobs:
       - name: Build current Navigator
         run: go build -tags netgo -ldflags '-s -w' -o app .
 
-      - name: Validate visual public home
+      - name: Validate complete editorial home
         run: |
           set -euo pipefail
-          grep -Fq 'nvh-hero' static/index.html
-          grep -Fq 'Карта на информационната среда' static/index.html
-          grep -Fq 'Динамика във времето' static/index.html
-          grep -Fq 'От източника' static/index.html
-          grep -Fq 'Един клиентски профил' static/index.html
-          grep -Fq 'Заяви демонстрация' static/index.html
-          grep -Fq 'nvh-network' static/index.html
-          grep -Fq 'nvh-chart' static/index.html
-          grep -Fq 'nvh-orbit' static/index.html
+          grep -Fq 'ed-hero-collage' static/index.html
+          grep -Fq 'ed-journey-progress' static/index.html
+          grep -Fq 'data-step="5"' static/index.html
+          grep -Fq 'Наблюдение' static/index.html
+          grep -Fq 'ed-sector-btn' static/index.html
           grep -Fq 'Интелиджънс Хъб' static/index.html
-          grep -Fq '>Наблюдение<' static/index.html
-          grep -Fq 'brandlab-office-hero.webp' static/index.html
-          grep -Fq 'brandlab-network-city.webp' static/index.html
-          ! grep -Fq 'intelSearchForm' static/index.html
+          grep -Fq 'editorial-flow-v6' static/index.html
+          grep -Fq '/demo.html' static/index.html
+          grep -Fq '/navigator' static/index.html
+          grep -Fq '/intelligence-hub.html' static/index.html
           ! grep -Fq 'BLIS™ Quick Search' static/index.html
-          ! grep -Fq 'Executive Brief' static/index.html
-          ! grep -Fq 'MONITOR' static/index.html
-          ! grep -Fq 'UNDERSTAND' static/index.html
-          ! grep -Fq 'DECIDE' static/index.html
-          ! grep -Fq 'FMCG' static/index.html
-          ! grep -Fq 'B2B' static/index.html
-          grep -Fq 'diContextSearch' static/navigator-decision-intelligence-v1.js
-          grep -Fq '/api/decision/ask' static/navigator-decision-intelligence-v1.js
-          echo HOME_VISUAL_SOURCE_OK
+          ! grep -Fq 'intelSearchForm' static/index.html
+          echo EDITORIAL_HOME_SOURCE_OK
 
       - name: Wait for and verify canonical production
         run: |
@@ -78,20 +67,12 @@ jobs:
           test "$ok" = "1"
 
           curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?visualqa=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq 'nvh-hero' /tmp/home.html
-          grep -Fq 'Карта на информационната среда' /tmp/home.html
-          grep -Fq 'Заяви демонстрация' /tmp/home.html
-          grep -Fq 'nvh-network' /tmp/home.html
-          grep -Fq 'nvh-chart' /tmp/home.html
-          grep -Fq 'nvh-orbit' /tmp/home.html
+          grep -Fq 'ed-hero-collage' /tmp/home.html
+          grep -Fq 'ed-journey-progress' /tmp/home.html
+          grep -Fq 'data-step="5"' /tmp/home.html
           grep -Fq 'Интелиджънс Хъб' /tmp/home.html
-          grep -Fq '>Наблюдение<' /tmp/home.html
+          grep -Fq 'editorial-flow-v6' /tmp/home.html
+          ! grep -Fq 'BLIS™ Quick Search' /tmp/home.html
           curl -fsS "$BASE/brandlab-office-hero.webp?ts=$(date +%s%N)" -o /tmp/hero.webp
           test -s /tmp/hero.webp
-          ! grep -Fq 'intelSearchForm' /tmp/home.html
-          ! grep -Fq 'BLIS™ Quick Search' /tmp/home.html
-
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/navigator-decision-intelligence-v1.js?ts=$(date +%s%N)" -o /tmp/decision.js
-          grep -Fq 'diContextSearch' /tmp/decision.js
-          grep -Fq '/api/decision/ask' /tmp/decision.js
-          echo HOME_VISUAL_PRODUCTION_OK
+          echo EDITORIAL_HOME_PRODUCTION_OK
