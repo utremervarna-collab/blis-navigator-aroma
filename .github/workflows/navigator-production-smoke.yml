@@ -16,7 +16,7 @@ concurrency:
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
   MIGRATION_BUILD: code-run-migration-2026-09-09-v1
-  RELEASE_MARKER: navigator-home-analyses-2026-09-27-v2
+  RELEASE_MARKER: navigator-home-approved-1to1-2026-09-27-v1
 
 jobs:
   local-regression:
@@ -108,13 +108,12 @@ jobs:
             test "$(curlr -sS -D /tmp/home.headers -o /tmp/home.html -w '%{http_code}' "$BASE/?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             grep -Eqi '^x-blis-home-origin: gateway' /tmp/home.headers
             grep -Fq 'BLIS™' /tmp/home.html
-            grep -Fq 'Информацията е предимство' /tmp/home.html
-            grep -Fq 'Поръчай анализ' /tmp/home.html
-            grep -Fq 'Влез в Навигатор' /tmp/home.html
-            grep -Fq 'Клиентски профил' /tmp/home.html
-            grep -Fq 'Последни анализи и статии' /tmp/home.html
-            grep -Fq '/analyses.html' /tmp/home.html
-            ! grep -Fq 'Заяви демонстрация' /tmp/home.html
+            grep -Fq '/home-approved-1to1.webp' /tmp/home.html
+            grep -Fq 'stepGlow s1' /tmp/home.html
+            grep -Fq 'stepGlow s5' /tmp/home.html
+            grep -Fq 'class="fx radar"' /tmp/home.html
+            grep -Fq '/analyses.html#order' /tmp/home.html
+            grep -Fq '/intelligence-hub.html' /tmp/home.html
             ! grep -Fq 'intelSearchForm' /tmp/home.html
             test "$(curlr -sS -o /tmp/home-tape.json -w '%{http_code}' "$BASE/api/public/home-tape?roundtrip=$round&ts=$(date +%s%N)")" = "200"
             python - <<'PY'
