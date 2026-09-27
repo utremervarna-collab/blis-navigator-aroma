@@ -1,13 +1,13 @@
-name: Navigator Home and Analyses QA
+name: Navigator Approved Home QA
 
 on:
   push:
     branches: [main]
     paths:
       - 'static/index.html'
+      - 'static/home.html'
+      - 'static/home-approved-1to1.webp'
       - 'static/analyses.html'
-      - 'static/home-2026.css'
-      - 'static/home-2026.js'
       - 'static/migration-build.js'
       - '.github/workflows/home-intelligence-search-qa.yml'
   workflow_dispatch:
@@ -16,75 +16,68 @@ permissions:
   contents: read
 
 concurrency:
-  group: navigator-home-analyses-qa
+  group: navigator-approved-home-qa
   cancel-in-progress: true
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: navigator-home-analyses-2026-09-27-v2
+  RELEASE_MARKER: navigator-home-approved-1to1-2026-09-27-v2
 
 jobs:
-  home-analyses:
+  approved-home:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.x'
-      - name: Build current Navigator
-        run: go build -tags netgo -ldflags '-s -w' -o app .
-      - name: Validate source
+      - name: Validate approved source contract
         run: |
           set -euo pipefail
-          grep -Fq 'Информацията е предимство' static/index.html
-          grep -Fq 'Поръчай анализ' static/index.html
-          grep -Fq 'Влез в Навигатор' static/index.html
-          grep -Fq 'Клиентски профил' static/index.html
-          grep -Fq 'Последни анализи и статии' static/index.html
-          grep -Fq 'Събиране' static/index.html
-          grep -Fq 'Подреждане' static/index.html
-          grep -Fq 'Проследяване' static/index.html
-          grep -Fq 'Анализ' static/index.html
-          grep -Fq 'Извод' static/index.html
+          grep -Fq '/home-approved-1to1.webp' static/index.html
+          grep -Fq 'BLIS™' static/index.html
+          grep -Fq 'stepGlow s1' static/index.html
+          grep -Fq 'stepGlow s5' static/index.html
+          grep -Fq 'class="fx radar"' static/index.html
+          grep -Fq '@keyframes stepPulse' static/index.html
+          grep -Fq '@keyframes flow' static/index.html
+          grep -Fq '@keyframes shine' static/index.html
+          grep -Fq 'href="/navigator"' static/index.html
+          grep -Fq 'href="/analyses.html#order"' static/index.html
+          grep -Fq 'href="/intelligence-hub.html"' static/index.html
           grep -Fq '/intelligence-hub-more-data-less-clarity.html' static/index.html
           grep -Fq '/intelligence-ai-search.html' static/index.html
           grep -Fq '/intelligence-reputation-trust.html' static/index.html
           grep -Fq '/intelligence-retail-bulgaria-2026.html' static/index.html
+          cmp -s static/index.html static/home.html
+          test -s static/home-approved-1to1.webp
           grep -Fq 'analysisOrder' static/analyses.html
-          grep -Fq '/api/inquiries' static/analyses.html
-          grep -Fq '@keyframes flow' static/home-2026.css
-          grep -Fq '@keyframes glint' static/home-2026.css
-          echo HOME_ANALYSES_SOURCE_OK
-      - name: Wait for canonical production
+          echo APPROVED_HOME_SOURCE_OK
+      - name: Wait for approved production release
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
           ok=0
           for i in $(seq 1 60); do
-            if curl -fsS --connect-timeout 12 --max-time 25 "$BASE/migration-build.js?ts=$(date +%s%N)" -o /tmp/build.js && grep -Fq "$RELEASE_MARKER" /tmp/build.js; then
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/migration-build.js?ts=$(date +%s%N)" -o /tmp/build.js && grep -Fq "$RELEASE_MARKER" /tmp/build.js; then
               ok=1
               break
             fi
             sleep 8
           done
           test "$ok" = "1"
-      - name: Verify live homepage and analyses
+      - name: Verify approved production home
         run: |
           set -euo pipefail
           BASE="${NAVIGATOR_ORIGIN%/}"
-          curl -fsS --retry 4 --retry-all-errors "$BASE/?homeqa=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq 'Информацията е предимство' /tmp/home.html
-          grep -Fq 'Поръчай анализ' /tmp/home.html
-          grep -Fq 'Влез в Навигатор' /tmp/home.html
-          grep -Fq 'Клиентски профил' /tmp/home.html
-          grep -Fq 'Последни анализи и статии' /tmp/home.html
-          curl -fsS "$BASE/home-2026.css?ts=$(date +%s%N)" -o /tmp/home.css
-          grep -Fq '@keyframes flow' /tmp/home.css
-          grep -Fq '@keyframes glint' /tmp/home.css
-          curl -fsS "$BASE/home-2026.js?ts=$(date +%s%N)" -o /tmp/home.js
-          grep -Fq 'is-active' /tmp/home.js
-          curl -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
-          grep -Fq 'Поръчай анализ' /tmp/analyses.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/?approved-home=$(date +%s%N)" -o /tmp/home.html
+          grep -Fq '/home-approved-1to1.webp' /tmp/home.html
+          grep -Fq 'BLIS™' /tmp/home.html
+          grep -Fq 'stepGlow s1' /tmp/home.html
+          grep -Fq 'stepGlow s5' /tmp/home.html
+          grep -Fq 'class="fx radar"' /tmp/home.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-approved-1to1.webp?ts=$(date +%s%N)" -o /tmp/approved.webp
+          test -s /tmp/approved.webp
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home.html?ts=$(date +%s%N)" -o /tmp/home-mirror.html
+          grep -Fq '/home-approved-1to1.webp' /tmp/home-mirror.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
           grep -Fq 'analysisOrder' /tmp/analyses.html
-          echo HOME_ANALYSES_PRODUCTION_OK
+          echo APPROVED_HOME_PRODUCTION_OK
