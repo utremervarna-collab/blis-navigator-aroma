@@ -1,11 +1,12 @@
-name: Home Intelligence Search QA
+name: Home Product Architecture QA
 
 on:
   push:
     branches: [main]
     paths:
       - 'static/index.html'
-      - 'home_intelligence_search_v1.go'
+      - 'static/navigator-decision-intelligence-v1.js'
+      - 'static/navigator-decision-intelligence-v1.css'
       - 'static/migration-build.js'
       - '.github/workflows/home-intelligence-search-qa.yml'
   workflow_dispatch:
@@ -14,15 +15,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: home-intelligence-search-qa
+  group: home-product-architecture-qa
   cancel-in-progress: true
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-intelligence-search-2026-09-27-v5
+  RELEASE_MARKER: home-intelligence-architecture-2026-09-27-v1
 
 jobs:
-  home-search:
+  architecture:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -34,20 +35,20 @@ jobs:
       - name: Build current Navigator
         run: go build -tags netgo -ldflags '-s -w' -o app .
 
-      - name: Validate Home Search source contract
+      - name: Validate public home and contextual search contract
         run: |
           set -euo pipefail
-          grep -Fq 'BLIS™ Quick Search · функция на Navigator' static/index.html
-          grep -Fq 'intelSearchForm' static/index.html
-          grep -Fq 'най-релевантните публични резултати' static/index.html
-          ! grep -Fq 'Web + BLIS intelligence' static/index.html
-          grep -Fq '/api/intelligence/search' static/index.html
-          ! grep -Fq 'intelScope' static/index.html
-          ! grep -Fq 'intelExamples' static/index.html
-          grep -Fq '.intelResult.navigator' static/index.html
-          ! grep -Fq 'data-search-mode=' static/index.html
-          grep -Fq '"/api/intelligence/search"' home_intelligence_search_v1.go
-          echo HOME_SEARCH_SOURCE_CONTRACT_OK
+          grep -Fq 'productPreview' static/index.html
+          grep -Fq 'Три intelligence задачи' static/index.html
+          grep -Fq 'flowGrid' static/index.html
+          grep -Fq 'Ask Navigator · само в клиентските профили' static/index.html
+          grep -Fq 'clientCompact' static/index.html
+          ! grep -Fq 'intelSearchForm' static/index.html
+          ! grep -Fq 'BLIS™ Quick Search' static/index.html
+          grep -Fq 'diContextSearch' static/navigator-decision-intelligence-v1.js
+          grep -Fq '/api/decision/ask' static/navigator-decision-intelligence-v1.js
+          grep -Fq '.di-context-search' static/navigator-decision-intelligence-v1.css
+          echo HOME_PRODUCT_ARCHITECTURE_SOURCE_OK
 
       - name: Wait for and verify canonical production
         run: |
@@ -63,33 +64,14 @@ jobs:
           done
           test "$ok" = "1"
 
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?searchqa=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq 'BLIS™ Quick Search · функция на Navigator' /tmp/home.html
-          ! grep -Fq 'intelExamples' /tmp/home.html
-          ! grep -Fq 'Web + BLIS intelligence' /tmp/home.html
-          grep -Fq 'intelSearchForm' /tmp/home.html
+          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?homeqa=$(date +%s%N)" -o /tmp/home.html
+          grep -Fq 'productPreview' /tmp/home.html
+          grep -Fq 'Три intelligence задачи' /tmp/home.html
+          grep -Fq 'Ask Navigator · само в клиентските профили' /tmp/home.html
+          ! grep -Fq 'intelSearchForm' /tmp/home.html
+          ! grep -Fq 'BLIS™ Quick Search' /tmp/home.html
 
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 45 "$BASE/api/intelligence/search?q=%D1%86%D0%B5%D0%BD%D0%B0%20%D0%BD%D0%B0%20%D0%B8%D0%BC%D0%BE%D1%82%D0%B8%20%D0%B2%20%D0%A1%D0%BE%D1%84%D0%B8%D1%8F&mode=all&ts=$(date +%s%N)" -o /tmp/search.json
-          python3 - <<'PY'
-          import json
-          d=json.load(open('/tmp/search.json',encoding='utf-8'))
-          assert d.get('ok') is True, d
-          assert d.get('mode')=='all', d.get('mode')
-          rows=d.get('results') or []
-          assert isinstance(rows,list)
-          web=[r for r in rows if r.get('kind') in ('web','news')]
-          assert web, 'No relevant public results for Sofia property price query'
-          answer=str(d.get('answer') or '')
-          assert len(answer) >= 60, answer
-          assert len(answer) <= 435, len(answer)
-          low=answer.lower()
-          for bad in ('ы','э','ё',' которая ',' является ',' миллионов ',' товаров '):
-              assert bad not in low, (bad,answer)
-          for r in web:
-              src=str(r.get('source') or '').lower()
-              assert src!='bing.com' and not src.endswith('.bing.com'), r
-          offer=d.get('analysis_offer') or {}
-          assert offer.get('show') is True, offer
-          assert 'пълен анализ' in str(offer.get('cta') or '').lower(), offer
-          print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(web), len(answer), web[0].get('source'))
-          PY
+          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/navigator-decision-intelligence-v1.js?ts=$(date +%s%N)" -o /tmp/decision.js
+          grep -Fq 'diContextSearch' /tmp/decision.js
+          grep -Fq '/api/decision/ask' /tmp/decision.js
+          echo HOME_PRODUCT_ARCHITECTURE_PRODUCTION_OK
