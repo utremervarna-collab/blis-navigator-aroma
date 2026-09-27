@@ -49,6 +49,8 @@ jobs:
           grep -Fq '/intelligence-retail-bulgaria-2026.html' static/index.html
           cmp -s static/index.html static/home.html
           test -s static/home-approved-1to1.webp
+          test "$(head -c 4 static/home-approved-1to1.webp)" = "RIFF"
+          test "$(dd if=static/home-approved-1to1.webp bs=1 skip=8 count=4 2>/dev/null)" = "WEBP"
           grep -Fq 'analysisOrder' static/analyses.html
           echo APPROVED_HOME_SOURCE_OK
       - name: Wait for approved production release
@@ -74,8 +76,11 @@ jobs:
           grep -Fq 'stepGlow s1' /tmp/home.html
           grep -Fq 'stepGlow s5' /tmp/home.html
           grep -Fq 'class="fx radar"' /tmp/home.html
-          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-approved-1to1.webp?ts=$(date +%s%N)" -o /tmp/approved.webp
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS -D /tmp/approved.headers "$BASE/home-approved-1to1.webp?ts=$(date +%s%N)" -o /tmp/approved.webp
           test -s /tmp/approved.webp
+          grep -Eiq '^content-type:[[:space:]]*image/webp([;[:space:]]|$)' /tmp/approved.headers
+          test "$(head -c 4 /tmp/approved.webp)" = "RIFF"
+          test "$(dd if=/tmp/approved.webp bs=1 skip=8 count=4 2>/dev/null)" = "WEBP"
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home?ts=$(date +%s%N)" -o /tmp/home-mirror.html
           grep -Fq '/home-approved-1to1.webp' /tmp/home-mirror.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
