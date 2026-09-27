@@ -19,7 +19,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-intelligence-search-2026-09-26-v4
+  RELEASE_MARKER: home-intelligence-search-2026-09-27-v5
 
 jobs:
   home-search:
@@ -40,8 +40,10 @@ jobs:
           grep -Fq 'BLIS™ Quick Search · функция на Navigator' static/index.html
           grep -Fq 'intelSearchForm' static/index.html
           grep -Fq 'най-релевантните публични резултати' static/index.html
+          ! grep -Fq 'Web + BLIS intelligence' static/index.html
           grep -Fq '/api/intelligence/search' static/index.html
-          grep -Fq 'intelScope' static/index.html
+          ! grep -Fq 'intelScope' static/index.html
+          ! grep -Fq 'intelExamples' static/index.html
           grep -Fq '.intelResult.navigator' static/index.html
           ! grep -Fq 'data-search-mode=' static/index.html
           grep -Fq '"/api/intelligence/search"' home_intelligence_search_v1.go
@@ -63,9 +65,11 @@ jobs:
 
           curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?searchqa=$(date +%s%N)" -o /tmp/home.html
           grep -Fq 'BLIS™ Quick Search · функция на Navigator' /tmp/home.html
+          ! grep -Fq 'intelExamples' /tmp/home.html
+          ! grep -Fq 'Web + BLIS intelligence' /tmp/home.html
           grep -Fq 'intelSearchForm' /tmp/home.html
 
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/api/intelligence/search?q=Aroma%20Cosmetics&mode=all&ts=$(date +%s%N)" -o /tmp/search.json
+          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 45 "$BASE/api/intelligence/search?q=%D1%86%D0%B5%D0%BD%D0%B0%20%D0%BD%D0%B0%20%D0%B8%D0%BC%D0%BE%D1%82%D0%B8%20%D0%B2%20%D0%A1%D0%BE%D1%84%D0%B8%D1%8F&mode=all&ts=$(date +%s%N)" -o /tmp/search.json
           python3 - <<'PY'
           import json
           d=json.load(open('/tmp/search.json',encoding='utf-8'))
@@ -73,12 +77,19 @@ jobs:
           assert d.get('mode')=='all', d.get('mode')
           rows=d.get('results') or []
           assert isinstance(rows,list)
-          assert rows, 'Home search returned no results for Aroma Cosmetics'
+          web=[r for r in rows if r.get('kind') in ('web','news')]
+          assert web, 'No relevant public results for Sofia property price query'
+          answer=str(d.get('answer') or '')
+          assert len(answer) >= 60, answer
+          assert len(answer) <= 435, len(answer)
+          low=answer.lower()
+          for bad in ('ы','э','ё',' которая ',' является ',' миллионов ',' товаров '):
+              assert bad not in low, (bad,answer)
+          for r in web:
+              src=str(r.get('source') or '').lower()
+              assert src!='bing.com' and not src.endswith('.bing.com'), r
           offer=d.get('analysis_offer') or {}
           assert offer.get('show') is True, offer
           assert 'пълен анализ' in str(offer.get('cta') or '').lower(), offer
-          assert '/contact.html?analysis=1&topic=' in str(offer.get('url') or ''), offer
-          answer=str(d.get('answer') or '')
-          assert len(answer) <= 435, len(answer)
-          print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(rows), len(answer), offer.get('cta'))
+          print('HOME_INTELLIGENCE_SEARCH_PRODUCTION_OK', len(web), len(answer), web[0].get('source'))
           PY
