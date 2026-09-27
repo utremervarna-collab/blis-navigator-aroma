@@ -20,7 +20,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-visual-architecture-2026-09-27-v1
+  RELEASE_MARKER: home-editorial-brandlab-2026-09-27-v1
 
 jobs:
   visual-home:
@@ -47,6 +47,10 @@ jobs:
           grep -Fq 'nvh-network' static/index.html
           grep -Fq 'nvh-chart' static/index.html
           grep -Fq 'nvh-orbit' static/index.html
+          grep -Fq 'Интелиджънс Хъб' static/index.html
+          grep -Fq '>Наблюдение<' static/index.html
+          grep -Fq 'brandlab-office-hero.webp' static/index.html
+          grep -Fq 'brandlab-network-city.webp' static/index.html
           ! grep -Fq 'intelSearchForm' static/index.html
           ! grep -Fq 'BLIS™ Quick Search' static/index.html
           ! grep -Fq 'Executive Brief' static/index.html
@@ -80,6 +84,10 @@ jobs:
           grep -Fq 'nvh-network' /tmp/home.html
           grep -Fq 'nvh-chart' /tmp/home.html
           grep -Fq 'nvh-orbit' /tmp/home.html
+          grep -Fq 'Интелиджънс Хъб' /tmp/home.html
+          grep -Fq '>Наблюдение<' /tmp/home.html
+          curl -fsS "$BASE/brandlab-office-hero.webp?ts=$(date +%s%N)" -o /tmp/hero.webp
+          test -s /tmp/hero.webp
           ! grep -Fq 'intelSearchForm' /tmp/home.html
           ! grep -Fq 'BLIS™ Quick Search' /tmp/home.html
 
