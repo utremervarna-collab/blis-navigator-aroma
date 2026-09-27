@@ -1,4 +1,4 @@
-name: Home Product Architecture QA
+name: Home Visual Architecture QA
 
 on:
   push:
@@ -15,15 +15,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: home-product-architecture-qa
+  group: home-visual-architecture-qa
   cancel-in-progress: true
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: home-intelligence-architecture-2026-09-27-v2
+  RELEASE_MARKER: home-visual-architecture-2026-09-27-v1
 
 jobs:
-  architecture:
+  visual-home:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,20 +35,29 @@ jobs:
       - name: Build current Navigator
         run: go build -tags netgo -ldflags '-s -w' -o app .
 
-      - name: Validate public home and contextual search contract
+      - name: Validate visual public home
         run: |
           set -euo pipefail
-          grep -Fq 'productPreview' static/index.html
-          grep -Fq 'Три intelligence задачи' static/index.html
-          grep -Fq 'flowGrid' static/index.html
-          grep -Fq 'Ask Navigator · само в клиентските профили' static/index.html
-          grep -Fq 'clientCompact' static/index.html
+          grep -Fq 'nvh-hero' static/index.html
+          grep -Fq 'Карта на информационната среда' static/index.html
+          grep -Fq 'Динамика във времето' static/index.html
+          grep -Fq 'От източника' static/index.html
+          grep -Fq 'Един клиентски профил' static/index.html
+          grep -Fq 'Заяви демонстрация' static/index.html
+          grep -Fq 'nvh-network' static/index.html
+          grep -Fq 'nvh-chart' static/index.html
+          grep -Fq 'nvh-orbit' static/index.html
           ! grep -Fq 'intelSearchForm' static/index.html
           ! grep -Fq 'BLIS™ Quick Search' static/index.html
+          ! grep -Fq 'Executive Brief' static/index.html
+          ! grep -Fq 'MONITOR' static/index.html
+          ! grep -Fq 'UNDERSTAND' static/index.html
+          ! grep -Fq 'DECIDE' static/index.html
+          ! grep -Fq 'FMCG' static/index.html
+          ! grep -Fq 'B2B' static/index.html
           grep -Fq 'diContextSearch' static/navigator-decision-intelligence-v1.js
           grep -Fq '/api/decision/ask' static/navigator-decision-intelligence-v1.js
-          grep -Fq '.di-context-search' static/navigator-decision-intelligence-v1.css
-          echo HOME_PRODUCT_ARCHITECTURE_SOURCE_OK
+          echo HOME_VISUAL_SOURCE_OK
 
       - name: Wait for and verify canonical production
         run: |
@@ -64,14 +73,17 @@ jobs:
           done
           test "$ok" = "1"
 
-          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?homeqa=$(date +%s%N)" -o /tmp/home.html
-          grep -Fq 'productPreview' /tmp/home.html
-          grep -Fq 'Три intelligence задачи' /tmp/home.html
-          grep -Fq 'Ask Navigator · само в клиентските профили' /tmp/home.html
+          curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/?visualqa=$(date +%s%N)" -o /tmp/home.html
+          grep -Fq 'nvh-hero' /tmp/home.html
+          grep -Fq 'Карта на информационната среда' /tmp/home.html
+          grep -Fq 'Заяви демонстрация' /tmp/home.html
+          grep -Fq 'nvh-network' /tmp/home.html
+          grep -Fq 'nvh-chart' /tmp/home.html
+          grep -Fq 'nvh-orbit' /tmp/home.html
           ! grep -Fq 'intelSearchForm' /tmp/home.html
           ! grep -Fq 'BLIS™ Quick Search' /tmp/home.html
 
           curl -fsS --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 12 --max-time 30 "$BASE/navigator-decision-intelligence-v1.js?ts=$(date +%s%N)" -o /tmp/decision.js
           grep -Fq 'diContextSearch' /tmp/decision.js
           grep -Fq '/api/decision/ask' /tmp/decision.js
-          echo HOME_PRODUCT_ARCHITECTURE_PRODUCTION_OK
+          echo HOME_VISUAL_PRODUCTION_OK
