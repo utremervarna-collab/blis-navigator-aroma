@@ -88,147 +88,195 @@ url('/brandlab-boardroom.webp') center/cover no-repeat;padding:110px 0}
  .nvh-photo-band,.nvh-editorial-grid{grid-template-columns:1fr}.nvh-photo-band .photo{min-height:420px}.nvh-editorial-grid .bigphoto{min-height:440px}.nvh-editorial-grid .side{grid-template-columns:1fr 1fr;grid-template-rows:none}.nvh-editorial-grid .side>div{min-height:300px}
 }
 @media(max-width:720px){.nvh-process{grid-template-columns:1fr}.nvh-step-icon{width:110px;height:110px}.nvh-photo-band .copy{padding:44px 28px}.nvh-photo-band .copy h2{font-size:40px}.nvh-editorial-grid .side{grid-template-columns:1fr}.nvh-editorial-grid .side>div{min-height:260px}}
+
+/* Navigator Editorial Flow v6 */
+.ed-home{overflow:hidden;background:#f7f4ee;color:#122c46}.ed-home img{display:block;width:100%;height:100%;object-fit:cover}.ed-home em{font-style:normal;color:#bd7e19}
+.ed-kicker,.ed-small{display:inline-block;font:900 12px/1.2 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#b27415}
+.ed-hero{position:relative;min-height:calc(100vh - 132px);background:#f7f4ee;padding:58px 0 96px}.ed-hero-grid{display:grid;grid-template-columns:.84fr 1.16fr;gap:56px;align-items:center;min-height:690px;position:relative;z-index:2}.ed-hero-copy{padding-top:12px}.ed-hero h1{font:500 clamp(62px,6.2vw,104px)/.91 Georgia,serif;letter-spacing:-.055em;margin:20px 0 28px;max-width:760px}.ed-hero-copy>p{max-width:660px;font-size:18px;line-height:1.72;color:#5c7083;margin:0 0 32px}.ed-actions{display:flex;flex-wrap:wrap;gap:12px}.ed-btn{min-height:56px;padding:0 23px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;font-weight:850;transition:.25s}.ed-btn:hover{transform:translateY(-2px)}.ed-btn-gold{background:#bd7e19;color:#fff}.ed-btn-ghost{border:1px solid #bfc9d3;color:#244663;background:rgba(255,255,255,.45)}.ed-client-link{display:inline-block;margin-top:22px;color:#47637b;text-decoration:none;font-size:13px;font-weight:750}
+.ed-hero-collage{position:relative;height:650px}.ed-photo{margin:0;position:absolute;overflow:hidden;box-shadow:0 26px 70px rgba(14,39,61,.13)}.ed-photo-main{inset:0 0 55px 85px;border-radius:4px}.ed-photo-main:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(12,35,55,.22))}.ed-photo-float{width:42%;height:34%;left:0;bottom:0;border:12px solid #f7f4ee}.ed-hero-tag{position:absolute;right:-18px;bottom:26px;width:260px;padding:17px 18px;background:#102d47;color:#fff}.ed-hero-tag b{display:block;font-size:13px}.ed-hero-tag span{display:block;margin-top:5px;color:#bcd0df;font-size:11px;line-height:1.45}.ed-hero-orbit{position:absolute;width:260px;height:260px;border:1px solid rgba(189,126,25,.32);border-radius:50%;right:-100px;top:-70px;box-shadow:0 0 0 50px rgba(189,126,25,.05),0 0 0 100px rgba(189,126,25,.025)}.ed-hero-word{position:absolute;left:-18px;bottom:-26px;font:900 clamp(110px,15vw,250px)/1 Inter,sans-serif;color:rgba(16,45,71,.035);letter-spacing:-.08em;white-space:nowrap}
+.ed-intro{padding:110px 0 100px;background:#fff}.ed-intro-grid{display:grid;grid-template-columns:120px 1.05fr .95fr;gap:40px;align-items:end}.ed-intro-number{font:500 88px/1 Georgia,serif;color:#d8b36e}.ed-intro-title span{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:#8191a0}.ed-intro-title h2{font:500 clamp(48px,5vw,74px)/1 Georgia,serif;letter-spacing:-.04em;margin:8px 0 0}.ed-intro-copy p{font-size:18px;line-height:1.75;color:#64778a;margin:0 0 4px}
+.ed-story{position:relative;min-height:720px;background:#132c44}.ed-story-image{position:absolute;inset:0 28% 0 0}.ed-story-image:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 50%,#132c44 100%)}.ed-story-overlay{min-height:720px;display:flex;justify-content:flex-end;align-items:center;position:relative;z-index:2}.ed-story-copy{width:38%;color:#fff;padding-left:30px}.ed-story-copy .ed-small{color:#e3b768}.ed-story-copy h2{font:500 clamp(46px,4.5vw,68px)/1.03 Georgia,serif;letter-spacing:-.035em;margin:14px 0 24px}.ed-story-copy p{font-size:17px;line-height:1.75;color:#c9d6e1}
+.ed-split{padding:130px 0;background:#f7f4ee}.ed-split-grid{display:grid;grid-template-columns:.88fr 1.12fr;gap:70px;align-items:center}.ed-split-copy h2{font:500 clamp(46px,4.5vw,70px)/1.02 Georgia,serif;letter-spacing:-.04em;margin:14px 0 24px}.ed-split-copy>p{font-size:18px;line-height:1.72;color:#64778a;max-width:600px}.ed-inline-list{list-style:none;padding:0;margin:30px 0 0;display:flex;flex-wrap:wrap;gap:10px}.ed-inline-list li{border-top:1px solid #c9d1d9;padding:12px 18px 0 0;font-size:13px;color:#3f5b73}.ed-split-media{height:620px;position:relative}.ed-split-media img{position:absolute}.ed-split-img-a{width:73%!important;height:78%!important;right:0;top:0}.ed-split-img-b{width:48%!important;height:48%!important;left:0;bottom:0;border:14px solid #f7f4ee}
+.ed-dark{padding:120px 0;background:#102b45;color:#fff}.ed-dark-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:80px;align-items:end}.ed-dark-lead .ed-small{color:#e2b05a}.ed-dark h2{font:500 clamp(48px,5vw,76px)/1 Georgia,serif;letter-spacing:-.04em;margin:14px 0 0}.ed-dark-copy p{font-size:18px;line-height:1.75;color:#c8d6e1}.ed-dark-copy a{display:inline-block;margin-top:20px;color:#fff;text-decoration:none;font-weight:800;border-bottom:1px solid rgba(255,255,255,.35);padding-bottom:5px}
+.ed-journey{padding:130px 0 110px;background:#fff}.ed-journey-head{max-width:900px}.ed-journey-head h2{font:500 clamp(50px,5vw,76px)/1 Georgia,serif;letter-spacing:-.04em;margin:14px 0 18px}.ed-journey-head p{font-size:17px;line-height:1.7;color:#687b8d;max-width:720px}.ed-journey-canvas{position:relative;height:720px;margin-top:40px}.ed-journey-svg{position:absolute;inset:40px 0 0;width:100%;height:600px}.ed-journey-base,.ed-journey-progress{fill:none;stroke-width:3}.ed-journey-base{stroke:#e6e0d6}.ed-journey-progress{stroke:#bd7e19;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1}.ed-step{position:absolute;width:210px;opacity:.42;transition:.45s}.ed-step.active{opacity:1;transform:translateY(-7px)}.ed-step>span{display:block;font-size:11px;font-weight:900;letter-spacing:.08em;color:#bd7e19;margin-bottom:8px}.ed-step figure{width:104px;height:104px;border-radius:50%;overflow:hidden;margin:0 0 16px;border:7px solid #fff;box-shadow:0 12px 28px rgba(24,52,79,.12)}.ed-step h3{font:500 27px Georgia,serif;margin:0 0 9px}.ed-step p{font-size:13px;line-height:1.55;color:#718295;margin:0}.ed-step-1{left:0;top:390px}.ed-step-2{left:19%;top:55px}.ed-step-3{left:41%;top:300px}.ed-step-4{left:64%;top:115px}.ed-step-5{right:0;top:30px}
+.ed-panorama{position:relative;min-height:760px;background:#0e2942;color:#fff}.ed-panorama-photo{position:absolute;inset:0}.ed-panorama-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,29,47,.95) 0%,rgba(10,29,47,.72) 46%,rgba(10,29,47,.12) 75%)}.ed-panorama-copy{position:relative;z-index:2;min-height:760px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}.ed-panorama-copy .ed-small{color:#e4b55d}.ed-panorama-copy h2{font:500 clamp(50px,5vw,78px)/1 Georgia,serif;max-width:720px;margin:16px 0 24px}.ed-panorama-copy p{max-width:630px;font-size:18px;line-height:1.75;color:#cfdae3}.ed-btn-light{background:#fff;color:#153c5e;margin-top:18px}
+.ed-signals{padding:125px 0;background:#f7f4ee}.ed-signals-grid{display:grid;grid-template-columns:.82fr 1.18fr;gap:100px}.ed-signals-title h2{font:500 clamp(50px,5vw,76px)/1 Georgia,serif;letter-spacing:-.04em;margin:14px 0}.ed-signals-stack article{display:grid;grid-template-columns:70px 1fr;gap:25px;padding:26px 0;border-top:1px solid #cdd5dc}.ed-signals-stack article:last-child{border-bottom:1px solid #cdd5dc}.ed-signals-stack article>span{font:500 36px Georgia,serif;color:#d4a450}.ed-signals-stack b{font-size:17px;color:#25455f}.ed-signals-stack p{font-size:14px;line-height:1.6;color:#718395;margin:6px 0 0}
+.ed-modules{padding:125px 0;background:#fff}.ed-modules-head{max-width:850px;margin-bottom:60px}.ed-modules-head h2{font:500 clamp(48px,5vw,74px)/1 Georgia,serif;margin:14px 0;letter-spacing:-.04em}.ed-modules-mosaic{display:grid;grid-template-columns:1.2fr .8fr 1fr;grid-template-rows:280px 235px;gap:14px}.ed-module{position:relative;text-decoration:none;color:#fff;padding:28px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;background:#173a59}.ed-module:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 20%,rgba(10,29,47,.88));z-index:0}.ed-module>*{position:relative;z-index:1}.ed-module>span{font-size:10px;font-weight:900;letter-spacing:.1em;color:#e5ba69}.ed-module h3{font:500 30px Georgia,serif;margin:7px 0}.ed-module p{font-size:13px;line-height:1.55;color:#d3dee7;max-width:430px}.ed-module-market{grid-row:1/3;background:url('/brandlab-network-city.webp') center/cover}.ed-module-competition{background:url('/brandlab-market-lens.webp') center/cover}.ed-module-reputation{background:#ad7420}.ed-module-digital{background:url('/brandlab-analysis-desk.webp') center/cover}.ed-module-consumers{background:url('/brandlab-meeting.webp') center/cover}.ed-module-signals{background:#102b45}
+.ed-sectors{padding:135px 0;background:#102b45;color:#fff}.ed-sectors-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:80px;align-items:start}.ed-sector-list h2{font:500 clamp(46px,4.5vw,68px)/1 Georgia,serif;margin:14px 0 34px}.ed-sector-list .ed-kicker{color:#e0af5c}.ed-sector-btn{display:block;width:100%;border:0;border-top:1px solid rgba(255,255,255,.16);background:transparent;color:#9fb2c3;text-align:left;padding:18px 4px;font-size:17px;cursor:pointer;transition:.25s}.ed-sector-btn:last-child{border-bottom:1px solid rgba(255,255,255,.16)}.ed-sector-btn.active,.ed-sector-btn:hover{color:#fff;padding-left:18px}.ed-sector-stage{position:sticky;top:115px;height:620px;overflow:hidden}.ed-sector-stage:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(8,25,40,.72))}.ed-sector-caption{position:absolute;left:32px;right:32px;bottom:30px;z-index:2}.ed-sector-caption b{font:500 33px Georgia,serif}.ed-sector-caption p{font-size:14px;color:#d4dee6;max-width:600px;margin:7px 0 0}
+.ed-hub{padding:130px 0;background:#f7f4ee}.ed-hub-title{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom:55px}.ed-hub-title .ed-kicker{grid-column:1/-1}.ed-hub-title h2{font:500 clamp(48px,5vw,74px)/1 Georgia,serif;margin:14px 0 0}.ed-hub-title>a{color:#284963;text-decoration:none;font-weight:800;border-bottom:1px solid #9facb8;padding-bottom:5px}.ed-hub-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:26px}.ed-hub-feature{text-decoration:none;color:#16344f}.ed-hub-image{height:470px;margin-bottom:20px}.ed-hub-feature>span,.ed-hub-side span{font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:900;color:#ae7418}.ed-hub-feature h3{font:500 32px/1.15 Georgia,serif;margin:8px 0}.ed-hub-side{display:grid;grid-template-rows:1fr 1fr;gap:18px}.ed-hub-side a{display:flex;flex-direction:column;justify-content:flex-end;padding:28px;background:#fff;text-decoration:none;color:#173651;border-top:4px solid #c48a2a}.ed-hub-side h3{font:500 24px/1.18 Georgia,serif;margin:9px 0 18px}.ed-hub-side i{font-style:normal;font-size:13px;font-weight:800;color:#597287}
+.ed-final{position:relative;min-height:700px;color:#fff}.ed-final>img{position:absolute;inset:0}.ed-final-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,27,43,.95),rgba(9,27,43,.72) 50%,rgba(9,27,43,.15))}.ed-final-content{position:relative;z-index:2;min-height:700px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}.ed-final .ed-kicker{color:#e5b565}.ed-final h2{font:500 clamp(52px,5.2vw,82px)/.98 Georgia,serif;letter-spacing:-.04em;margin:16px 0 24px}.ed-final p{font-size:18px;line-height:1.7;color:#d0dbe4;max-width:660px}.ed-btn-outline-light{border:1px solid rgba(255,255,255,.5);color:#fff;background:transparent;margin-top:18px}
+@media(max-width:1080px){.ed-hero-grid,.ed-intro-grid,.ed-split-grid,.ed-dark-grid,.ed-signals-grid,.ed-sectors-grid,.ed-hub-grid{grid-template-columns:1fr}.ed-hero-collage{height:580px}.ed-intro-grid{gap:18px}.ed-intro-number{font-size:60px}.ed-story-image{inset:0}.ed-story-image:after{background:linear-gradient(180deg,rgba(19,44,68,.15),#132c44 92%)}.ed-story-overlay{align-items:flex-end}.ed-story-copy{width:100%;padding:0 0 60px;max-width:760px}.ed-split-media{height:540px}.ed-journey-canvas{height:auto;display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:55px}.ed-journey-svg{display:none}.ed-step{position:relative!important;left:auto!important;right:auto!important;top:auto!important;width:auto;opacity:1}.ed-modules-mosaic{grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,250px)}.ed-module-market{grid-row:auto}.ed-sector-stage{position:relative;top:auto}.ed-hub-title{grid-template-columns:1fr;gap:18px}}
+@media(max-width:700px){.ed-hero{padding-top:34px}.ed-hero-grid{min-height:auto}.ed-hero h1{font-size:54px}.ed-hero-copy>p{font-size:16px}.ed-hero-collage{height:460px;margin-top:16px}.ed-photo-main{left:30px}.ed-photo-float{width:52%;height:30%;border-width:8px}.ed-hero-tag{right:0;width:220px}.ed-actions{display:grid}.ed-btn{width:100%}.ed-intro,.ed-split,.ed-dark,.ed-journey,.ed-signals,.ed-modules,.ed-sectors,.ed-hub{padding:78px 0}.ed-story,.ed-story-overlay{min-height:650px}.ed-split-media{height:420px}.ed-journey-canvas{grid-template-columns:1fr}.ed-step figure{width:86px;height:86px}.ed-modules-mosaic{display:block}.ed-module{min-height:260px;margin-bottom:10px}.ed-sector-stage{height:460px}.ed-hub-title h2,.ed-hub-feature h3{font-size:34px}.ed-hub-side{grid-template-rows:auto}.ed-hub-image{height:360px}.ed-final,.ed-final-content{min-height:630px}.ed-final h2{font-size:48px}}
 </style>
 </head>
 <body>
 <header class="top"><div class="container topin"><a class="logo" href="/"><strong>BLIS™</strong><span>от BRAND LAB</span></a><nav class="nav"><a href="/intelligence-hub.html">Интелиджънс Хъб</a><a href="#platform">Платформа</a><a href="#solutions">Решения</a><a href="/methodology.html">Методология</a><a href="#resources">Ресурси</a><a href="#clients">Приложения</a><a href="/brand-lab.html">За Brand Lab</a></nav><div class="actions"><a class="btn login" href="/navigator">Вход за клиенти</a><a class="btn demo" href="/demo.html">Заяви демонстрация</a></div></div></header>
 <div class="marketTape" aria-label="Актуални BLIS индекси"><div class="tapeLead"><i></i> BLIS НА ЖИВО</div><div class="tapeViewport"><div id="blisTapeTrack" class="tapeTrack"><div class="tapeItem"><span class="tapeMetric">Зареждане на активните индекси…</span></div></div></div></div>
-<main>
-<section class="nvh-hero"><div class="container nvh-hero-in">
-  <div class="nvh-hero-copy">
-    <span class="nvh-kicker">BLIS™ Navigator</span>
-    <h1>Вижте какво се променя.<br><em>Разберете защо.</em></h1>
-    <p>Една среда за постоянно наблюдение и анализ на пазара, конкурентите, репутацията, потребителските сигнали и дигиталното присъствие. Navigator събира фактите, поставя ги в контекст и показва кое заслужава внимание.</p>
-    <div class="nvh-actions"><a class="btn demo" href="/demo.html">Заяви демонстрация →</a><a class="btn login" href="/navigator">Вход за клиенти →</a></div>
-    <div class="nvh-note"><span><i></i> постоянно наблюдение</span><span><i></i> проверими източници</span><span><i></i> клиентски анализи</span></div>
-  </div>
-  <div class="nvh-visual">
-    <div class="nvh-visual-card">
-      <div class="nvh-visual-head"><b>Карта на информационната среда</b><span>● актуално наблюдение</span></div>
-      <svg class="nvh-network" viewBox="0 0 720 520" role="img" aria-label="Диаграма на информационната среда">
-        <defs>
-          <linearGradient id="nvhRing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2b6eb0"/><stop offset=".52" stop-color="#82a7ce"/><stop offset="1" stop-color="#d7a44a"/></linearGradient>
-          <filter id="nvhShadow"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-opacity=".12"/></filter>
-        </defs>
-        <circle cx="360" cy="258" r="196" fill="none" stroke="#e5edf5" stroke-width="1.5"/>
-        <circle cx="360" cy="258" r="142" fill="none" stroke="#edf2f7" stroke-width="1"/>
-        <path d="M154 150 C245 92 275 102 360 258 S505 405 579 363" fill="none" stroke="url(#nvhRing)" stroke-width="3" opacity=".72"/>
-        <path d="M160 364 C238 419 301 391 360 258 S487 106 575 152" fill="none" stroke="#7fa3c7" stroke-width="2" opacity=".5"/>
-        <circle cx="360" cy="258" r="82" fill="#173a5b" filter="url(#nvhShadow)"/>
-        <text x="360" y="249" text-anchor="middle" fill="#fff" font-size="25" font-weight="700">BLIS</text>
-        <text x="360" y="278" text-anchor="middle" fill="#bcd0e2" font-size="14">Navigator</text>
-        <g font-family="Arial, sans-serif" text-anchor="middle">
-          <g><circle cx="150" cy="145" r="54" fill="#fff" stroke="#dfe8f1" filter="url(#nvhShadow)"/><text x="150" y="141" fill="#284863" font-size="14" font-weight="700">Пазар</text><text x="150" y="160" fill="#7b8c9e" font-size="11">тенденции</text></g>
-          <g><circle cx="574" cy="146" r="54" fill="#fff" stroke="#dfe8f1" filter="url(#nvhShadow)"/><text x="574" y="142" fill="#284863" font-size="14" font-weight="700">Конкуренти</text><text x="574" y="161" fill="#7b8c9e" font-size="11">движения</text></g>
-          <g><circle cx="586" cy="368" r="54" fill="#fff" stroke="#dfe8f1" filter="url(#nvhShadow)"/><text x="586" y="364" fill="#284863" font-size="14" font-weight="700">Репутация</text><text x="586" y="383" fill="#7b8c9e" font-size="11">тон и теми</text></g>
-          <g><circle cx="144" cy="374" r="54" fill="#fff" stroke="#dfe8f1" filter="url(#nvhShadow)"/><text x="144" y="370" fill="#284863" font-size="14" font-weight="700">Потребители</text><text x="144" y="389" fill="#7b8c9e" font-size="11">нагласи</text></g>
-        </g>
-        <g fill="#d6a148"><circle cx="264" cy="105" r="5"/><circle cx="490" cy="116" r="4"/><circle cx="516" cy="398" r="5"/><circle cx="244" cy="407" r="4"/></g>
-      </svg>
+<main class="ed-home">
+<section class="ed-hero">
+  <div class="container ed-hero-grid">
+    <div class="ed-hero-copy">
+      <span class="ed-kicker">BLIS™ Navigator</span>
+      <h1>Вижте какво<br>се променя.<br><em>Разберете защо.</em></h1>
+      <p>Една среда за постоянно наблюдение и анализ на пазара, конкурентите, репутацията, потребителските сигнали и дигиталното присъствие. Navigator събира фактите, поставя ги в контекст и показва кое заслужава внимание.</p>
+      <div class="ed-actions">
+        <a class="ed-btn ed-btn-gold" href="/demo.html">Заяви демонстрация →</a>
+        <a class="ed-btn ed-btn-ghost" href="/intelligence-hub.html">Интелиджънс Хъб →</a>
+      </div>
+      <a class="ed-client-link" href="/navigator">Вход за клиенти ↗</a>
     </div>
-    <div class="nvh-float a"><b>Ранен сигнал</b><span>отклонение над обичайната динамика</span></div>
-    <div class="nvh-float b"><b>Конкурентно движение</b><span>потвърдено от няколко източника</span></div>
+    <div class="ed-hero-collage" aria-label="BLIS Navigator">
+      <figure class="ed-photo ed-photo-main"><img src="/brandlab-office-hero.webp" alt="Работна среда на Brand Lab"></figure>
+      <figure class="ed-photo ed-photo-float"><img src="/brandlab-analysis-desk.webp" alt="Аналитична работна среда"></figure>
+      <div class="ed-hero-tag"><b>Постоянно наблюдение</b><span>пазар · конкуренти · репутация · сигнали</span></div>
+      <div class="ed-hero-orbit" aria-hidden="true"></div>
+    </div>
   </div>
-</div></section>
+  <div class="ed-hero-word" aria-hidden="true">NAVIGATOR</div>
+</section>
 
-<section class="nvh-proof"><div class="container nvh-proof-in">
-  <div class="nvh-proof-lead"><b>Един продукт. Различни бизнес среди.</b><span>Профилът се настройва според клиента, сектора и конкурентите.</span></div>
-  <div class="nvh-proof-item"><b>Потребителски марки</b><span>репутация · категории · конкуренти</span></div>
-  <div class="nvh-proof-item"><b>Бизнес услуги</b><span>пазар · клиенти · позиции</span></div>
-  <div class="nvh-proof-item"><b>Недвижими имоти</b><span>офис пазари · наеми · конкуренти</span></div>
-  <div class="nvh-proof-item"><b>Кризисни казуси</b><span>ускорено наблюдение · развитие</span></div>
-</div></section>
-
-<section id="platform" class="nvh-section"><div class="container">
-  <div class="nvh-head"><span class="over">Какво прави Navigator</span><h2>Три задачи.<br><em>Една обща картина.</em></h2><p>Платформата не е сбор от отделни графики. Всеки модул допринася към една и съща клиентска картина, какво се случва, защо е важно и какво се променя във времето.</p></div>
-  <div class="nvh-three">
-    <article class="nvh-value"><div class="nvh-value-num">01</div><h3>Наблюдава</h3><p>Следи постоянно важните източници и открива нови сигнали.</p><ul><li>медии и публични споменавания</li><li>пазарни и секторни промени</li><li>репутационни отклонения</li></ul></article>
-    <article class="nvh-value"><div class="nvh-value-num">02</div><h3>Сравнява</h3><p>Поставя клиента в контекст спрямо конкуренти, периоди и предишно поведение.</p><ul><li>конкурентни движения</li><li>тенденции във времето</li><li>разлики спрямо обичайната картина</li></ul></article>
-    <article class="nvh-value"><div class="nvh-value-num">03</div><h3>Анализира</h3><p>Свързва отделните факти и ги превръща в ясни изводи и приоритети.</p><ul><li>рискове и възможности</li><li>причини за промяната</li><li>кратки аналитични обобщения</li></ul></article>
+<section class="ed-intro" id="platform">
+  <div class="container ed-intro-grid">
+    <div class="ed-intro-number">01</div>
+    <div class="ed-intro-title"><span>Една система</span><h2>Много по-ясна<br><em>картина.</em></h2></div>
+    <div class="ed-intro-copy"><p>Платформата не е сбор от отделни графики. Всеки модул допринася към една и съща клиентска картина: какво се случва, защо е важно и какво се променя във времето.</p></div>
   </div>
-</div></section>
+</section>
 
-<section class="nvh-section soft"><div class="container">
-  <div class="nvh-head"><span class="over">Визуална картина</span><h2>Не просто данни.<br><em>Динамика във времето.</em></h2><p>Navigator показва кога има промяна, къде е тя и дали е единичен шум или устойчиво движение. Анализът остава свързан с конкретните източници.</p></div>
-  <div class="nvh-chart-grid">
-    <article class="nvh-chart-card"><div class="nvh-card-top"><div><small>Динамика</small><h3>Как се променя средата</h3></div><span>последни периоди</span></div>
-      <svg class="nvh-chart" viewBox="0 0 720 330" role="img" aria-label="Примерна диаграма на динамиката">
-        <defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#3e7bb8" stop-opacity=".28"/><stop offset="1" stop-color="#3e7bb8" stop-opacity=".02"/></linearGradient></defs>
-        <g stroke="#e9eef4" stroke-width="1"><line x1="55" y1="55" x2="680" y2="55"/><line x1="55" y1="120" x2="680" y2="120"/><line x1="55" y1="185" x2="680" y2="185"/><line x1="55" y1="250" x2="680" y2="250"/></g>
-        <path d="M55 235 C120 224 150 185 210 196 S310 213 365 154 S460 128 510 148 S605 92 680 84 L680 270 L55 270Z" fill="url(#area)"/>
-        <path d="M55 235 C120 224 150 185 210 196 S310 213 365 154 S460 128 510 148 S605 92 680 84" fill="none" stroke="#2f72b4" stroke-width="5" stroke-linecap="round"/>
-        <circle cx="365" cy="154" r="8" fill="#c58a24"/><circle cx="680" cy="84" r="8" fill="#2ba769"/>
-        <g fill="#7d8d9f" font-size="12"><text x="55" y="305">начало</text><text x="340" y="305">промяна</text><text x="638" y="305">сега</text></g>
+<section class="ed-story">
+  <div class="ed-story-image"><img src="/brandlab-meeting.webp" alt="Работа по клиентски анализ"></div>
+  <div class="container ed-story-overlay">
+    <div class="ed-story-copy">
+      <span class="ed-small">Наблюдава</span>
+      <h2>Следи средата,<br>без да губи контекста.</h2>
+      <p>Медии, публични споменавания, пазарни и секторни промени, репутационни отклонения и ранни сигнали.</p>
+    </div>
+  </div>
+</section>
+
+<section class="ed-split">
+  <div class="container ed-split-grid">
+    <div class="ed-split-copy">
+      <span class="ed-small">Сравнява</span>
+      <h2>Поставя всяка промяна<br><em>спрямо нещо реално.</em></h2>
+      <p>Navigator сравнява периоди, конкуренти, предишно поведение и натрупана история, за да различава единичния шум от устойчивото движение.</p>
+      <ul class="ed-inline-list"><li>конкурентни движения</li><li>тенденции във времето</li><li>отклонения от обичайната картина</li></ul>
+    </div>
+    <div class="ed-split-media">
+      <img class="ed-split-img-a" src="/brandlab-market-lens.webp" alt="Анализ на пазарни данни">
+      <img class="ed-split-img-b" src="/brandlab-boardroom.webp" alt="Клиентски контекст">
+    </div>
+  </div>
+</section>
+
+<section class="ed-dark">
+  <div class="container ed-dark-grid">
+    <div class="ed-dark-lead">
+      <span class="ed-small">Анализира</span>
+      <h2>Фактите имат стойност,<br>когато водят до извод.</h2>
+    </div>
+    <div class="ed-dark-copy">
+      <p>Системата свързва отделните сигнали и ги превръща в ясни изводи, рискове, възможности и приоритети. Важното остава свързано с конкретните източници.</p>
+      <a href="/methodology.html">Виж методологията →</a>
+    </div>
+  </div>
+</section>
+
+<section class="ed-journey" id="journey">
+  <div class="container">
+    <div class="ed-journey-head"><span class="ed-kicker">Аналитичен процес</span><h2>От източника<br>до <em>извода.</em></h2><p>Пет последователни етапа. При движение надолу по страницата линията проследява целия аналитичен процес.</p></div>
+    <div class="ed-journey-canvas">
+      <svg class="ed-journey-svg" viewBox="0 0 1200 620" preserveAspectRatio="none" aria-hidden="true">
+        <path class="ed-journey-base" d="M55 470 C180 500, 220 120, 385 170 S570 540, 720 415 S905 110, 1145 175"/>
+        <path id="edJourneyProgress" class="ed-journey-progress" d="M55 470 C180 500, 220 120, 385 170 S570 540, 720 415 S905 110, 1145 175"/>
       </svg>
-      <div class="nvh-legend"><div><b>Сигнал</b><span>ново отклонение</span></div><div><b>Потвърждение</b><span>повече от един източник</span></div><div><b>Тенденция</b><span>устойчиво движение</span></div></div>
-    </article>
-    <article class="nvh-radar-card"><div class="nvh-card-top"><div><small>Сравнение</small><h3>Къде е промяната</h3></div></div>
-      <svg class="nvh-chart" viewBox="0 0 560 430" role="img" aria-label="Радарна диаграма">
-        <g transform="translate(280 215)">
-          <polygon points="0,-165 157,-51 97,134 -97,134 -157,-51" fill="none" stroke="#e4ebf2"/>
-          <polygon points="0,-120 114,-37 70,97 -70,97 -114,-37" fill="none" stroke="#e8eef4"/>
-          <polygon points="0,-75 71,-23 44,61 -44,61 -71,-23" fill="none" stroke="#edf2f7"/>
-          <g stroke="#edf2f7"><line x1="0" y1="0" x2="0" y2="-165"/><line x1="0" y1="0" x2="157" y2="-51"/><line x1="0" y1="0" x2="97" y2="134"/><line x1="0" y1="0" x2="-97" y2="134"/><line x1="0" y1="0" x2="-157" y2="-51"/></g>
-          <polygon points="0,-130 126,-41 62,86 -55,76 -118,-38" fill="rgba(47,114,180,.17)" stroke="#2f72b4" stroke-width="4"/>
-          <circle cx="0" cy="-130" r="6" fill="#2f72b4"/><circle cx="126" cy="-41" r="6" fill="#2f72b4"/><circle cx="62" cy="86" r="6" fill="#2f72b4"/><circle cx="-55" cy="76" r="6" fill="#2f72b4"/><circle cx="-118" cy="-38" r="6" fill="#2f72b4"/>
-        </g>
-        <g fill="#405d76" font-size="13" font-weight="700"><text x="245" y="27">Пазар</text><text x="449" y="153">Конкуренти</text><text x="384" y="389">Репутация</text><text x="78" y="389">Потребители</text><text x="22" y="153">Дигитална среда</text></g>
-      </svg>
-    </article>
+      <article class="ed-step ed-step-1" data-step="1"><span>01</span><figure><img src="/brandlab-analysis-desk.webp" alt=""></figure><h3>Събиране</h3><p>Медии, публични източници, конкурентна активност, дигитални канали и данни на клиента.</p></article>
+      <article class="ed-step ed-step-2" data-step="2"><span>02</span><figure><img src="/brandlab-boardroom.webp" alt=""></figure><h3>Подреждане</h3><p>Филтриране по релевантност, тема, конкурент, период и значение.</p></article>
+      <article class="ed-step ed-step-3" data-step="3"><span>03</span><figure><img src="/brandlab-office-hero.webp" alt=""></figure><h3>Наблюдение</h3><p>Постоянно проследяване на важните промени, сигнали и повтарящи се теми.</p></article>
+      <article class="ed-step ed-step-4" data-step="4"><span>04</span><figure><img src="/brandlab-meeting.webp" alt=""></figure><h3>Анализ</h3><p>Сравнение, зависимости, тенденции и връзки между отделните сигнали.</p></article>
+      <article class="ed-step ed-step-5" data-step="5"><span>05</span><figure><img src="/brandlab-market-lens.webp" alt=""></figure><h3>Извод</h3><p>Ясно обяснение какво означава промяната и какво заслужава внимание.</p></article>
+    </div>
   </div>
-</div></section>
+</section>
 
-<section class="nvh-section"><div class="container">
-  <div class="nvh-head"><span class="over">Аналитичен процес</span><h2>От източника<br>до <em>извода</em></h2><p>Всеки анализ минава през последователни стъпки. Така информацията не остава просто поток от публикации и числа.</p></div>
-  <div class="nvh-process-wrap"><div class="nvh-process">
-    <article class="nvh-step"><span class="nvh-step-num">01</span><div class="nvh-step-icon"><img src="/brandlab-analysis-desk.webp" alt=""></div><h3>Събиране</h3><p>Медии, публични източници, конкурентна активност, дигитални канали и данни на клиента.</p></article>
-    <article class="nvh-step"><span class="nvh-step-num">02</span><div class="nvh-step-icon"><img src="/brandlab-boardroom.webp" alt=""></div><h3>Подреждане</h3><p>Филтриране по релевантност, тема, конкурент, период и значение за конкретния профил.</p></article>
-    <article class="nvh-step"><span class="nvh-step-num">03</span><div class="nvh-step-icon"><img src="/brandlab-office-hero.webp" alt=""></div><h3>Наблюдение</h3><p>Постоянно проследяване на важните промени, сигнали и повтарящи се теми.</p></article>
-    <article class="nvh-step"><span class="nvh-step-num">04</span><div class="nvh-step-icon"><img src="/brandlab-meeting.webp" alt=""></div><h3>Анализ</h3><p>Сравнение, тенденции, зависимости, отклонения и връзки между отделните сигнали.</p></article>
-    <article class="nvh-step"><span class="nvh-step-num">05</span><div class="nvh-step-icon"><img src="/brandlab-market-lens.webp" alt=""></div><h3>Извод</h3><p>Ясно обяснение какво означава промяната и какво заслужава внимание след това.</p></article>
-  </div></div>
-</div></section>
-
-<section id="solutions" class="nvh-section soft"><div class="container nvh-orbit-wrap">
-  <div class="nvh-orbit-copy"><span class="nvh-kicker">Един клиентски профил</span><h2>Всичко важно<br>в един контекст</h2><p>Пазарът, конкурентите, репутацията и потребителските сигнали не се разглеждат поотделно. Navigator ги свързва около конкретния клиент и натрупва история във времето.</p><div class="nvh-actions"><a class="btn demo" href="/demo.html">Виж демонстрация →</a></div></div>
-  <div class="nvh-orbit">
-    <svg viewBox="0 0 650 610" role="img" aria-label="Диаграма на клиентския профил">
-      <defs><filter id="orbShadow"><feDropShadow dx="0" dy="16" stdDeviation="15" flood-opacity=".12"/></filter></defs>
-      <circle cx="325" cy="305" r="225" fill="#fff" stroke="#e0e8f1" stroke-width="2" filter="url(#orbShadow)"/>
-      <circle cx="325" cy="305" r="165" fill="none" stroke="#e7edf4" stroke-width="2" stroke-dasharray="5 9"/>
-      <circle cx="325" cy="305" r="90" fill="#163955"/>
-      <text x="325" y="296" text-anchor="middle" fill="#fff" font-size="24" font-weight="700">КЛИЕНТ</text><text x="325" y="324" text-anchor="middle" fill="#b9cfdf" font-size="13">единен профил</text>
-      <g font-family="Arial" font-size="14" font-weight="700" text-anchor="middle"><g><circle cx="325" cy="72" r="58" fill="#edf4fb" stroke="#d4e2ef"/><text x="325" y="77" fill="#2b5579">Пазар</text></g><g><circle cx="557" cy="230" r="58" fill="#fff4e2" stroke="#ead3aa"/><text x="557" y="235" fill="#8b641f">Конкуренти</text></g><g><circle cx="470" cy="520" r="58" fill="#eef8f3" stroke="#d4e9df"/><text x="470" y="525" fill="#2f6f57">Репутация</text></g><g><circle cx="180" cy="520" r="58" fill="#f2f3fb" stroke="#dfe2f1"/><text x="180" y="525" fill="#535d86">Потребители</text></g><g><circle cx="93" cy="230" r="58" fill="#edf5fb" stroke="#d6e4ef"/><text x="93" y="225" fill="#2d587b">Дигитална</text><text x="93" y="243" fill="#2d587b">среда</text></g></g>
-      <g stroke="#7fa2c4" stroke-width="2" opacity=".55"><line x1="325" y1="162" x2="325" y2="130"/><line x1="405" y1="274" x2="499" y2="241"/><line x1="380" y1="376" x2="438" y2="469"/><line x1="270" y1="376" x2="212" y2="469"/><line x1="245" y1="274" x2="151" y2="241"/></g>
-    </svg>
+<section class="ed-panorama">
+  <div class="ed-panorama-photo"><img src="/brandlab-network-city.webp" alt="Свързана бизнес среда"></div>
+  <div class="container ed-panorama-copy">
+    <span class="ed-small">Свързана картина</span>
+    <h2>Пазарът не се движи<br>в отделни категории.</h2>
+    <p>Navigator свързва пазарната среда, конкурентите, репутацията, потребителските сигнали и важните външни фактори в една обща картина за конкретния клиент.</p>
+    <a class="ed-btn ed-btn-light" href="/intelligence-hub.html">Отвори Интелиджънс Хъб →</a>
   </div>
-</div></section>
+</section>
 
-<section class="nvh-photo-band"><div class="photo"></div><div class="copy"><small>Свързана картина</small><h2>Пазарът не се движи в отделни категории.</h2><p>Navigator свързва пазарната среда, конкурентите, репутацията, потребителските сигнали и важните външни фактори в една обща картина за конкретния клиент.</p><div class="nvh-actions" style="margin-top:28px"><a class="btn demo" href="/intelligence-hub.html">Интелиджънс Хъб →</a></div></div></section><section class="nvh-section"><div class="container">
-  <div class="nvh-head"><span class="over">Сигнали и решения</span><h2>Кое е важно<br><em>точно сега</em></h2><p>Системата не показва всичко с еднаква тежест. Новите движения се подреждат по значимост, потвърждение и връзка с текущия клиентски контекст.</p></div>
-  <div class="nvh-signals">
-    <article class="nvh-signal-board"><small>Примерен изглед</small><h3>Важни сигнали</h3><div class="nvh-signal-list">
-      <div class="nvh-signal"><i></i><div><b>Промяна в конкурентната активност</b><span>потвърдена от няколко независими източника</span></div><em>висок приоритет</em></div>
-      <div class="nvh-signal"><i></i><div><b>Нова тема в публичната среда</b><span>нарастваща честота през последния период</span></div><em>за наблюдение</em></div>
-      <div class="nvh-signal"><i></i><div><b>Промяна в репутационния тон</b><span>отклонение спрямо обичайната картина</span></div><em>проверка</em></div>
-    </div></article>
-    <article class="nvh-result-card"><div><h3>От сигнал към извод</h3><p>Navigator свързва отделните наблюдения, за да покаже дали става дума за единично събитие, временен шум или устойчива промяна.</p><div class="nvh-result-list"><div><b>Какво се промени?</b><span>сравнение с предходния период</span></div><div><b>Защо има значение?</b><span>контекст за конкретния клиент</span></div><div><b>Какво да следим?</b><span>следващи сигнали и възможни сценарии</span></div></div></div><div class="nvh-actions"><a class="btn login" href="/navigator">Вход в Navigator →</a></div></article>
+<section class="ed-signals">
+  <div class="container ed-signals-grid">
+    <div class="ed-signals-title"><span class="ed-kicker">Сигнали и решения</span><h2>Кое е важно<br><em>точно сега.</em></h2></div>
+    <div class="ed-signals-stack">
+      <article><span>01</span><div><b>Какво се променя?</b><p>Ново движение спрямо предходния период и обичайната картина.</p></div></article>
+      <article><span>02</span><div><b>Къде се вижда?</b><p>Потвърждение от източници, конкуренти и различни части на информационната среда.</p></div></article>
+      <article><span>03</span><div><b>Защо има значение?</b><p>Контекст за конкретния клиент и възможен ефект върху позицията му.</p></div></article>
+      <article><span>04</span><div><b>Какво следим оттук нататък?</b><p>Следващи сигнали, повторяемост и възможни сценарии.</p></div></article>
+    </div>
   </div>
-</div></section>
+</section>
 
-<section class="nvh-section soft"><div class="container"><div class="nvh-head"><span class="over">Контекст и анализ</span><h2>Данните придобиват стойност<br><em>в правилния контекст.</em></h2><p>Съдържанието остава същото, но го показваме по-близо до реалната работа: наблюдение, анализ, срещи, решения.</p></div><div class="nvh-editorial-grid"><div class="bigphoto"></div><div class="side"><div class="ph1"></div><div class="ph2"></div></div></div></div></section><section id="clients" class="nvh-section soft"><div class="container">
-  <div class="nvh-head"><span class="over">Приложение</span><h2>Една методология.<br><em>Различен бизнес контекст.</em></h2><p>Профилът се настройва според сектора, конкурентите, източниците и реалните въпроси на клиента. Затова една и съща система може да обслужва различни видове организации.</p></div>
-  <div class="nvh-sectors">
-    <article class="nvh-sector"><b>Потребителски марки</b><span>категории, репутация, конкуренти и потребителски нагласи</span></article>
-    <article class="nvh-sector"><b>Бизнес услуги</b><span>пазарна среда, клиенти, позиции и конкурентни движения</span></article>
-    <article class="nvh-sector"><b>Недвижими имоти и офиси</b><span>наеми, търсене, конкурентни обекти и икономическа среда</span></article>
-    <article class="nvh-sector"><b>Търговски центрове</b><span>наематели, кампании, конкуренти и потребителска активност</span></article>
-    <article class="nvh-sector"><b>Хотелиерство и туризъм</b><span>оценки, репутация, сезонност и конкурентна картина</span></article>
-    <article class="nvh-sector"><b>Кризисни казуси</b><span>ускорено наблюдение, хронология и ранни предупреждения</span></article>
+<section class="ed-modules" id="solutions">
+  <div class="container">
+    <div class="ed-modules-head"><span class="ed-kicker">Един клиентски профил</span><h2>Всичко важно<br>в <em>един контекст.</em></h2></div>
+    <div class="ed-modules-mosaic">
+      <a class="ed-module ed-module-market" href="/navigator"><span>01</span><h3>Пазарна среда</h3><p>Тенденции, секторни промени, регулаторни и икономически фактори.</p></a>
+      <a class="ed-module ed-module-competition" href="/navigator"><span>02</span><h3>Конкуренти</h3><p>Действия, кампании, позициониране, продукти и конкурентни движения.</p></a>
+      <a class="ed-module ed-module-reputation" href="/navigator"><span>03</span><h3>Репутация</h3><p>Медии, тон, оценки, мнения и повтарящи се теми.</p></a>
+      <a class="ed-module ed-module-digital" href="/navigator"><span>04</span><h3>Дигитална среда</h3><p>Сайт, търсене, социални канали, съдържание и външни сигнали.</p></a>
+      <a class="ed-module ed-module-consumers" href="/navigator"><span>05</span><h3>Потребители</h3><p>Нагласи, обратна връзка, очаквания, интерес и промени в поведението.</p></a>
+      <a class="ed-module ed-module-signals" href="/navigator"><span>06</span><h3>Сигнали</h3><p>Рискове, възможности, необичайни отклонения и събития за проверка.</p></a>
+    </div>
   </div>
-</div></section>
+</section>
 
-<section class="nvh-final"><div class="container nvh-final-in"><div><h2>Вижте Navigator<br>в реален клиентски сценарий.</h2><p>Демонстрацията показва как се подреждат сигналите, как се проследява динамиката и как информацията се превръща в анализ.</p></div><div class="nvh-actions"><a class="btn demo" href="/demo.html">Заяви демонстрация →</a><a class="btn login" href="/navigator">Вход за клиенти →</a></div></div></section>
+<section class="ed-sectors" id="clients">
+  <div class="container ed-sectors-grid">
+    <div class="ed-sector-list">
+      <span class="ed-kicker">Приложения</span>
+      <h2>Една методология.<br><em>Различен бизнес контекст.</em></h2>
+      <button class="ed-sector-btn active" data-img="/brandlab-meeting.webp" data-title="Потребителски марки" data-text="Категории, репутация, конкуренти и потребителски нагласи.">Потребителски марки</button>
+      <button class="ed-sector-btn" data-img="/brandlab-analysis-desk.webp" data-title="Бизнес услуги" data-text="Пазарна среда, клиенти, позиции и конкурентни движения.">Бизнес услуги</button>
+      <button class="ed-sector-btn" data-img="/brandlab-network-city.webp" data-title="Недвижими имоти и офиси" data-text="Наеми, търсене, конкурентни обекти и икономическа среда.">Недвижими имоти и офиси</button>
+      <button class="ed-sector-btn" data-img="/brandlab-office-hero.webp" data-title="Търговски центрове" data-text="Наематели, кампании, конкуренти и потребителска активност.">Търговски центрове</button>
+      <button class="ed-sector-btn" data-img="/brandlab-boardroom.webp" data-title="Хотелиерство и туризъм" data-text="Оценки, репутация, сезонност и конкурентна картина.">Хотелиерство и туризъм</button>
+      <button class="ed-sector-btn" data-img="/brandlab-market-lens.webp" data-title="Кризисни казуси" data-text="Ускорено наблюдение, хронология, ранни предупреждения и развитие.">Кризисни казуси</button>
+    </div>
+    <div class="ed-sector-stage">
+      <img id="edSectorImage" src="/brandlab-meeting.webp" alt="">
+      <div class="ed-sector-caption"><b id="edSectorTitle">Потребителски марки</b><p id="edSectorText">Категории, репутация, конкуренти и потребителски нагласи.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="ed-hub" id="resources">
+  <div class="container">
+    <div class="ed-hub-title"><span class="ed-kicker">Интелиджънс Хъб</span><h2>Анализи, методология<br>и <em>работещи изводи.</em></h2><a href="/intelligence-hub.html">Виж всички материали →</a></div>
+    <div class="ed-hub-grid">
+      <a class="ed-hub-feature" href="/methodology.html"><div class="ed-hub-image"><img src="/brandlab-analysis-desk.webp" alt=""></div><span>Методология</span><h3>Как оценяваме релевантност, надеждност и практическо значение</h3></a>
+      <div class="ed-hub-side">
+        <a href="/blis.html"><span>BLIS</span><h3>Как наблюдението, анализът и интерпретацията се свързват в един процес</h3><i>Прочети →</i></a>
+        <a href="/clients.html"><span>За клиенти</span><h3>Как се изгражда защитен клиентски профил според конкретната бизнес среда</h3><i>Виж повече →</i></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ed-final">
+  <img src="/brandlab-boardroom.webp" alt="">
+  <div class="ed-final-shade"></div>
+  <div class="container ed-final-content">
+    <span class="ed-kicker">BLIS™ Navigator</span>
+    <h2>Вижте Navigator<br>в реален клиентски сценарий.</h2>
+    <p>Демонстрацията показва как се подреждат сигналите, как се проследява динамиката и как информацията се превръща в анализ.</p>
+    <div class="ed-actions"><a class="ed-btn ed-btn-light" href="/demo.html">Заяви демонстрация →</a><a class="ed-btn ed-btn-outline-light" href="/navigator">Вход за клиенти →</a></div>
+  </div>
+</section>
 </main>
 <footer class="footer"><div class="container"><div class="footGrid"><div class="footBrand"><strong>BLIS™</strong><span>от BRAND LAB<br>система за наблюдение и анализ</span></div><div><h4>Платформа</h4><a href="#platform">Как работи</a><a href="#solutions">Възможности</a><a href="/navigator">Вход за клиенти</a><a href="/demo.html">Заяви демонстрация</a></div><div><h4>Решения</h4><a href="#clients">Потребителски марки</a><a href="#clients">Хотели и туризъм</a><a href="#clients">Търговски центрове</a><a href="#clients">Услуги</a></div><div><h4>Ресурси</h4><a href="#resources">Аналитичен център</a><a href="/methodology.html">Методология</a><a href="#resources">Анализи</a><a href="#resources">Новини</a></div><div><h4>Компания</h4><a href="/brand-lab.html">За Brand Lab</a><a href="/contact.html">Контакти</a><a href="/privacy.html">Поверителност</a><a href="/terms.html">Условия за ползване</a></div></div><div class="footBottom"><span>© 2026 Brand Lab. BLIS™, система за наблюдение и анализ.</span><div class="legal"><a href="/privacy.html">Политика за поверителност</a><a href="/terms.html">Условия за ползване</a></div></div></div></footer>
 <script src="/varna-towers-runtime.js?v=20260819-home-tape1"></script>
@@ -271,4 +319,41 @@ url('/brandlab-boardroom.webp') center/cover no-repeat;padding:110px 0}
 })();
 </script>
 
-<script id="blis-home-active-client-v2">(function(){try{var allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center']);var q=new URLSearchParams(location.search),fromQuery=(q.get('client')||'').trim().toLowerCase(),saved='';try{saved=(localStorage.getItem('blis-client-ui')||'').trim().toLowerCase()}catch(_){}var key=allowed.has(fromQuery)?fromQuery:(allowed.has(saved)?saved:'');if(!key)return;document.documentElement.dataset.clientContext=key;try{localStorage.setItem('blis-client-ui',key)}catch(_){}var target='/dashboard.html?client='+encodeURIComponent(key)+'&page=overview';function isNavigatorLink(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function fix(){document.querySelectorAll('a[href]').forEach(function(a){if(a.closest&&a.closest('.intelSearch'))return;var h=a.getAttribute('href')||'';if(isNavigatorLink(h))a.setAttribute('href',target)})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(a.closest&&a.closest('.intelSearch'))return;if(isNavigatorLink(h)){e.preventDefault();location.href=target}}fix();document.addEventListener('click',click,true);new MutationObserver(fix).observe(document.body,{childList:true,subtree:true})}catch(e){}})();</script></body></html>
+<script id="blis-home-active-client-v2">(function(){try{var allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center']);var q=new URLSearchParams(location.search),fromQuery=(q.get('client')||'').trim().toLowerCase(),saved='';try{saved=(localStorage.getItem('blis-client-ui')||'').trim().toLowerCase()}catch(_){}var key=allowed.has(fromQuery)?fromQuery:(allowed.has(saved)?saved:'');if(!key)return;document.documentElement.dataset.clientContext=key;try{localStorage.setItem('blis-client-ui',key)}catch(_){}var target='/dashboard.html?client='+encodeURIComponent(key)+'&page=overview';function isNavigatorLink(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function fix(){document.querySelectorAll('a[href]').forEach(function(a){if(a.closest&&a.closest('.intelSearch'))return;var h=a.getAttribute('href')||'';if(isNavigatorLink(h))a.setAttribute('href',target)})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(a.closest&&a.closest('.intelSearch'))return;if(isNavigatorLink(h)){e.preventDefault();location.href=target}}fix();document.addEventListener('click',click,true);new MutationObserver(fix).observe(document.body,{childList:true,subtree:true})}catch(e){}})();</script>
+<script id="editorial-flow-v6">
+(function(){
+  const path=document.getElementById('edJourneyProgress');
+  const journey=document.getElementById('journey');
+  const steps=[...document.querySelectorAll('.ed-step')];
+  if(path&&journey){
+    const len=path.getTotalLength();
+    path.style.strokeDasharray=String(len);
+    path.style.strokeDashoffset=String(len);
+    const update=()=>{
+      const r=journey.getBoundingClientRect();
+      const vh=window.innerHeight||1;
+      const p=Math.max(0,Math.min(1,(vh-r.top)/(r.height+vh*.25)));
+      path.style.strokeDashoffset=String(len*(1-p));
+      steps.forEach((el,i)=>el.classList.toggle('active',p>=(i+1)/5-.12));
+    };
+    update();
+    addEventListener('scroll',update,{passive:true});
+    addEventListener('resize',update);
+  }
+  const image=document.getElementById('edSectorImage');
+  const title=document.getElementById('edSectorTitle');
+  const text=document.getElementById('edSectorText');
+  document.querySelectorAll('.ed-sector-btn').forEach(btn=>{
+    const set=()=>{
+      document.querySelectorAll('.ed-sector-btn').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      if(image){image.style.opacity='.25';setTimeout(()=>{image.src=btn.dataset.img||image.src;image.style.opacity='1'},120)}
+      if(title)title.textContent=btn.dataset.title||btn.textContent;
+      if(text)text.textContent=btn.dataset.text||'';
+    };
+    btn.addEventListener('click',set);
+    btn.addEventListener('mouseenter',set);
+  });
+  if(image)image.style.transition='opacity .25s ease';
+})();
+</script></body></html>
