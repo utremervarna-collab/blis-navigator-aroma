@@ -68,10 +68,15 @@ func homeSearchTokensV1(q string) []string {
 	q = strings.ToLower(strings.TrimSpace(q))
 	repl := strings.NewReplacer("„", " ", "“", " ", `"`, " ", "'", " ", ",", " ", ".", " ", ":", " ", ";", " ", "!", " ", "?", " ", "/", " ", "\\", " ", "(", " ", ")", " ", "-", " ")
 	q = repl.Replace(q)
+	stop := map[string]bool{
+		"на":true,"в":true,"във":true,"за":true,"от":true,"до":true,"и":true,"или":true,"с":true,"със":true,"по":true,"при":true,"към":true,
+		"как":true,"какво":true,"колко":true,"кога":true,"къде":true,"кой":true,"коя":true,"кои":true,"е":true,"са":true,"има":true,"ли":true,"се":true,"ми":true,
+		"the":true,"a":true,"an":true,"of":true,"in":true,"on":true,"for":true,"to":true,"and":true,"or":true,"is":true,"are":true,"what":true,"how":true,"when":true,"where":true,
+	}
 	seen := map[string]bool{}
 	out := []string{}
 	for _, t := range strings.Fields(q) {
-		if len([]rune(t)) < 2 || seen[t] {
+		if len([]rune(t)) < 3 || stop[t] || seen[t] {
 			continue
 		}
 		seen[t] = true
@@ -80,37 +85,131 @@ func homeSearchTokensV1(q string) []string {
 	return out
 }
 
-func homeSearchMatchScoreV1(tokens []string, title, text, brand, source string) float64 {
+func homeSearchTokenHitV4(token, text string) bool {
+	token = strings.ToLower(strings.TrimSpace(token))
+	text = strings.ToLower(text)
+	if token == "" || text == "" {
+		return false
+	}
+	if strings.Contains(text, token) {
+		return true
+	}
+	r := []rune(token)
+	if len(r) >= 5 {
+		n := 4
+		if r[0] >= 'а' && r[0] <= 'я' {
+			n = 3
+		}
+		if n < len(r) && strings.Contains(text, string(r[:n])) {
+			return true
+		}
+	}
+	return false
+}
+
+func homeSearchLooksRussianV4(v string) bool {
+	low := " " + strings.ToLower(v) + " "
+	score := 0
+	for _, x := range []string{"ы","э","ё"," которая "," который "," что "," всё "," является "," служит "," миллионов "," товаров "," скидки "," купить "," доставка "} {
+		if strings.Contains(low, x) {
+			score++
+		}
+	}
+	return score >= 2 || strings.Contains(low, "ы") || strings.Contains(low, "э") || strings.Contains(low, "ё")
+}
+
+func homeSearchBulgarianQueryV4(q string) bool {
+	for _, r := range strings.ToLower(q) {
+		if r >= 'а' && r <= 'я' {
+			return true
+		}
+	}
+	return false
+}
+
+func homeSearchResultRelevanceV4(q, title, text, source string) float64 {
+	tokens := homeSearchTokensV1(q)
 	if len(tokens) == 0 {
 		return 0
 	}
-	titleL := strings.ToLower(title)
-	textL := strings.ToLower(text)
-	brandL := strings.ToLower(brand)
-	sourceL := strings.ToLower(source)
-	score := 0.0
+	combined := title + " " + text
+	if homeSearchBulgarianQueryV4(q) && homeSearchLooksRussianV4(combined) {
+		return 0
+	}
 	hits := 0
+	score := 0.0
 	for _, t := range tokens {
 		hit := false
-		if strings.Contains(titleL, t) {
-			score += 6
+		if homeSearchTokenHitV4(t, title) {
+			score += 7
 			hit = true
 		}
-		if strings.Contains(brandL, t) {
-			score += 5
+		if homeSearchTokenHitV4(t, text) {
+			score += 3
 			hit = true
 		}
-		if strings.Contains(textL, t) {
-			score += 2
-			hit = true
-		}
-		if strings.Contains(sourceL, t) {
+		if homeSearchTokenHitV4(t, source) {
 			score += 1
 			hit = true
 		}
 		if hit {
 			hits++
 		}
+	}
+	need := 1
+	if len(tokens) >= 3 {
+		need = 2
+	}
+	if len(tokens) >= 5 {
+		need = 3
+	}
+	if hits < need {
+		return 0
+	}
+	score += float64(hits) * 4
+	if strings.Contains(strings.ToLower(combined), strings.ToLower(strings.TrimSpace(q))) {
+		score += 12
+	}
+	return score
+}
+
+func homeSearchMatchScoreV1(tokens []string, title, text, brand, source string) float64 {
+	if len(tokens) == 0 {
+		return 0
+	}
+	score := 0.0
+	hits := 0
+	for _, t := range tokens {
+		hit := false
+		if homeSearchTokenHitV4(t, title) {
+			score += 6
+			hit = true
+		}
+		if homeSearchTokenHitV4(t, brand) {
+			score += 5
+			hit = true
+		}
+		if homeSearchTokenHitV4(t, text) {
+			score += 2
+			hit = true
+		}
+		if homeSearchTokenHitV4(t, source) {
+			score += 1
+			hit = true
+		}
+		if hit {
+			hits++
+		}
+	}
+	need := 1
+	if len(tokens) >= 3 {
+		need = 2
+	}
+	if len(tokens) >= 5 {
+		need = 3
+	}
+	if hits < need {
+		return 0
 	}
 	if hits == len(tokens) {
 		score += 8
@@ -235,12 +334,16 @@ type homeNewsRSSV1 struct {
 }
 
 func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
-	raw := "https://www.bing.com/search?q=" + url.QueryEscape(q) + "&count=12&setlang=bg"
+	raw := "https://www.bing.com/search?q=" + url.QueryEscape(q) + "&count=20&setlang=bg-BG&mkt=bg-BG&cc=BG"
 	status, body, _, err := timedFetch(raw, 3*1024*1024)
 	if err != nil || status < 200 || status >= 400 {
 		return nil
 	}
-	out := []homeSearchResultV1{}
+	type scored struct {
+		r homeSearchResultV1
+		s float64
+	}
+	rows := []scored{}
 	seen := map[string]bool{}
 	for _, block := range collectorBlockRE.FindAllStringSubmatch(body, -1) {
 		if len(block) < 2 {
@@ -257,7 +360,6 @@ func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
 		if seen[strings.ToLower(rawURL)] {
 			continue
 		}
-		seen[strings.ToLower(rawURL)] = true
 		title := cleanPostSnippet(html.UnescapeString(lm[2]))
 		snippet := ""
 		if pm := collectorPRE.FindStringSubmatch(block[1]); len(pm) > 1 {
@@ -270,10 +372,18 @@ func homeWebBingV1(q string, limit int) []homeSearchResultV1 {
 		if title == "" {
 			continue
 		}
-		out = append(out, homeSearchResultV1{Kind: "web", Title: title, Snippet: snippet, Source: source, URL: rawURL})
-		if len(out) >= limit {
-			break
+		score := homeSearchResultRelevanceV4(q, title, snippet, source)
+		if score <= 0 {
+			continue
 		}
+		seen[strings.ToLower(rawURL)] = true
+		rows = append(rows, scored{r:homeSearchResultV1{Kind:"web",Title:title,Snippet:snippet,Source:source,URL:rawURL,Score:score},s:score})
+	}
+	sort.SliceStable(rows,func(i,j int)bool{return rows[i].s>rows[j].s})
+	out:=[]homeSearchResultV1{}
+	for _,row:=range rows{
+		out=append(out,row.r)
+		if len(out)>=limit{break}
 	}
 	return out
 }
@@ -288,9 +398,11 @@ func homeWebNewsV1(q string, limit int) []homeSearchResultV1 {
 	if xml.Unmarshal([]byte(body), &feed) != nil {
 		return nil
 	}
-	out := []homeSearchResultV1{}
+	type scored struct{ r homeSearchResultV1; s float64 }
+	rows:=[]scored{}
 	for _, item := range feed.Channel.Items {
 		title := cleanPostSnippet(item.Title)
+		snippet := cleanPostSnippet(item.Description)
 		if title == "" {
 			continue
 		}
@@ -298,38 +410,46 @@ func homeWebNewsV1(q string, limit int) []homeSearchResultV1 {
 		if source == "" {
 			source = "Google News"
 		}
-		out = append(out, homeSearchResultV1{
-			Kind: "news", Title: title, Snippet: cleanPostSnippet(item.Description), Source: source,
-			URL: strings.TrimSpace(item.Link), Published: strings.TrimSpace(item.PubDate),
-		})
-		if len(out) >= limit {
-			break
-		}
+		score:=homeSearchResultRelevanceV4(q,title,snippet,source)
+		if score<=0{continue}
+		rows=append(rows,scored{r:homeSearchResultV1{
+			Kind:"news",Title:title,Snippet:snippet,Source:source,
+			URL:strings.TrimSpace(item.Link),Published:strings.TrimSpace(item.PubDate),Score:score,
+		},s:score})
+	}
+	sort.SliceStable(rows,func(i,j int)bool{return rows[i].s>rows[j].s})
+	out:=[]homeSearchResultV1{}
+	for _,row:=range rows{
+		out=append(out,row.r)
+		if len(out)>=limit{break}
 	}
 	return out
 }
 
-func homeWebSearchV1(q string, limit int) []homeSearchResultV1 {
-	type batch struct{ rows []homeSearchResultV1 }
-	ch := make(chan batch, 2)
-	go func() { ch <- batch{homeWebBingV1(q, limit)} }()
-	go func() { ch <- batch{homeWebNewsV1(q, 5)} }()
-	all := []homeSearchResultV1{}
-	for i := 0; i < 2; i++ {
-		all = append(all, (<-ch).rows...)
+func homeSearchNeedsNewsV4(q string) bool {
+	low:=strings.ToLower(q)
+	for _,term:=range []string{"новини","новина","последн","днес","вчера","сега","актуалн","развитие","какво се случва","latest","news","today","recent"}{
+		if strings.Contains(low,term){return true}
 	}
-	seen := map[string]bool{}
-	out := []homeSearchResultV1{}
-	for _, r := range all {
-		key := strings.ToLower(strings.TrimSpace(r.URL + "|" + r.Title))
-		if key == "" || seen[key] {
-			continue
-		}
-		seen[key] = true
-		out = append(out, r)
-		if len(out) >= limit {
-			break
-		}
+	return false
+}
+
+func homeWebSearchV1(q string, limit int) []homeSearchResultV1 {
+	web:=homeWebBingV1(q,limit+4)
+	all:=append([]homeSearchResultV1{},web...)
+	if homeSearchNeedsNewsV4(q){
+		all=append(all,homeWebNewsV1(q,5)...)
+	}
+	sort.SliceStable(all,func(i,j int)bool{return all[i].Score>all[j].Score})
+	seen:=map[string]bool{}
+	out:=[]homeSearchResultV1{}
+	for _,r:=range all{
+		key:=strings.ToLower(strings.TrimSpace(r.URL+"|"+r.Title))
+		if key==""||seen[key]{continue}
+		if homeSearchBulgarianQueryV4(q)&&homeSearchLooksRussianV4(r.Title+" "+r.Snippet){continue}
+		seen[key]=true
+		out=append(out,r)
+		if len(out)>=limit{break}
 	}
 	return out
 }
@@ -382,66 +502,86 @@ func homeSearchPreviewV3(v string, maxRunes int) string {
 	if maxRunes <= 0 {
 		maxRunes = 420
 	}
-	cut := len(r)
-	endings := 0
-	for i, ch := range r {
-		if ch == '.' || ch == '!' || ch == '?' {
-			endings++
-			if endings >= 2 && i >= 150 {
-				cut = i + 1
-				break
-			}
-		}
+	if len(r) > maxRunes {
+		return strings.TrimSpace(string(r[:maxRunes])) + "…"
 	}
-	if cut > maxRunes {
-		cut = maxRunes
-	}
-	out := strings.TrimSpace(string(r[:cut]))
-	if cut < len(r) {
-		out += "…"
-	}
-	return out
+	return v
 }
 
-func homeSearchAnswerV2(web []homeSearchResultV1) (string, []homeSearchAnswerSourceV1) {
-	parts := []string{}
-	sources := []homeSearchAnswerSourceV1{}
-	seenText := map[string]bool{}
-	seenURL := map[string]bool{}
-	total := 0
-	for _, r := range web {
-		text := homeSearchPreviewV3(r.Snippet, 300)
-		if text == "" {
-			text = homeSearchPreviewV3(r.Title, 180)
-		}
-		key := strings.ToLower(strings.TrimSpace(text))
-		if text != "" && !seenText[key] {
-			seenText[key] = true
-			if len([]rune(text)) >= 70 || len(parts) == 0 {
-				parts = append(parts, text)
-				total += len([]rune(text))
-			}
-		}
-		u := strings.TrimSpace(r.URL)
-		if u != "" && !seenURL[strings.ToLower(u)] {
-			seenURL[strings.ToLower(u)] = true
-			sources = append(sources, homeSearchAnswerSourceV1{
-				Title: homeSearchCompactTextV2(r.Title, 120),
-				Source: strings.TrimSpace(r.Source),
-				URL: u,
-			})
-		}
-		if (len(parts) >= 2 && total >= 180) || total >= 360 {
-			if len(sources) >= 2 {
-				break
-			}
+func homeSearchSentenceScoreV4(q, sentence string) float64 {
+	sentence=strings.TrimSpace(strings.Join(strings.Fields(sentence)," "))
+	if len([]rune(sentence))<45||len([]rune(sentence))>360{return 0}
+	if homeSearchBulgarianQueryV4(q)&&homeSearchLooksRussianV4(sentence){return 0}
+	low:=strings.ToLower(sentence)
+	for _,bad:=range []string{"cookie","бисквитк","поверителност","privacy","регистрац","вход в профил","javascript","прочетете повече"}{
+		if strings.Contains(low,bad){return 0}
+	}
+	tokens:=homeSearchTokensV1(q)
+	hits:=0
+	for _,t:=range tokens{
+		if homeSearchTokenHitV4(t,sentence){hits++}
+	}
+	need:=1
+	if len(tokens)>=3{need=2}
+	if len(tokens)>=5{need=3}
+	if hits<need{return 0}
+	return float64(hits*10)+float64(360-len([]rune(sentence)))/120
+}
+
+func homeSearchBestPageSentenceV4(q, rawURL string) string {
+	if strings.TrimSpace(rawURL)==""{return ""}
+	status,body,_,err:=timedFetch(rawURL,2*1024*1024)
+	if err!=nil||status<200||status>=400{return ""}
+	_,plain:=competitorPageText(body)
+	if plain==""{return ""}
+	parts:=strings.FieldsFunc(plain,func(r rune)bool{return r=='.'||r=='!'||r=='?'||r=='\n'||r=='\r'})
+	best:=""
+	bestScore:=0.0
+	for _,part:=range parts{
+		s:=strings.TrimSpace(part)
+		score:=homeSearchSentenceScoreV4(q,s)
+		if score>bestScore{
+			bestScore=score
+			best=s
 		}
 	}
-	answer := strings.TrimSpace(strings.Join(parts, " "))
-	if len([]rune(answer)) > 430 {
-		answer = homeSearchPreviewV3(answer, 430)
+	return homeSearchPreviewV3(best,300)
+}
+
+func homeSearchAnswerV2(q string, web []homeSearchResultV1) (string, []homeSearchAnswerSourceV1) {
+	if len(web)==0{return "",nil}
+	type enriched struct{idx int; sentence string}
+	ch:=make(chan enriched,2)
+	fetchN:=2
+	if len(web)<fetchN{fetchN=len(web)}
+	for i:=0;i<fetchN;i++{
+		go func(idx int){ch<-enriched{idx:idx,sentence:homeSearchBestPageSentenceV4(q,web[idx].URL)}}(i)
 	}
-	return answer, sources
+	pageSent:=map[int]string{}
+	for i:=0;i<fetchN;i++{e:=<-ch;pageSent[e.idx]=e.sentence}
+	parts:=[]string{}
+	sources:=[]homeSearchAnswerSourceV1{}
+	seenText:=map[string]bool{}
+	for i,r:=range web{
+		text:=pageSent[i]
+		if text==""{text=homeSearchPreviewV3(r.Snippet,260)}
+		if text==""{text=homeSearchPreviewV3(r.Title,180)}
+		if homeSearchSentenceScoreV4(q,text)<=0{
+			continue
+		}
+		key:=strings.ToLower(strings.TrimSpace(text))
+		if !seenText[key]{
+			seenText[key]=true
+			parts=append(parts,text)
+		}
+		if strings.TrimSpace(r.URL)!=""{
+			sources=append(sources,homeSearchAnswerSourceV1{Title:homeSearchCompactTextV2(r.Title,120),Source:strings.TrimSpace(r.Source),URL:r.URL})
+		}
+		if len(parts)>=2||len(strings.Join(parts," "))>=330{break}
+	}
+	answer:=strings.TrimSpace(strings.Join(parts," "))
+	if len([]rune(answer))>430{answer=homeSearchPreviewV3(answer,430)}
+	return answer,sources
 }
 
 func homeSearchContainsAnyV3(low string, terms []string) bool {
@@ -545,7 +685,7 @@ func buildHomeSearchPayloadV1(q, mode string) homeSearchPayloadV1 {
 	} else {
 		results = web
 	}
-	answer, answerSources := homeSearchAnswerV2(web)
+	answer, answerSources := homeSearchAnswerV2(q, web)
 	return homeSearchPayloadV1{
 		OK: true, Query: q, Mode: mode, Summary: homeSearchSummaryV1(q, mode, nav, web),
 		Answer: answer, AnswerSources: answerSources, Offer: homeSearchOfferV2(q, nav),
