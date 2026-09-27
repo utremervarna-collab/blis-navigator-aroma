@@ -3,4 +3,4 @@
 window.__BLIS_MIGRATION_BUILD__='code-run-migration-2026-09-09-final-v2';
 window.__BLIS_MIGRATION_COMPAT_BUILD__='code-run-migration-2026-09-09-v1';
 
-window.__BLIS_RELEASE__='home-intelligence-architecture-2026-09-27-v2';
+window.__BLIS_RELEASE__='home-visual-architecture-2026-09-27-v1';
