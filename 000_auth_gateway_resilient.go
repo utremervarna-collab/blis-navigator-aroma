@@ -184,6 +184,27 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	// The approved Home visual is part of the same embedded static bundle as
+	// indexHTML. Serve it directly from the external gateway so Home never
+	// depends on the internal backend being ready.
+	if path == "/home-approved-1to1.webp" && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		b, err := staticFS.ReadFile("static/home-approved-1to1.webp")
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "image/webp")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("X-BLIS-Home-Asset-Origin", "gateway")
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		_, _ = w.Write(b)
+		return
+	}
+
 	// The public home page is fully embedded and must never depend on the
 	// internal backend process. Serving it directly from the external gateway
 	// keeps Dashboard -> Home navigation available even while the backend is
