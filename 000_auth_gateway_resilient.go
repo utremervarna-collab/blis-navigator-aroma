@@ -188,7 +188,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// internal backend process. Serving it directly from the external gateway
 	// keeps Dashboard -> Home navigation available even while the backend is
 	// briefly busy, restoring persistence, or being replaced by the provider.
-	if (path == "/" || path == "/index.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+	if (path == "/" || path == "/index.html" || path == "/home" || path == "/home/" || path == "/home.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
 		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "black-sea-center") {
 			http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
 			return
