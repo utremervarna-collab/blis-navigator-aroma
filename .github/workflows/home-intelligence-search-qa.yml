@@ -21,7 +21,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: navigator-home-approved-1to1-2026-09-27-v2
+  RELEASE_MARKER: navigator-home-approved-1to1-2026-09-27-v3
 
 jobs:
   approved-home:
@@ -76,7 +76,7 @@ jobs:
           grep -Fq 'class="fx radar"' /tmp/home.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-approved-1to1.webp?ts=$(date +%s%N)" -o /tmp/approved.webp
           test -s /tmp/approved.webp
-          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home.html?ts=$(date +%s%N)" -o /tmp/home-mirror.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home?ts=$(date +%s%N)" -o /tmp/home-mirror.html
           grep -Fq '/home-approved-1to1.webp' /tmp/home-mirror.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
           grep -Fq 'analysisOrder' /tmp/analyses.html
