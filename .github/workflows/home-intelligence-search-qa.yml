@@ -20,7 +20,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: navigator-functional-home-2026-09-27-v4
+  RELEASE_MARKER: navigator-exact-master-home-2026-09-28-v8
 
 jobs:
   approved-home:
@@ -37,6 +37,8 @@ jobs:
           grep -Fq 'Клиентски профил' static/index.html
           grep -Fq 'Поръчай анализ' static/index.html
           grep -Fq 'Интелиджънс Хъб' static/index.html
+          grep -Fq 'Услуги и цени' static/index.html
+          grep -Fq 'href="/services.html"' static/index.html
           grep -Fq 'Последни анализи и статии' static/index.html
           grep -Fq 'Събиране' static/index.html
           grep -Fq 'Подреждане' static/index.html
@@ -84,6 +86,8 @@ jobs:
           grep -Fq 'Клиентски профил' /tmp/home.html
           grep -Fq 'Поръчай анализ' /tmp/home.html
           grep -Fq 'Интелиджънс Хъб' /tmp/home.html
+          grep -Fq 'Услуги и цени' /tmp/home.html
+          grep -Fq 'href="/services.html"' /tmp/home.html
           grep -Fq 'Последни анализи и статии' /tmp/home.html
           grep -Fq 'monitorScene' /tmp/home.html
           grep -Fq 'heroRadar' /tmp/home.html
