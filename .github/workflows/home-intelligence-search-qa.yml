@@ -61,6 +61,7 @@ jobs:
           grep -Fq '/home-2026.js' static/index.html
           cmp -s static/index.html static/home.html
           grep -Fq 'analysisOrder' static/analyses.html
+          grep -Fq '<h1 id="orderAnalysisTitle">Услуги и цени</h1>' static/services.html
           echo FUNCTIONAL_HOME_SOURCE_OK
       - name: Wait for approved production release
         run: |
@@ -102,4 +103,7 @@ jobs:
           grep -Fq 'navigator-functional-home-2026-09-27-v4' /tmp/home-mirror.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/analyses.html?ts=$(date +%s%N)" -o /tmp/analyses.html
           grep -Fq 'analysisOrder' /tmp/analyses.html
+          curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/services.html?ts=$(date +%s%N)" -o /tmp/services.html
+          grep -Fq '<h1 id="orderAnalysisTitle">Услуги и цени</h1>' /tmp/services.html
+          echo SERVICES_DESTINATION_OK
           echo FUNCTIONAL_HOME_PRODUCTION_OK
