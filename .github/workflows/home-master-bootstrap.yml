@@ -1,0 +1,61 @@
+name: Bootstrap exact Navigator Home master
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/home-master-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  install-master:
+    if: github.event.head_commit.message == 'Bootstrap exact Navigator Home master asset'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download exact approved master
+        env:
+          MASTER_URL: "https://s3.amazonaws.com/document-export.canva.com/X0vTw/DAHWbOX0vTw/1/thumbnail/0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUHTDF2ZFFQ%2F20260927%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260927T044404Z&X-Amz-Expires=83208&X-Amz-Signature=8bca4f686acf540b641d14ac3c2286ac893209c9f10fb0f77cbce59deca76fcc&X-Amz-SignedHeaders=host&response-expires=Mon%2C%2028%20Sep%202026%2003%3A50%3A52%20GMT"
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 4 --retry-all-errors --retry-delay 2 "$MASTER_URL" -o static/home-approved-master.png
+          python3 - <<'PY'
+          import struct
+          p='static/home-approved-master.png'
+          b=open(p,'rb').read(24)
+          assert b[:8] == b'\x89PNG\r\n\x1a\n', b[:8]
+          w,h=struct.unpack('>II',b[16:24])
+          print('MASTER_DIMENSIONS',w,h)
+          assert (w,h)==(941,1672), (w,h)
+          PY
+      - name: Remove Canva dependency and bind local master
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('static/index.html')
+          s=p.read_text(encoding='utf-8')
+          s2=re.sub(r'<iframe class="master"[^>]*></iframe>', '<img class="master" src="/home-approved-master.png?v=20260928-1" alt="BLIS Navigator начална страница">', s, count=1)
+          if s2==s:
+              raise SystemExit('Canva iframe not found')
+          s2=s2.replace('navigator-exact-master-home-2026-09-27-v6','navigator-exact-master-home-2026-09-28-v7')
+          p.write_text(s2,encoding='utf-8')
+          Path('static/home.html').write_text(s2,encoding='utf-8')
+          assert 'canva.com' not in s2.lower()
+          assert '/home-approved-master.png' in s2
+          PY
+      - name: Commit exact local Home
+        run: |
+          set -euo pipefail
+          git config user.name "BLIS Home Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/home-master-bootstrap.yml
+          git add static/index.html static/home.html static/home-approved-master.png
+          git commit -m "Install exact approved Navigator Home locally"
+          git push origin HEAD:main
