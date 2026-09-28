@@ -184,6 +184,25 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	if strings.HasPrefix(path, "/home-master-c") && strings.HasSuffix(path, ".js") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		name := strings.TrimPrefix(path, "/")
+		b, err := staticFS.ReadFile("static/" + name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=us-ascii")
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set("X-BLIS-Home-Chunk-Origin", "gateway")
+		if r.Method == http.MethodHead {
+			w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		_, _ = w.Write(b)
+		return
+	}
+
 	// The approved Home visual is part of the same embedded static bundle as
 	// indexHTML. Serve it directly from the external gateway so Home never
 	// depends on the internal backend being ready.

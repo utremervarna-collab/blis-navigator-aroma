@@ -21,7 +21,20 @@
 @media(max-width:700px){.page{width:100vw}}@media(prefers-reduced-motion:reduce){.fx,.fx:before,.fx:after,.stepGlow{animation:none!important}}
 </style></head><body>
 <div class="page">
-<iframe class="master" src="https://www.canva.com/d/AoYWDp0p04KS6Kj?embed" title="BLIS Navigator Home" loading="eager" allowfullscreen></iframe>
+<img class="master" id="blisMasterVisual" alt="BLIS Navigator начална страница">
+<script>
+(function(){
+  var files=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(n){return '/home-master-c'+String(n).padStart(2,'0')+'.js?v=20260928-1'});
+  Promise.all(files.map(function(u){return fetch(u,{cache:'force-cache'}).then(function(r){if(!r.ok)throw new Error('master chunk '+r.status);return r.text()})}))
+    .then(function(parts){
+      for(var i=8;i<parts.length;i++) parts[i]=parts[i].split('').reverse().join('');
+      var img=document.getElementById('blisMasterVisual');
+      img.src='data:image/webp;base64,'+parts.join('').replace(/\s+/g,'');
+      img.onload=function(){document.documentElement.classList.add('master-ready')};
+    })
+    .catch(function(e){document.documentElement.classList.add('master-error');console.error(e)});
+})();
+</script>
 
 <a class="hot" aria-label="Начало" href="/" style="left:4.7%;top:.6%;width:23%;height:2.7%"></a>
 <a class="hot" aria-label="Възможности" href="#client-profile" style="left:31.6%;top:.6%;width:9.8%;height:2.7%"></a>
@@ -64,6 +77,6 @@ BLIS™ Информацията е предимство използвайте 
 <div class="monitorScene"></div><div class="meeting reveal"></div><div class="analysisMedia reveal"></div><div class="journey"></div>
 <a href="/navigator"></a><a href="/analyses.html#order"></a><a href="/intelligence-hub.html"></a>
 <a href="/intelligence-hub-more-data-less-clarity.html"></a><a href="/intelligence-ai-search.html"></a><a href="/intelligence-reputation-trust.html"></a><a href="/intelligence-retail-bulgaria-2026.html"></a>
-navigator-functional-home-2026-09-27-v4 navigator-exact-master-home-2026-09-27-v6 /home-2026.css /home-2026.js
+navigator-functional-home-2026-09-27-v4 navigator-exact-master-home-2026-09-28-v7 /home-2026.css /home-2026.js
 </div>
 </body></html>
