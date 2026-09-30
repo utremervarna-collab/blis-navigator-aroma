@@ -46,7 +46,7 @@ jobs:
           grep -Fq '>Анализ<' static/index.html
           grep -Fq '>Извод<' static/index.html
           grep -Fq 'monitorScene' static/index.html
-          grep -Fq 'heroRadar' static/index.html
+          ! grep -Fq 'heroRadar' static/index.html
           grep -Fq 'meeting reveal' static/index.html
           grep -Fq 'analysisMedia reveal' static/index.html
           grep -Fq 'href="/navigator"' static/index.html
@@ -91,7 +91,7 @@ jobs:
           grep -Fq 'href="/services.html"' /tmp/home.html
           grep -Fq 'Последни анализи и статии' /tmp/home.html
           grep -Fq 'monitorScene' /tmp/home.html
-          grep -Fq 'heroRadar' /tmp/home.html
+          ! grep -Fq 'heroRadar' /tmp/home.html
           grep -Fq 'navigator-functional-home-2026-09-27-v4' /tmp/home.html
           curl --retry 6 --retry-all-errors --retry-delay 2 -fsS "$BASE/home-2026.css?ts=$(date +%s%N)" -o /tmp/home.css
           grep -Fq '.monitorScene' /tmp/home.css
