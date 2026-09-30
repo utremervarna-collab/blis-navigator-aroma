@@ -20,7 +20,7 @@ concurrency:
 
 env:
   NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
-  RELEASE_MARKER: navigator-exact-master-home-2026-09-30-v10
+  RELEASE_MARKER: navigator-exact-master-home-2026-09-30-v11
 
 jobs:
   approved-home:
