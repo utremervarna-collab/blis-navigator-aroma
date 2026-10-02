@@ -37,7 +37,7 @@ func deltaHasObs(c *Client, s, m string) bool {
 func deltaSeed(c *Client,s,m string,v interface{},stamp string){if !deltaHasObs(c,s,m){add(c,s,m,v,stamp)}}
 
 func seedDeltaPlanetFacts(c *Client){
-	stamp:="2026-09-23T10:45:00+03:00"
+	stamp:="2026-10-02T10:45:00+03:00"
 	deltaSeed(c,"about","gross_built_area_m2",120000.0,stamp)
 	deltaSeed(c,"about","retail_area_m2",40000.0,stamp)
 	deltaSeed(c,"about","brands_over",140.0,stamp)
@@ -54,6 +54,10 @@ func seedDeltaPlanetFacts(c *Client){
 	deltaSeed(c,"contact","events_contact","Антоанета Тенева · antoaneta.teneva@deltaplanet.bg",stamp)
 	deltaSeed(c,"official_site","opening_hours","10:00–21:00",stamp)
 	deltaSeed(c,"official_site","latest_news_2026_08_29","Всички ваучери от кампанията „Палитра от намаления“ са изчерпани",stamp)
+	deltaSeed(c,"official_site","school_expo_2026_09_19_20","School Expo 2026 „Уча, творя, спортувам“ · 19–20 септември 2026 · 10:00–20:00",stamp)
+	deltaSeed(c,"official_site","vr_varna_active_2026_10","VR Varna е активен на ниво 1 и ниво -3 в Delta Planet Mall",stamp)
+	deltaSeed(c,"official_site","gabina_active_2026","GABINA е представена като нов магазин на ниво 1",stamp)
+	deltaSeed(c,"official_site","costa_refreshers_2026","Costa Coffee комуникира нови Refresher напитки в Delta Planet Mall",stamp)
 	deltaSeed(c,"official_site","pandora_new_generation_2026_01_19",true,stamp)
 	deltaSeed(c,"official_site","cinema_summer_2026",true,stamp)
 	deltaSeed(c,"shops","tenant_mix","IKEA; Billa; LC Waikiki; HalfPrice; New Yorker; Reserved; Mango; Pinko; Cropp; House; Sinsay; Tezenis; Sport Depot; CCC; MAC; Pandora; Swarovski; TEDi; dm; Pepco; Comsed",stamp)
@@ -168,6 +172,20 @@ func deltaVerifiedRecentMentions() []Signal {
 		}
 	}
 	return []Signal{
+		makeSignal(
+			"Youth Street / School Expo 2026","media","external",
+			"https://youthstreet.eu/school-expo-2026-%D0%B2-delta-planet-mall-%D0%B2%D0%B0%D1%80%D0%BD%D0%B0-%D1%81%D1%8A%D0%B1%D0%B8%D1%80%D0%B0-%D0%B2-%D0%B5%D0%B4%D0%B8%D0%BD-%D1%83%D0%B8%D0%BA%D0%B5%D0%BD%D0%B4-%D0%B7%D0%BD%D0%B0/",
+			"School Expo 2026 в Delta Planet Mall",
+			"На 19–20 септември 2026 г. Delta Planet Mall е домакин на School Expo „Уча, творя, спортувам“ с образователни, спортни и творчески участници.",
+			"2026-09-19T10:00:00+03:00","event","positive",100,5,
+		),
+		makeSignal(
+			"VR Varna","tenant_web","external",
+			"https://www.vrvarna.com/kontakti/",
+			"VR Varna поддържа активна локация в Delta Planet Mall",
+			"VR Varna публикува актуално работно време и потвърждава присъствие на ниво 1 и ниво -3 в Delta Planet Mall.",
+			"2026-10-02T09:00:00+03:00","tenant_activity","positive",96,5,
+		),
 		makeSignal(
 			"Delta Planet Mall","official","owned",
 			"https://deltaplanet.bg/novini",
