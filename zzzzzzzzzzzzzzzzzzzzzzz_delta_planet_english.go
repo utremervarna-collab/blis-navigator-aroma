@@ -2,11 +2,16 @@ package main
 
 import "bytes"
 
-// Load the Delta Planet Mall English catalog after the shared runtime.
-// The catalog is route-scoped and triggers a fresh translation pass.
+// Load the canonical client/language lock and the Delta Planet Mall English catalog.
+// The lock runs before the legacy dashboard bootstrap so query parameters remain
+// authoritative; the catalog then translates current and dynamically rendered UI.
 func init() {
-	const tag = `<script defer src="/blis-i18n-en-delta-planet-v1.js?v=20261002-delta-en1" data-blis-i18n-catalog="delta-planet"></script>`
+	const lockTag = `<script src="/blis-i18n-client-lock-v1.js?v=20261002-client-lock1" data-blis-client-language-lock="1"></script>`
+	if !bytes.Contains(blisI18NScripts, []byte("blis-i18n-client-lock-v1.js")) {
+		blisI18NScripts = append(blisI18NScripts, []byte(lockTag)...)
+	}
+	const deltaTag = `<script defer src="/blis-i18n-en-delta-planet-v1.js?v=20261002-delta-en2" data-blis-i18n-catalog="delta-planet"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("blis-i18n-en-delta-planet-v1.js")) {
-		blisI18NScripts = append(blisI18NScripts, []byte(tag)...)
+		blisI18NScripts = append(blisI18NScripts, []byte(deltaTag)...)
 	}
 }
