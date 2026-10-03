@@ -34,7 +34,17 @@ function markCanonicalVisuals(){const radar=document.querySelector('#social .dv-
 function scheduleVisualContract(){markCanonicalVisuals();window.BLISNavigator3VisualPreservationV1?.schedule?.();window.BLISNavigator3PageContractV1?.schedule?.();setTimeout(markCanonicalVisuals,70);setTimeout(markCanonicalVisuals,240);setTimeout(renameMarketCopy,500);setTimeout(renameMarketCopy,1200)}
 function activeRoute(){const raw=document.querySelector('.page.active')?.id||new URLSearchParams(location.search).get('page')||'overview';return window.BLISRouteAlias?.(raw)||({environment:'market',digital:'social',opportunities:'social',live:'social',reputation:'market',reports:'history',timeline:'history'}[raw]||raw)}
 function canonicalVisualReady(){const id=activeRoute();if(id==='overview')return!!document.querySelector('#overview .ovh-gauge svg,#overview .vs-gauge-card svg,#overview .vs-gauge-svg');if(id==='social')return!!document.querySelector('#social #digitalBody .dv-radar-wrap .dv-radar-grid');if(id==='market')return!!document.querySelector('#market .pm-stage,#market .pm-canvas');if(id==='competition')return!!document.querySelector('#competition .vs-comp-axis');if(id==='history')return!!document.querySelector('#history .vs-history-board');if(id==='hub'||id==='calendar')return!!document.querySelector(`#${id} .n3-resource-card`);return!!document.querySelector('.page.active')}
-function finalShellReady(){return document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&!!document.querySelector('.bch3-context-title')&&!!document.querySelector('.page.active')&&canonicalVisualReady()}
+function finalShellReady(){
+ const shell=document.documentElement.dataset.navigatorVersion==='3.0-preserved-visuals-5plus2'&&document.querySelectorAll('#nav [data-n3-page]').length===7&&!!document.querySelector('.bch3-context-title')&&!!document.querySelector('.page.active');
+ if(!shell)return false;
+ if(canonicalVisualReady())return true;
+ if(requestedClient==='delta-planet'){
+   const active=document.querySelector('.page.active');
+   const text=(active?.innerText||'').trim();
+   return text.length>20&&document.body?.dataset?.client==='delta-planet';
+ }
+ return false;
+}
 let appRevealed=false,paintToken=0;
 function revealFinalApp(){
  if(appRevealed||!document.body||!finalShellReady())return;
