@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'delta_planet_client.go'
+      - 'main.go'
       - 'static/blis-i18n-client-lock-v1.js'
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-3-architecture-v1.js'
