@@ -14,6 +14,9 @@
     window.BLIS_INITIAL_CLIENT=requested;
     window.__BLIS_EXPECTED_CLIENT=requested;
     try{localStorage.setItem('blis-client-ui',requested)}catch(_){}
+    try{document.cookie='blis_admin_client='+encodeURIComponent(requested)+'; Path=/; Max-Age=2592000; SameSite=Lax; Secure'}catch(_){}
+    try{if(typeof slug!=='undefined')slug=requested}catch(_){}
+    try{window.slug=requested}catch(_){}
   }
   if(requestedLang){
     try{localStorage.setItem('blis-language','en')}catch(_){}
@@ -41,7 +44,10 @@
     if(!requested)return;
     window.BLIS_INITIAL_CLIENT=requested;
     window.__BLIS_EXPECTED_CLIENT=requested;
+    try{if(typeof slug!=='undefined'&&slug!==requested)slug=requested}catch(_){}
     try{if(window.slug!==requested)window.slug=requested}catch(_){}
+    try{if(localStorage.getItem('blis-client-ui')!==requested)localStorage.setItem('blis-client-ui',requested)}catch(_){}
+    try{document.cookie='blis_admin_client='+encodeURIComponent(requested)+'; Path=/; Max-Age=2592000; SameSite=Lax; Secure'}catch(_){}
     if(document.body&&document.body.dataset.client!==requested)document.body.dataset.client=requested;
     const select=document.getElementById('clientSel');
     if(select&&select.value!==requested)select.value=requested;
