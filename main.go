@@ -315,7 +315,15 @@ func seedStore() Store {
 	mollox := molloxSeedClient(stamp)
 	wirello := wirelloSeedClient(stamp)
 	everbet := everbetSeedClient(stamp)
-	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello, "everbet": everbet}}
+	deltaPlanet := &Client{
+		Slug: "delta-planet",
+		Name: "Delta Planet Mall",
+		Sector: "Търговски център / retailtainment / развлечения",
+		Note: "Пълен публичен профил · live monitoring · конкурентни досиета",
+		Sources: deltaPlanetSources(),
+	}
+	seedDeltaPlanetFacts(deltaPlanet)
+	s := Store{Clients: map[string]*Client{"astor-garden": astor, "aroma": aroma, "bolyarka": bolyarka, "mollox": mollox, "wirello": wirello, "everbet": everbet, "delta-planet": deltaPlanet}}
 	for _, c := range s.Clients {
 		d := dashboard(c)
 		c.Snapshots = []Snapshot{{CreatedAt: stamp, Payload: d}}
