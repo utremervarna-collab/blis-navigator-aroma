@@ -6,6 +6,8 @@ on:
     paths:
       - 'delta_planet_client.go'
       - 'static/blis-i18n-client-lock-v1.js'
+      - 'static/navigator-production-entry-v1.js'
+      - 'static/navigator-3-architecture-v1.js'
       - 'static/blis-i18n-en-delta-planet-v1.js'
       - 'zzzzzzzzzzzzzzzzzzzzzzz_delta_planet_english.go'
       - '.github/workflows/delta-planet-bilingual-qa.yml'
