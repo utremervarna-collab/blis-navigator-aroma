@@ -1,0 +1,113 @@
+name: Delta Planet Bilingual QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'delta_planet_client.go'
+      - 'static/blis-i18n-client-lock-v1.js'
+      - 'static/blis-i18n-en-delta-planet-v1.js'
+      - 'zzzzzzzzzzzzzzzzzzzzzzz_delta_planet_english.go'
+      - '.github/workflows/delta-planet-bilingual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  delta-bilingual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build Navigator
+        run: |
+          set -euxo pipefail
+          go build -tags netgo -ldflags '-s -w' -o app .
+          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/delta-qa-server.log 2>&1 &
+          for i in $(seq 1 50); do curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break; sleep 1; done
+          curl -fsS http://127.0.0.1:10000/api/health >/dev/null
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+      - name: Verify Delta Planet BG and EN
+        run: |
+          cat >/tmp/delta-qa.cjs <<'NODE'
+          const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
+          const origin='http://127.0.0.1:10000';
+          const routes=['overview','social','market','competition','history'];
+          const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+          const norm=s=>(s||'').replace(/\s+/g,' ').trim();
+          function fail(msg){throw new Error(msg)}
+          async function waitReady(page,route){
+            await page.waitForFunction(
+              ({route})=>document.body?.dataset?.client==='delta-planet' &&
+                document.querySelector('.page.active')?.id===route &&
+                document.documentElement.classList.contains('blis-dashboard-ready'),
+              {route},{timeout:30000}
+            );
+          }
+          async function visibleCyrillic(page){
+            return await page.evaluate(()=>{
+              const cyr=/[А-Яа-яЁёЀ-ӿ]/;
+              const vis=el=>{if(!el||!el.getBoundingClientRect)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity||1)>.01&&r.width>0&&r.height>0};
+              const out=[];
+              const w=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT,{acceptNode(n){const p=n.parentElement;if(!p||['SCRIPT','STYLE','NOSCRIPT','TEMPLATE'].includes(p.tagName)||!vis(p))return NodeFilter.FILTER_REJECT;const t=(n.nodeValue||'').replace(/\s+/g,' ').trim();return t&&cyr.test(t)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+              while(w.nextNode())out.push((w.currentNode.nodeValue||'').replace(/\s+/g,' ').trim());
+              return [...new Set(out)].filter(Boolean);
+            });
+          }
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              for(const lang of ['bg','en']){
+                const context=await browser.newContext({viewport:{width:1440,height:1000}});
+                const page=await context.newPage();
+                const url=`${origin}/dashboard.html?client=delta-planet&page=overview${lang==='en'?'&lang=en':''}`;
+                await page.goto(url,{waitUntil:'commit',timeout:30000});
+                await waitReady(page,'overview');
+                for(const route of routes){
+                  if(route!=='overview'){
+                    await page.evaluate(r=>window.refGo&&window.refGo(r),route);
+                    await waitReady(page,route);
+                  }
+                  const state=await page.evaluate(()=>({
+                    href:location.href,
+                    client:document.body?.dataset?.client||'',
+                    active:document.querySelector('.page.active')?.id||'',
+                    htmlLang:document.documentElement.lang||'',
+                    name:document.querySelector('.client-brand-name')?.textContent?.trim()||''
+                  }));
+                  const u=new URL(state.href);
+                  if(state.client!=='delta-planet'||u.searchParams.get('client')!=='delta-planet')fail(`${lang}/${route}: client drift ${JSON.stringify(state)}`);
+                  if(state.active!==route)fail(`${lang}/${route}: route drift ${JSON.stringify(state)}`);
+                  if(/bolyarka/i.test(state.href)||/Болярка/i.test(state.name))fail(`${lang}/${route}: Bolyarka leak ${JSON.stringify(state)}`);
+                  if(lang==='en'){
+                    if(u.searchParams.get('lang')!=='en'||state.htmlLang!=='en')fail(`en/${route}: language drift ${JSON.stringify(state)}`);
+                    await page.waitForTimeout(500);
+                    const residual=await visibleCyrillic(page);
+                    if(residual.length)fail(`en/${route}: Cyrillic remains: ${JSON.stringify(residual.slice(0,30))}`);
+                  }
+                }
+                await page.reload({waitUntil:'commit',timeout:30000});
+                await waitReady(page,routes[routes.length-1]);
+                const reload=await page.evaluate(()=>({href:location.href,client:document.body?.dataset?.client||'',active:document.querySelector('.page.active')?.id||'',htmlLang:document.documentElement.lang||''}));
+                if(reload.client!=='delta-planet'||reload.active!==routes[routes.length-1])fail(`${lang}: reload drift ${JSON.stringify(reload)}`);
+                if(lang==='en'&&(new URL(reload.href).searchParams.get('lang')!=='en'||reload.htmlLang!=='en'))fail(`en: reload language drift ${JSON.stringify(reload)}`);
+                await context.close();
+              }
+              console.log('DELTA_PLANET_BILINGUAL_OK');
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/delta-qa.cjs
+      - name: Diagnostics
+        if: failure()
+        run: tail -n 250 /tmp/delta-qa-server.log || true
