@@ -3,7 +3,7 @@ name: Navigator English Coverage QA
 
 on:
   push:
-    branches: [ feature/full-english-i18n-20260830 ]
+    branches: [main, feature/full-english-i18n-20260830]
     paths:
       - 'static/blis-i18n*.js'
       - 'static/navigator-language-cleanup-v1.js'
@@ -87,7 +87,7 @@ jobs:
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             const publicPaths=['/','/about.html','/blis.html','/brand-lab.html','/clients.html','/contact.html','/methodology.html','/privacy.html','/terms.html','/services.html','/intelligence-hub.html','/intelligence-ai-search.html','/intelligence-calendar.html','/intelligence-reputation-trust.html','/intelligence-retail-bulgaria-2026.html','/demo.html','/demo-navigator.html','/demo-status.html','/mollox.html'];
             for(const path of publicPaths){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(en(path),{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1900);await collect(p,path)}catch(e){errors.push(`${path}: ${e.message}`)}await p.close()}
-            const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello'];const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
+            const clients=['aroma','bolyarka','mollox','varna-towers','everbet','astor-garden','wirello','delta-planet'];const routes=['overview','social','market','digital','reputation','competition','opportunities','history','reports'];
             for(const client of clients){const p=await browser.newPage({viewport:{width:1440,height:1200}});try{await p.goto(`${origin}/dashboard.html?client=${client}&page=overview&lang=en`,{waitUntil:'domcontentloaded',timeout:20000});await p.waitForTimeout(1900);for(const route of routes){if(route!=='overview'){await p.evaluate(r=>window.refGo&&window.refGo(r),route);await p.waitForTimeout(850)}await collect(p,`dashboard:${client}:${route}`)}}catch(e){errors.push(`dashboard:${client}: ${e.message}`)}await p.close()}
             for(const id of ['digital','reputation','signals','competitive','summary']){const res=await fetch(`${origin}/api/clients/aroma/reports/${id}?lang=en`);const body=await res.text();if(cyr.test(body))errors.push(`download report ${id}: Cyrillic remains`)}
             await browser.close();
