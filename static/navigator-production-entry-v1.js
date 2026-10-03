@@ -4,7 +4,7 @@
 'use strict';
 if(window.__BLIS_PRODUCTION_ENTRY_V45)return;window.__BLIS_PRODUCTION_ENTRY_V45=true;
 const VERSION='20260907-key-factors-title-1';
-function forceBulgarianEarly(){document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';try{const u=new URL(location.href);if(u.searchParams.has('lang')){u.searchParams.delete('lang');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}}catch(_){}}
+function forceBulgarianEarly(){const en=new URLSearchParams(location.search).get('lang')==='en';document.documentElement.lang=en?'en':'bg';document.documentElement.dataset.navigatorLanguage=en?'en':'bg';window.BLIS_LANGUAGE=en?'en':'bg';}
 forceBulgarianEarly();
 function urlClient(){try{return new URLSearchParams(location.search).get('client')||''}catch(_){return''}}
 const initialClient=urlClient()||document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||'aroma';
