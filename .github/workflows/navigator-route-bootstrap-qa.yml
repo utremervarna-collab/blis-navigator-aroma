@@ -11,6 +11,12 @@ on:
       - 'static/navigator-production-entry-v1.js'
       - 'static/navigator-3-architecture-v1.js'
       - 'static/navigator-3-visual-preservation-v1.js'
+      - 'static/blis-i18n-client-lock-v1.js'
+      - 'static/blis-i18n-en-delta-planet-v1.js'
+      - 'delta_planet_client.go'
+      - 'static/blis-i18n-client-lock-v1.js'
+      - 'static/blis-i18n-en-delta-planet-v1.js'
+      - 'delta_planet_client.go'
   pull_request:
     branches: [main]
     paths:
@@ -62,7 +68,7 @@ jobs:
           const {chromium}=require(process.env.GITHUB_WORKSPACE+'/node_modules/playwright');
           const fs=require('fs');
           const origin='http://127.0.0.1:10000';
-          const clients=['aroma','bolyarka','mollox','wirello','varna-towers','astor-garden','everbet'];
+          const clients=['aroma','bolyarka','mollox','wirello','varna-towers','astor-garden','everbet','delta-planet'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
           const fail=msg=>{try{fs.writeFileSync('/tmp/route-bootstrap-error.txt',msg)}catch(_){};throw new Error(msg)};
           (async()=>{
