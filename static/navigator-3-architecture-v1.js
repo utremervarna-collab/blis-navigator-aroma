@@ -37,7 +37,7 @@ const meta=id=>VISIBLE.find(x=>x.id===canonical(id))||CORE[0];
 function socialHost(){const page=document.getElementById('social');if(!page)return null;let h=document.getElementById('n3SocialRoot');if(!h){h=document.createElement('div');h.id='n3SocialRoot';const legacy=document.getElementById('socialBody');page.insertBefore(h,legacy?.parentElement===page?legacy:null)}return h}
 const host=id=>id==='overview'?(document.getElementById('overviewPremium')||document.getElementById('overviewBody')||document.getElementById('overview')):id==='social'?socialHost():(document.getElementById(id+'Body')||document.getElementById(id));
 
-function forceBulgarian(){document.documentElement.lang='bg';document.documentElement.dataset.navigatorLanguage='bg-only';window.BLIS_LANGUAGE='bg';document.querySelectorAll('.bch3-lang').forEach(x=>x.remove())}
+function forceBulgarian(){const en=new URLSearchParams(location.search).get('lang')==='en';document.documentElement.lang=en?'en':'bg';document.documentElement.dataset.navigatorLanguage=en?'en':'bg';window.BLIS_LANGUAGE=en?'en':'bg';if(!en)document.querySelectorAll('.bch3-lang').forEach(x=>x.remove())}
 function ensurePage(id){let p=document.getElementById(id);if(p)return p;const shell=document.querySelector('.shell');if(!shell)return null;p=document.createElement('section');p.id=id;p.className='page';p.innerHTML=`<div id="${id}Body"></div>`;shell.appendChild(p);return p}
 function ensurePages(){['overview','social','market','digital','reputation','competition','opportunities','history','reports','hub','calendar'].forEach(ensurePage)}
 function css(){if(document.getElementById('navigator3ArchitectureCss'))return;const s=document.createElement('style');s.id='navigator3ArchitectureCss';s.textContent=`
