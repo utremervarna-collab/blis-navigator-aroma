@@ -59,9 +59,7 @@ jobs:
               import re
               title=re.sub(r'\s+',' ',str(row.get('title') or '')).strip().casefold()
               brand_name=re.sub(r'\s+',' ',str(row.get('brand') or '')).strip().casefold()
-              raw=str(row.get('published_at') or row.get('detected_at') or '')
-              day=raw[:10]
-              return (str(row.get('scope') or '').casefold(),brand_name,title,day)
+              return (str(row.get('scope') or '').casefold(),brand_name,title)
           for label,rows in [('brand',brand),('competitor',comp)]:
               keys=[sem(x) for x in rows if str(x.get('title') or '').strip()]
               assert len(keys)==len(set(keys)), ('duplicate semantic signal',label,keys)
