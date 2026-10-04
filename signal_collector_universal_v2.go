@@ -129,6 +129,9 @@ func runUniversalSignalCollectorV2() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	go func() {
 		// First refresh shortly after process start, then continuously.
 		time.Sleep(15 * time.Second)
