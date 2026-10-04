@@ -195,18 +195,16 @@ func topRentDashboard(c *Client) map[string]interface{} {
 			"decision_questions":[]interface{}{"Къде се ускорява търсенето?","Къде ценовата позиция се променя?","Кой конкурент прави ход?","Къде има възможност за по-висок приход?"},
 		},
 		"location_matrix":[]interface{}{
-			map[string]interface{}{"market":"София","type":"летище + град","priority":"висок","signals":"полетен поток · служебни пътувания · градско търсене · конкуренти"},
-			map[string]interface{}{"market":"Варна","type":"летище + град + курорти","priority":"висок сезонен","signals":"туризъм · полети · курортно търсене · цени"},
-			map[string]interface{}{"market":"Бургас","type":"летище + град + курорти","priority":"висок сезонен","signals":"туризъм · полети · курортно търсене · цени"},
-			map[string]interface{}{"market":"Пловдив","type":"летище + град","priority":"среден","signals":"полетен поток · градско търсене · събития"},
-			map[string]interface{}{"market":"Русе","type":"град","priority":"развиващ","signals":"локално търсене · трансграничен поток"},
-			map[string]interface{}{"market":"Букурещ","type":"летище · международен пазар","priority":"стратегически","signals":"търсене около OTP · местни конкуренти · развитие на пазара"},
+			map[string]interface{}{"market":"София","type":"летище + град","priority":"висок"},
+			map[string]interface{}{"market":"Варна","type":"летище + град + курорти","priority":"висок сезонен"},
+			map[string]interface{}{"market":"Бургас","type":"летище + град + курорти","priority":"висок сезонен"},
+			map[string]interface{}{"market":"Пловдив","type":"летище + град","priority":"среден"},
+			map[string]interface{}{"market":"Русе","type":"град","priority":"развиващ"},
+			map[string]interface{}{"market":"Букурещ","type":"летище · международен пазар","priority":"стратегически"},
 		},
 		"price_intelligence":map[string]interface{}{
 			"status":"актуално_top_public_fees_competitor_quotes_guarded",
-			"dimensions":[]interface{}{"локация","начална дата/час","крайна дата/час","клас автомобил","депозит","застраховка","лимит км","летищни/други такси"},
 			"competitors":[]interface{}{"Sixt","Hertz","Europcar","Green Motion"},
-			"output":[]interface{}{"ценова разлика","пазарна медиана","позиция спрямо пазара","открита промоция","разлика в таксите","сигнал за наличност"},
 			"published_top_signals":[]interface{}{
 				map[string]interface{}{"label":"Доставка до адрес/хотел · Варна","value":"18 €","type":"fee","source":"TOP Rent A Car"},
 				map[string]interface{}{"label":"Доставка до адрес/хотел · Бургас","value":"18 €","type":"fee","source":"TOP Rent A Car"},
@@ -230,16 +228,9 @@ func topRentDashboard(c *Client) map[string]interface{} {
 				map[string]interface{}{"id":"OTP-ECO-7D","market":"Букурещ","pickup":"Отопени","iata":"OTP","class":"Икономичен / Компактен","days":7},
 				map[string]interface{}{"id":"OTP-ECO-14D","market":"Букурещ","pickup":"Отопени","iata":"OTP","class":"Икономичен / Компактен","days":14},
 			},
-			"quote_comparison_state":map[string]interface{}{
-				"required_fields":[]interface{}{"supplier","scenario_id","total_price","currency","deposit","insurance","mileage","airport_fee","other_fees","availability","captured_at"},
-				"minimum_competitors":2,
-				"publish_rule":"Покажи пазарна медиана и ценова разлика само при минимум TOP + 2 конкурента със съпоставими условия.",
-			},
 		},
 		"demand_intelligence":map[string]interface{}{
-			"inputs":[]interface{}{"полетен капацитет","туристически поток","сезонност","празници","събития","търсене по дестинация","конкурентна наличност"},
 			"horizons":[]interface{}{"7 дни","14 дни","30 дни"},
-			"output":[]interface{}{"Натиск на търсенето","Възможност по локация","Сигнал за разпределение на автопарка","Възможност за по-висок приход"},
 			"season_context":"Зимен сезон на публикуваните еднопосочни тарифи: 01.10–30.04",
 			"markets":[]interface{}{
 				map[string]interface{}{"market":"София","h7":"стабилно","h14":"стабилно","h30":"стабилно","confidence":"средна","driver":"целогодишно летищно + градско + служебно търсене","fleet_signal":"поддържай широк микс; наблюдавай икономичния, компактния и бизнес сегмента"},
