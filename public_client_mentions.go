@@ -240,13 +240,7 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 		if slug == "top-rent-a-car" {
 			title := strings.ToLower(strings.Join(strings.Fields(cleanCompetitorDisplayText(s.Title)), " "))
 			brand := strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(s.Brand)), " "))
-			day := ""
-			if t, ok := parseCompetitorPublished(s.PublishedAt); ok {
-				day = t.UTC().Format("2006-01-02")
-			} else if t, err := time.Parse(time.RFC3339, strings.TrimSpace(s.DetectedAt)); err == nil {
-				day = t.UTC().Format("2006-01-02")
-			}
-			key := strings.TrimSpace(scope + "|" + brand + "|" + title + "|" + day)
+			key := strings.TrimSpace(scope + "|" + brand + "|" + title)
 			if title != "" && semanticSeen[key] {
 				continue
 			}
