@@ -229,6 +229,33 @@ async function checkMentionStreams(browser) {
   } finally { await context.close(); }
 }
 
+async function checkTopRoundTrip(browser) {
+  if (origin !== 'http://127.0.0.1:10000') return;
+  const context = await browser.newContext({viewport: {width: 1440, height: 900}, serviceWorkers: 'block'});
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/top-rent-a-car`, {waitUntil:'domcontentloaded', timeout:30000});
+    await page.waitForFunction(() =>
+      document.documentElement.classList.contains('blis-dashboard-ready') &&
+      document.body.dataset.client === 'top-rent-a-car' &&
+      (document.querySelector('.bch3-name')?.textContent||'').includes('TOP Rent A Car'),
+      null, {timeout:45000});
+    const home = page.locator('.dashboard-home-link');
+    if (await home.count() !== 1) throw new Error('TOP dashboard Home link missing');
+    await home.click();
+    await page.waitForFunction(() => location.pathname==='/' && new URLSearchParams(location.search).get('client')==='top-rent-a-car', null, {timeout:15000});
+    const navLink = page.locator('a[href="/top-rent-a-car"]').first();
+    if (await navLink.count() < 1) throw new Error('TOP Home did not preserve client return link');
+    await navLink.click();
+    await page.waitForFunction(() =>
+      document.documentElement.classList.contains('blis-dashboard-ready') &&
+      document.body.dataset.client === 'top-rent-a-car' &&
+      (document.querySelector('.bch3-name')?.textContent||'').includes('TOP Rent A Car'),
+      null, {timeout:45000});
+    console.log('TOP_DASHBOARD_HOME_DASHBOARD_OK');
+  } finally { await context.close(); }
+}
+
 async function checkPublicMentionsContract() {
   if (origin !== 'http://127.0.0.1:10000') return;
   const base = `${origin}/api/public/mentions`;
@@ -260,7 +287,7 @@ async function checkPublicMentionsContract() {
       const context = await browser.newContext({viewport: {width, height: 900}, deviceScaleFactor: 1});
       const cases = width <= 820
         ? [['aroma', 'overview'], ['mollox', 'social'], ['varna-towers', 'overview']]
-        : [['aroma', 'overview'], ['mollox', 'social'], ['black-sea-center', 'overview']];
+        : [['aroma', 'overview'], ['mollox', 'social'], ['black-sea-center', 'overview'], ['top-rent-a-car', 'overview']];
       for (const [client, first] of cases) {
         const page = await context.newPage();
         await instrument(page);
@@ -272,5 +299,6 @@ async function checkPublicMentionsContract() {
     await checkSlowBootstrap(browser);
     await checkRetiredLauncher(browser);
     await checkMentionStreams(browser);
+    await checkTopRoundTrip(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
