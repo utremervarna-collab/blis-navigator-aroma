@@ -45,6 +45,7 @@ COPY --from=builder /out/app /app/app
 COPY --from=builder /src/data /app/data
 ENV BLIS_ENABLE_INPROCESS_SCHEDULER=0
 ENV BLIS_ENABLE_EMBEDDED_SIGNAL_COLLECTOR=0
+ENV BLIS_DISABLE_BACKGROUND_NETWORK_LOOPS=1
 # The full diagnostic remains available for CI/local runs but is intentionally
 # disabled in the constrained public web container. It duplicates expensive
 # dashboard calculations during the same cold-start window as persistence restore.
