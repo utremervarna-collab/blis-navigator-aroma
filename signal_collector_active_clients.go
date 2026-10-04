@@ -19,6 +19,9 @@ func collectAdditionalActiveClientSignals() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	go func() {
 		// Let startup migrations and the main collector settle first.
 		time.Sleep(20 * time.Second)
