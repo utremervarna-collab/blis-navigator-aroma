@@ -27,8 +27,7 @@ function canonicalUrl(v){try{const u=new URL(String(v||''),location.origin);u.ha
 function key(s){
   const published=publishedTs(s)||ts(s);
   if(client()==='top-rent-a-car'){
-    const day=published?new Date(published).toISOString().slice(0,10):'';
-    const semantic=N(`${s?.scope||''}|${s?.brand||''}|${s?.title||''}|${day}`);
+    const semantic=N(`${s?.scope||''}|${s?.brand||''}|${s?.title||''}`);
     if(semantic)return 'semantic:'+semantic;
   }
   const u=canonicalUrl(s?.url);if(u)return 'url:'+u;
@@ -111,7 +110,7 @@ function timeline(rows,scope){
 function brandTicker(rows){
   if(!rows.length)return '<div class="blis-ms-ticker blis-ms-ticker-empty"><div>Няма открити споменавания на клиента в последните 3 месеца.</div></div>';
   const balanced=A(rows).slice(0,24);
-  const item=s=>`<a class="blis-ms-ticker-item" href="${E(s.url)}" target="_blank" rel="noopener noreferrer"><b>TOP Rent A Car</b><span>${E(title(s))}</span><small>${E(source(s))}</small></a>`;
+  const item=s=>`<a class="blis-ms-ticker-item" href="${E(s.url)}" target="_blank" rel="noopener noreferrer"><b>${E((window.D&&window.D.name)||'TOP Rent A Car')}</b><span>${E(title(s))}</span><small>${E(source(s))}</small></a>`;
   const base=balanced.map(item).join('');
   const repeated=balanced.length>=5?base+base:base;
   return `<div class="blis-ms-ticker blis-ms-brand-ticker"><div class="blis-ms-track${balanced.length>=5?'':' static'}">${repeated}</div></div>`
