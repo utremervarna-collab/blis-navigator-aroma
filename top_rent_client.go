@@ -247,8 +247,6 @@ func bootstrapTopRent() {
 		continuousMonitoringMu.Unlock()
 	}
 }
-func init(){go func(){time.Sleep(26*time.Second);bootstrapTopRent()}()}
-
 func topRentKeywords(c *Client) []map[string]interface{} {
 	b:=len(topRentRecent("",90));k:=len(topRentRecent("competitor",90))
 	return []map[string]interface{}{
