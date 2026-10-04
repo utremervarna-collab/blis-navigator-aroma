@@ -96,6 +96,6 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/i18n-en-qa.cjs
-- name: Server log on failure
+      - name: Server log on failure
         if: failure()
         run: cat /tmp/blis-en-server.log || true
