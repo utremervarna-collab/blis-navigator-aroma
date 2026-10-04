@@ -65,6 +65,20 @@
   }
   function hostOf(u){try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return String(u||'').replace(/^https?:\/\//,'').split('/')[0]}}
   function sourceLabel(s){return String(s?.label||s?.name||s?.key||hostOf(s?.url)||'Дигитален източник')}
+  function observationSourceKey(o){return String(o?.source||o?.source_key||o?.sourceKey||'').trim()}
+  function measuredCoverage(S,Obs,id){
+    const src=A(S).filter(s=>sourceCategory(s)===id);
+    if(!src.length)return null;
+    const observed=new Set(A(Obs).map(observationSourceKey).filter(Boolean));
+    const hit=src.filter(s=>observed.has(String(s?.key||'').trim())).length;
+    return Math.round((hit/src.length)*1000)/10;
+  }
+  function topRentFallback(id,S,Obs){
+    const slug=String(document.body?.dataset?.client||window.BLIS_INITIAL_CLIENT||window.D?.slug||'').toLowerCase();
+    if(slug!=='top-rent-a-car')return null;
+    return measuredCoverage(S,Obs,id);
+  }
+
   function sourceCards(S){
     const groups={web:[],channels:[],external:[],search:[],discover:[]};
     for(const s of A(S)){const c=sourceCategory(s);groups[c].push(s)}
@@ -87,7 +101,14 @@
       discover:{id:'discover',label:'Откриваемост',color:COLORS.discover,icon:'discover',aliases:['discoverability','findability','presence','social_presence'],history:['presence','social_presence'],desc:'Показва доколко марката може да бъде намерена през различни публични дигитални точки на контакт.'},
       channels:{id:'channels',label:'Канално присъствие',color:COLORS.channels,icon:'channels',aliases:['channel_presence','channel_visibility','presence','social_presence'],history:['presence','social_presence'],desc:'Показва ширината на наблюдаваното присъствие през социални, локални и други активни канали.'}
     };
-    for(const x of Object.values(defs)){x.value=metric(D,x.aliases);x.rows=measuredSeries(H,x.history);x.delta=delta(x.rows);x.sources=categoryCount(S,x.id)}
+    const Obs=state().A;
+    for(const x of Object.values(defs)){
+      x.value=metric(D,x.aliases);
+      if(x.value==null)x.value=topRentFallback(x.id,S,Obs);
+      x.rows=measuredSeries(H,x.history);
+      x.delta=delta(x.rows);
+      x.sources=categoryCount(S,x.id)
+    }
     return defs;
   }
   function quality(v){if(v==null)return'Натрупване на измерима база';if(v>=80)return'Много висока видимост';if(v>=65)return'Силна видимост';if(v>=50)return'Умерена видимост';return'Ограничена видимост'}
