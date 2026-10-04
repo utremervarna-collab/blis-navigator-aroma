@@ -32,7 +32,7 @@ function render(){
   const D=window.D||{};
   const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно';
   const html='<section id="topRentCommandCenter" class="trcc">'+
-    '<div class="trcc-head"><div class="trcc-brand"><div class="trcc-logo" aria-label="TOP Rent A Car">TOP</div><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
+    '<div class="trcc-head"><div class="trcc-brand"><div class="trcc-logo"><img src="https://www.pirinultra.com/assets/media/partners/top_rent_a_car.jpg" alt="TOP Rent A Car"></div><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
     renderOps(D)+'</section>';
   let el=old;if(!el){el=document.createElement('div');root.prepend(el)}
   el.outerHTML=html;
