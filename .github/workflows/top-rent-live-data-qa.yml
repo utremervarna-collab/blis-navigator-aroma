@@ -1,0 +1,75 @@
+name: TOP Rent A Car Live Data QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'top_rent_client.go'
+      - 'signal_collector.go'
+      - 'competitor_signal_collector.go'
+      - 'public_client_mentions.go'
+      - 'static/navigator-live-refresh-v1.js'
+      - '.github/workflows/top-rent-live-data-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NAVIGATOR_ORIGIN: ${{ vars.NAVIGATOR_ORIGIN || 'https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run' }}
+
+jobs:
+  verify-top-live-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for TOP production profile and 90-day mentions
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          ok=0
+          for i in $(seq 1 48); do
+            if curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/clients/top-rent-a-car/dashboard?ts=$(date +%s%N)" -o /tmp/top-dashboard.json \
+              && curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/public/mentions?client=top-rent-a-car&scope=brand&limit=300&ts=$(date +%s%N)" -o /tmp/top-brand.json \
+              && curl -fsS --connect-timeout 15 --max-time 30 "$BASE/api/public/mentions?client=top-rent-a-car&scope=competitor&limit=300&ts=$(date +%s%N)" -o /tmp/top-competitor.json; then
+              if python - <<'PY'
+          import json,sys
+          d=json.load(open('/tmp/top-dashboard.json',encoding='utf-8'))
+          b=json.load(open('/tmp/top-brand.json',encoding='utf-8'))
+          c=json.load(open('/tmp/top-competitor.json',encoding='utf-8'))
+          brand=b.get('signals') or []
+          comp=c.get('signals') or []
+          brands={str(x.get('brand') or '').strip().casefold() for x in comp}
+          required={x.casefold() for x in ('Sixt','Hertz','Europcar','Green Motion')}
+          checks=[
+              d.get('client')=='top-rent-a-car',
+              b.get('client')=='top-rent-a-car' and b.get('scope')=='brand',
+              c.get('client')=='top-rent-a-car' and c.get('scope')=='competitor',
+              len(brand)>=5,
+              len(comp)>=4,
+              required.issubset(brands),
+              all(str(x.get('url') or '').startswith(('http://','https://')) for x in brand+comp),
+              all(str(x.get('source') or '').strip() and str(x.get('title') or '').strip() for x in brand+comp),
+          ]
+          if not all(checks):
+              print('TOP_DATA_NOT_READY', {'brand':len(brand),'competitor':len(comp),'brands':sorted(brands),'checks':checks})
+              sys.exit(1)
+          print('TOP_90D_LIVE_DATA_OK', {'brand':len(brand),'competitor':len(comp),'brands':sorted(brands)})
+          PY
+              then ok=1; break; fi
+            fi
+            sleep 10
+          done
+          test "$ok" = "1"
+
+      - name: Verify client and competitor mention UI asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${NAVIGATOR_ORIGIN%/}"
+          curl -fsS --connect-timeout 15 --max-time 30 "$BASE/navigator-live-refresh-v1.js?ts=$(date +%s%N)" -o /tmp/live-refresh.js
+          grep -Fq 'function brandTicker' /tmp/live-refresh.js
+          grep -Fq 'Хронология на конкурентните споменавания' /tmp/live-refresh.js
+          grep -Fq 'blis-ms-ticker' /tmp/live-refresh.js
+          echo TOP_MENTION_UI_OK
