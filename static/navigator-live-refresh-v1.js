@@ -98,6 +98,13 @@ function timeline(rows,scope){
   let ld='';
   return rows.slice(0,MAX_ROWS).map(s=>{const p=publishedTs(s),t=p||ts(s),d=day(t),newDay=d!==ld;ld=d;const summary=body(s),kind=p?'публикувано':'открито';return `${newDay?`<div class="blis-ms-day">${E(d)}</div>`:''}<article class="blis-ms-event"><i></i><div><div class="blis-ms-meta">${scope==='competitor'?`<span class="blis-ms-brand">${E(brand(s))}</span>`:''}<span>${E(source(s))}</span><span>${kind}</span><time>${E(fmt(t))}</time></div><strong>${E(title(s))}</strong>${summary&&summary!==title(s)?`<p>${E(summary.slice(0,300))}</p>`:''}</div><a href="${E(s.url)}" target="_blank" rel="noopener noreferrer">ИЗТОЧНИК ↗</a></article>`}).join('')
 }
+function brandTicker(rows){
+  if(!rows.length)return '<div class="blis-ms-ticker blis-ms-ticker-empty"><div>Няма открити споменавания на клиента в последните 3 месеца.</div></div>';
+  const balanced=A(rows).slice(0,24);
+  const item=s=>`<a class="blis-ms-ticker-item" href="${E(s.url)}" target="_blank" rel="noopener noreferrer"><b>TOP Rent A Car</b><span>${E(title(s))}</span><small>${E(source(s))}</small></a>`;
+  const base=balanced.map(item).join('');
+  return `<div class="blis-ms-ticker blis-ms-brand-ticker"><div class="blis-ms-track">${base}${base}</div></div>`
+}
 function ticker(rows){
   if(!rows.length)return '<div class="blis-ms-ticker blis-ms-ticker-empty"><div>Няма открити конкурентни споменавания в последните 3 месеца.</div></div>';
   const groups=new Map();
@@ -127,7 +134,7 @@ function renderMonitoring(){
   const host=document.querySelector('#n3SocialRoot > .vs-page')||document.querySelector('#n3SocialRoot .vs-page')||document.getElementById('n3SocialRoot');if(!host)return;
   if(p.parentNode!==host)host.appendChild(p);
   const sig=[c,st.updated,st.error,rows.map(key).join('|')].join('::');if(p.dataset.signature===sig)return;p.dataset.signature=sig;
-  p.innerHTML=`<div class="blis-ms-head"><div><h3>Хронология на споменаванията</h3><p>Потвърдени публични споменавания с дата от последните 3 месеца, подредени от най-новото към по-старото.</p></div>${status(st)}</div><div class="blis-ms-count"><b>${rows.length}</b> потвърдени споменавания през последните 3 месеца</div><div class="blis-ms-timeline">${timeline(rows,'brand')}</div>`
+  p.innerHTML=`<div class="blis-ms-head"><div><h3>Хронология на споменаванията</h3><p>Потвърдени публични споменавания с дата от последните 3 месеца, подредени от най-новото към по-старото.</p></div>${status(st)}</div>${brandTicker(rows)}<div class="blis-ms-count" style="padding-top:13px"><b>${rows.length}</b> потвърдени споменавания през последните 3 месеца</div><div class="blis-ms-timeline">${timeline(rows,'brand')}</div>`
 }
 function renderCompetition(){
   const c=client(),st=state(c),rows=recent3m(st.competitor),p=panel('blisCompetitorMentionTimeline','competition');
