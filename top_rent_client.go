@@ -122,7 +122,20 @@ func ensureTopRentClient() *Client {
 func topRentSignals() []Signal {
 	signalMu.RLock(); rows:=append([]Signal(nil),signalState.Signals[topRentSlug]...); signalMu.RUnlock()
 	sort.SliceStable(rows,func(i,j int)bool{a,b:=rows[i].PublishedAt,rows[j].PublishedAt;if a==""{a=rows[i].DetectedAt};if b==""{b=rows[j].DetectedAt};return a>b})
-	return rows
+	seen:=map[string]bool{}
+	out:=make([]Signal,0,len(rows))
+	for _,s:=range rows{
+		title:=strings.ToLower(strings.Join(strings.Fields(cleanCompetitorDisplayText(s.Title))," "))
+		brand:=strings.ToLower(strings.Join(strings.Fields(s.Brand)," "))
+		day:=""
+		if t,ok:=parseCompetitorPublished(s.PublishedAt);ok{day=t.UTC().Format("2006-01-02")}else if t,e:=time.Parse(time.RFC3339,s.DetectedAt);e==nil{day=t.UTC().Format("2006-01-02")}
+		k:=strings.TrimSpace(s.Scope+"|"+brand+"|"+title+"|"+day)
+		if title==""{k=s.Fingerprint}
+		if k==""||seen[k]{continue}
+		seen[k]=true
+		out=append(out,s)
+	}
+	return out
 }
 func topRentRecent(scope string,days int) []Signal {
 	cut:=time.Now().UTC().Add(-time.Duration(days)*24*time.Hour); out:=[]Signal{}
