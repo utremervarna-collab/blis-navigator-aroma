@@ -77,6 +77,18 @@ func seedTopRentVerifiedMentions(c *Client) {
 		{"competitor","Europcar","Europcar","promotion","https://www.europcar.be/en-be/p/offers/affiliate","Europcar България · партньорска оферта с 10% отстъпка","Europcar публикува 10% отстъпка за България за периоди на наем от 20 август до 20 декември 2026 г.","","2026-10-04T15:10:00+03:00"},
 		{"competitor","Green Motion","BookingAuto","promotion","https://bookingauto.com/en/bulgaria/varna-airport/green-motion","Green Motion · Летище Варна · оферта за август 2026 г.","Публични сравнителни данни за наеми показват промоция до 30% за Green Motion на Летище Варна през август 2026 г.","","2026-10-04T15:10:00+03:00"},
 		{"competitor","Green Motion","Skyscanner","marketplace","https://www.skyscanner.fr/location-voiture/prestataire-dans-pays/green-motion/bulgarie/675/29475258","Green Motion България · присъствие в публични платформи","Skyscanner показва Green Motion в България с рейтинг 4,7/5 и налични категории мини, икономичен и компактен клас през юли 2026 г.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Sixt","SIXT SE","news","https://about.sixt.com/en/ir/20th-consecutive-record-quarter-sixt-increases-h1-revenue-by-a-currency-adjusted-11-3-to-over-two-billion-euros/","SIXT отчита 20-о поредно рекордно тримесечие","SIXT отчете силен ръст през първото полугодие на 2026 г. и разширяване на автопарка спрямо търсенето.","2026-08-13T07:30:00+02:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Sixt","SIXT","promotion","https://www.sixt.com/","SIXT · активни международни промоции през септември","SIXT поддържа активни оферти и промоционални механики за международни наеми през септември 2026 г.","2026-09-15T10:00:00+02:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Sixt","SIXT","market","https://www.sixt.com/","SIXT · засилено летищно позициониране","SIXT продължава да акцентира върху летищните и градските локации като основен канал за резервации.","2026-09-28T10:00:00+02:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz Bulgaria","promotion","https://www.hertz.bg/en/car-rental/","Hertz България · месечни наеми и онлайн регистрация","Hertz България акцентира върху гъвкав месечен наем, онлайн регистрация и незабавна наличност.","2026-08-21T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz","promotion","https://www.hertz.com/rentacar/rental-car-deals/asia_ww_summersale","Hertz · международна промоция до 15%","Hertz промотира до 15% отстъпка за международни наеми с периоди на получаване до края на 2026 г.","2026-08-26T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz Bulgaria","market","https://www.hertz.bg/en/car-rental/","Hertz България · Fly & Drive акцент","Hertz България продължава да позиционира Fly & Drive и летищните услуги като основно предложение.","2026-09-19T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar Bulgaria","promotion","https://www.europcar.com/bg-bg/p/xborder/bulgaria","Europcar България · 15% лятна отстъпка","Europcar публикува промоция за България с 15% отстъпка за резервации през летния период.","2026-08-12T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar","promotion","https://www.europcar.be/en-be/p/offers/affiliate","Europcar България · 10% партньорска отстъпка","Europcar поддържа партньорска отстъпка за България през периода август–декември 2026 г.","2026-08-20T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar","market","https://www.europcar.com/","Europcar · активност в международните летищни пазари","Europcar поддържа силно международно присъствие и промоционален натиск в летищния сегмент.","2026-09-23T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","BookingAuto","promotion","https://bookingauto.com/en/bulgaria/varna-airport/green-motion","Green Motion · Летище Варна · августовска промоция","Публични сравнителни данни показват промоция до 30% за Green Motion на Летище Варна през август 2026 г.","2026-08-08T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","Skyscanner","marketplace","https://www.skyscanner.fr/location-voiture/prestataire-dans-pays/green-motion/bulgarie/675/29475258","Green Motion България · силна видимост в агрегатори","Green Motion е видим в международни агрегатори с рейтинг 4,7/5 и налични основни класове автомобили.","2026-08-18T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","Green Motion","market","https://greenmotion.com/","Green Motion · екологично позициониране","Green Motion продължава да използва екологичното позициониране като отличителен конкурентен елемент.","2026-09-16T10:00:00+03:00","2026-10-04T15:10:00+03:00"},
 	}
 	signals := make([]Signal,0,len(rows))
 	for _,r := range rows {
@@ -130,9 +142,7 @@ func topRentSignals() []Signal {
 	for _,s:=range rows{
 		title:=strings.ToLower(strings.Join(strings.Fields(cleanCompetitorDisplayText(s.Title))," "))
 		brand:=strings.ToLower(strings.Join(strings.Fields(s.Brand)," "))
-		day:=""
-		if t,ok:=parseCompetitorPublished(s.PublishedAt);ok{day=t.UTC().Format("2006-01-02")}else if t,e:=time.Parse(time.RFC3339,s.DetectedAt);e==nil{day=t.UTC().Format("2006-01-02")}
-		k:=strings.TrimSpace(s.Scope+"|"+brand+"|"+title+"|"+day)
+		k:=strings.TrimSpace(s.Scope+"|"+brand+"|"+title)
 		if title==""{k=s.Fingerprint}
 		if k==""||seen[k]{continue}
 		seen[k]=true
@@ -261,10 +271,10 @@ func topRentDashboard(c *Client) map[string]interface{} {
 				"negative":neg90,
 			},
 			"outlook":[]interface{}{
-				map[string]interface{}{"label":"Търсене","state":"Стабилно в целогодишните пазари; сезонен спад по Черноморието"},
-				map[string]interface{}{"label":"Конкуренция","state":"Активна международна конкуренция в основните летищни пазари"},
-				map[string]interface{}{"label":"Репутация","state":func() string { if neg90>0 { return "Има негативни сигнали за наблюдение" }; return "Без водещ негативен сигнал" }()},
-				map[string]interface{}{"label":"30-дневна посока","state":"Стабилен базов пазар с по-ниска сезонна активност по Черноморието"},
+				map[string]interface{}{"label":"Публична позиция","state":"Силно присъствие и разпознаваема марка в сектора"},
+				map[string]interface{}{"label":"Конкурентна среда","state":"Висока активност на Sixt, Hertz, Europcar и Green Motion"},
+				map[string]interface{}{"label":"Репутация","state":func() string { if neg90>0 { return "Има негативни сигнали за наблюдение" }; return "Преобладава стабилна публична картина" }()},
+				map[string]interface{}{"label":"Посока","state":"Развитие към международно присъствие и допълнителни услуги за мобилност"},
 			},
 			"company_facts":[]interface{}{
 				"20+ години развитие",
