@@ -184,15 +184,11 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
-	// Provider health must not depend on the internal backend finishing cold-start
-	// restore. The external gateway is already listening and can answer readiness
-	// immediately, preventing Northflank from removing the instance from the
-	// upstream pool while the backend restores data on the internal port.
+	// Readiness must reflect the internal Navigator backend, not only the
+	// external gateway socket. Proxy health requests to the backend so the
+	// provider cannot mark an instance ready before dashboard/API routes exist.
 	if path == "/api/health" || path == "/health" || path == "/healthz" {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-store")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"ok":true,"gateway":"ready"}`))
+		authProxy.ServeHTTP(w, r)
 		return
 	}
 
