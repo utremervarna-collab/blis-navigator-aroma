@@ -51,12 +51,30 @@ jobs:
           const norm=s=>(s||'').replace(/\s+/g,' ').trim();
           function fail(msg){throw new Error(msg)}
           async function waitReady(page,route){
-            await page.waitForFunction(
-              ({route})=>document.body?.dataset?.client==='delta-planet' &&
-                document.querySelector('.page.active')?.id===route &&
-                document.documentElement.classList.contains('blis-dashboard-ready'),
-              {route},{timeout:30000}
-            );
+            try{
+              await page.waitForFunction(
+                ({route})=>document.body?.dataset?.client==='delta-planet' &&
+                  document.querySelector('.page.active')?.id===route &&
+                  document.documentElement.classList.contains('blis-dashboard-ready'),
+                {route},{timeout:30000}
+              );
+            }catch(e){
+              const state=await page.evaluate(()=>({
+                href:location.href,
+                client:document.body?.dataset?.client||'',
+                active:document.querySelector('.page.active')?.id||'',
+                classes:document.documentElement.className,
+                paint:document.documentElement.dataset.navigatorPaint||'',
+                version:document.documentElement.dataset.navigatorVersion||'',
+                nav:[...document.querySelectorAll('#nav [data-n3-page]')].map(x=>x.dataset.n3Page),
+                contextTitle:document.querySelector('.bch3-context-title')?.textContent?.trim()||'',
+                activeText:(document.querySelector('.page.active')?.innerText||'').trim().slice(0,500),
+                loading:document.body?.dataset?.blisLoading||'',
+                lang:document.documentElement.lang||''
+              }));
+              console.error('DELTA_READY_STATE',JSON.stringify(state));
+              throw e;
+            }
           }
           async function visibleCyrillic(page){
             return await page.evaluate(()=>{
