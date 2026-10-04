@@ -94,3 +94,8 @@ func productionStoreMeta(w http.ResponseWriter, r *http.Request) {
 		"restore": getRuntimeRestoreStatus(),
 	})
 }
+
+
+func backgroundNetworkLoopsDisabled() bool {
+	return os.Getenv("BLIS_DISABLE_BACKGROUND_NETWORK_LOOPS") == "1"
+}
