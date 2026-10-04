@@ -107,7 +107,7 @@ async function boot(){
  forceBulgarianEarly();
  await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
- await safe('/navigator-readable-type-v1.js');await safe('/top-rent-command-center-v1.js');
+ await safe('/navigator-readable-type-v1.js');await safe('/top-rent-command-center-v1.js');await safe('/navigator-live-refresh-v1.js');await safe('/navigator-mention-mount-guard-v1.js');
  // Data updates do not change the route. Only navigation or a client switch
  // should hide the active page while a new canonical visual is assembled.
  let paintedClient=initialClient;
