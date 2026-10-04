@@ -18,6 +18,7 @@ const legacyClientRememberCookieName = "blis_client_remember"
 const adminClientCookieName = "blis_admin_client"
 const publicDemoCookieName = "blis_public_demo"
 const bscScopeCookieName = "blis_bsc_scope"
+const topRentScopeCookieName = "blis_top_rent_scope"
 const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bbca5d5ced1705"
 
 func validNavigatorClient(slug string) bool {
@@ -153,6 +154,19 @@ func clearBscScopeCookie(w http.ResponseWriter, r *http.Request) {
 func isBscScope(r *http.Request) bool {
 	c, err := r.Cookie(bscScopeCookieName)
 	return err == nil && c.Value == "black-sea-center"
+}
+
+func setTopRentScopeCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: topRentScopeCookieName, Value: "top-rent-a-car", Path: "/", HttpOnly: true, Secure: secureRequest(r), SameSite: http.SameSiteLaxMode, MaxAge: 60 * 60 * 8})
+}
+
+func clearTopRentScopeCookie(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: topRentScopeCookieName, Value: "", Path: "/", HttpOnly: true, Secure: secureRequest(r), SameSite: http.SameSiteLaxMode, MaxAge: -1, Expires: time.Unix(0, 0)})
+}
+
+func isTopRentScope(r *http.Request) bool {
+	c, err := r.Cookie(topRentScopeCookieName)
+	return err == nil && c.Value == "top-rent-a-car"
 }
 
 func ownerSession(r *http.Request) (clientSession, bool) {
@@ -338,8 +352,10 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// Public Delta Planet Mall profile. Keep the vanity route lightweight:
 	// redirect to the canonical dashboard instead of holding an extra proxy
 	// request open during startup/data restoration.
-	// Public TOP Rent A Car profile. Dedicated vanity route prevents any saved-client fallback.
+	// Public TOP Rent A Car profile. Keep the existing public URL, but hard-scope
+	// the browser session to TOP so no other client profile can be exposed.
 	if (path == "/top-rent-a-car" || path == "/top-rent-a-car/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		setTopRentScopeCookie(w, r)
 		q := url.Values{}
 		q.Set("client", "top-rent-a-car")
 		q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
@@ -415,7 +431,20 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		r2 := r.Clone(r.Context())
 		r2.URL.Path = "/dashboard.html"
 		q := r2.URL.Query()
-		if !validNavigatorClient(strings.TrimSpace(q.Get("client"))) {
+		requested := strings.TrimSpace(q.Get("client"))
+		if requested == "top-rent-a-car" || isTopRentScope(r) {
+			setTopRentScopeCookie(w, r)
+			q.Set("client", "top-rent-a-car")
+			if q.Get("page") == "" {
+				q.Set("page", "overview")
+			}
+			q.Del("lang")
+			r2.URL.RawQuery = q.Encode()
+			r2.Header.Set("X-BLIS-Client-Scope", "top-rent-a-car")
+			authProxy.ServeHTTP(w, r2)
+			return
+		}
+		if !validNavigatorClient(requested) {
 			q.Set("client", "aroma")
 		}
 		if q.Get("page") == "" {
@@ -433,6 +462,20 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	if path == "/api/public/home-tape" {
 		publicHomeTape(w, r)
 		return
+	}
+	if isTopRentScope(r) && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		if path == "/api/clients" {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			_, _ = w.Write([]byte(`[{"slug":"top-rent-a-car","name":"TOP Rent A Car","sector":"Коли под наем · мобилност · туризъм","note":"Заключен клиентски профил"}]`))
+			return
+		}
+		if strings.HasPrefix(path, "/api/clients/") && !strings.HasPrefix(path, "/api/clients/top-rent-a-car/") {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error":"Профилът е ограничен до TOP Rent A Car"}`))
+			return
+		}
 	}
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && (path == "/api/clients" || strings.HasPrefix(path, "/api/clients/")) {
 		if authProxy == nil {
@@ -604,6 +647,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	if path == "/api/client-logout" {
 		clearLegacyClientRememberCookie(w, r)
 		clearBscScopeCookie(w, r)
+		clearTopRentScopeCookie(w, r)
 	}
 	clientGateway(w, r)
 }
