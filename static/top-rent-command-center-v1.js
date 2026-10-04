@@ -14,14 +14,14 @@ function renderOps(D){
     '<div class="trcc-kpi"><span>Позитивни сигнали</span><b>'+esc(s.positive??0)+'</b></div>'+
     '<div class="trcc-kpi"><span>Негативни сигнали</span><b>'+esc(s.negative??0)+'</b></div>';
   const outlook=(e.outlook||[]).map(x=>'<div class="trcc-exec-row"><span>'+esc(x.label)+'</span><b>'+esc(x.state)+'</b></div>').join('');
-  const scope=(e.market_scope||[]).map(x=>'<div class="trcc-scope-row">'+esc(x)+'</div>').join('');
+  const scope=(e.company_profile||[]).map(x=>'<div class="trcc-scope-row">'+esc(x)+'</div>').join('');
   const important=(D.signals||[]).slice(0,3).map(x=>'<div class="trcc-signal"><b>'+esc(x.title||'Сигнал')+'</b><span>'+esc(x.source||'')+'</span></div>').join('');
   return '<div class="trcc-exec">'+
     '<div class="trcc-summary">'+esc(e.summary||'')+'</div>'+
     '<div class="trcc-kpis">'+position+signalStats+'</div>'+
     '<div class="trcc-exec-grid">'+
       '<div class="trcc-exec-card"><h3>Текуща картина</h3>'+outlook+'</div>'+
-      '<div class="trcc-exec-card"><h3>Пазарно присъствие</h3>'+scope+'</div>'+
+      '<div class="trcc-exec-card"><h3>За TOP Rent A Car</h3>'+scope+'</div>'+
       '<div class="trcc-exec-card"><h3>Последни важни сигнали</h3>'+(important||'<div class="trcc-scope-row">Няма нов значим сигнал.</div>')+'</div>'+
     '</div>'+
   '</div>';
@@ -32,7 +32,7 @@ function render(){
   const D=window.D||{};
   const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно';
   const html='<section id="topRentCommandCenter" class="trcc">'+
-    '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
+    '<div class="trcc-head"><div class="trcc-brand"><div class="trcc-logo" aria-label="TOP Rent A Car">TOP</div><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
     renderOps(D)+'</section>';
   let el=old;if(!el){el=document.createElement('div');root.prepend(el)}
   el.outerHTML=html;
