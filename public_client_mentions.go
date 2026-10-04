@@ -232,10 +232,29 @@ func buildPublicMentionTimeline(slug, scope string) (string, []publicClientMenti
 	}
 
 	candidates := make([]Signal, 0, len(byFP))
+	semanticSeen := map[string]bool{}
 	for _, s := range byFP {
-		if publicMentionSignalValid(slug, scope, clientSnapshot, s) {
-			candidates = append(candidates, s)
+		if !publicMentionSignalValid(slug, scope, clientSnapshot, s) {
+			continue
 		}
+		if slug == "top-rent-a-car" {
+			title := strings.ToLower(strings.Join(strings.Fields(cleanCompetitorDisplayText(s.Title)), " "))
+			brand := strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(s.Brand)), " "))
+			day := ""
+			if t, ok := parseCompetitorPublished(s.PublishedAt); ok {
+				day = t.UTC().Format("2006-01-02")
+			} else if t, err := time.Parse(time.RFC3339, strings.TrimSpace(s.DetectedAt)); err == nil {
+				day = t.UTC().Format("2006-01-02")
+			}
+			key := strings.TrimSpace(scope + "|" + brand + "|" + title + "|" + day)
+			if title != "" && semanticSeen[key] {
+				continue
+			}
+			if title != "" {
+				semanticSeen[key] = true
+			}
+		}
+		candidates = append(candidates, s)
 	}
 	// Prefer verified publication time. When a source exposes no publication
 	// timestamp, order by the real monitor detection time instead.
