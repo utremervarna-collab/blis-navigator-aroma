@@ -7,10 +7,11 @@ function isTop(){return (document.body?.dataset?.client||window.slug)==='top-ren
 function renderOps(D){
   const p=D.price_intelligence||{},d=D.demand_intelligence||{},f=D.fleet_allocation||{};
   const prices=(p.published_top_signals||[]).slice(0,7).map(x=>'<div class="trcc-row"><span>'+esc(x.label)+'</span><b>'+esc(x.value)+'</b></div>').join('');
+  const scenarios=(p.standard_scenarios||[]).slice(0,12).map(x=>'<div class="trcc-scenario"><b>'+esc(x.iata)+' · '+esc(x.days)+' дни</b><span>'+esc(x.class)+'</span></div>').join('');
   const demands=(d.markets||[]).slice(0,6).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b><span class="trcc-chip">7д: '+esc(x.h7)+'</span></div><span>'+esc(x.fleet_signal)+'</span></div>').join('');
   const actions=(f.current_actions||[]).slice(0,4).map(x=>'<div class="trcc-action"><b>'+esc(x.from)+' → '+esc(x.to)+' · '+esc(x.action)+'</b><span>'+esc(x.condition)+'</span></div>').join('');
   return '<div class="trcc-ops">'+
-    '<div class="trcc-op"><h3>Price Intelligence Radar</h3><div class="trcc-opsub">Реални публични сигнали на TOP. Конкурентно сравнение само при еднакви условия.</div>'+prices+'</div>'+
+    '<div class="trcc-op"><h3>Price Intelligence Radar</h3><div class="trcc-opsub">Реални публични сигнали на TOP. Конкурентно сравнение само при еднакви условия.</div>'+prices+'<h4 class="trcc-minihead">Scenario Matrix</h4><div class="trcc-scenarios">'+scenarios+'</div></div>'+
     '<div class="trcc-op"><h3>Demand Forecast · 7 / 14 / 30 дни</h3><div class="trcc-opsub">'+esc(d.method_note||'Оперативен baseline до достатъчно live наблюдения.')+'</div>'+demands+'</div>'+
     '<div class="trcc-op"><h3>Fleet Allocation Signal</h3><div class="trcc-opsub">Подпомага преразпределението, без да го препоръчва само по сезонност.</div>'+actions+'</div>'+
   '</div>';
