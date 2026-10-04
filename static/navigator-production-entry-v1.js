@@ -92,7 +92,7 @@ function waitForFinalPaint(started=Date.now()){
 }
 async function boot(){
  forceBulgarianEarly();
- await Promise.all(['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css'].map(safeStyle));
+ await Promise.all(['/navigator-reference.css','/navigator-shell-master.css','/navigator-client-ui.css','/navigator-digital-master.css','/navigator-perception-map.css','/navigator-executive-layout-fix-v2.css','/navigator-executive-pages-4-9.css','/navigator-visual-special-v2.css','/navigator-signal-current-marker-v1.css','/top-rent-command-center-v1.css'].map(safeStyle));
  await safe('/navigator-system-structure-v1.js');
  await safe('/navigator-perception-core-v8.js');await safe('/navigator-perception-map.js');await safe('/navigator-market-system-v1.js');
  await safe('/navigator-data-loader-v1.js');
@@ -107,7 +107,7 @@ async function boot(){
  forceBulgarianEarly();
  await safe('/navigator-3-client-clarity-v1.js');await safe('/navigator-3-evidence-v1.js');await safe('/navigator-3-competitor-dossier-v1.js');await safe('/navigator-3-client-proof-v1.js');
  await safe('/navigator-3-architecture-v1.js');await safe('/navigator-3-visual-preservation-v1.js');await safe('/navigator-3-page-contract-v1.js');
- await safe('/navigator-readable-type-v1.js');
+ await safe('/navigator-readable-type-v1.js');await safe('/top-rent-command-center-v1.js');
  // Data updates do not change the route. Only navigation or a client switch
  // should hide the active page while a new canonical visual is assembled.
  let paintedClient=initialClient;
