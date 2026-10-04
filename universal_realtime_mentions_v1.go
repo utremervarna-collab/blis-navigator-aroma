@@ -478,6 +478,9 @@ func runUniversalRealtimeMentionCycle() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	go func() {
 		// Give the HTTP gateway time to become healthy before the first broad pass.
 		// KUB keeps its separate near-real-time crisis collector.
