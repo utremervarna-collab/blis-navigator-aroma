@@ -191,7 +191,14 @@ func topRentDashboard(c *Client) map[string]interface{} {
 	blis:=r1(visibility*.28+reputation*.20+marketReadiness*.32+competitive*.20)
 	confidence:=r1(coverage*.55+freshness*.25+clamp(float64(brand90+comp90)/25*100)*.20)
 	trend:=0.0;for i:=len(c.Snapshots)-1;i>=0;i--{if prev,ok:=numericObsV33(c.Snapshots[i].Payload["blis_index"]);ok&&prev>0{trend=r1(blis-prev);break}}
-	signals:=[]interface{}{};for _,s:=range topRentSignals(){if s.Scope=="competitor"{continue};level:="info";if s.Severity=="critical"||s.Severity=="high"{level="watch"}else if s.Sentiment=="positive"{level="positive"};signals=append(signals,map[string]interface{}{"level":level,"title":s.Title,"text":s.Text,"source":s.Source,"url":s.URL,"published_at":s.PublishedAt,"detected_at":s.DetectedAt,"topic":s.Topic});if len(signals)>=30{break}}
+	signals:=[]interface{}{}
+	for _,s:=range topRentSignals(){
+		if s.Scope=="competitor"{continue}
+		level:="info"
+		if s.Severity=="critical"||s.Severity=="high"{level="watch"}else if s.Sentiment=="positive"{level="positive"}
+		signals=append(signals,map[string]interface{}{"level":level,"title":s.Title,"text":s.Text,"source":s.Source,"url":s.URL,"published_at":s.PublishedAt,"detected_at":s.DetectedAt,"topic":s.Topic})
+		break
+	}
 	return map[string]interface{}{
 		"client":c.Slug,"slug":c.Slug,"client_slug":c.Slug,"name":c.Name,"sector":c.Sector,"note":c.Note,
 		"profile_mode":"market_command_center","profile_title":"TOP Rent A Car · Пазарен команден център",
