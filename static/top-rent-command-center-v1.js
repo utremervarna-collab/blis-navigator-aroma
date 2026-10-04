@@ -32,7 +32,7 @@ function render(){
   const D=window.D||{};
   const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно';
   const html='<section id="topRentCommandCenter" class="trcc">'+
-    '<div class="trcc-head"><div class="trcc-brand"><div class="trcc-logo"><img src="https://www.pirinultra.com/assets/media/partners/top_rent_a_car.jpg" alt="TOP Rent A Car"></div><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
+    '<div class="trcc-head"><div class="trcc-brand"><div class="trcc-logo"><img src="https://toprentacar.bg/templates/toprentacar/images/logo.svg" alt="TOP Rent A Car" onerror="this.style.display='none';this.parentNode.classList.add('fallback');this.parentNode.textContent='TOP Rent A Car'"></div><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div><div class="trcc-intro">TOP Rent A Car е национална компания за автомобили под наем с широка мрежа от офиси в България и присъствие на ключови летища. Компанията развива краткосрочни наеми, месечни абонаменти и услуги за мобилност, включително присъствие в Румъния. Този общ изглед показва най-важното за текущата публична позиция на марката, репутацията, конкурентната активност и посоката през последните 90 дни.</div></div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
     renderOps(D)+'</section>';
   let el=old;if(!el){el=document.createElement('div');root.prepend(el)}
   el.outerHTML=html;
