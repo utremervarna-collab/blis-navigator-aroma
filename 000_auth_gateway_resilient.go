@@ -184,6 +184,18 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	// Provider health must not depend on the internal backend finishing cold-start
+	// restore. The external gateway is already listening and can answer readiness
+	// immediately, preventing Northflank from removing the instance from the
+	// upstream pool while the backend restores data on the internal port.
+	if path == "/api/health" || path == "/health" || path == "/healthz" {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true,"gateway":"ready"}`))
+		return
+	}
+
 	if strings.HasPrefix(path, "/home-master-c") && strings.HasSuffix(path, ".js") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
 		name := strings.TrimPrefix(path, "/")
 		b, err := staticFS.ReadFile("static/" + name)
