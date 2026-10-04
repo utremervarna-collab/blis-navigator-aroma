@@ -96,14 +96,6 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           node /tmp/i18n-en-qa.cjs
-      - name: Upload English residual report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: navigator-i18n-english-residual
-          path: i18n-english-residual.json
-          if-no-files-found: ignore
-          retention-days: 2
-      - name: Server log on failure
+- name: Server log on failure
         if: failure()
         run: cat /tmp/blis-en-server.log || true
