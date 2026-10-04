@@ -70,7 +70,7 @@ jobs:
           const clients=['aroma','bolyarka','mollox','varna-towers','delta-planet','black-sea-center','everbet','astor-garden'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers','delta-planet':'Delta Planet Mall','black-sea-center':'Black Sea Center',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const visible=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','wirello'];
+          const visible=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello'];
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
 
