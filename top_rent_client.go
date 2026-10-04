@@ -53,16 +53,6 @@ func seedTopRentFacts(c *Client) {
 	topRentSeed(c,"contacts","mobile_phone","+359 890 170 170",stamp)
 	topRentSeed(c,"fleet","fleet_monitoring_enabled",true,stamp)
 	topRentSeed(c,"prices","price_intelligence_enabled",true,stamp)
-	topRentSeed(c,"prices","varna_hotel_delivery_eur",18.0,stamp)
-	topRentSeed(c,"prices","burgas_hotel_delivery_eur",18.0,stamp)
-	topRentSeed(c,"prices","sofia_head_office_to_airport_eur",20.0,stamp)
-	topRentSeed(c,"prices","sofia_mladost_to_airport_eur",20.0,stamp)
-	topRentSeed(c,"prices","sofia_varna_one_way_eur",190.0,stamp)
-	topRentSeed(c,"prices","sofia_burgas_one_way_eur",170.0,stamp)
-	topRentSeed(c,"prices","varna_burgas_one_way_eur",110.0,stamp)
-	topRentSeed(c,"prices","sofia_bucharest_one_way_eur",320.0,stamp)
-	topRentSeed(c,"prices","winter_season_start","01.10",stamp)
-	topRentSeed(c,"prices","winter_season_end","30.04",stamp)
 }
 
 
@@ -175,9 +165,9 @@ func topRentDashboard(c *Client) map[string]interface{} {
 		
 		"nav":[]interface{}{map[string]interface{}{"key":"overview","label":"Команден център","icon":"⌂"},map[string]interface{}{"key":"social","label":"Търсене и сигнали","icon":"◉"},map[string]interface{}{"key":"market","label":"Пазар и локации","icon":"◎"},map[string]interface{}{"key":"competition","label":"Цени и конкуренти","icon":"◇"},map[string]interface{}{"key":"history","label":"Прогнози/Доклади","icon":"↗"}},
 		"indices":[]interface{}{
-			idx("presence","Пазарна видимост",visibility,"Показва колко добре е покрита публичната среда на TOP Rent A Car и текущият обем на измеримите сигнали.",[]interface{}{comp("Наблюдавани източници",observedSources,"актуално"),comp("Покритие",coverage,"55%"),comp("Свежест · 48 часа",freshness,"20%"),comp("Споменавания · 90 дни",brand90,"25%")},"Покритие × 55% + свежест × 20% + нормализирани сигнали × 25%",[]string{"toprentacar.bg","Google News","публични източници"}),
-			idx("reputation","Репутация",reputation,"Баланс на позитивните и негативните класифицирани сигнали за марката.",[]interface{}{comp("Позитивни · 90 дни",pos90,"актуално"),comp("Негативни · 90 дни",neg90,"актуално"),comp("Всички сигнали",brand90,"актуално")},"50 + 50 × (позитивни − негативни) / всички сигнали",[]string{"reviews","Google","публичен web"}),
-			idx("digital","Готовност на данните",marketReadiness,"Оценява готовността на профила да дава търговски сигнали чрез покритие, свежест и активност на измерванията.",[]interface{}{comp("Покритие",coverage,"45%"),comp("Свежест",freshness,"25%"),comp("Наблюдения · 90 дни",recentObs,"30%")},"Покритие × 45% + свежест × 25% + активност × 30%",[]string{"официални източници","летища","туристически данни"}),
+			idx("presence","Пазарна видимост",visibility,"Текуща публична видимост на TOP Rent A Car.",[]interface{}{comp("Наблюдавани източници",observedSources,"актуално"),comp("Покритие",coverage,"55%"),comp("Свежест · 48 часа",freshness,"20%"),comp("Споменавания · 90 дни",brand90,"25%")},"Покритие × 55% + свежест × 20% + нормализирани сигнали × 25%",[]string{"toprentacar.bg","Google News","публични източници"}),
+			idx("reputation","Репутация",reputation,"Текущ баланс на позитивни и негативни публични сигнали.",[]interface{}{comp("Позитивни · 90 дни",pos90,"актуално"),comp("Негативни · 90 дни",neg90,"актуално"),comp("Всички сигнали",brand90,"актуално")},"50 + 50 × (позитивни − негативни) / всички сигнали",[]string{"reviews","Google","публичен web"}),
+			idx("digital","Готовност на данните",marketReadiness,"Актуалност и достатъчност на наличните данни.",[]interface{}{comp("Покритие",coverage,"45%"),comp("Свежест",freshness,"25%"),comp("Наблюдения · 90 дни",recentObs,"30%")},"Покритие × 45% + свежест × 25% + активност × 30%",[]string{"официални източници","летища","туристически данни"}),
 			idx("competitive","Конкурентна позиция",competitive,"Сравнителна видимост спрямо наблюдаваните конкуренти.",[]interface{}{comp("TOP сигнали · 90 дни",brand90,"актуално"),comp("Конкурентни сигнали · 90 дни",comp90,"актуално"),comp("Наблюдавани конкуренти",4,"зададени")},"TOP / (TOP + среден конкурентен обем) × 100",[]string{"Sixt","Hertz","Europcar","Green Motion"}),
 		},
 		"metrics":[]interface{}{
@@ -185,65 +175,43 @@ func topRentDashboard(c *Client) map[string]interface{} {
 			met("Летищно присъствие","SOF · PDV · VAR · BOJ · OTP"),
 			met("Сезонни офиси","Слънчев бряг · Обзор · Златни пясъци"),
 			met("Международно развитие","Букурещ Отопени"),
-			met("Трансгранични доставки","Атина · Солун · Белград · Скопие · Букурещ"),
-			met("Ценово разузнаване","Активно · само при съпоставими сценарии"),
-			met("Пазарен хоризонт","24 ч. сигнали · 14/30 дни прогноза"),
-			met("Основен фокус","търсене · цена · наличност · репутация · конкурентни движения"),
+						met("Ценова позиция","Недостатъчно съпоставими публични цени"),
+			met("Прогноза","7 · 14 · 30 дни"),
+			met("Наблюдение","търсене · цена · репутация · конкуренти"),
 		},
-		"market_command_center":map[string]interface{}{
-			"pillars":[]interface{}{"Търсене","Цени","Конкуренти","Туристически поток","Репутация","Прогноза"},
-			"decision_questions":[]interface{}{"Къде се ускорява търсенето?","Къде ценовата позиция се променя?","Кой конкурент прави ход?","Къде има възможност за по-висок приход?"},
-		},
+		"market_command_center":map[string]interface{}{},
 		"location_matrix":[]interface{}{
-			map[string]interface{}{"market":"София","type":"летище + град","priority":"висок"},
-			map[string]interface{}{"market":"Варна","type":"летище + град + курорти","priority":"висок сезонен"},
-			map[string]interface{}{"market":"Бургас","type":"летище + град + курорти","priority":"висок сезонен"},
-			map[string]interface{}{"market":"Пловдив","type":"летище + град","priority":"среден"},
-			map[string]interface{}{"market":"Русе","type":"град","priority":"развиващ"},
-			map[string]interface{}{"market":"Букурещ","type":"летище · международен пазар","priority":"стратегически"},
+			map[string]interface{}{"market":"София","type":"Летище + град","priority":"Висок приоритет"},
+			map[string]interface{}{"market":"Варна","type":"Летище + курорти","priority":"Сезонен приоритет"},
+			map[string]interface{}{"market":"Бургас","type":"Летище + курорти","priority":"Сезонен приоритет"},
+			map[string]interface{}{"market":"Пловдив","type":"Град + летище","priority":"Среден приоритет"},
+			map[string]interface{}{"market":"Русе","type":"Град","priority":"Развиващ се пазар"},
+			map[string]interface{}{"market":"Букурещ","type":"Летище + международен пазар","priority":"Стратегически пазар"},
 		},
 		"price_intelligence":map[string]interface{}{
-			"status":"актуално_top_public_fees_competitor_quotes_guarded",
-			"competitors":[]interface{}{"Sixt","Hertz","Europcar","Green Motion"},
 			"price_position":[]interface{}{
-				map[string]interface{}{"market":"София","state":"Няма достатъчно съпоставими публични цени"},
-				map[string]interface{}{"market":"Варна","state":"Няма достатъчно съпоставими публични цени"},
-				map[string]interface{}{"market":"Бургас","state":"Няма достатъчно съпоставими публични цени"},
-				map[string]interface{}{"market":"Букурещ","state":"Няма достатъчно съпоставими публични цени"},
-			},
-			"standard_scenarios":[]interface{}{
-				map[string]interface{}{"id":"SOF-ECO-3D","market":"София","pickup":"Летище София","iata":"SOF","class":"Икономичен / Компактен","days":3},
-				map[string]interface{}{"id":"SOF-ECO-7D","market":"София","pickup":"Летище София","iata":"SOF","class":"Икономичен / Компактен","days":7},
-				map[string]interface{}{"id":"SOF-ECO-14D","market":"София","pickup":"Летище София","iata":"SOF","class":"Икономичен / Компактен","days":14},
-				map[string]interface{}{"id":"VAR-ECO-3D","market":"Варна","pickup":"Летище Варна","iata":"VAR","class":"Икономичен / Компактен","days":3},
-				map[string]interface{}{"id":"VAR-ECO-7D","market":"Варна","pickup":"Летище Варна","iata":"VAR","class":"Икономичен / Компактен","days":7},
-				map[string]interface{}{"id":"VAR-ECO-14D","market":"Варна","pickup":"Летище Варна","iata":"VAR","class":"Икономичен / Компактен","days":14},
-				map[string]interface{}{"id":"BOJ-ECO-3D","market":"Бургас","pickup":"Летище Бургас","iata":"BOJ","class":"Икономичен / Компактен","days":3},
-				map[string]interface{}{"id":"BOJ-ECO-7D","market":"Бургас","pickup":"Летище Бургас","iata":"BOJ","class":"Икономичен / Компактен","days":7},
-				map[string]interface{}{"id":"BOJ-ECO-14D","market":"Бургас","pickup":"Летище Бургас","iata":"BOJ","class":"Икономичен / Компактен","days":14},
-				map[string]interface{}{"id":"OTP-ECO-3D","market":"Букурещ","pickup":"Отопени","iata":"OTP","class":"Икономичен / Компактен","days":3},
-				map[string]interface{}{"id":"OTP-ECO-7D","market":"Букурещ","pickup":"Отопени","iata":"OTP","class":"Икономичен / Компактен","days":7},
-				map[string]interface{}{"id":"OTP-ECO-14D","market":"Букурещ","pickup":"Отопени","iata":"OTP","class":"Икономичен / Компактен","days":14},
+				map[string]interface{}{"market":"София","state":"Недостатъчно съпоставими данни"},
+				map[string]interface{}{"market":"Варна","state":"Недостатъчно съпоставими данни"},
+				map[string]interface{}{"market":"Бургас","state":"Недостатъчно съпоставими данни"},
+				map[string]interface{}{"market":"Букурещ","state":"Недостатъчно съпоставими данни"},
 			},
 		},
 		"demand_intelligence":map[string]interface{}{
-			"horizons":[]interface{}{"7 дни","14 дни","30 дни"},
-			"season_context":"Зимен сезон на публикуваните еднопосочни тарифи: 01.10–30.04",
 			"markets":[]interface{}{
-				map[string]interface{}{"market":"София","h7":"стабилно","h14":"стабилно","h30":"стабилно","confidence":"средна","driver":"целогодишно летищно + градско + служебно търсене","fleet_signal":"Стабилно търсене"},
-				map[string]interface{}{"market":"Варна","h7":"сезонен спад","h14":"сезонен спад","h30":"ниска сезонност","confidence":"средна","driver":"преход след летния сезон; активен летищен поток остава","fleet_signal":"Сезонен спад"},
-				map[string]interface{}{"market":"Бургас","h7":"сезонен спад","h14":"сезонен спад","h30":"ниска сезонност","confidence":"средна","driver":"силно сезонен туристически пазар след 30.09","fleet_signal":"Сезонен спад"},
-				map[string]interface{}{"market":"Пловдив","h7":"стабилно","h14":"стабилно","h30":"умерено","confidence":"ниска-средна","driver":"по-малък летищен и градски пазар","fleet_signal":"Стабилно"},
-				map[string]interface{}{"market":"Русе","h7":"умерено","h14":"умерено","h30":"умерено","confidence":"ниска","driver":"локално + трансгранично търсене","fleet_signal":"Умерено"},
-				map[string]interface{}{"market":"Букурещ","h7":"стратегическо наблюдение","h14":"стратегическо наблюдение","h30":"растежов тест","confidence":"ниска-средна","driver":"нов международен пазар / OTP","fleet_signal":"Стратегическо наблюдение"},
+				map[string]interface{}{"market":"София","h7":"Стабилно","h14":"Стабилно","h30":"Стабилно"},
+				map[string]interface{}{"market":"Варна","h7":"Сезонен спад","h14":"Сезонен спад","h30":"Ниска сезонност"},
+				map[string]interface{}{"market":"Бургас","h7":"Сезонен спад","h14":"Сезонен спад","h30":"Ниска сезонност"},
+				map[string]interface{}{"market":"Пловдив","h7":"Стабилно","h14":"Стабилно","h30":"Умерено"},
+				map[string]interface{}{"market":"Русе","h7":"Умерено","h14":"Умерено","h30":"Умерено"},
+				map[string]interface{}{"market":"Букурещ","h7":"Наблюдение","h14":"Наблюдение","h30":"Потенциал за растеж"},
 			},
 		},
 		"fleet_allocation":map[string]interface{}{
-			"status":"подкрепа за решение"
 			"current_actions":[]interface{}{
-				map[string]interface{}{"from":"Бургас","to":"София / друг целогодишен пазар","action":"наблюдавай за потенциално преразпределение","condition":"само при доказан излишък и по-силен demand signal в целта"},
-				map[string]interface{}{"from":"Варна","to":"София / Букурещ","action":"наблюдавай баланса в икономичния и компактния клас","condition":"след сравнение на натиск от резервации и наличност"},
-				map[string]interface{}{"from":"София","to":"—","action":"поддържай широк продуктов микс","condition":"целогодишна база + летищно и служебно търсене"},
+				map[string]interface{}{"market":"София","state":"Широк продуктов микс"},
+				map[string]interface{}{"market":"Варна","state":"Контрол на сезонната наличност"},
+				map[string]interface{}{"market":"Бургас","state":"Контрол на сезонната наличност"},
+				map[string]interface{}{"market":"Букурещ","state":"Пазар за наблюдение"},
 			},
 		},
 		"signals":signals,
@@ -260,7 +228,7 @@ func topRentDashboard(c *Client) map[string]interface{} {
 			map[string]interface{}{"title":"Конкуренти","state":"Активно"},
 			map[string]interface{}{"title":"Репутация","state":"Активно"},
 		},
-		"актуално_summary":map[string]interface{}{"brand_mentions_90d":brand90,"competitor_mentions_90d":comp90,"positive_brand_mentions_90d":pos90,"negative_brand_mentions_90d":neg90},
+		"live_summary":map[string]interface{}{"brand_mentions_90d":brand90,"competitor_mentions_90d":comp90,"positive_brand_mentions_90d":pos90,"negative_brand_mentions_90d":neg90},
 	}
 }
 
