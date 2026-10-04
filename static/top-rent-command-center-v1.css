@@ -68,3 +68,6 @@ body[data-client="top-rent-a-car"] #overview .trcc-signal b{display:block;font-s
 body[data-client="top-rent-a-car"] #overview .trcc-signal span{display:block;margin-top:4px;font-size:8.5px;color:#8798a6}
 @media(max-width:1050px){body[data-client="top-rent-a-car"] #overview .trcc-kpis{grid-template-columns:repeat(2,1fr)}body[data-client="top-rent-a-car"] #overview .trcc-exec-grid{grid-template-columns:1fr}}
 @media(max-width:640px){body[data-client="top-rent-a-car"] #overview .trcc-kpis{grid-template-columns:1fr}}
+
+body[data-client="top-rent-a-car"] #overview .trcc-brand{display:flex;align-items:center;gap:12px}
+body[data-client="top-rent-a-car"] #overview .trcc-logo{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#143f66;color:#fff;font-weight:800;font-size:14px;letter-spacing:.04em;box-shadow:0 5px 18px rgba(20,63,102,.16)}
