@@ -22,7 +22,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center":
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center", "top-rent-a-car":
 		return true
 	default:
 		return false
@@ -328,6 +328,15 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// Public Delta Planet Mall profile. Keep the vanity route lightweight:
 	// redirect to the canonical dashboard instead of holding an extra proxy
 	// request open during startup/data restoration.
+	// Public TOP Rent A Car profile. Dedicated vanity route prevents any saved-client fallback.
+	if (path == "/top-rent-a-car" || path == "/top-rent-a-car/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		q := url.Values{}
+		q.Set("client", "top-rent-a-car")
+		q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+		http.Redirect(w, r, "/dashboard.html?"+q.Encode(), http.StatusFound)
+		return
+	}
+
 	if (path == "/delta-planet" || path == "/delta-planet/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
 		q := url.Values{}
 		q.Set("client", "delta-planet")
