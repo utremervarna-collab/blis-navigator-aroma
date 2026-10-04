@@ -241,8 +241,10 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		body := injectBLISI18N([]byte(indexHTML))
-		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "delta-planet") {
-			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='delta-planet';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href','/delta-planet')})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)){e.preventDefault();location.href='/delta-planet'}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',click,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
+		homeClient := strings.TrimSpace(r.URL.Query().Get("client"))
+		if homeClient == "delta-planet" || homeClient == "top-rent-a-car" {
+			target := "/" + homeClient
+			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='`+homeClient+`',T='`+target+`';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href',T)})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)){e.preventDefault();location.href=T}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',click,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
 			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))
 		}
 		_, _ = w.Write(body)
