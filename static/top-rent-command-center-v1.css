@@ -46,3 +46,25 @@ body[data-client="top-rent-a-car"] #overview .trcc-scenario{border:1px solid #e6
 body[data-client="top-rent-a-car"] #overview .trcc-scenario b{display:block;font-size:9.5px;color:#173955}
 body[data-client="top-rent-a-car"] #overview .trcc-scenario span{display:block;margin-top:3px;font-size:8.5px;color:#728191}
 @media(max-width:640px){body[data-client="top-rent-a-car"] #overview .trcc-scenarios{grid-template-columns:repeat(2,1fr)}}
+
+body[data-client="top-rent-a-car"] #overview .trcc-exec{padding:0 20px 22px}
+body[data-client="top-rent-a-car"] #overview .trcc-summary{margin-bottom:14px;border:1px solid #dfe8ef;border-radius:14px;background:#f8fbfd;padding:16px 18px;font-size:12px;line-height:1.55;color:#49677f}
+body[data-client="top-rent-a-car"] #overview .trcc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+body[data-client="top-rent-a-car"] #overview .trcc-kpi{border:1px solid #e0e8ef;border-radius:12px;background:#fff;padding:13px 14px}
+body[data-client="top-rent-a-car"] #overview .trcc-kpi span{display:block;font-size:9px;color:#7c8e9e;margin-bottom:5px}
+body[data-client="top-rent-a-car"] #overview .trcc-kpi b{font-size:16px;color:#183a55}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-grid{display:grid;grid-template-columns:1.1fr .9fr 1fr;gap:12px}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-card{border:1px solid #e0e8ef;border-radius:14px;background:#fff;padding:16px}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-card h3{margin:0 0 11px;font-size:12px;color:#183a55}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-row{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid #edf2f6}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-row:last-child{border-bottom:0}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-row span{font-size:9px;color:#7a8c9b}
+body[data-client="top-rent-a-car"] #overview .trcc-exec-row b{font-size:10px;line-height:1.45;color:#294d68}
+body[data-client="top-rent-a-car"] #overview .trcc-scope-row{padding:9px 0;border-bottom:1px solid #edf2f6;font-size:10px;line-height:1.45;color:#4f6d84}
+body[data-client="top-rent-a-car"] #overview .trcc-scope-row:last-child{border-bottom:0}
+body[data-client="top-rent-a-car"] #overview .trcc-signal{padding:9px 0;border-bottom:1px solid #edf2f6}
+body[data-client="top-rent-a-car"] #overview .trcc-signal:last-child{border-bottom:0}
+body[data-client="top-rent-a-car"] #overview .trcc-signal b{display:block;font-size:10px;line-height:1.4;color:#284b68}
+body[data-client="top-rent-a-car"] #overview .trcc-signal span{display:block;margin-top:4px;font-size:8.5px;color:#8798a6}
+@media(max-width:1050px){body[data-client="top-rent-a-car"] #overview .trcc-kpis{grid-template-columns:repeat(2,1fr)}body[data-client="top-rent-a-car"] #overview .trcc-exec-grid{grid-template-columns:1fr}}
+@media(max-width:640px){body[data-client="top-rent-a-car"] #overview .trcc-kpis{grid-template-columns:1fr}}
