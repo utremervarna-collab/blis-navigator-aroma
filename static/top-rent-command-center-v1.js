@@ -3,7 +3,21 @@
 'use strict';
 if(window.__TOP_RENT_COMMAND_V1)return;window.__TOP_RENT_COMMAND_V1=true;
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function isTop(){return (document.body?.dataset?.client||window.slug)==='top-rent-a-car'}
+function isTop(){
+  try{
+    const q=new URLSearchParams(location.search);
+    return String(
+      q.get('client')||
+      document.body?.dataset?.client||
+      window.BLIS_INITIAL_CLIENT||
+      window.D?.slug||
+      window.slug||
+      ''
+    ).toLowerCase()==='top-rent-a-car'
+  }catch(_){
+    return String(document.body?.dataset?.client||window.D?.slug||window.slug||'').toLowerCase()==='top-rent-a-car'
+  }
+}
 function renderOps(D){
   const e=D.executive_overview||{};
   const position=(e.position||[]).map(x=>'<div class="trcc-kpi"><span>'+esc(x.label)+'</span><b>'+esc(x.value)+esc(x.suffix||'')+'</b></div>').join('');
@@ -40,6 +54,15 @@ function render(){
 window.addEventListener('blis:clientdata',()=>setTimeout(render,30));
 window.addEventListener('blis:routechange',()=>setTimeout(render,30));
 window.addEventListener('popstate',()=>setTimeout(render,30));
+window.addEventListener('blis:production-ready',()=>setTimeout(render,40));
 document.addEventListener('click',e=>{if(e.target.closest?.('.client-option'))setTimeout(render,180)},true);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(render,100),{once:true});else setTimeout(render,100);
+let obsTimer=0;
+const observer=new MutationObserver(()=>{
+  if(!isTop())return;
+  if(document.getElementById('topRentCommandCenter'))return;
+  clearTimeout(obsTimer);obsTimer=setTimeout(render,40);
+});
+observer.observe(document.documentElement,{childList:true,subtree:true});
+[80,220,500,1000,1800].forEach(ms=>setTimeout(render,ms));
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(render,60),{once:true});else setTimeout(render,60);
 })();
