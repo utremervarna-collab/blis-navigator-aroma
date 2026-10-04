@@ -1,4 +1,5 @@
 name: Delta Planet Bilingual QA
+# rerun delta bilingual after storage cleanup
 
 on:
   push:
