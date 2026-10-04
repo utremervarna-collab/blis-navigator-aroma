@@ -1,0 +1,4 @@
+BLIS Navigator production provider: Northflank
+Canonical production: https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run
+Purpose: force clean Northflank rebuild after production health hardening.
+Date: 2026-10-04
