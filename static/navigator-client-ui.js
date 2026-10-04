@@ -16,9 +16,10 @@ const clients={
   mollox:{bg:'MOLLOX България',en:'MOLLOX Bulgaria',typeBg:'Професионална хигиена',typeEn:'Professional hygiene',visible:true},
   wirello:{bg:'Wirello Market',en:'Wirello Market',typeBg:'Модерен ритейл',typeEn:'Retail',visible:true},
   everbet:{bg:'Everbet',en:'Everbet',typeBg:'Онлайн игри и спортни залози',typeEn:'Online gaming',visible:false},
+  'top-rent-a-car':{bg:'TOP Rent A Car',en:'TOP Rent A Car',typeBg:'Коли под наем · мобилност · туризъм',typeEn:'Car rental · mobility · tourism',visible:true},
   'black-sea-center':{bg:'Black Sea Center',en:'Black Sea Center',typeBg:'Бизнес и офис комплекс',typeEn:'Business & office complex',visible:true}
 };
-const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','wirello'];
+const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello'];
 const valid=k=>!!clients[k];
 let ownerMode=false;
 let sessionClient='';
