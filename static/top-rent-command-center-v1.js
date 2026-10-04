@@ -7,8 +7,8 @@ function isTop(){return (document.body?.dataset?.client||window.slug)==='top-ren
 function renderOps(D){
   const p=D.price_intelligence||{},d=D.demand_intelligence||{},f=D.fleet_allocation||{};
   const priceRows=(p.price_position||[]).map(x=>'<div class="trcc-row"><span>'+esc(x.market)+'</span><b>'+esc(x.state)+'</b></div>').join('');
-  const forecast=(d.markets||[]).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b><span class="trcc-chip">7 дни: '+esc(x.h7)+'</span></div><span>'+esc(x.fleet_signal||'')+'</span></div>').join('');
-  const actions=(f.current_actions||[]).slice(0,3).map(x=>'<div class="trcc-action"><b>'+esc(x.from)+' → '+esc(x.to)+'</b><span>'+esc(x.action)+'</span></div>').join('');
+  const forecast=(d.markets||[]).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b></div><span>7 дни: '+esc(x.h7)+' · 14 дни: '+esc(x.h14)+' · 30 дни: '+esc(x.h30)+'</span></div>').join('');
+  const actions=(f.current_actions||[]).map(x=>'<div class="trcc-action"><b>'+esc(x.market)+'</b><span>'+esc(x.state)+'</span></div>').join('');
   return '<div class="trcc-ops">'+
     '<div class="trcc-op"><h3>Ценова позиция</h3>'+priceRows+'</div>'+
     '<div class="trcc-op"><h3>Прогноза за търсенето</h3>'+forecast+'</div>'+
