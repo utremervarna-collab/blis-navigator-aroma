@@ -1,4 +1,4 @@
-/* TOP Rent A Car · dedicated Market Command Center */
+/* TOP Rent A Car · публичен пазарен команден център */
 (function(){
 'use strict';
 if(window.__TOP_RENT_COMMAND_V1)return;window.__TOP_RENT_COMMAND_V1=true;
@@ -11,9 +11,9 @@ function renderOps(D){
   const demands=(d.markets||[]).slice(0,6).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b><span class="trcc-chip">7д: '+esc(x.h7)+'</span></div><span>'+esc(x.fleet_signal)+'</span></div>').join('');
   const actions=(f.current_actions||[]).slice(0,4).map(x=>'<div class="trcc-action"><b>'+esc(x.from)+' → '+esc(x.to)+' · '+esc(x.action)+'</b><span>'+esc(x.condition)+'</span></div>').join('');
   return '<div class="trcc-ops">'+
-    '<div class="trcc-op"><h3>Price Intelligence Radar</h3><div class="trcc-opsub">Реални публични сигнали на TOP. Конкурентно сравнение само при еднакви условия.</div>'+prices+'<h4 class="trcc-minihead">Scenario Matrix</h4><div class="trcc-scenarios">'+scenarios+'</div></div>'+
-    '<div class="trcc-op"><h3>Demand Forecast · 7 / 14 / 30 дни</h3><div class="trcc-opsub">'+esc(d.method_note||'Оперативен baseline до достатъчно live наблюдения.')+'</div>'+demands+'</div>'+
-    '<div class="trcc-op"><h3>Fleet Allocation Signal</h3><div class="trcc-opsub">Подпомага преразпределението, без да го препоръчва само по сезонност.</div>'+actions+'</div>'+
+    '<div class="trcc-op"><h3>Ценова позиция</h3>'+prices+'<h4 class="trcc-minihead">Сценарии</h4><div class="trcc-scenarios">'+scenarios+'</div></div>'+
+    '<div class="trcc-op"><h3>Прогноза · 7 / 14 / 30 дни</h3>'+demands+'</div>'+
+    '<div class="trcc-op"><h3>Разпределение на автопарка</h3>'+actions+'</div>'+
   '</div>';
 }
 function render(){
@@ -25,7 +25,7 @@ function render(){
   const lm=locs.map(x=>'<div class="trcc-loc"><b>'+esc(x.market)+'</b><span>'+esc(x.type)+'<br>'+esc(x.priority)+'<br>'+esc(x.signals)+'</span></div>').join('');
   const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно наблюдение';
   const html='<section id="topRentCommandCenter" class="trcc">'+
-    '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ MOBILITY INTELLIGENCE</div><div class="trcc-title">TOP Rent A Car · Market Command Center</div><p class="trcc-sub">Един екран за търсене, ценова позиция, конкурентни движения, туристически поток, репутация и следващо търговско действие.</p></div><div class="trcc-live">Последно измерване<b>'+esc(updated)+'</b></div></div>'+
+    '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ · ПАЗАРНА ИНТЕЛИГЕНТНОСТ</div><div class="trcc-title">TOP Rent A Car · Пазарен команден център</div></div><div class="trcc-live">Последно измерване<b>'+esc(updated)+'</b></div></div>'+
     '<div class="trcc-pills">'+pills+'</div>'+
     '<div class="trcc-grid"><div class="trcc-card"><h3>Въпроси за решение</h3><div class="trcc-questions">'+qs+'</div><div class="trcc-guard">'+esc(cc.price_guard||'Ценовото сравнение се публикува само при съпоставими оферти.')+'</div></div>'+
     '<div class="trcc-card"><h3>Географски радар</h3><div class="trcc-locs">'+lm+'</div></div></div>'+
