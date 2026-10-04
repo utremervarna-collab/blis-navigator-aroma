@@ -39,3 +39,10 @@ body[data-client="top-rent-a-car"] #overview .trcc-action{padding:9px 10px;borde
 body[data-client="top-rent-a-car"] #overview .trcc-action b{display:block;font-size:10.5px;color:#193a53}
 body[data-client="top-rent-a-car"] #overview .trcc-action span{display:block;margin-top:4px;font-size:9.2px;line-height:1.4;color:#6b7b89}
 @media(max-width:1050px){body[data-client="top-rent-a-car"] #overview .trcc-ops{grid-template-columns:1fr}}
+
+body[data-client="top-rent-a-car"] #overview .trcc-minihead{margin:13px 0 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#6f8090}
+body[data-client="top-rent-a-car"] #overview .trcc-scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+body[data-client="top-rent-a-car"] #overview .trcc-scenario{border:1px solid #e6ebf0;border-radius:9px;padding:8px;background:#fafcfd}
+body[data-client="top-rent-a-car"] #overview .trcc-scenario b{display:block;font-size:9.5px;color:#173955}
+body[data-client="top-rent-a-car"] #overview .trcc-scenario span{display:block;margin-top:3px;font-size:8.5px;color:#728191}
+@media(max-width:640px){body[data-client="top-rent-a-car"] #overview .trcc-scenarios{grid-template-columns:repeat(2,1fr)}}
