@@ -43,7 +43,7 @@ func seedTopRentFacts(c *Client) {
 	topRentSeed(c,"locations","core_markets","София; Пловдив; Варна; Бургас; Русе; Букурещ",stamp)
 	topRentSeed(c,"locations","airport_presence","София; Пловдив; Варна; Бургас; Букурещ Отопени",stamp)
 	topRentSeed(c,"locations","seasonal_offices","Слънчев бряг; Обзор; Златни пясъци",stamp)
-	topRentSeed(c,"locations","cross_border_deактуалноry","Атина; Солун; Белград; Скопие; Букурещ",stamp)
+	topRentSeed(c,"locations","cross_border_delivery","Атина; Солун; Белград; Скопие; Букурещ",stamp)
 	topRentSeed(c,"locations","varna_airport_inside_terminal",true,stamp)
 	topRentSeed(c,"locations","burgas_airport_inside_terminal",true,stamp)
 	topRentSeed(c,"locations","sofia_airport_t1_t2",true,stamp)
@@ -53,8 +53,8 @@ func seedTopRentFacts(c *Client) {
 	topRentSeed(c,"contacts","mobile_phone","+359 890 170 170",stamp)
 	topRentSeed(c,"fleet","fleet_monitoring_enabled",true,stamp)
 	topRentSeed(c,"prices","price_intelligence_enabled",true,stamp)
-	topRentSeed(c,"prices","varna_hotel_deактуалноry_eur",18.0,stamp)
-	topRentSeed(c,"prices","burgas_hotel_deактуалноry_eur",18.0,stamp)
+	topRentSeed(c,"prices","varna_hotel_delivery_eur",18.0,stamp)
+	topRentSeed(c,"prices","burgas_hotel_delivery_eur",18.0,stamp)
 	topRentSeed(c,"prices","sofia_head_office_to_airport_eur",20.0,stamp)
 	topRentSeed(c,"prices","sofia_mladost_to_airport_eur",20.0,stamp)
 	topRentSeed(c,"prices","sofia_varna_one_way_eur",190.0,stamp)
@@ -72,21 +72,21 @@ func seedTopRentVerifiedMentions(c *Client) {
 		scope, brand, source, sourceType, rawURL, title, text, published, detected string
 	}
 	rows := []verifiedMention{
-		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","Top Rent A Car supports BRCC business delegation to Romania as mobility partner","Business delegation with nearly 40 Bulgarian companies visited Ploiești and Bucharest; TOP Rent A Car participated as mobility partner.","2026-10-02T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","New addition to the Top Rent A Car fleet – 20 Hyundai BAYON vehicles","TOP Rent A Car announced 20 Hyundai BAYON vehicles joining its fleet, following the earlier addition of 250 Hyundai i20 vehicles.","2026-09-30T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/%D0%BE%D1%82%D0%B7%D0%B8%D0%B2%D0%B8/varna?feedback_rate=fair","Verified customer review · Varna","A verified customer review for the Varna location rated service as good and staff as excellent.","2026-09-29T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/en/feedback","Verified customer review · service complaint","A verified customer review described a frustrating vehicle return and rim-damage inspection experience; retained as a reputation signal.","2026-08-16T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","TOP MOBILITY now offers bike rentals in Bulgaria","TOP MOBILITY announced bicycle rentals as an additional mobility service in Bulgaria.","2026-07-27T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","The New Opel Frontera Hybrid Automatic 2026","TOP Rent A Car announced another fleet expansion with the Opel Frontera Hybrid Automatic 2026.","2026-07-17T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
-		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","Top Rent A Car supported ATP Challenger 50 Plovdiv 2026","TOP Rent A Car was presented as a long-term logistics partner of the Bulgarian Tennis Federation at ATP Challenger 50 Plovdiv 2026.","2026-07-13T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","TOP Rent A Car подкрепя бизнес делегация на BRCC в Румъния като партньор за мобилност","Бизнес делегация с близо 40 български компании посети Плоещ и Букурещ; TOP Rent A Car участва като партньор за мобилност.","2026-10-02T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","20 нови Hyundai BAYON в автопарка на TOP Rent A Car","TOP Rent A Car обяви добавянето на 20 Hyundai BAYON към автопарка, след по-ранното включване на 250 Hyundai i20.","2026-09-30T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/%D0%BE%D1%82%D0%B7%D0%B8%D0%B2%D0%B8/varna?feedback_rate=fair","Потвърден клиентски отзив · Варна","Потвърден клиентски отзив за Варна оценява услугата като добра, а персонала като отличен.","2026-09-29T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/en/feedback","Потвърден клиентски отзив · оплакване от обслужването","Потвърден клиентски отзив описва проблем при връщане на автомобила и проверка за повреда на джанта; отчетен е като репутационен сигнал.","2026-08-16T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","TOP MOBILITY вече предлага велосипеди под наем в България","TOP MOBILITY обяви велосипеди под наем като допълнителна услуга за мобилност в България.","2026-07-27T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","Нов Opel Frontera Hybrid Automatic 2026","TOP Rent A Car обяви ново разширяване на автопарка с Opel Frontera Hybrid Automatic 2026.","2026-07-17T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","TOP Rent A Car подкрепи ATP Challenger 50 Plovdiv 2026","TOP Rent A Car беше представен като дългосрочен логистичен партньор на Българската федерация по тенис на ATP Challenger 50 Plovdiv 2026.","2026-07-13T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
 
-		{"competitor","Sixt","SIXT SE","news","https://about.sixt.com/en/ir/20th-consecutive-record-quarter-sixt-increases-h1-revenue-by-a-currency-adjusted-11-3-to-over-two-billion-euros/","SIXT reports 20th consecutive record quarter","SIXT reported H1 2026 revenue of EUR 2.12 billion, currency-adjusted growth of 11.3%, fleet expansion in line with demand and confirmed full-year guidance.","2026-08-13T07:30:00+02:00","2026-10-04T15:10:00+03:00"},
-		{"competitor","Hertz","Hertz","promotion","https://www.hertz.com/rentacar/rental-car-deals/asia_ww_summersale","Hertz worldwide sale · up to 15%","Hertz promoted savings of up to 15% for worldwide rentals, with bookings during August 2026 and pickup dates extending through December 2026.","","2026-10-04T15:10:00+03:00"},
-		{"competitor","Hertz","Hertz Bulgaria","web","https://www.hertz.bg/en/car-rental/","Hertz Bulgaria promotes monthly rental and online check-in","Hertz Bulgaria currently highlights flexible monthly rentals, immediate availability, online check-in and Fly & Drive benefits.","","2026-10-04T15:10:00+03:00"},
-		{"competitor","Europcar","Europcar Bulgaria","promotion","https://www.europcar.com/bg-bg/p/xborder/bulgaria","Europcar Bulgaria summer rental offer · save 15%","Europcar published a Bulgaria rental promotion offering 15% savings, valid for reservations through 31 August 2026 and rentals from 1 to 28 days.","","2026-10-04T15:10:00+03:00"},
-		{"competitor","Europcar","Europcar","promotion","https://www.europcar.be/en-be/p/offers/affiliate","Europcar Bulgaria affiliate offer · 10%","Europcar lists a 10% Bulgaria discount for checkout periods from 20 August to 20 December 2026, for rentals from 1 to 28 days.","","2026-10-04T15:10:00+03:00"},
-		{"competitor","Green Motion","BookingAuto","promotion","https://bookingauto.com/en/bulgaria/varna-airport/green-motion","Green Motion Летище Варна · August 2026 offer","Public rental comparison data advertised up to 30% off Green Motion bookings at Летище Варна in August 2026.","","2026-10-04T15:10:00+03:00"},
-		{"competitor","Green Motion","Skyscanner","marketplace","https://www.skyscanner.fr/location-voiture/prestataire-dans-pays/green-motion/bulgarie/675/29475258","Green Motion Bulgaria · public marketplace visibility","Skyscanner showed Green Motion car hire in Bulgaria with a 4.7/5 rating and available Mini, Economy and Compact categories in July 2026.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Sixt","SIXT SE","news","https://about.sixt.com/en/ir/20th-consecutive-record-quarter-sixt-increases-h1-revenue-by-a-currency-adjusted-11-3-to-over-two-billion-euros/","SIXT отчита 20-о поредно рекордно тримесечие","SIXT отчете 2,12 млрд. евро приходи за първото полугодие на 2026 г., 11,3% валутно коригиран ръст и разширяване на автопарка според търсенето.","2026-08-13T07:30:00+02:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz","promotion","https://www.hertz.com/rentacar/rental-car-deals/asia_ww_summersale","Hertz · глобална промоция до 15%","Hertz промотира до 15% отстъпка за международни наеми с периоди на получаване до декември 2026 г.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz Bulgaria","web","https://www.hertz.bg/en/car-rental/","Hertz България промотира месечен наем и онлайн регистрация","Hertz България акцентира върху гъвкави месечни наеми, незабавна наличност, онлайн регистрация и предложения Fly & Drive.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar Bulgaria","promotion","https://www.europcar.com/bg-bg/p/xborder/bulgaria","Europcar България · лятна оферта с 15% отстъпка","Europcar публикува промоция за България с 15% отстъпка за резервации до 31 август 2026 г. и наеми от 1 до 28 дни.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar","promotion","https://www.europcar.be/en-be/p/offers/affiliate","Europcar България · партньорска оферта с 10% отстъпка","Europcar публикува 10% отстъпка за България за периоди на наем от 20 август до 20 декември 2026 г.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","BookingAuto","promotion","https://bookingauto.com/en/bulgaria/varna-airport/green-motion","Green Motion · Летище Варна · оферта за август 2026 г.","Публични сравнителни данни за наеми показват промоция до 30% за Green Motion на Летище Варна през август 2026 г.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","Skyscanner","marketplace","https://www.skyscanner.fr/location-voiture/prestataire-dans-pays/green-motion/bulgarie/675/29475258","Green Motion България · присъствие в публични платформи","Skyscanner показва Green Motion в България с рейтинг 4,7/5 и налични категории мини, икономичен и компактен клас през юли 2026 г.","","2026-10-04T15:10:00+03:00"},
 	}
 	signals := make([]Signal,0,len(rows))
 	for _,r := range rows {
@@ -145,8 +145,8 @@ func topRentRecent(scope string,days int) []Signal {
 func topRentCompCount(name string,days int) int { n:=0;for _,s:=range topRentRecent("competitor",days){if strings.EqualFold(strings.TrimSpace(s.Brand),name){n++}};return n }
 func topRentCompRow(name string,score float64) map[string]interface{} {
 	n90,n30:=topRentCompCount(name,90),topRentCompCount(name,30)
-	status:="Изчаква достатъчно съпоставими актуално данни";if score>0{status="Измерено от публични сигнали"}
-	return map[string]interface{}{"name":name,"score":score,"news":float64(n90),"activity":float64(n90),"trend":float64(n30),"актуално_mentions_30d":n30,"актуално_mentions_90d":n90,"score_status":status}
+	status:="Изчаква достатъчно съпоставими актуални данни";if score>0{status="Измерено от публични сигнали"}
+	return map[string]interface{}{"name":name,"score":score,"news":float64(n90),"activity":float64(n90),"trend":float64(n30),"live_mentions_30d":n30,"live_mentions_90d":n90,"score_status":status}
 }
 func topRentObservedQuality(c *Client)(coverage,freshness float64,observedSources,recentObs int){
 	if c==nil||len(c.Sources)==0{return 0,0,0,0};seen:=map[string]bool{};fresh:=map[string]bool{};keys:=map[string]bool{}
@@ -267,7 +267,7 @@ func topRentDashboard(c *Client) map[string]interface{} {
 			map[string]interface{}{"name":"Green Motion","tier":"конкурент с eco/EV позициониране"},
 		},
 		"opportunity_cards":[]interface{}{
-			map[string]interface{}{"title":"Възможност за по-висок приход","state":"актуално when evidence is sufficient"},
+			map[string]interface{}{"title":"Възможност за по-висок приход","state":"Следи се"},
 			map[string]interface{}{"title":"Разпределение на автопарка","state":"активно"},
 			map[string]interface{}{"title":"Конкурентен сигнал","state":"активно наблюдение"},
 			map[string]interface{}{"title":"Репутационен сигнал","state":"активно наблюдение"},
