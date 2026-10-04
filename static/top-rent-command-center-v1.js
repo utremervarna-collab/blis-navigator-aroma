@@ -6,14 +6,13 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 function isTop(){return (document.body?.dataset?.client||window.slug)==='top-rent-a-car'}
 function renderOps(D){
   const p=D.price_intelligence||{},d=D.demand_intelligence||{},f=D.fleet_allocation||{};
-  const prices=(p.published_top_signals||[]).slice(0,7).map(x=>'<div class="trcc-row"><span>'+esc(x.label)+'</span><b>'+esc(x.value)+'</b></div>').join('');
-  const scenarios=(p.standard_scenarios||[]).slice(0,12).map(x=>'<div class="trcc-scenario"><b>'+esc(x.iata)+' · '+esc(x.days)+' дни</b><span>'+esc(x.class)+'</span></div>').join('');
-  const demands=(d.markets||[]).slice(0,6).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b><span class="trcc-chip">7д: '+esc(x.h7)+'</span></div><span>'+esc(x.fleet_signal)+'</span></div>').join('');
-  const actions=(f.current_actions||[]).slice(0,4).map(x=>'<div class="trcc-action"><b>'+esc(x.from)+' → '+esc(x.to)+' · '+esc(x.action)+'</b><span>'+esc(x.condition)+'</span></div>').join('');
+  const priceRows=(p.price_position||[]).map(x=>'<div class="trcc-row"><span>'+esc(x.market)+'</span><b>'+esc(x.state)+'</b></div>').join('');
+  const forecast=(d.markets||[]).map(x=>'<div class="trcc-demand"><div class="trcc-demand-top"><b>'+esc(x.market)+'</b><span class="trcc-chip">7 дни: '+esc(x.h7)+'</span></div><span>'+esc(x.fleet_signal||'')+'</span></div>').join('');
+  const actions=(f.current_actions||[]).slice(0,3).map(x=>'<div class="trcc-action"><b>'+esc(x.from)+' → '+esc(x.to)+'</b><span>'+esc(x.action)+'</span></div>').join('');
   return '<div class="trcc-ops">'+
-    '<div class="trcc-op"><h3>Ценова позиция</h3>'+prices+'<h4 class="trcc-minihead">Сценарии</h4><div class="trcc-scenarios">'+scenarios+'</div></div>'+
-    '<div class="trcc-op"><h3>Прогноза · 7 / 14 / 30 дни</h3>'+demands+'</div>'+
-    '<div class="trcc-op"><h3>Разпределение на автопарка</h3>'+actions+'</div>'+
+    '<div class="trcc-op"><h3>Ценова позиция</h3>'+priceRows+'</div>'+
+    '<div class="trcc-op"><h3>Прогноза за търсенето</h3>'+forecast+'</div>'+
+    '<div class="trcc-op"><h3>Автопарк</h3>'+actions+'</div>'+
   '</div>';
 }
 function render(){
@@ -21,9 +20,9 @@ function render(){
   const root=document.getElementById('overview');if(!root)return;
   const D=window.D||{};const locs=Array.isArray(D.location_matrix)?D.location_matrix:[];
   const lm=locs.map(x=>'<div class="trcc-loc"><b>'+esc(x.market)+'</b><span>'+esc(x.type)+'<br>'+esc(x.priority)+'</span></div>').join('');
-  const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно наблюдение';
+  const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно';
   const html='<section id="topRentCommandCenter" class="trcc">'+
-    '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ · ПАЗАРНА ИНТЕЛИГЕНТНОСТ</div><div class="trcc-title">TOP Rent A Car · Пазарен команден център</div></div><div class="trcc-live">Последно измерване<b>'+esc(updated)+'</b></div></div>'+
+    '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ NAVIGATOR</div><div class="trcc-title">TOP Rent A Car</div></div><div class="trcc-live">Последно обновяване<b>'+esc(updated)+'</b></div></div>'+
     '<div class="trcc-grid"><div class="trcc-card"><h3>Пазари</h3><div class="trcc-locs">'+lm+'</div></div></div>'+
     renderOps(D)+'</section>';
   let el=old;if(!el){el=document.createElement('div');root.prepend(el)}
