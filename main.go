@@ -742,6 +742,8 @@ func dashboard(c *Client) map[string]interface{} {
 		return deltaDashboard(c)
 	case "black-sea-center":
 		return blackSeaCenterDashboard(c)
+	case "top-rent-a-car":
+		return topRentDashboard(c)
 	default:
 		return aromaDashboard(c)
 	}
