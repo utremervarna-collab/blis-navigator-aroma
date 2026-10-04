@@ -53,6 +53,16 @@ func seedTopRentFacts(c *Client) {
 	topRentSeed(c,"contacts","mobile_phone","+359 890 170 170",stamp)
 	topRentSeed(c,"fleet","fleet_monitoring_enabled",true,stamp)
 	topRentSeed(c,"prices","price_intelligence_enabled",true,stamp)
+	topRentSeed(c,"prices","varna_hotel_delivery_eur",18.0,stamp)
+	topRentSeed(c,"prices","burgas_hotel_delivery_eur",18.0,stamp)
+	topRentSeed(c,"prices","sofia_head_office_to_airport_eur",20.0,stamp)
+	topRentSeed(c,"prices","sofia_mladost_to_airport_eur",20.0,stamp)
+	topRentSeed(c,"prices","sofia_varna_one_way_eur",190.0,stamp)
+	topRentSeed(c,"prices","sofia_burgas_one_way_eur",170.0,stamp)
+	topRentSeed(c,"prices","varna_burgas_one_way_eur",110.0,stamp)
+	topRentSeed(c,"prices","sofia_bucharest_one_way_eur",320.0,stamp)
+	topRentSeed(c,"prices","winter_season_start","01.10",stamp)
+	topRentSeed(c,"prices","winter_season_end","30.04",stamp)
 }
 
 func ensureTopRentClient() *Client {
@@ -143,15 +153,49 @@ func topRentDashboard(c *Client) map[string]interface{} {
 			map[string]interface{}{"market":"Букурещ","type":"летище · международен пазар","priority":"стратегически","signals":"OTP demand · local competitors · expansion proof"},
 		},
 		"price_intelligence":map[string]interface{}{
-			"status":"armed_waiting_comparable_quotes",
+			"status":"live_top_public_fees_competitor_quotes_guarded",
 			"dimensions":[]interface{}{"локация","начална дата/час","крайна дата/час","клас автомобил","депозит","застраховка","лимит км","летищни/други такси"},
 			"competitors":[]interface{}{"Sixt","Hertz","Europcar","Green Motion"},
 			"output":[]interface{}{"price gap","market median","position percentile","promotion detected","fee delta","availability signal"},
+			"published_top_signals":[]interface{}{
+				map[string]interface{}{"label":"Доставка до адрес/хотел · Варна","value":"18 €","type":"fee","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"Доставка до адрес/хотел · Бургас","value":"18 €","type":"fee","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"София централен офис → Летище София","value":"20 €","type":"one_way","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"София → Варна","value":"190 €","type":"one_way","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"София → Бургас","value":"170 €","type":"one_way","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"Варна → Бургас","value":"110 €","type":"one_way","source":"TOP Rent A Car"},
+				map[string]interface{}{"label":"София → Букурещ","value":"320 €","type":"one_way","source":"TOP Rent A Car"},
+			},
+			"comparison_guard":"Конкурентна цена се показва само ако локацията, периодът, класът автомобил и съпътстващите условия са съпоставими.",
 		},
 		"demand_intelligence":map[string]interface{}{
 			"inputs":[]interface{}{"полетен капацитет","туристически поток","сезонност","празници","събития","търсене по дестинация","конкурентна наличност"},
 			"horizons":[]interface{}{"7 дни","14 дни","30 дни"},
 			"output":[]interface{}{"Demand Pressure","Location Opportunity","Fleet Allocation Signal","Revenue Opportunity"},
+			"model_status":"baseline_plus_live_inputs",
+			"season_context":"Зимен сезон на публикуваните еднопосочни тарифи: 01.10–30.04",
+			"markets":[]interface{}{
+				map[string]interface{}{"market":"София","h7":"стабилно","h14":"стабилно","h30":"стабилно","confidence":"средна","driver":"целогодишен летищен + градски + business demand","fleet_signal":"поддържай широк микс; наблюдавай Economy/Compact и business класове"},
+				map[string]interface{}{"market":"Варна","h7":"сезонен спад","h14":"сезонен спад","h30":"ниска сезонност","confidence":"средна","driver":"преход след летния сезон; активен летищен поток остава","fleet_signal":"редуцирай свръхналичност; запази гъвкав Economy/Compact резерв"},
+				map[string]interface{}{"market":"Бургас","h7":"сезонен спад","h14":"сезонен спад","h30":"ниска сезонност","confidence":"средна","driver":"силно сезонен leisure пазар след 30.09","fleet_signal":"приоритизирай трансфер към целогодишни пазари при доказан излишък"},
+				map[string]interface{}{"market":"Пловдив","h7":"стабилно","h14":"стабилно","h30":"умерено","confidence":"ниска-средна","driver":"по-малък летищен и градски пазар","fleet_signal":"поддържай оптимизиран базов парк; избягвай излишък"},
+				map[string]interface{}{"market":"Русе","h7":"умерено","h14":"умерено","h30":"умерено","confidence":"ниска","driver":"локално + трансгранично търсене","fleet_signal":"малък адаптивен парк; следи cross-border заявки"},
+				map[string]interface{}{"market":"Букурещ","h7":"стратегическо наблюдение","h14":"стратегическо наблюдение","h30":"растежов тест","confidence":"ниска-средна","driver":"нов международен пазар / OTP","fleet_signal":"измервай utilization и booking lead time преди разширяване"},
+			},
+			"method_note":"Посоките са оперативен baseline от публична сезонност и структура на локациите. Числови прогнози се публикуват едва след достатъчно live полетни, туристически и ценови наблюдения.",
+		},
+		"fleet_allocation":map[string]interface{}{
+			"status":"decision_support",
+			"rules":[]interface{}{
+				"Не мести автомобили само по сезонност: изисквай потвърждение от наличност, резервации или конкурентен натиск.",
+				"Сигнал за прехвърляне = слаб demand pressure + излишна наличност в изходна локация + по-висок opportunity score в целевата.",
+				"Приоритетни класове за наблюдение: Economy, Compact, SUV/Family и business/automatic.",
+			},
+			"current_actions":[]interface{}{
+				map[string]interface{}{"from":"Бургас","to":"София / друг целогодишен пазар","action":"наблюдавай за потенциално преразпределение","condition":"само при доказан излишък и по-силен demand signal в целта"},
+				map[string]interface{}{"from":"Варна","to":"София / Букурещ","action":"наблюдавай Economy/Compact баланс","condition":"след сравнение на booking pressure и наличност"},
+				map[string]interface{}{"from":"София","to":"—","action":"поддържай широк продуктов микс","condition":"целогодишна база + летищно и business търсене"},
+			},
 		},
 		"signals":signals,
 		"competitors":[]interface{}{topRentCompRow("TOP Rent A Car",competitive),topRentCompRow("Sixt",0),topRentCompRow("Hertz",0),topRentCompRow("Europcar",0),topRentCompRow("Green Motion",0)},
