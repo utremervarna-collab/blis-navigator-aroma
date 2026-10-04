@@ -19,16 +19,12 @@ function renderOps(D){
 function render(){
   const old=document.getElementById('topRentCommandCenter');if(!isTop()){old?.remove();return}
   const root=document.getElementById('overview');if(!root)return;
-  const D=window.D||{};const cc=D.market_command_center||{};const locs=Array.isArray(D.location_matrix)?D.location_matrix:[];
-  const pills=(cc.pillars||['Търсене','Цени','Конкуренти','Туристически поток','Репутация','Прогноза']).map(x=>'<div class="trcc-pill">'+esc(x)+'</div>').join('');
-  const qs=(cc.decision_questions||[]).map(x=>'<div class="trcc-q">'+esc(x)+'</div>').join('');
-  const lm=locs.map(x=>'<div class="trcc-loc"><b>'+esc(x.market)+'</b><span>'+esc(x.type)+'<br>'+esc(x.priority)+'<br>'+esc(x.signals)+'</span></div>').join('');
+  const D=window.D||{};const locs=Array.isArray(D.location_matrix)?D.location_matrix:[];
+  const lm=locs.map(x=>'<div class="trcc-loc"><b>'+esc(x.market)+'</b><span>'+esc(x.type)+'<br>'+esc(x.priority)+'</span></div>').join('');
   const updated=D.data_updated?new Date(D.data_updated).toLocaleString('bg-BG'):'активно наблюдение';
   const html='<section id="topRentCommandCenter" class="trcc">'+
     '<div class="trcc-head"><div><div class="trcc-kicker">BLIS™ · ПАЗАРНА ИНТЕЛИГЕНТНОСТ</div><div class="trcc-title">TOP Rent A Car · Пазарен команден център</div></div><div class="trcc-live">Последно измерване<b>'+esc(updated)+'</b></div></div>'+
-    '<div class="trcc-pills">'+pills+'</div>'+
-    '<div class="trcc-grid"><div class="trcc-card"><h3>Въпроси за решение</h3><div class="trcc-questions">'+qs+'</div><div class="trcc-guard">'+esc(cc.price_guard||'Ценовото сравнение се публикува само при съпоставими оферти.')+'</div></div>'+
-    '<div class="trcc-card"><h3>Географски радар</h3><div class="trcc-locs">'+lm+'</div></div></div>'+
+    '<div class="trcc-grid"><div class="trcc-card"><h3>Пазари</h3><div class="trcc-locs">'+lm+'</div></div></div>'+
     renderOps(D)+'</section>';
   let el=old;if(!el){el=document.createElement('div');root.prepend(el)}
   el.outerHTML=html;
