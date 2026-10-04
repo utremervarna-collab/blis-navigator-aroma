@@ -65,6 +65,43 @@ func seedTopRentFacts(c *Client) {
 	topRentSeed(c,"prices","winter_season_end","30.04",stamp)
 }
 
+
+func seedTopRentVerifiedMentions(c *Client) {
+	if c == nil { return }
+	type verifiedMention struct {
+		scope, brand, source, sourceType, rawURL, title, text, published, detected string
+	}
+	rows := []verifiedMention{
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","Top Rent A Car supports BRCC business delegation to Romania as mobility partner","Business delegation with nearly 40 Bulgarian companies visited Ploiești and Bucharest; TOP Rent A Car participated as mobility partner.","2026-10-02T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","New addition to the Top Rent A Car fleet – 20 Hyundai BAYON vehicles","TOP Rent A Car announced 20 Hyundai BAYON vehicles joining its fleet, following the earlier addition of 250 Hyundai i20 vehicles.","2026-09-30T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/%D0%BE%D1%82%D0%B7%D0%B8%D0%B2%D0%B8/varna?feedback_rate=fair","Verified customer review · Varna","A verified customer review for the Varna location rated service as good and staff as excellent.","2026-09-29T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Reviews","review","https://toprentacar.bg/en/feedback","Verified customer review · service complaint","A verified customer review described a frustrating vehicle return and rim-damage inspection experience; retained as a reputation signal.","2026-08-16T12:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","TOP MOBILITY now offers bike rentals in Bulgaria","TOP MOBILITY announced bicycle rentals as an additional mobility service in Bulgaria.","2026-07-27T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","The New Opel Frontera Hybrid Automatic 2026","TOP Rent A Car announced another fleet expansion with the Opel Frontera Hybrid Automatic 2026.","2026-07-17T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+		{"owned","TOP Rent A Car","TOP Rent A Car Blog","web","https://toprentacar.bg/en-news/author/admin/","Top Rent A Car supported ATP Challenger 50 Plovdiv 2026","TOP Rent A Car was presented as a long-term logistics partner of the Bulgarian Tennis Federation at ATP Challenger 50 Plovdiv 2026.","2026-07-13T09:00:00+03:00","2026-10-04T15:10:00+03:00"},
+
+		{"competitor","Sixt","SIXT SE","news","https://about.sixt.com/en/ir/20th-consecutive-record-quarter-sixt-increases-h1-revenue-by-a-currency-adjusted-11-3-to-over-two-billion-euros/","SIXT reports 20th consecutive record quarter","SIXT reported H1 2026 revenue of EUR 2.12 billion, currency-adjusted growth of 11.3%, fleet expansion in line with demand and confirmed full-year guidance.","2026-08-13T07:30:00+02:00","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz","promotion","https://www.hertz.com/rentacar/rental-car-deals/asia_ww_summersale","Hertz worldwide sale · up to 15%","Hertz promoted savings of up to 15% for worldwide rentals, with bookings during August 2026 and pickup dates extending through December 2026.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Hertz","Hertz Bulgaria","web","https://www.hertz.bg/en/car-rental/","Hertz Bulgaria promotes monthly rental and online check-in","Hertz Bulgaria currently highlights flexible monthly rentals, immediate availability, online check-in and Fly & Drive benefits.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar Bulgaria","promotion","https://www.europcar.com/bg-bg/p/xborder/bulgaria","Europcar Bulgaria summer rental offer · save 15%","Europcar published a Bulgaria rental promotion offering 15% savings, valid for reservations through 31 August 2026 and rentals from 1 to 28 days.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Europcar","Europcar","promotion","https://www.europcar.be/en-be/p/offers/affiliate","Europcar Bulgaria affiliate offer · 10%","Europcar lists a 10% Bulgaria discount for checkout periods from 20 August to 20 December 2026, for rentals from 1 to 28 days.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","BookingAuto","promotion","https://bookingauto.com/en/bulgaria/varna-airport/green-motion","Green Motion Varna Airport · August 2026 offer","Public rental comparison data advertised up to 30% off Green Motion bookings at Varna Airport in August 2026.","","2026-10-04T15:10:00+03:00"},
+		{"competitor","Green Motion","Skyscanner","marketplace","https://www.skyscanner.fr/location-voiture/prestataire-dans-pays/green-motion/bulgarie/675/29475258","Green Motion Bulgaria · public marketplace visibility","Skyscanner showed Green Motion car hire in Bulgaria with a 4.7/5 rating and available Mini, Economy and Compact categories in July 2026.","","2026-10-04T15:10:00+03:00"},
+	}
+	signals := make([]Signal,0,len(rows))
+	for _,r := range rows {
+		fp := signalHash(c.Slug+"|verified90d|"+r.scope+"|"+r.brand,r.rawURL,r.title,r.text)
+		sentiment,risk := signalSentimentAndRisk(r.title+" "+r.text)
+		if r.scope=="competitor" { risk = 20 }
+		signals=append(signals,Signal{
+			ID:fp[:16],Client:c.Slug,Brand:r.brand,Source:r.source,SourceType:r.sourceType,Scope:r.scope,
+			URL:r.rawURL,Title:r.title,Text:r.text,PublishedAt:r.published,DetectedAt:r.detected,
+			Relevance:100,Sentiment:sentiment,Topic:signalTopic(r.title+" "+r.text),RiskScore:risk,Severity:signalSeverity(risk),Fingerprint:fp,
+		})
+	}
+	mergeSignals(c.Slug,signals)
+}
+
 func ensureTopRentClient() *Client {
 	mu.Lock()
 	if store.Clients==nil { store.Clients=map[string]*Client{} }
@@ -78,6 +115,7 @@ func ensureTopRentClient() *Client {
 	}
 	mu.Unlock()
 	seedTopRentFacts(c)
+	seedTopRentVerifiedMentions(c)
 	return c
 }
 
