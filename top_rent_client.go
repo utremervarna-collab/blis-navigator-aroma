@@ -92,6 +92,18 @@ func seedTopRentVerifiedMentions(c *Client) {
 	mergeSignals(c.Slug,signals)
 }
 
+
+func topRentEnsureBaselineSnapshot(c *Client) {
+	if c == nil || len(c.Snapshots) > 0 {
+		return
+	}
+	d := topRentDashboard(c)
+	c.Snapshots = append(c.Snapshots, Snapshot{
+		CreatedAt: nowISO(),
+		Payload:   d,
+	})
+}
+
 func ensureTopRentClient() *Client {
 	mu.Lock()
 	if store.Clients==nil { store.Clients=map[string]*Client{} }
@@ -106,6 +118,7 @@ func ensureTopRentClient() *Client {
 	mu.Unlock()
 	seedTopRentFacts(c)
 	seedTopRentVerifiedMentions(c)
+	topRentEnsureBaselineSnapshot(c)
 	return c
 }
 
@@ -139,9 +152,27 @@ func topRentCompRow(name string,score float64) map[string]interface{} {
 	return map[string]interface{}{"name":name,"score":score,"news":float64(n90),"activity":float64(n90),"trend":float64(n30),"live_mentions_30d":n30,"live_mentions_90d":n90,"score_status":status}
 }
 func topRentObservedQuality(c *Client)(coverage,freshness float64,observedSources,recentObs int){
-	if c==nil||len(c.Sources)==0{return 0,0,0,0};seen:=map[string]bool{};fresh:=map[string]bool{};keys:=map[string]bool{}
-	for _,s:=range c.Sources{keys[s.Key]=true};cut48:=time.Now().Add(-48*time.Hour);cut90:=time.Now().Add(-90*24*time.Hour)
-	for _,o:=range c.Observations{if !keys[o.SourceKey]{continue};seen[o.SourceKey]=true;if t,e:=time.Parse(time.RFC3339,o.ObservedAt);e==nil{if t.After(cut48){fresh[o.SourceKey]=true};if t.After(cut90){recentObs++}}}
+	if c==nil||len(c.Sources)==0{return 0,0,0,0}
+	seen:=map[string]bool{};fresh:=map[string]bool{};keys:=map[string]bool{}
+	for _,s:=range c.Sources{keys[strings.TrimSpace(s.Key)]=true}
+	cut48:=time.Now().Add(-48*time.Hour);cut90:=time.Now().Add(-90*24*time.Hour)
+	for _,o:=range c.Observations{
+		k:=strings.TrimSpace(o.SourceKey)
+		if !keys[k]{continue}
+		seen[k]=true
+		if t,e:=time.Parse(time.RFC3339,o.ObservedAt);e==nil{
+			if t.After(cut48){fresh[k]=true}
+			if t.After(cut90){recentObs++}
+		}
+	}
+	// Seeded public facts are valid observed coverage even when their timestamp
+	// predates the 48h freshness window.
+	if len(seen)==0 && len(c.Observations)>0 {
+		for _,o:=range c.Observations{
+			k:=strings.TrimSpace(o.SourceKey)
+			if keys[k]{seen[k]=true}
+		}
+	}
 	return r1(float64(len(seen))/math.Max(float64(len(c.Sources)),1)*100),r1(float64(len(fresh))/math.Max(float64(len(c.Sources)),1)*100),len(seen),recentObs
 }
 
