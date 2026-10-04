@@ -572,6 +572,9 @@ func runCompetitorSignalCollector() map[string]int {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	go func() {
 		// Run shortly after the base collector has restored its state.
 		time.Sleep(110 * time.Second)
