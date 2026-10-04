@@ -101,6 +101,9 @@ func runContinuousMetricCycle(snapshot bool) {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	// Near-real-time discovery from every accessible public source configured for
 	// every real client profile and its configured competitors.
 	go func() {
