@@ -214,6 +214,32 @@ func topRentDashboard(c *Client) map[string]interface{} {
 				map[string]interface{}{"market":"Букурещ","state":"Пазар за наблюдение"},
 			},
 		},
+		"executive_overview":map[string]interface{}{
+			"summary":"TOP Rent A Car е с широко национално покритие, силно летищно присъствие и активна конкурентна среда. След летния пик фокусът се измества към целогодишните пазари и управлението на сезонната наличност.",
+			"position":[]interface{}{
+				map[string]interface{}{"label":"BLIS индекс","value":blis,"suffix":"/100"},
+				map[string]interface{}{"label":"Пазарна видимост","value":visibility,"suffix":"/100"},
+				map[string]interface{}{"label":"Репутация","value":reputation,"suffix":"/100"},
+				map[string]interface{}{"label":"Конкурентна позиция","value":competitive,"suffix":"/100"},
+			},
+			"signals_90d":map[string]interface{}{
+				"brand":brand90,
+				"competitor":comp90,
+				"positive":pos90,
+				"negative":neg90,
+			},
+			"outlook":[]interface{}{
+				map[string]interface{}{"label":"Търсене","state":"Стабилно в целогодишните пазари; сезонен спад по Черноморието"},
+				map[string]interface{}{"label":"Конкуренция","state":"Активна международна конкуренция в основните летищни пазари"},
+				map[string]interface{}{"label":"Репутация","state":func() string { if neg90>0 { return "Има негативни сигнали за наблюдение" }; return "Без водещ негативен сигнал" }()},
+				map[string]interface{}{"label":"30-дневна посока","state":"Стабилен базов пазар с по-ниска сезонна активност по Черноморието"},
+			},
+			"market_scope":[]interface{}{
+				"Национално покритие: София, Пловдив, Варна, Бургас, Русе",
+				"Международно развитие: Букурещ / Отопени",
+				"Сезонно присъствие: Слънчев бряг, Обзор, Златни пясъци",
+			},
+		},
 		"signals":signals,
 		"competitors":[]interface{}{topRentCompRow("TOP Rent A Car",competitive),topRentCompRow("Sixt",0),topRentCompRow("Hertz",0),topRentCompRow("Europcar",0),topRentCompRow("Green Motion",0)},
 		"competitor_dossiers":[]interface{}{
