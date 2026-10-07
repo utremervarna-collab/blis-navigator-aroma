@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euxo pipefail
           go build -tags netgo -ldflags '-s -w' -o app .
-          BLIS_AUTH_PROXY_DISABLED=1 PORT=10000 ./app >/tmp/delta-qa-server.log 2>&1 &
+          PORT=10000 ./app >/tmp/delta-qa-server.log 2>&1 &
           for i in $(seq 1 50); do curl -fsS http://127.0.0.1:10000/api/health >/dev/null && break; sleep 1; done
           curl -fsS http://127.0.0.1:10000/api/health >/dev/null
       - name: Install Chromium
