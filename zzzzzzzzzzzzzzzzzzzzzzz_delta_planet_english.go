@@ -10,7 +10,7 @@ func init() {
 	if !bytes.Contains(blisI18NScripts, []byte("blis-i18n-client-lock-v1.js")) {
 		blisI18NScripts = append(blisI18NScripts, []byte(lockTag)...)
 	}
-	const deltaTag = `<script defer src="/blis-i18n-en-delta-planet-v1.js?v=20261008-delta-en3" data-blis-i18n-catalog="delta-planet"></script>`
+	const deltaTag = `<script defer src="/blis-i18n-en-delta-planet-v1.js?v=20261008-delta-en4" data-blis-i18n-catalog="delta-planet"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("blis-i18n-en-delta-planet-v1.js")) {
 		blisI18NScripts = append(blisI18NScripts, []byte(deltaTag)...)
 	}
