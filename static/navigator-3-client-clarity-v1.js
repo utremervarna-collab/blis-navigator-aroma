@@ -46,9 +46,10 @@ function installBulgarianLockCss(){
   .n3-radar-legend-note{display:block;margin-top:7px;padding-top:6px;border-top:1px solid #edf1f5;color:#8191a0;font-size:7.5px;line-height:1.45;text-align:center}
   @media(max-width:760px){.n3-radar-legend-items{justify-content:flex-start}.n3-radar-legend{padding:9px}}
   `;
-  document.head.appendChild(style);
+  style.textContent+='body[data-client="delta-planet"] [data-blis-language-switch]{display:inline-flex!important;visibility:visible!important;opacity:1!important}';document.head.appendChild(style);
 }
 function disableLanguageSwitches(root=document){
+  if(new URLSearchParams(location.search).get('client')==='delta-planet')return;
   if(isEnglish())return;
   const scope=root&&root.querySelectorAll?root:document;
   scope.querySelectorAll('.bch3-lang,[data-blis-language-switch]').forEach(el=>{
