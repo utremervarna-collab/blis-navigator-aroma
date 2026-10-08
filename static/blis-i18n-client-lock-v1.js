@@ -77,7 +77,9 @@
         }catch(_){}
       },0);
     }
-    if(requestedLang&&window.BLISI18N&&typeof window.BLISI18N.apply==='function')window.BLISI18N.apply(document);
+    // The shared language runtime already observes changed nodes. A full-document
+    // translation on every client-lock mutation duplicates that work and feeds
+    // the language-switch observer cycle during English bootstrap.
   }
 
   let scheduled=false;
