@@ -208,6 +208,24 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Language assets are embedded public presentation resources. Keep them
+	// available during backend startup so English never silently loses its catalog.
+	if strings.HasPrefix(path, "/blis-i18n-") && strings.HasSuffix(path, ".js") && !strings.Contains(strings.TrimPrefix(path, "/"), "/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		if b, err := staticFS.ReadFile("static" + path); err == nil {
+			h := make(http.Header)
+			h.Set("Content-Type", "application/javascript; charset=utf-8")
+			h.Set("Cache-Control", "no-cache")
+			h.Set("X-BLIS-Language-Asset-Origin", "gateway")
+			resp := &http.Response{StatusCode: http.StatusOK, Header: h, Body: io.NopCloser(bytes.NewReader(b)), ContentLength: int64(len(b)), Request: r}
+			if authProxy.ModifyResponse != nil { if err := authProxy.ModifyResponse(resp); err != nil { http.Error(w, "Language asset unavailable", http.StatusServiceUnavailable); return } }
+			defer resp.Body.Close()
+			for k, values := range resp.Header { for _, v := range values { w.Header().Add(k, v) } }
+			w.WriteHeader(resp.StatusCode)
+			if r.Method != http.MethodHead { _, _ = io.Copy(w, resp.Body) }
+			return
+		}
+	}
+
 	if strings.HasPrefix(path, "/home-master-c") && strings.HasSuffix(path, ".js") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
 		name := strings.TrimPrefix(path, "/")
 		b, err := staticFS.ReadFile("static/" + name)
