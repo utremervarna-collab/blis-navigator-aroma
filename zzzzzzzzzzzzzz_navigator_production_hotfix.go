@@ -58,7 +58,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 
 	if path == "/navigator-production-entry-v1.js" {
 		err := rewriteNavigatorAsset(resp,
-			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20261008-en-safe4';"},
+			[2]string{"const VERSION='20260907-key-factors-title-1';", "const VERSION='20261008-en-safe5';"},
 			[2]string{"await Promise.race([window.BLISDataLoaderV1?.load?.(initialClient,true),new Promise(resolve=>setTimeout(resolve,3000))]);", "const initialData=window.BLISDataLoaderV1?.load?.(initialClient,true);if(initialData&&typeof initialData.catch==='function')initialData.catch(()=>{});"},
 			[2]string{"await safe('/navigator-intelligence-stream-v2.js');await safe('/navigator-client-perspective-classifier-v1.js');await safe('/navigator-executive-data-v1.js');", "await Promise.all([safe('/navigator-intelligence-stream-v2.js'),safe('/navigator-client-perspective-classifier-v1.js'),safe('/navigator-executive-data-v1.js')]);"},
 			[2]string{"await safe('/navigator-digital-master.js');await safe('/navigator-client-ui.js');await safe('/navigator-client-branding-v3.js');await safe('/navigator-executive-reports-v1.js');", "await Promise.all([safe('/navigator-digital-master.js'),safe('/navigator-client-ui.js'),safe('/navigator-executive-reports-v1.js')]);await safe('/navigator-client-branding-v3.js');"},
@@ -112,7 +112,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		body = navigatorPublicKeyRedactionEntrypoint.ReplaceAll(body, nil)
 		const leanHead = `<style id="blisDashboardPrepaintLean">html:not(.blis-dashboard-ready) body{background:#f4f7fb!important;overflow:hidden!important}html:not(.blis-dashboard-ready) .app,html:not(.blis-dashboard-ready) #modal{visibility:hidden!important;opacity:0!important;pointer-events:none!important}html:not(.blis-dashboard-ready) body:before{content:"BLIS Navigator";position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;background:#f4f7fb;color:#1d5fd0;font:700 22px/1.2 Arial,sans-serif}html.blis-route-pending.blis-dashboard-ready .main .page.active{visibility:hidden!important;opacity:0!important}</style><script id="blisDashboardSlowGuard">setTimeout(function(){if(!document.documentElement.classList.contains("blis-dashboard-ready"))document.documentElement.classList.add("blis-dashboard-slow")},8000)</script>`
 		if !bytes.Contains(body, []byte("blisDashboardPrepaintLean")) { body = bytes.Replace(body, []byte("</head>"), []byte(leanHead+"</head>"), 1) }
-		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20261008-en-safe4"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
+		tag := []byte(`<script src="/navigator-production-entry-v1.js?v=20261008-en-safe5"></script><script src="/navigator-public-key-redaction-v1.js?v=20260922-redact2"></script><script src="/navigator-nav-visibility-guard-v1.js?v=20260923-deltahome1"></script><script src="/navigator-live-refresh-v1.js?v=20260924-delta-clean1"></script><script src="/navigator-mention-mount-guard-v1.js?v=20260913-fastboot1"></script>`)
 		if navigatorProductionEntrypoint.Match(body) {
 			body = navigatorProductionEntrypoint.ReplaceAll(body, tag)
 		} else {
