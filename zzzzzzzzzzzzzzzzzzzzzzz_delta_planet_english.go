@@ -6,7 +6,7 @@ import "bytes"
 // The lock runs before the legacy dashboard bootstrap so query parameters remain
 // authoritative; the catalog then translates current and dynamically rendered UI.
 func init() {
-	const lockTag = `<script src="/blis-i18n-client-lock-v1.js?v=20261002-client-lock1" data-blis-client-language-lock="1"></script>`
+	const lockTag = `<script src="/blis-i18n-client-lock-v1.js?v=20261008-client-lock2" data-blis-client-language-lock="1"></script>`
 	if !bytes.Contains(blisI18NScripts, []byte("blis-i18n-client-lock-v1.js")) {
 		blisI18NScripts = append(blisI18NScripts, []byte(lockTag)...)
 	}
