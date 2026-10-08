@@ -29,13 +29,14 @@ const BG_REPLACEMENTS=[
  [/\bLive monitoring\b/gi,'Текущо наблюдение'],
  [/\bLIVE\b/g,'В РЕАЛНО ВРЕМЕ']
 ];
-function setText(el,text){if(el&&el.textContent.trim()!==text)el.textContent=text}
+function isEnglish(){return new URLSearchParams(location.search).get('lang')==='en'||document.documentElement.lang==='en'}
+function setText(el,text){if(isEnglish()&&window.BLISI18N?.t)text=window.BLISI18N.t(text,el);if(el&&el.textContent.trim()!==text)el.textContent=text}
 function installBulgarianLockCss(){
   if(document.getElementById('navigator3BulgarianLockCss'))return;
   const style=document.createElement('style');
   style.id='navigator3BulgarianLockCss';
   style.textContent=`
-  .bch3-lang,[data-blis-language-switch],.n3-language-switch-disabled{display:none!important}
+  html:not([lang="en"]) .bch3-lang,html:not([lang="en"]) [data-blis-language-switch],html:not([lang="en"]) .n3-language-switch-disabled{display:none!important}
   .n3-radar-legend{width:min(760px,100%);box-sizing:border-box;margin:9px auto 3px;padding:9px 11px;border:1px solid #dfe7ef;border-radius:11px;background:#fff;box-shadow:0 6px 18px rgba(20,47,80,.045)}
   .n3-radar-legend-title{margin-bottom:7px;color:#46617a;font-size:8px;font-weight:900;letter-spacing:.02em;text-align:center}
   .n3-radar-legend-items{display:flex;align-items:center;justify-content:center;gap:10px 14px;flex-wrap:wrap}
@@ -48,6 +49,7 @@ function installBulgarianLockCss(){
   document.head.appendChild(style);
 }
 function disableLanguageSwitches(root=document){
+  if(isEnglish())return;
   const scope=root&&root.querySelectorAll?root:document;
   scope.querySelectorAll('.bch3-lang,[data-blis-language-switch]').forEach(el=>{
     el.classList.remove('bch3-lang');
@@ -60,6 +62,7 @@ function disableLanguageSwitches(root=document){
   });
 }
 function normalizeBulgarianCopy(root=document){
+  if(isEnglish())return;
   const scope=root&&root.nodeType?root:document;
   const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT,{acceptNode(node){
     const p=node.parentElement;if(!p||p.closest('script,style,noscript'))return NodeFilter.FILTER_REJECT;
@@ -111,6 +114,7 @@ function watchLateRenders(){
 }
 function forceBulgarian(){
   installBulgarianLockCss();
+  if(isEnglish()){document.documentElement.lang='en';document.documentElement.dataset.navigatorLanguage='en';window.BLIS_LANGUAGE='en';return}
   document.documentElement.lang='bg';
   document.documentElement.dataset.navigatorLanguage='bg-only';
   window.BLIS_LANGUAGE='bg';
