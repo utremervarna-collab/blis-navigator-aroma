@@ -4,6 +4,8 @@
 */
 (function(){
 'use strict';
+// English labels belong to the shared language runtime, not the legacy BG repair.
+if(new URLSearchParams(location.search).get('lang')==='en'||document.documentElement.lang==='en')return;
 if(window.__BLIS_NAV_LABEL_FIX_V1)return;window.__BLIS_NAV_LABEL_FIX_V1=true;
 
 function setText(el){
