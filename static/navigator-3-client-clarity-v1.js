@@ -1,3 +1,4 @@
+/* Delta bilingual switch release 20261008-switch1. */
 /* BLIS Navigator 3.0 — client clarity owner v5.
    Bulgarian-only, source-localized analytical renderers without duplicate page-story panels. */
 (function(){
