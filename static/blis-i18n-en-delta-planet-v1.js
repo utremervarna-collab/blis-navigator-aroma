@@ -1,4 +1,4 @@
-/* Delta Planet Mall — English profile catalog. Loaded after the shared BLIS runtime. */
+/* Delta Planet Mall — English profile catalog, release 20261008-en7. Loaded after the shared BLIS runtime. */
 (function(){'use strict';
 if(!/delta-planet/i.test(location.pathname+location.search) && !document.documentElement.innerHTML.includes('Delta Planet Mall')) return;
 const M={
