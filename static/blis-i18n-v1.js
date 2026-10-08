@@ -127,9 +127,11 @@ function addSwitch(){
     if(host){host.appendChild(btn)}else if(document.body){const row=document.createElement('div');row.className='blis-lang-row';row.appendChild(btn);document.body.insertBefore(row,document.body.firstChild)}
   }
   btn.type='button';btn.dataset.blisLanguageSwitch='1';btn.classList.add('blis-lang-switch');
-  btn.textContent=lang==='en'?'BG':'EN';
-  btn.setAttribute('aria-label',lang==='en'?'Switch to Bulgarian':'Превключи на английски');
-  btn.title=lang==='en'?'Switch to Bulgarian':'Превключи на английски';
+  const switchText=lang==='en'?'BG':'EN';
+  if(btn.textContent!==switchText)btn.textContent=switchText;
+  const switchLabel=lang==='en'?'Switch to Bulgarian':'Превключи на английски';
+  if(btn.getAttribute('aria-label')!==switchLabel)btn.setAttribute('aria-label',switchLabel);
+  if(btn.title!==switchLabel)btn.title=switchLabel;
   if(!btn.dataset.blisLanguageBound){btn.dataset.blisLanguageBound='1';btn.addEventListener('click',()=>changeLanguage(switchTarget()))}
 }
 function addStyle(){
