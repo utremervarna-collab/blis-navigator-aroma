@@ -95,7 +95,7 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		}
 		if resp.Request.URL.Query().Get("client") == "delta-planet" {
 			body = deltaUnrelatedClientScripts.ReplaceAll(body, nil)
-			body = bytes.ReplaceAll(body, []byte("/navigator-nav-label-fix-v1.js?v=20260909-env1"), []byte("/navigator-nav-label-fix-v1.js?v=20261008-en-safe2"))
+			body = bytes.ReplaceAll(body, []byte("/navigator-nav-label-fix-v1.js?v=20260909-env1"), []byte("/navigator-nav-label-fix-v1.js?v=20261008-en-safe3"))
 			body = bytes.ReplaceAll(body, []byte("/blis-i18n-v1.js?v=20260830-en26"), []byte("/blis-i18n-v1.js?v=20261008-en27"))
 			body = bytes.ReplaceAll(body, []byte("/blis-i18n-v1.js?v=20260830-en9"), []byte("/blis-i18n-v1.js?v=20261008-en27"))
 		}
