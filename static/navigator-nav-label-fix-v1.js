@@ -10,7 +10,9 @@ function setText(el){
   if(!el)return;
   const target=el.querySelector?.('.navtxt')||el;
   const txt=(target.textContent||'').trim();
-  if(txt!=='Среда')target.textContent='Среда';
+  const en=new URLSearchParams(location.search).get('lang')==='en'||document.documentElement.lang==='en';
+  const label=en?'Environment':'Среда';
+  if(txt!==label)target.textContent=label;
 }
 
 function fix(){
