@@ -1,5 +1,5 @@
 BLIS Navigator production provider: Northflank
 Canonical production: https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run
 Purpose: complete Delta English catalog and resilient embedded language assets during backend startup.
-Required source commit: fff69d34c86d35200c8ed74c2a04c1b291a075b3
+Required source commit: 010b1b0acb8308028b444e9522f2eb4264edb459
 Date: 2026-10-08
