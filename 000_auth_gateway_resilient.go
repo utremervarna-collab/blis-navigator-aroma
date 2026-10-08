@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -367,6 +369,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Set("client", "delta-planet")
 		q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
+		if strings.EqualFold(r.URL.Query().Get("lang"), "en") { q.Set("lang", "en") }
 		http.Redirect(w, r, "/dashboard.html?"+q.Encode(), http.StatusFound)
 		return
 	}
@@ -452,6 +455,25 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 		r2.URL.RawQuery = q.Encode()
 		r2.Header.Del("X-BLIS-Client-Scope")
+		if requested == "delta-planet" {
+			// The public dashboard shell is embedded; render through the same
+			// response assembly chain without waiting for the data backend.
+			body, err := staticFS.ReadFile("static/dashboard.html")
+			if err != nil { http.Error(w, "Delta profile unavailable", http.StatusServiceUnavailable); return }
+			body = injectBLISI18N(body)
+			resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(body)), ContentLength: int64(len(body)), Request: r2}
+			resp.Header.Set("Content-Type", "text/html; charset=utf-8")
+			if authProxy.ModifyResponse != nil {
+				if err := authProxy.ModifyResponse(resp); err != nil { resp.Body.Close(); http.Error(w, "Delta profile assembly unavailable", http.StatusServiceUnavailable); return }
+			}
+			defer resp.Body.Close()
+			for key, values := range resp.Header { for _, value := range values { w.Header().Add(key, value) } }
+			w.Header().Set("X-BLIS-Delta-Shell-Origin", "gateway")
+			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+			if r.Method == http.MethodHead { w.WriteHeader(http.StatusOK); return }
+			_, _ = io.Copy(w, resp.Body)
+			return
+		}
 		authProxy.ServeHTTP(w, r2)
 		return
 	}
