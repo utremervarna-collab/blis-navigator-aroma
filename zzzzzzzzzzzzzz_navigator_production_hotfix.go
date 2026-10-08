@@ -20,6 +20,9 @@ var navigatorClientValueUniversalEntrypoint = regexp.MustCompile(`<script[^>]+sr
 var navigatorPublicKeyRedactionEntrypoint = regexp.MustCompile(`<script[^>]+src="/navigator-public-key-redaction-v1\.js(?:\?v=[^\"]*)?"[^>]*></script>`)
 var navigatorLeanSupersededScripts = regexp.MustCompile(`<script[^>]+src="/(?:navigator-intelligence-analysis-v3|navigator-deep-analytics-v31|navigator-metric-intelligence-v33|navigator-client-value-guard-v1|navigator-client-value-universal-v2|navigator-client-intelligence-content-v2|navigator-client-intelligence-content-v3|navigator-client-intelligence-content-v3-stability|navigator-editorial-cleanup-v1|navigator-route-lazy-v1|navigator-decision-intelligence-v1|navigator-competition-news-v1|navigator-competitor-dossiers-data-v2|navigator-competitor-dossiers-tune-v1|navigator-3-competitor-dossier-v2|navigator-monitoring-canonical-v5|navigator-stability-preload-v1|navigator-client-value-repair-v3|navigator-intelligence-canonical-v5)\.js[^\"]*"[^>]*></script>`)
 
+// Client-specific scripts do not participate in Delta's public profile.
+var deltaUnrelatedClientScripts = regexp.MustCompile(`<script[^>]+src="/(?:kub-[^"/]*|aroma-[^"/]*|navigator-aroma-[^"/]*|navigator-mollox-[^"/]*)\.js[^"]*"[^>]*></script>`)
+
 func init() {
 	if authProxy == nil { return }
 	previous := authProxy.ModifyResponse
@@ -89,6 +92,9 @@ func applyNavigatorProductionHotfixes(resp *http.Response) error {
 		if path == "/varna-towers" || path == "/varna-towers-dashboard" {
 			isolation := []byte(`<style id="blis-varna-towers-isolation-v2">.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel{display:none!important;visibility:hidden!important;pointer-events:none!important}</style><script id="blis-varna-towers-isolation-v2-script">(function(){function lock(){document.querySelectorAll('.dashboard-home-link,.client-switch,.client-switch-menu,#clientSel').forEach(function(el){try{el.remove()}catch(e){el.style.setProperty('display','none','important')}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock,{once:true});else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
 			body = bytes.Replace(body, []byte("</body>"), append(isolation, []byte("</body>")...), 1)
+		}
+		if resp.Request.URL.Query().Get("client") == "delta-planet" {
+			body = deltaUnrelatedClientScripts.ReplaceAll(body, nil)
 		}
 		body = legacyVarnaTowersUIScripts.ReplaceAll(body, nil)
 		body = legacyNavigatorUIScripts.ReplaceAll(body, nil)
