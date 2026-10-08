@@ -102,8 +102,38 @@ R.push(
  [/^Публичният календар показва активна седмична програма.*$/,'The public calendar shows an active weekly programme, including functional training.']
 );
 
+Object.assign(M,{'Мониторинг':'Monitoring','Развитие/Доклади':'Development / Reports','Ограничено покритие':'Limited coverage','Наблюдението продължава.':'Monitoring continues.','Няма нови сигнали над прага за клиентска значимост. Това не означава липса на наблюдение, а липса на достатъчно силна нова промяна.':'No new signals exceed the client significance threshold. Monitoring continues, with no sufficiently strong new change.'});
 window.BLIS_EN_TRANSLATIONS=Object.assign(window.BLIS_EN_TRANSLATIONS||{},M);
 window.BLIS_EN_RULES=(window.BLIS_EN_RULES||[]).concat(R);
 window.dispatchEvent(new CustomEvent('blis:i18n-catalog',{detail:{catalog:'delta-planet-en'}}));
 if(window.BLISI18N&&window.BLISI18N.apply)window.BLISI18N.apply(document);
+// Keep the client catalog authoritative even when a legacy renderer captured Bulgarian.
+function deltaEnglish(){return new URLSearchParams(location.search).get('lang')==='en'}
+function translateDelta(raw){
+ if(!raw||!/[А-Яа-я]/.test(raw))return raw;
+ const s=raw.trim();let next=M[s];
+ if(next===undefined){for(const [re,repl]of R){re.lastIndex=0;if(re.test(s)){re.lastIndex=0;next=s.replace(re,repl);break}}}
+ if(next===undefined)return raw;
+ return raw.slice(0,raw.indexOf(s))+next+raw.slice(raw.indexOf(s)+s.length);
+}
+let pending=false;
+function applyDelta(){
+ pending=false;if(!deltaEnglish())return;
+ document.documentElement.lang='en';
+ const walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT);
+ let n;while((n=walker.nextNode())){
+  if(n.parentElement&&/SCRIPT|STYLE|NOSCRIPT|TEXTAREA/.test(n.parentElement.tagName))continue;
+  const next=translateDelta(n.nodeValue);if(next!==n.nodeValue)n.nodeValue=next;
+ }
+ for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt]')){
+  for(const a of ['title','aria-label','placeholder','alt']){const v=el.getAttribute(a),next=translateDelta(v);if(next!==v)el.setAttribute(a,next)}
+ }
+ document.documentElement.dataset.deltaEnglishCatalog='20261008-full';
+}
+function scheduleDelta(){if(!pending){pending=true;requestAnimationFrame(applyDelta)}}
+function startDelta(){
+ applyDelta();
+ new MutationObserver(scheduleDelta).observe(document.body||document.documentElement,{subtree:true,childList:true,characterData:true});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startDelta,{once:true});else startDelta();
 })();
