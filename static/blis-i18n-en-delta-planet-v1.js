@@ -107,7 +107,7 @@ window.BLIS_EN_TRANSLATIONS=Object.assign(window.BLIS_EN_TRANSLATIONS||{},M);
 window.BLIS_EN_RULES=(window.BLIS_EN_RULES||[]).concat(R);
 window.dispatchEvent(new CustomEvent('blis:i18n-catalog',{detail:{catalog:'delta-planet-en'}}));
 if(window.BLISI18N&&window.BLISI18N.apply)window.BLISI18N.apply(document);
-Object.assign(M,{'Какво се случва на пазара':'What is happening in the market','Как се отразява върху възприятието':'How it affects perception','репутационно състояние':'reputation status','Какво се промени при конкурентите':'What changed among competitors','Няма нов отделен конкурентен сигнал над прага за значимост.':'No new distinct competitor signal exceeds the significance threshold.','tenant_activity':'Tenant activity','event':'Event','campaign':'Campaign','entertainment':'Entertainment'});
+Object.assign(M,{'Мрежа на пазарни и репутационни фактори':'Network of market and reputation factors','Какво се случва на пазара':'What is happening in the market','Как се отразява върху възприятието':'How it affects perception','репутационно състояние':'reputation status','Какво се промени при конкурентите':'What changed among competitors','Няма нов отделен конкурентен сигнал над прага за значимост.':'No new distinct competitor signal exceeds the significance threshold.','tenant_activity':'Tenant activity','event':'Event','campaign':'Campaign','entertainment':'Entertainment'});
 R.push([/^(.*) ([-+]?\\d+(?:[.,]\\d+)?) т\\.$/,'$1 $2 pts']);
 // Keep the client catalog authoritative even when a legacy renderer captured Bulgarian.
 function deltaEnglish(){return new URLSearchParams(location.search).get('lang')==='en'}
