@@ -1,5 +1,5 @@
 BLIS Navigator production provider: Northflank
 Canonical production: https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run
 Purpose: rebuild with full Delta Planet English page catalog and cache refresh.
-Required source commit: ef43e9b552ec04c1a78425f2348c565dfef11ff7
+Required source commit: bea69b3b29e7f54b1645092c37727f7a42d979e3
 Date: 2026-10-08
