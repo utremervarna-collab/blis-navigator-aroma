@@ -1833,6 +1833,7 @@ func jsonOut(w http.ResponseWriter, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 func handler(w http.ResponseWriter, r *http.Request) {
+	if serveICardPublic(w, r) { return }
 	path := strings.Trim(r.URL.Path, "/")
 	// BLIS Signal Collector endpoints are routed here because production uses
 	// handler directly rather than http.DefaultServeMux.
