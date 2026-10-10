@@ -726,6 +726,8 @@ func buildAromaSignals(followers, posts, news30, web, ecommerce float64) []inter
 
 func dashboard(c *Client) map[string]interface{} {
 	switch c.Slug {
+	case icardSlug:
+		return icardDashboard(c)
 	case "astor-garden":
 		return astorDashboard(c)
 	case "bolyarka":
@@ -2071,6 +2073,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	ensureStore()
 	ensureTopRentClient()
+	ensureICardClient()
 	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
 	startEngineScheduler()
 	port := os.Getenv("PORT")
