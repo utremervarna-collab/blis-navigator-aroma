@@ -21,6 +21,9 @@ func serveICardPublic(w http.ResponseWriter, r *http.Request) bool {
   "/icard/app.js": "static/icard-commercial.js",
   "/icard/report": "static/icard-commercial-report.html",
  }
+ for _, page := range []string{"overview", "monitoring", "digital", "market", "competition", "trust", "growth", "prospects", "prepare", "reports", "sources"} {
+  files["/icard/"+page] = "static/icard-commercial.html"
+ }
  file, ok := files[path]
  if !ok { return false }
  if r.Method != http.MethodGet && r.Method != http.MethodHead {
@@ -39,7 +42,7 @@ func serveICardPublic(w http.ResponseWriter, r *http.Request) bool {
  w.Header().Set("Content-Type", contentType)
  w.Header().Set("Cache-Control", "no-store")
  w.Header().Set("X-Content-Type-Options", "nosniff")
- w.Header().Set("X-BLIS-ICard-Version", "icard-commercial-v1-20261010")
+ w.Header().Set("X-BLIS-ICard-Version", "icard-navigator-v2-20261010")
  if path == "/icard/report" && r.URL.Query().Get("download") == "1" {
   w.Header().Set("Content-Disposition", `attachment; filename="iCard_BLIS_Report_2026-10-10.html"`)
  }
