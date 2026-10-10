@@ -9,7 +9,7 @@ import (
 )
 
 func TestICardPresentationRoutes(t *testing.T) {
- for _, path := range []string{"/icard", "/icard/", "/icard/data", "/icard/style.css", "/icard/app.js", "/icard/report"} {
+ for _, path := range []string{"/icard", "/icard/", "/icard/data", "/icard/style.css", "/icard/app.js", "/icard/report", "/icard/monitoring", "/icard/digital", "/icard/market", "/icard/competition", "/icard/trust", "/icard/growth", "/icard/prospects", "/icard/prepare", "/icard/reports", "/icard/sources"} {
   for _, method := range []string{http.MethodGet, http.MethodHead} {
    req:=httptest.NewRequest(method,path,nil)
    req.AddCookie(&http.Cookie{Name:topRentScopeCookieName,Value:"top-rent-a-car"})
