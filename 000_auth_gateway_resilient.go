@@ -25,7 +25,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center", "top-rent-a-car":
+	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center", "top-rent-a-car", "icard":
 		return true
 	default:
 		return false
@@ -49,6 +49,7 @@ func canonicalNavigatorPage(page string) string {
 
 func navigatorDashboardTarget(r *http.Request) string {
 	slug := strings.TrimSpace(r.URL.Query().Get("client"))
+	if slug == icardSlug { return "/icard" }
 	if isBscScope(r) {
 		slug = "black-sea-center"
 	}
@@ -198,6 +199,7 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
+	if serveICardPublic(w, r) { return }
 	path := r.URL.Path
 
 	// Readiness must reflect the internal Navigator backend, not only the
@@ -284,7 +286,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		}
 		body := injectBLISI18N([]byte(indexHTML))
 		homeClient := strings.TrimSpace(r.URL.Query().Get("client"))
-		if homeClient == "delta-planet" || homeClient == "top-rent-a-car" {
+		if homeClient == "delta-planet" || homeClient == "top-rent-a-car" || homeClient == "icard" {
 			target := "/" + homeClient
 			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='`+homeClient+`',T='`+target+`';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href',T)})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)){e.preventDefault();location.href=T}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',click,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
 			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))

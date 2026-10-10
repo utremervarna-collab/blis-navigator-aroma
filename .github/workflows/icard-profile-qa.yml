@@ -1,0 +1,48 @@
+name: iCard tailored profile QA
+on:
+  pull_request:
+    branches: [main]
+    paths: ['icard*.go', 'static/icard-*', 'scripts/icard-profile-smoke.cjs', '.github/workflows/icard-profile-qa.yml', 'main.go', '000_auth_gateway_resilient.go']
+  push:
+    branches: [main]
+    paths: ['icard*.go', 'static/icard-*', 'scripts/icard-profile-smoke.cjs', '.github/workflows/icard-profile-qa.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile and verify routes and evidence integrity
+        env:
+          BLIS_AUTH_PROXY_DISABLED: '1'
+          BLIS_DISABLE_BACKGROUND_NETWORK_LOOPS: '1'
+          BLIS_ENABLE_STARTUP_DIAGNOSTIC: '0'
+        run: |
+          go test -run '^TestICard' -count=1 .
+          go build -tags netgo -ldflags '-s -w' -o /tmp/icard-app .
+          node --check static/icard-commercial.js
+      - name: Verify interactive profile at desktop and mobile widths
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+          PORT=11000 BLIS_ENABLE_INPROCESS_SCHEDULER=0 BLIS_DISABLE_BACKGROUND_NETWORK_LOOPS=1 BLIS_ENABLE_STARTUP_DIAGNOSTIC=0 /tmp/icard-app >/tmp/icard.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:11000/icard/data >/dev/null && break
+            sleep 1
+          done
+          ICARD_ORIGIN=http://127.0.0.1:11000 node scripts/icard-profile-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icard-profile-evidence
+          path: |
+            /tmp/icard-*.png
+            /tmp/icard.log
