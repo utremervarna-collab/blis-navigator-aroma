@@ -374,25 +374,27 @@
       {
         "name": "Trustpilot · Digital Wallet",
         "product": "Потребителски портфейл",
-        "rating": 4.0,
-        "count": 1955,
+        "rating": 4,
+        "count": 1959,
         "url": "https://www.trustpilot.com/review/icard.com",
         "distribution": {
-          "5": 73,
-          "4": 5,
-          "3": 2,
+          "1": 19,
           "2": 1,
-          "1": 19
+          "3": 2,
+          "4": 5,
+          "5": 73
         },
-        "limitation": "Показани проценти, закръглени от платформата; самоподбрани мнения."
+        "limitation": "Показани проценти, закръглени от платформата; самоподбрани мнения.",
+        "checked_at": "2026-10-10"
       },
       {
         "name": "Google Play · Business",
         "product": "Предишно бизнес приложение",
-        "rating": 3.0,
-        "count": 221,
+        "rating": 3,
+        "count": 212,
         "url": "https://play.google.com/store/apps/details?id=eu.mobile.icard.business&hl=en",
-        "limitation": "Страницата насочва към новото Business Edge. Оценката не се прехвърля върху Edge."
+        "limitation": "Предишно бизнес приложение. Показани 3,0/5 и 212 мнения в извлечената версия; стойностите зависят от магазина и региона. Не се прехвърлят върху Edge.",
+        "checked_at": "2026-10-10"
       },
       {
         "name": "Google Play · Business Edge",
@@ -405,13 +407,85 @@
       {
         "name": "App Store · Digital Wallet · BG",
         "product": "Потребителски портфейл",
-        "rating": null,
-        "count": null,
+        "rating": 4.4,
+        "count": 837,
         "url": "https://apps.apple.com/bg/app/icard-beyond-a-wallet/id1322347923",
-        "limitation": "Оценката не е потвърдена повторно в извлечената страница. Потребителски продукт; различна аудитория от бизнес приложението."
+        "limitation": "Потребителски портфейл, магазин България. Самоподбрани оценки; не измерват бизнес услугите.",
+        "checked_at": "2026-10-10"
+      },
+      {
+        "name": "Google Play · Digital Wallet",
+        "product": "Потребителски портфейл",
+        "rating": 4.1,
+        "count": 17600,
+        "count_approximate": true,
+        "url": "https://play.google.com/store/apps/details?id=eu.mobile.icard&hl=en",
+        "checked_at": "2026-10-10",
+        "limitation": "Платформата показва закръглено 17,6 хил. мнения. Регионален изглед; не е рейтинг на бизнес приложението."
+      },
+      {
+        "name": "App Store · Business · BG",
+        "product": "Бизнес приложение · App Store",
+        "rating": 2.9,
+        "count": 10,
+        "url": "https://apps.apple.com/bg/app/icard-for-business/id1449603432?platform=iphone&see-all=reviews",
+        "checked_at": "2026-10-10",
+        "limitation": "Магазин България, малка съвкупност. Идентификатор 1449603432; не се приравнява на Business Edge в Google Play."
       }
     ],
     "reviews": [
+      {
+        "id": "tp-6ac7bf831da78e42dcc4c1aa",
+        "date": "2026-10-08",
+        "stars": 5,
+        "themes": [
+          "Проверки и документи",
+          "Обслужване"
+        ],
+        "summary": "Потребителят описва бърза проверка на документи без прекъсване на достъпа.",
+        "source_url": "https://www.trustpilot.com/reviews/6ac7bf831da78e42dcc4c1aa",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6abfe4a17ac99bda971acacf",
+        "date": "2026-10-02",
+        "stars": 5,
+        "themes": [
+          "Удобство"
+        ],
+        "summary": "Положителна оценка за удобството на услугата.",
+        "source_url": "https://www.trustpilot.com/reviews/6abfe4a17ac99bda971acacf",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6aba5d8f24b26490f9d37c05",
+        "date": "2026-09-28",
+        "stars": 5,
+        "themes": [
+          "Обслужване"
+        ],
+        "summary": "Положително мнение за обслужването.",
+        "source_url": "https://www.trustpilot.com/reviews/6aba5d8f24b26490f9d37c05",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
       {
         "id": "t1",
         "date": "2026-09-17",
@@ -423,7 +497,10 @@
         "summary": "Оплакване за проверка на превод и комуникацията.",
         "source_url": "https://www.trustpilot.com/reviews/6aabbda6c7cc3cd7e9eb2d7d",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       },
       {
         "id": "t2",
@@ -436,7 +513,10 @@
         "summary": "Положителна оценка за обслужването.",
         "source_url": "https://www.trustpilot.com/reviews/6aab88111763e1a47d4c4da2",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       },
       {
         "id": "t3",
@@ -448,7 +528,10 @@
         "summary": "Положителна оценка за бързина.",
         "source_url": "https://www.trustpilot.com/reviews/6aaa8868efa798bc0a579875",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       },
       {
         "id": "t4",
@@ -460,7 +543,11 @@
         "summary": "Положителна оценка за удобство.",
         "source_url": "https://www.trustpilot.com/reviews/6a998cca8ada6501a0250259",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт.",
+        "experience_date": "2026-05-06"
       },
       {
         "id": "t5",
@@ -472,7 +559,10 @@
         "summary": "Положителна оценка за трансакции.",
         "source_url": "https://www.trustpilot.com/reviews/6a8c334a0e78c4f333022e52",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       },
       {
         "id": "t6",
@@ -484,7 +574,10 @@
         "summary": "Положителна оценка за бързо обслужване.",
         "source_url": "https://www.trustpilot.com/reviews/6a86e322326dbcc9e9cea43e",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       },
       {
         "id": "t7",
@@ -497,7 +590,11 @@
         "summary": "Оплакване за добавяне на карта и обясненията.",
         "source_url": "https://www.trustpilot.com/reviews/6a8348414a18990effde9889",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт.",
+        "updated_at": "2026-10-01"
       },
       {
         "id": "t8",
@@ -509,13 +606,304 @@
         "summary": "Забележка за лимит при теглене.",
         "source_url": "https://www.trustpilot.com/reviews/6a7f3fa0c9c0efc984e3f609",
         "source_label": "Публично мнение · Trustpilot",
-        "source_page": "https://www.trustpilot.com/review/icard.com"
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a70c6fc562d8b6823c9a1c7",
+        "date": "2026-08-03",
+        "stars": 5,
+        "themes": [
+          "Удобство"
+        ],
+        "summary": "Потребителят оценява функционалността на приложението.",
+        "source_url": "https://www.trustpilot.com/reviews/6a70c6fc562d8b6823c9a1c7",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a6d0dea98a4636192d85724",
+        "date": "2026-07-31",
+        "stars": 5,
+        "themes": [
+          "Надеждност",
+          "Обслужване"
+        ],
+        "summary": "Дългогодишен потребител описва надеждност и отзивчива поддръжка.",
+        "source_url": "https://www.trustpilot.com/reviews/6a6d0dea98a4636192d85724",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a6ba0190e72cc371144d4ff",
+        "date": "2026-07-30",
+        "stars": 5,
+        "themes": [
+          "Бързина"
+        ],
+        "summary": "Кратка положителна оценка за бързина и яснота.",
+        "source_url": "https://www.trustpilot.com/reviews/6a6ba0190e72cc371144d4ff",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a69176938349fc136398d2a",
+        "date": "2026-07-28",
+        "stars": 5,
+        "themes": [
+          "Удобство"
+        ],
+        "summary": "Потребителят харесва справките за разходи и разделянето на сметки.",
+        "source_url": "https://www.trustpilot.com/reviews/6a69176938349fc136398d2a",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a5a0c4b602fa67679650424",
+        "date": "2026-07-17",
+        "stars": 5,
+        "themes": [
+          "Удобство"
+        ],
+        "summary": "Кратка положителна оценка за лесна употреба.",
+        "source_url": "https://www.trustpilot.com/reviews/6a5a0c4b602fa67679650424",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
+      },
+      {
+        "id": "tp-6a567c4e9448c047f03b8a28",
+        "date": "2026-07-14",
+        "stars": 5,
+        "themes": [
+          "Надеждност",
+          "Обслужване"
+        ],
+        "summary": "Положително мнение за работата на услугата и поддръжката.",
+        "source_url": "https://www.trustpilot.com/reviews/6a567c4e9448c047f03b8a28",
+        "source_page": "https://www.trustpilot.com/review/icard.com",
+        "source_label": "Публично мнение · Trustpilot",
+        "product": "Потребителски портфейл",
+        "collected_at": "2026-10-10",
+        "date_basis": "Дата на публикуване, показана в списъка",
+        "verification": "Текстът е проверен в списъка на платформата; отделната страница не беше достъпна.",
+        "claim_status": "Потребителско твърдение; не независимо потвърден факт."
       }
     ],
     "history": null,
     "change": null,
     "rising_themes": null,
-    "sample_note": "Осем ръчно извлечени мнения; тематична, непредставителна извадка. Темите могат да се припокриват."
+    "sample_note": "17 ръчно извлечени мнения от Trustpilot за потребителския портфейл; непредставителна извадка. Периодните филтри показват част от нея. Историческите бизнес отзиви и мненията без потвърдени звезди са съхранени отделно и не участват в тези проценти.",
+    "additional_reviews": [
+      {
+        "id": "gp-business-emme-20220506",
+        "date": "2022-05-06",
+        "product": "Предишно бизнес приложение",
+        "themes": [
+          "Техническа работа",
+          "Обслужване",
+          "Масови плащания"
+        ],
+        "summary": "Авторът съобщава за затруднения с входа, масови плащания и контакт с поддръжката.",
+        "source_url": "https://play.google.com/store/apps/details?id=eu.mobile.icard.business",
+        "company_response_date": "2022-05-26",
+        "company_response_summary": "Компанията иска допълнителни данни, тъй като не намира сметка под посоченото име.",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "gp-business-louba-20201217",
+        "date": "2020-12-17",
+        "product": "Предишно бизнес приложение",
+        "themes": [
+          "Проверки и документи",
+          "Обслужване"
+        ],
+        "summary": "Авторът описва продължителна проверка и отказана заявка.",
+        "source_url": "https://play.google.com/store/apps/details?id=eu.mobile.icard.business",
+        "company_response_date": "2021-01-26",
+        "company_response_summary": "Компанията обяснява необходимостта от проверки на самоличността и риска.",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "gp-business-marco-20201201",
+        "date": "2020-12-01",
+        "product": "Предишно бизнес приложение",
+        "themes": [
+          "Преводи",
+          "Обслужване"
+        ],
+        "summary": "Авторът твърди, че фирмен превод е задържан.",
+        "source_url": "https://play.google.com/store/apps/details?id=eu.mobile.icard.business",
+        "company_response_date": "2020-12-03",
+        "company_response_summary": "Компанията посочва извършена проверка и връщане на превода на подателя.",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "apple-business-vanessa-20240104",
+        "date": "2024-01-04",
+        "product": "Бизнес приложение · App Store",
+        "themes": [
+          "Удобство",
+          "Плащане с линк"
+        ],
+        "summary": "Потребителят оценява бизнес функциите и исканията за плащане към международни клиенти.",
+        "source_url": "https://apps.apple.com/bg/app/icard-for-business/id1449603432?platform=iphone&see-all=reviews",
+        "company_response_date": "2024-11-22",
+        "company_response_summary": "Компанията благодари за положителното мнение.",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "apple-business-genadi-20240104",
+        "date": "2024-01-04",
+        "product": "Бизнес приложение · App Store",
+        "themes": [
+          "Удобство"
+        ],
+        "summary": "Кратка положителна оценка за бизнес приложението.",
+        "source_url": "https://apps.apple.com/bg/app/icard-for-business/id1449603432?platform=iphone&see-all=reviews",
+        "company_response_date": "2024-11-22",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "apple-business-verification-20221026",
+        "date": "2022-10-26",
+        "product": "Бизнес приложение · App Store",
+        "themes": [
+          "Проверки и документи",
+          "Преводи"
+        ],
+        "summary": "Авторът описва ограничен достъп до фирмена сметка и затруднения при проверка и преводи.",
+        "source_url": "https://apps.apple.com/bg/app/icard-for-business/id1449603432?platform=iphone&see-all=reviews",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "apple-business-readability-sept8",
+        "date": null,
+        "date_label": "8 Sept; година не е изписана",
+        "product": "Бизнес приложение · App Store",
+        "themes": [
+          "Четимост",
+          "Обслужване"
+        ],
+        "summary": "Авторът хвали услугата и поддръжката, но критикува фона и четимостта на шрифта.",
+        "source_url": "https://apps.apple.com/bg/app/icard-for-business/id1449603432?platform=iphone&see-all=reviews",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": null,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "gp-wallet-vasil-20260804",
+        "date": "2026-08-04",
+        "product": "Потребителски портфейл",
+        "themes": [
+          "Техническа работа",
+          "Достъп"
+        ],
+        "summary": "Потребителят харесва функциите, но критикува ограниченията при отключен системен зареждач на телефона.",
+        "source_url": "https://play.google.com/store/apps/details?id=eu.mobile.icard&hl=en",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": false,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "gp-wallet-maciej-20260624",
+        "date": "2026-06-24",
+        "product": "Потребителски портфейл",
+        "themes": [
+          "Безконтактни плащания"
+        ],
+        "summary": "Авторът е недоволен от прекратяването на iCard Pay.",
+        "source_url": "https://play.google.com/store/apps/details?id=eu.mobile.icard&hl=en",
+        "company_response_date": "2026-07-06",
+        "company_response_summary": "Компанията потвърждава прекратяването на iCard Pay и посочва Google Pay като наличен начин за безконтактни плащания с карти Visa.",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      },
+      {
+        "id": "bgm-cash-20260711",
+        "date": "2026-07-11",
+        "product": "Потребителски портфейл",
+        "themes": [
+          "Внасяне на пари",
+          "Удобство"
+        ],
+        "summary": "Форумен потребител препоръчва iCard за внасяне на пари и захранване на друга сметка. Описаните лимити и такси не са проверени като текущи условия.",
+        "source_url": "https://www.bg-mamma.com/?topic=1873512.75",
+        "source_locator": "Мнение №88",
+        "stars": null,
+        "collected_at": "2026-10-10",
+        "claim_status": "Потребителско мнение; не независимо потвърден факт.",
+        "historical": true,
+        "limitation": "Индивидуалните звезди не се установяват надеждно от извлечения текст. Не участват в разпределението по звезди."
+      }
+    ],
+    "collection": {
+      "checked_at": "2026-10-10",
+      "unique_reviews": 27,
+      "trustpilot_reviews": 17,
+      "additional_reviews": 10,
+      "business_edge": "Не са извлечени публични мнения или потвърден общ рейтинг от проверената страница.",
+      "icard_direct": "При търсенето не е намерена проверена самостоятелна извадка от мнения на търговци за iCard Direct.",
+      "method": "Ръчно събиране от публичните списъци; дедублиране по URL или платформа, авторски идентификатор и дата. Пазят се продукт, дата, тема и отговор на компанията. Не се твърди пълно покритие.",
+      "excluded": "Мнения за работодателя, едноименни несвързани приложения и недостъпни форумни публикации не са включени."
+    }
   },
   "competitive_changes": null,
   "market": {
@@ -529,7 +917,7 @@
       "marketplace_pct": 7.1,
       "eu_customers_pct": 37.7,
       "other_countries_pct": 21.4,
-      "domestic_customers_pct": 97.0,
+      "domestic_customers_pct": 97,
       "change_2020_2024_pp": 4.4
     },
     "tourism": {
