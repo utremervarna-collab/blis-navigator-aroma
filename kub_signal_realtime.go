@@ -84,6 +84,7 @@ func runKUBRealtimeCollector() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	go func() {
 		// Run almost immediately after startup so a cold wake does not leave the
 		// Monitoring page waiting for the first scheduled discovery pass.
