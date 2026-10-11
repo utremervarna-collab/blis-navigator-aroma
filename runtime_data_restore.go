@@ -433,6 +433,7 @@ func runtimeDataStatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	http.HandleFunc("/api/runtime-data/status", runtimeDataStatusHandler)
 	startRuntimeDataRestore()
 }
