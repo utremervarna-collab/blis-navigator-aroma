@@ -110,6 +110,7 @@ func runKUBRecallCollector() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	go func() {
 		time.Sleep(8 * time.Second)
 		runKUBRecallCollector()
