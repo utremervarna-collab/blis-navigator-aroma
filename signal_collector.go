@@ -61,6 +61,7 @@ var (
 	signalMu       sync.RWMutex
 	signalState    = SignalState{Signals: map[string][]Signal{}}
 	signalRestored bool
+	signalObservationWriteMu sync.Mutex
 )
 
 var (
@@ -474,7 +475,7 @@ func signalObservationExists(c *Client, metric string) bool {
 	if c == nil {
 		return false
 	}
-	for i := len(c.Observations) - 1; i >= 0 && i >= len(c.Observations)-2000; i-- {
+	for i := len(c.Observations) - 1; i >= 0; i-- {
 		o := c.Observations[i]
 		if o.SourceKey == "signal_collector" && o.MetricKey == metric {
 			return true
@@ -484,14 +485,22 @@ func signalObservationExists(c *Client, metric string) bool {
 }
 
 func persistSignalObservation(s Signal) {
+	if strings.TrimSpace(s.Client) == "" || strings.TrimSpace(s.ID) == "" {
+		return
+	}
+	// Serialize the existence check and write across concurrent collector cycles.
+	signalObservationWriteMu.Lock()
+	defer signalObservationWriteMu.Unlock()
 	mu.Lock()
 	c := store.Clients[s.Client]
-	mu.Unlock()
-	if c == nil {
+	if c == nil || c.Slug != s.Client {
+		mu.Unlock()
 		return
 	}
 	metric := "signal_event_" + s.ID
-	if signalObservationExists(c, metric) {
+	exists := signalObservationExists(c, metric)
+	mu.Unlock()
+	if exists {
 		return
 	}
 	b, err := json.Marshal(s)
@@ -510,6 +519,9 @@ func mergeSignals(client string, fresh []Signal) int {
 	}
 	newCount := 0
 	for _, s := range fresh {
+		if s.Client != client || s.Fingerprint == "" {
+			continue
+		}
 		if old, ok := byFP[s.Fingerprint]; ok {
 			if old.DetectedAt != "" {
 				s.DetectedAt = old.DetectedAt
@@ -532,7 +544,9 @@ func mergeSignals(client string, fresh []Signal) int {
 	signalMu.Unlock()
 
 	for _, s := range fresh {
-		persistSignalObservation(s)
+		if s.Client == client && s.Fingerprint != "" {
+			persistSignalObservation(s)
+		}
 	}
 	return newCount
 }
@@ -567,7 +581,7 @@ func restoreSignalsFromObservations() {
 				continue
 			}
 			var s Signal
-			if json.Unmarshal([]byte(raw), &s) == nil && s.Fingerprint != "" {
+			if json.Unmarshal([]byte(raw), &s) == nil && s.Fingerprint != "" && s.Client == slug {
 				rows = append(rows, s)
 			}
 		}
