@@ -41,6 +41,7 @@ func normalizeKUBSignalMetrics() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	go func() {
 		// The KUB collector starts after 2s. Reconcile after it has populated state,
 		// then remain offset from its 5-minute collection cycle.
