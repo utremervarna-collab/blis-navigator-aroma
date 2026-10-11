@@ -19,6 +19,7 @@ func kubLateAfternoonVerifiedSignals() []Signal {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	go func() {
 		time.Sleep(4 * time.Second)
 		mergeSignals("kub", kubLateAfternoonVerifiedSignals())
