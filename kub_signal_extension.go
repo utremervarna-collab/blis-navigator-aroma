@@ -203,6 +203,7 @@ func runKUBSignalCollector() {
 }
 
 func init() {
+	if backgroundNetworkLoopsDisabled() { return }
 	go func() {
 		time.Sleep(2 * time.Second)
 		runKUBSignalCollector()
