@@ -53,7 +53,7 @@ ENV BLIS_ENABLE_STARTUP_DIAGNOSTIC=0
 # Ask Go to collect more aggressively so transient JSON allocations are released
 # before they can push the instance out of the provider's healthy upstream pool.
 ENV GOGC=50
-LABEL blis.navigator.recovery="2026-10-04-northflank-health-v3"
+LABEL blis.navigator.recovery="2026-10-11-top-rent-production-recovery-v4"
 ENV PORT=8080
 ENV DATA_DIR=/tmp/blis-navigator
 EXPOSE 8080
