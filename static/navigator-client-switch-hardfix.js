@@ -3,10 +3,11 @@
   'use strict';
   if(window.__BLISClientSwitchHardfix)return;
   window.__BLISClientSwitchHardfix=true;
-  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center']);
+  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center','top-rent-a-car','kub','icard']);
 
   async function switchInPlace(key){
     if(!allowed.has(key))return;
+    if(key==='kub'){location.assign('/kub-crisis.html');return;}
     try{localStorage.setItem('blis-client-ui',key)}catch(_){ }
     try{document.cookie=`blis_admin_client=${encodeURIComponent(key)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`}catch(_){ }
     window.BLIS_INITIAL_CLIENT=key;
