@@ -1,16 +1,13 @@
 /* BLIS Navigator — establish the selected client before legacy app.js boots. */
 (function(){
   'use strict';
-  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center','top-rent-a-car']);
+  const allowed=new Set(['aroma','bolyarka','astor-garden','varna-towers','delta-planet','mollox','wirello','everbet','black-sea-center','top-rent-a-car','kub','icard']);
   function selectedClient(){
     try{
       const q=new URLSearchParams(location.search).get('client');
       if(q&&allowed.has(q))return q;
     }catch(e){}
-    try{
-      const saved=localStorage.getItem('blis-client-ui');
-      if(saved&&allowed.has(saved))return saved;
-    }catch(e){}
+    // Generic dashboard entry must not silently reopen the last client.
     return 'aroma';
   }
   const selected=selectedClient();
