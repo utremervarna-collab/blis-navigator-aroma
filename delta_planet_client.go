@@ -1,5 +1,7 @@
 package main
 
+// Delta freshness QA trigger 2026-10-18.
+
 import (
 	"encoding/json"
 	"fmt"
