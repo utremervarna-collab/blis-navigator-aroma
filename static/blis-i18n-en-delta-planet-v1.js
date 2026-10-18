@@ -176,26 +176,29 @@ function translateDelta(raw){
  if(next===undefined)return raw;
  return raw.slice(0,raw.indexOf(s))+next+raw.slice(raw.indexOf(s)+s.length);
 }
-let pending=false;
+let applying=false;
 function applyDelta(){
- pending=false;if(!deltaEnglish())return;
- if(document.documentElement.lang!=='en')document.documentElement.lang='en';
- const walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT);
- let n;while((n=walker.nextNode())){
-  if(n.parentElement&&/SCRIPT|STYLE|NOSCRIPT|TEXTAREA/.test(n.parentElement.tagName))continue;
-  const next=translateDelta(n.nodeValue);if(next!==n.nodeValue)n.nodeValue=next;
- }
- for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt]')){
-  for(const a of ['title','aria-label','placeholder','alt']){const v=el.getAttribute(a),next=translateDelta(v);if(next!==v)el.setAttribute(a,next)}
- }
- document.documentElement.dataset.deltaEnglishCatalog='20261008-full';
+ if(applying||!deltaEnglish())return;
+ applying=true;
+ try{
+  if(document.documentElement.lang!=='en')document.documentElement.lang='en';
+  const walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT);
+  let n;while((n=walker.nextNode())){
+   if(n.parentElement&&/SCRIPT|STYLE|NOSCRIPT|TEXTAREA/.test(n.parentElement.tagName))continue;
+   const next=translateDelta(n.nodeValue);if(next!==n.nodeValue)n.nodeValue=next;
+  }
+  for(const el of document.querySelectorAll('[title],[aria-label],[placeholder],[alt]')){
+   for(const a of ['title','aria-label','placeholder','alt']){const v=el.getAttribute(a),next=translateDelta(v);if(next!==v)el.setAttribute(a,next)}
+  }
+  document.documentElement.dataset.deltaEnglishCatalog='20261018-current';
+ }finally{applying=false}
 }
-function scheduleDelta(){if(!pending){pending=true;requestAnimationFrame(applyDelta)}}
+function scheduleDelta(){applyDelta()}
 function startDelta(){
  applyDelta();
- new MutationObserver(scheduleDelta).observe(document.body||document.documentElement,{subtree:true,childList:true,characterData:true});
+ new MutationObserver(()=>{if(!applying)applyDelta()}).observe(document.body||document.documentElement,{subtree:true,childList:true,characterData:true});
  new MutationObserver(()=>{
-  if(deltaEnglish()&&document.documentElement.lang!=='en')scheduleDelta();
+  if(deltaEnglish()&&document.documentElement.lang!=='en')applyDelta();
  }).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startDelta,{once:true});else startDelta();
