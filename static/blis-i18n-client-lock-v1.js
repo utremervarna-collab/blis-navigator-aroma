@@ -96,8 +96,11 @@
     observer.observe(document.body||document.documentElement,{subtree:true,childList:true});
   },{once:true});
   window.addEventListener('load',lock,{once:true});
-  ['blis:production-ready','blis:clientdata','blis:rendered','blis:i18n-catalog','blis:routechange'].forEach(function(ev){
+  ['blis:production-ready','blis:clientdata','blis:rendered','blis:i18n-catalog'].forEach(function(ev){
     window.addEventListener(ev,schedule);
   });
+  // Route transitions are synchronous. Reassert the requested language before
+  // callers can inspect the new route; delayed RAF repair causes a visible BG flash.
+  window.addEventListener('blis:routechange',lock);
   [50,150,350,700,1200,2200].forEach(function(ms){setTimeout(lock,ms)});
 })();
