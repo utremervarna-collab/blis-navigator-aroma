@@ -449,7 +449,22 @@ func collectClientSignals(c *Client) []Signal {
 	combined = append(combined, collectPublicWebSignals(c)...)
 	combined = append(combined, collectExternalSocialSignals(c)...)
 	combined = append(combined, collectOwnedSocialSignals(c)...)
-	return dedupeSignals(combined)
+	rows := dedupeSignals(combined)
+	if c.Slug == "delta-planet" {
+		clean := rows[:0]
+		for _, s := range rows {
+			lowURL := strings.ToLower(strings.TrimSpace(s.URL))
+			// Bing can recall this undated 2025 holiday-hours article as if it
+			// were newly detected. It is historical context, not an October 2026 signal.
+			if strings.Contains(lowURL, "boulevardbulgaria.bg") &&
+				strings.Contains(lowURL, "praznichno-rabotno-vreme-na-delta-planet-mall") {
+				continue
+			}
+			clean = append(clean, s)
+		}
+		rows = clean
+	}
+	return rows
 }
 
 func signalClientSnapshot(slug string) *Client {
