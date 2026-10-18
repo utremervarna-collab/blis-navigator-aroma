@@ -21,11 +21,14 @@ func deltaPlanetSources() []Source {
 		{Key:"tripadvisor",Label:"Tripadvisor · Delta Planet Mall",URL:"https://www.tripadvisor.com/Attraction_Review-g295392-d17513506-Reviews-Delta_Planet_Mall-Varna_Varna_Province.html",Method:"публични туристически оценки и тематични отзиви",Reliability:.88},
 		{Key:"retailmap",Label:"RetailMap · Delta Planet",URL:"https://retailmap.bg/en/malls/varna/delta-planet-33",Method:"GLA, паркиране, ключови наематели и формат",Reliability:.91},
 		{Key:"visit_varna",Label:"Visit Varna · Delta Planet Mall",URL:"https://visit.varna.bg/en/objects.html/shop/delta-planet-mall/1711",Method:"локален туристически профил и публични факти",Reliability:.90},
+		{Key:"radio_varna",Label:"Радио Варна · Delta Planet Mall",URL:"https://bnrnews.bg/varna/post/543531/studenti-po-meditsina-s-kampaniya-sreshtu-raka-na-gardata-vav-varna",Method:"актуални локални медийни споменавания и обществени инициативи",Reliability:.97},
+		{Key:"varna_online",Label:"Варна Онлайн · Delta Planet Mall",URL:"https://varnaonline.bg/news/studenti-medici-otkrivat-shtand-vav-varna-za-profilaktika-3352news.html",Method:"локални новини и събитийни споменавания",Reliability:.90},
+		{Key:"cinecity_guide",Label:"CineCity Guide · Cinema City Delta Planet Mall",URL:"https://cinecity.guide/bg/varna?kino=cinema-city-varna",Method:"актуална кино програма и предстоящи специални прожекции",Reliability:.90},
 
 		{Key:"cmp_grand_mall",Label:"Grand Mall Varna",URL:"https://www.grandmall-varna.com/",Method:"пряк конкурент · магазини, заведения, кино, развлечения, промоции и събития",Reliability:.98},
 		{Key:"cmp_grand_mall_shops",Label:"Grand Mall Varna",URL:"https://grandmall-varna.com/en/magazini",Method:"пряк конкурент · tenant mix, нови обекти и промоции",Reliability:.98},
-		{Key:"cmp_mall_varna",Label:"Black Sea Center",URL:"https://www.mall-varna.bg/",Method:"втори конкурентен кръг · търговски/офис площи и свободни помещения",Reliability:.96},
-		{Key:"cmp_mall_varna_about",Label:"Black Sea Center",URL:"https://www.mall-varna.bg/aboutus",Method:"втори конкурентен кръг · площи, функции и собственост",Reliability:.96},
+		{Key:"cmp_mall_varna",Label:"Black Sea Center",URL:"https://bsc-offices.com/",Method:"втори конкурентен кръг · актуална концепция с офиси, търговия, услуги, спорт и развлечения",Reliability:.98},
+		{Key:"cmp_mall_varna_about",Label:"Black Sea Center",URL:"https://bsc-offices.com/offices/",Method:"втори конкурентен кръг · офисни площи, паркинг, бъдещи функции и инвестиционно позициониране",Reliability:.98},
 		{Key:"cmp_retail_park_varna",Label:"Retail Park Varna",URL:"https://retailmap.bg/bg/%D1%82%D1%8A%D1%80%D0%B3%D0%BE%D0%B2%D1%81%D0%BA%D0%B8-%D1%86%D0%B5%D0%BD%D1%82%D1%80%D0%BE%D0%B2%D0%B5/varna/retail-park-varna-42",Method:"конкурентен формат · home/sport/tech retail, GLA и parking",Reliability:.91},
 	}
 }
@@ -37,7 +40,7 @@ func deltaHasObs(c *Client, s, m string) bool {
 func deltaSeed(c *Client,s,m string,v interface{},stamp string){if !deltaHasObs(c,s,m){add(c,s,m,v,stamp)}}
 
 func seedDeltaPlanetFacts(c *Client){
-	stamp:="2026-10-02T10:45:00+03:00"
+	stamp:="2026-10-18T12:45:00+03:00"
 	deltaSeed(c,"about","gross_built_area_m2",120000.0,stamp)
 	deltaSeed(c,"about","retail_area_m2",40000.0,stamp)
 	deltaSeed(c,"about","brands_over",140.0,stamp)
@@ -53,6 +56,12 @@ func seedDeltaPlanetFacts(c *Client){
 	deltaSeed(c,"contact","email","office@deltaplanet.bg",stamp)
 	deltaSeed(c,"contact","events_contact","Антоанета Тенева · antoaneta.teneva@deltaplanet.bg",stamp)
 	deltaSeed(c,"official_site","opening_hours","10:00–21:00",stamp)
+	deltaSeed(c,"google_business","rating_2026_10_18",4.5,stamp)
+	deltaSeed(c,"google_business","reviews_2026_10_18",10128.0,stamp)
+	deltaSeed(c,"official_site","ikea_raffle_2026_10_01_30","Томбола за IKEA ваучер 500€ · активна 1–30 октомври 2026",stamp)
+	deltaSeed(c,"official_site","halloween_2026_10_31","Ден на мистериите · 31 октомври 2026 · от 15:00 ч.",stamp)
+	deltaSeed(c,"radio_varna","breast_cancer_campaign_2026_10_17_18","Информационна и благотворителна кампания за профилактика на рака на гърдата · 17–18 октомври · 12:00–15:00",stamp)
+	deltaSeed(c,"cinecity_guide","cinelibri_2026_10_23_31","Cinema City Delta Planet Mall е включен в програмата на CineLibri 2026 с прожекции 23–31 октомври",stamp)
 	deltaSeed(c,"official_site","latest_news_2026_08_29","Всички ваучери от кампанията „Палитра от намаления“ са изчерпани",stamp)
 	deltaSeed(c,"official_site","school_expo_2026_09_19_20","School Expo 2026 „Уча, творя, спортувам“ · 19–20 септември 2026 · 10:00–20:00",stamp)
 	deltaSeed(c,"official_site","vr_varna_active_2026_10","VR Varna е активен на ниво 1 и ниво -3 в Delta Planet Mall",stamp)
@@ -153,9 +162,9 @@ func deltaDashboard(c *Client)map[string]interface{}{
 		"signals":signals,
 		"competitors":[]interface{}{deltaCompRow("Delta Planet Mall",competitive),deltaCompRow("Grand Mall Varna",0),deltaCompRow("Black Sea Center",0),deltaCompRow("Retail Park Varna",0)},
 		"competitor_dossiers":[]interface{}{
-			map[string]interface{}{"name":"Grand Mall Varna","tier":"пряк конкурент","format":"традиционен shopping mall","gla":"около 50 500 m²","parking":"около 1 700 места (исторически официално публикувана стойност)","anchors":"мода, техника, хипермаркет, Cineland/IMAX, Playground, Retro Museum","monitoring":"tenant mix; нови магазини; промоции; събития; кино/развлечения; F&B; leasing; репутация; кампании"},
-			map[string]interface{}{"name":"Black Sea Center","tier":"втори конкурентен кръг","format":"търговски + офис площи","gla":"13 523.85 m² търговски площи по официалния профил","parking":"277 места","anchors":"офиси, свободни площи, спорт/развлечения и услуги","monitoring":"свободни помещения; наематели; промени в предназначението; услуги; събития; собственост"},
-			map[string]interface{}{"name":"Retail Park Varna","tier":"конкурентен формат","format":"retail park","gla":"13 000 m²","parking":"500 места","anchors":"Decathlon, JYSK, Zora, Design Center, Мебели Виденов","monitoring":"нови наематели; категории home/sport/tech; промоции; разширения; трафик и удобство"},
+			map[string]interface{}{"name":"Grand Mall Varna","tier":"пряк конкурент","format":"традиционен shopping mall","gla":"около 50 500 m²","parking":"около 1 700 места (исторически официално публикувана стойност)","anchors":"мода, техника, хипермаркет, Cineland/IMAX, Playground, Retro Museum, iSTYLE","monitoring":"tenant mix; нови магазини; промоции; събития; кино/развлечения; F&B; leasing; репутация; кампании"},
+			map[string]interface{}{"name":"Black Sea Center","tier":"втори конкурентен кръг","format":"офиси + търговия + услуги + спорт + развлечения","gla":"официалният сайт посочва над 65 000 m² Prime Real Estate; не е публикувано като единен retail GLA","parking":"над 600 места за посетители и наематели","anchors":"офиси на етажи 3–4; Pulse Fitness & Spa 5 000 m²; падел; детски център 2 500 m²; 3 ресторанта; premium café; банки и retail","monitoring":"офисни продажби/наеми; реконструкция; нови оператори; търговски и F&B микс; спорт/развлечения; паркинг; връзка с Kaufland"},
+			map[string]interface{}{"name":"Retail Park Varna","tier":"конкурентен формат","format":"retail park","gla":"13 000 m²","parking":"500 места","anchors":"Decathlon, JYSK, Zora, Design Center, Мебели Виденов, Ralica, Next Level","monitoring":"нови наематели; категории home/sport/tech; фитнес и услуги; промоции; разширения; трафик и удобство"},
 		},
 		"live_summary":map[string]interface{}{"brand_mentions_90d":brand90,"competitor_mentions_90d":comp90,"positive_brand_mentions_90d":pos90,"negative_brand_mentions_90d":neg90},
 	}
@@ -172,6 +181,34 @@ func deltaVerifiedRecentMentions() []Signal {
 		}
 	}
 	return []Signal{
+		makeSignal(
+			"Радио Варна","media","external",
+			"https://bnrnews.bg/varna/post/543531/studenti-po-meditsina-s-kampaniya-sreshtu-raka-na-gardata-vav-varna",
+			"Кампания за профилактика на рака на гърдата в Delta Planet Mall на 17–18 октомври",
+			"Асоциацията на студентите медици във Варна и SCORA провеждат информационна и благотворителна кампания в Delta Planet Mall на 17 и 18 октомври от 12:00 до 15:00 ч.",
+			"2026-10-17T10:36:00+03:00","community","positive",100,5,
+		),
+		makeSignal(
+			"Delta Planet Mall","official","owned",
+			"https://www.deltaplanet.bg/sabitia",
+			"Delta Planet Mall провежда томбола за IKEA ваучер на стойност 500€",
+			"Кампанията е активна от 1 до 30 октомври 2026 г. и добавя промоционална причина за повторно посещение през целия месец.",
+			"2026-10-01T10:00:00+03:00","campaign","positive",100,5,
+		),
+		makeSignal(
+			"Cinema City / CineCity Guide","web","external",
+			"https://cinecity.guide/bg/varna?kino=cinema-city-varna",
+			"Cinema City в Delta Planet Mall влиза в програмата на CineLibri 2026",
+			"Актуалната програма показва специални прожекции в Cinema City Delta Planet Mall от 23 до 31 октомври 2026 г.",
+			"2026-10-18T04:36:00+03:00","entertainment","positive",96,5,
+		),
+		makeSignal(
+			"Delta Planet Mall","official","owned",
+			"https://www.deltaplanet.bg/sabitia",
+			"Delta Planet Mall подготвя „Ден на мистериите“ за Хелоуин",
+			"На 31 октомври от 15:00 ч. търговският център планира игри, загадки и мисии за деца, с лакомства и награда Kodak PIXPRO.",
+			"","event","positive",100,5,
+		),
 		makeSignal(
 			"Youth Street / School Expo 2026","media","external",
 			"https://youthstreet.eu/school-expo-2026-%D0%B2-delta-planet-mall-%D0%B2%D0%B0%D1%80%D0%BD%D0%B0-%D1%81%D1%8A%D0%B1%D0%B8%D1%80%D0%B0-%D0%B2-%D0%B5%D0%B4%D0%B8%D0%BD-%D1%83%D0%B8%D0%BA%D0%B5%D0%BD%D0%B4-%D0%B7%D0%BD%D0%B0/",
@@ -242,6 +279,29 @@ func deltaVerifiedRecentCompetitorMentions() []Signal {
 		}
 	}
 	return []Signal{
+		// Current competitor developments verified on 18 October 2026.
+		makeSignal(
+			"Black Sea Center","Black Sea Center Offices","official",
+			"https://bsc-offices.com/",
+			"Black Sea Center развива нова лайфстайл концепция с офиси, услуги, спорт и развлечения",
+			"Официалният профил описва офиси на етажи 3–4, над 600 паркоместа, Pulse Fitness & Spa 5 000 m², падел, детски център 2 500 m², ресторанти, premium café, банки и retail.",
+			"","repositioning","neutral",100,10,
+		),
+		makeSignal(
+			"Grand Mall Varna","iSTYLE","official",
+			"https://istyle.bg/",
+			"iSTYLE поддържа първия си специализиран магазин във Варна в Grand Mall Varna",
+			"Актуалният профил на iSTYLE посочва магазин на партер в Grand Mall Varna с работно време 10:00–21:00 ч.; обектът е първата специализирана iSTYLE локация във Варна.",
+			"","tenant_activity","positive",96,5,
+		),
+		makeSignal(
+			"Retail Park Varna","Next Level Retail Park Varna","tenant_web",
+			"https://retailparkvarna.nextlevelclub.bg/calendar",
+			"Next Level Retail Park Varna поддържа активна фитнес програма през октомври",
+			"Публичният календар за 12–18 октомври 2026 г. показва ежедневни групови занимания, а клубът предлага активни платени абонаменти.",
+			"","tenant_activity","neutral",94,5,
+		),
+
 		// Grand Mall Varna — tenant campaigns and entertainment activity.
 		makeSignal(
 			"Grand Mall Varna","Grand Mall Varna / публична социална публикация","social_web",
