@@ -10,6 +10,29 @@
   const routeClient=allowed.has(route)?route:'';
   const requested=allowed.has(params.get('client'))?params.get('client'):(routeClient||'');
   const requestedLang=params.get('lang')==='en'?'en':'';
+  if(requestedLang){
+    // Keep the canonical English route authoritative even if a late legacy
+    // renderer tries to restore the document's original lang="bg" attribute.
+    // Property assignment and the common setAttribute path are both guarded.
+    try{
+      const html=document.documentElement;
+      const proto=Object.getOwnPropertyDescriptor(HTMLElement.prototype,'lang');
+      if(proto&&proto.get&&proto.set&&!Object.prototype.hasOwnProperty.call(html,'lang')){
+        Object.defineProperty(html,'lang',{
+          configurable:true,
+          enumerable:true,
+          get(){return 'en'},
+          set(){proto.set.call(this,'en')}
+        });
+      }
+      const nativeSet=html.setAttribute.bind(html);
+      html.setAttribute=function(name,value){
+        if(String(name||'').toLowerCase()==='lang')return nativeSet('lang','en');
+        return nativeSet(name,value);
+      };
+      nativeSet('lang','en');
+    }catch(_){document.documentElement.lang='en'}
+  }
   if(requested){
     window.BLIS_INITIAL_CLIENT=requested;
     window.__BLIS_EXPECTED_CLIENT=requested;
