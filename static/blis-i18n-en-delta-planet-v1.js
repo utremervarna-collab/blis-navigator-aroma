@@ -51,6 +51,11 @@ const M={
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
 Object.assign(M,{
+"Продукт и категория":"Product and category",
+"Сигналът се потвърждава в 2 различни източника и е достатъчно значим за проследяване.":"The signal is confirmed by 2 different sources and is significant enough to monitor.",
+"2 източника / потвърждения":"2 sources / confirmations"
+});
+Object.assign(M,{
 "Как се променя средата":"How the environment is changing",
 "Конкретни теми и измерими движения. Ако няма именуема тема, Navigator не измисля такава.":"Specific themes and measurable movements. If there is no identifiable theme, Navigator does not invent one.",
 "Активни теми":"Active themes",
