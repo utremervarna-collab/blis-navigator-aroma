@@ -171,7 +171,7 @@ function translateDelta(raw){
 let pending=false;
 function applyDelta(){
  pending=false;if(!deltaEnglish())return;
- document.documentElement.lang='en';
+ if(document.documentElement.lang!=='en')document.documentElement.lang='en';
  const walker=document.createTreeWalker(document.body||document.documentElement,NodeFilter.SHOW_TEXT);
  let n;while((n=walker.nextNode())){
   if(n.parentElement&&/SCRIPT|STYLE|NOSCRIPT|TEXTAREA/.test(n.parentElement.tagName))continue;
@@ -186,6 +186,9 @@ function scheduleDelta(){if(!pending){pending=true;requestAnimationFrame(applyDe
 function startDelta(){
  applyDelta();
  new MutationObserver(scheduleDelta).observe(document.body||document.documentElement,{subtree:true,childList:true,characterData:true});
+ new MutationObserver(()=>{
+  if(deltaEnglish()&&document.documentElement.lang!=='en')scheduleDelta();
+ }).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startDelta,{once:true});else startDelta();
 })();
