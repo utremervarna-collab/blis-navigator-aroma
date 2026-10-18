@@ -90,7 +90,15 @@ func ensureDeltaPlanetClient() *Client{
 }
 
 func deltaSignals()[]Signal{
-	signalMu.RLock(); rows:=append([]Signal(nil),signalState.Signals["delta-planet"]...); signalMu.RUnlock()
+	signalMu.RLock(); raw:=append([]Signal(nil),signalState.Signals["delta-planet"]...); signalMu.RUnlock()
+	rows:=make([]Signal,0,len(raw))
+	for _,s:=range raw{
+		// Do not surface an undated Bing recall result as a current development
+		// when the underlying article is a known 2025 holiday-hours notice.
+		lowURL:=strings.ToLower(strings.TrimSpace(s.URL))
+		if strings.Contains(lowURL,"boulevardbulgaria.bg") && strings.Contains(lowURL,"praznichno-rabotno-vreme-na-delta-planet-mall"){continue}
+		rows=append(rows,s)
+	}
 	sort.SliceStable(rows,func(i,j int)bool{a,b:=rows[i].PublishedAt,rows[j].PublishedAt;if a==""{a=rows[i].DetectedAt};if b==""{b=rows[j].DetectedAt};return a>b})
 	return rows
 }
