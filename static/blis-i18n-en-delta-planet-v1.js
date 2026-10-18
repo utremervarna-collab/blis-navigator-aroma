@@ -50,6 +50,12 @@ const M={
 'Black Sea Center: нов собственик и нова концепция':'Black Sea Center: new owner and new concept','Black Sea Center влиза в нов етап на развитие':'Black Sea Center enters a new stage of development',
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
+Object.assign(M,{
+"Историческа база":"Historical baseline",
+"Важни промени":"Key developments",
+"потвърдени споменавания през последните 3 месеца":"verified mentions in the past 3 months",
+"На 19–20 септември 2026 Delta Planet Mall е домакин на School Expo „Уча, творя, спортувам“ с образователни, спортни и творчески":"On 19–20 September 2026, Delta Planet Mall hosts the School Expo “Learn, Create, Play Sports”, with educational, sports and creative activities"
+});
 Object.assign(M,{"Спрямо предходното измерване":"Compared with the previous measurement"});
 Object.assign(M,{
 "Радио Варна · Delta Planet Mall":"Radio Varna · Delta Planet Mall",
@@ -88,6 +94,7 @@ Object.assign(M,{
 "нови наематели; категории home/sport/tech; фитнес и услуги; промоции; разширения; трафик и удобство":"new tenants; home/sport/tech categories; fitness and services; promotions; expansion; traffic and convenience"
 });
 const R=[
+[/^На 19–20 септември 2026(?: г\.)? Delta Planet Mall е домакин на School Expo „Уча, творя, спортувам“ с образователни, спортни и творчески(?: участници)?\.?$/,'On 19–20 September 2026, Delta Planet Mall hosts the School Expo “Learn, Create, Play Sports”, featuring educational, sports and creative participants.'],
 [/^(\d+) публикации$/,'$1 posts'],
 [/^На 19–20 септември 2026 г\. Delta Planet Mall е домакин на School Expo „Уча, творя, спортувам“ с образователни, спортни и творчески участници\.$/,'On 19–20 September 2026, Delta Planet Mall hosts the School Expo “Learn, Create, Play Sports”, featuring educational, sports and creative participants.'],
 [/^VR Varna публикува актуално работно време и потвърждава присъствие на ниво 1 и ниво -3 в Delta Planet Mall\.$/,'VR Varna publishes current opening hours and confirms its presence on Level 1 and Level -3 at Delta Planet Mall.'],
