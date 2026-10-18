@@ -1530,13 +1530,13 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 func startEngineScheduler() {
 	go func() {
 		time.Sleep(30 * time.Second)
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
+		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "delta-planet"} {
 			runClientEngine(store.Clients[slug], true)
 		}
 		t := time.NewTicker(24 * time.Hour)
 		defer t.Stop()
 		for range t.C {
-			for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox"} {
+			for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "delta-planet"} {
 				runClientEngine(store.Clients[slug], true)
 			}
 		}
