@@ -51,6 +51,9 @@ const M={
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
 Object.assign(M,{
+"Няма достатъчно силна нова възможност. Това е валиден резултат — слабите сигнали не се показват.":"There is no sufficiently strong new opportunity. This is a valid result — weak signals are not shown."
+});
+Object.assign(M,{
 "Историческа база":"Historical baseline",
 "Важни промени":"Key developments",
 "потвърдени споменавания през последните 3 месеца":"verified mentions in the past 3 months",
