@@ -51,6 +51,15 @@ const M={
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
 Object.assign(M,{
+"Как се променя средата":"How the environment is changing",
+"Конкретни теми и измерими движения. Ако няма именуема тема, Navigator не измисля такава.":"Specific themes and measurable movements. If there is no identifiable theme, Navigator does not invent one.",
+"Активни теми":"Active themes",
+"18.10, 02:20 · за проследяване":"18 Oct, 02:20 · monitor",
+"Промяна във възприятието и средата":"Change in perception and environment",
+"Няма измерима промяна в репутационната или пазарната среда над прага за значимост.":"No measurable change in the reputation or market environment exceeds the significance threshold.",
+"Какво да наблюдаваме":"What to monitor"
+});
+Object.assign(M,{
 "Празнично работно време на Delta Planet Mall - boulevardbulgaria.bg":"Holiday opening hours at Delta Planet Mall - boulevardbulgaria.bg",
 "Празнично работно време на Delta Planet Mall":"Holiday opening hours at Delta Planet Mall",
 "Празничното работно време на Delta Planet Mall по време на коледните и новогодишните празници през 2025 г.":"Delta Planet Mall holiday opening hours during the 2025 Christmas and New Year period."
