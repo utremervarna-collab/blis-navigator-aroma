@@ -664,6 +664,15 @@ func signalListHandler(w http.ResponseWriter, r *http.Request) {
 	defer signalMu.RUnlock()
 	if client != "" {
 		rows := append([]Signal{}, signalState.Signals[client]...)
+		if client == "delta-planet" {
+			clean := rows[:0]
+			for _, s := range rows {
+				if !deltaStaleRecallSignal(s) {
+					clean = append(clean, s)
+				}
+			}
+			rows = clean
+		}
 		if scope != "" {
 			filtered := rows[:0]
 			for _, s := range rows {
