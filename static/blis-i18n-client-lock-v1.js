@@ -42,6 +42,7 @@
   let dataLoadRequested=false;
   function lock(){
     if(!requested)return;
+    if(requestedLang&&document.documentElement.lang!=='en')document.documentElement.lang='en';
     window.BLIS_INITIAL_CLIENT=requested;
     window.__BLIS_EXPECTED_CLIENT=requested;
     try{if(typeof slug!=='undefined'&&slug!==requested)slug=requested}catch(_){}
