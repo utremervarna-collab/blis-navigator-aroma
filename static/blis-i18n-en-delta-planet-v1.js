@@ -51,6 +51,11 @@ const M={
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
 Object.assign(M,{
+"Празнично работно време на Delta Planet Mall - boulevardbulgaria.bg":"Holiday opening hours at Delta Planet Mall - boulevardbulgaria.bg",
+"Празнично работно време на Delta Planet Mall":"Holiday opening hours at Delta Planet Mall",
+"Празничното работно време на Delta Planet Mall по време на коледните и новогодишните празници през 2025 г.":"Delta Planet Mall holiday opening hours during the 2025 Christmas and New Year period."
+});
+Object.assign(M,{
 "Няма достатъчно силна нова възможност. Това е валиден резултат — слабите сигнали не се показват.":"There is no sufficiently strong new opportunity. This is a valid result — weak signals are not shown."
 });
 Object.assign(M,{
