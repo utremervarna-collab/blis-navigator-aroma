@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
@@ -87,6 +88,39 @@ func ensureDeltaPlanetClient() *Client{
 	mu.Unlock()
 	seedDeltaPlanetFacts(c)
 	return c
+}
+
+func deltaStaleRecallSignal(s Signal) bool {
+	lowURL:=strings.ToLower(strings.TrimSpace(s.URL))
+	return strings.Contains(lowURL,"boulevardbulgaria.bg") &&
+		strings.Contains(lowURL,"praznichno-rabotno-vreme-na-delta-planet-mall")
+}
+
+func sanitizeDeltaSignalState(){
+	signalMu.Lock()
+	if rows:=signalState.Signals["delta-planet"];len(rows)>0{
+		clean:=rows[:0]
+		for _,s:=range rows{if !deltaStaleRecallSignal(s){clean=append(clean,s)}}
+		signalState.Signals["delta-planet"]=clean
+	}
+	signalMu.Unlock()
+
+	mu.Lock()
+	if c:=store.Clients["delta-planet"];c!=nil&&len(c.Observations)>0{
+		clean:=c.Observations[:0]
+		for _,o:=range c.Observations{
+			remove:=false
+			if o.SourceKey=="signal_collector"&&strings.HasPrefix(o.MetricKey,"signal_event_"){
+				if raw,ok:=o.Value.(string);ok{
+					var s Signal
+					if json.Unmarshal([]byte(raw),&s)==nil&&deltaStaleRecallSignal(s){remove=true}
+				}
+			}
+			if !remove{clean=append(clean,o)}
+		}
+		c.Observations=clean
+	}
+	mu.Unlock()
 }
 
 func deltaSignals()[]Signal{
@@ -393,6 +427,7 @@ func ensureDeltaVerifiedRecentMentions(){
 func bootstrapDeltaPlanet(){
 	c:=ensureDeltaPlanetClient()
 	if c==nil{return}
+	sanitizeDeltaSignalState()
 	ensureDeltaVerifiedRecentMentions()
 	runUniversalClientEngineV34(c,true)
 	if continuousMonitoringMu.TryLock(){
@@ -400,7 +435,7 @@ func bootstrapDeltaPlanet(){
 		if snap!=nil{
 			fresh:=collectClientSignals(snap)
 			for _,t:=range competitorSignalTargets(snap){fresh=append(fresh,collectCompetitorNews(snap,t)...);fresh=append(fresh,collectCompetitorWeb(snap,t)...);fresh=append(fresh,collectCompetitorSocial(snap,t)...)}
-			mergeSignals("delta-planet",dedupeSignals(fresh));saveSignalStateFile();saveStore()
+			mergeSignals("delta-planet",dedupeSignals(fresh));sanitizeDeltaSignalState();saveSignalStateFile();saveStore()
 		}
 		continuousMonitoringMu.Unlock()
 	}
