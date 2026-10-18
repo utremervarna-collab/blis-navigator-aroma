@@ -50,6 +50,7 @@ const M={
 'Black Sea Center: нов собственик и нова концепция':'Black Sea Center: new owner and new concept','Black Sea Center влиза в нов етап на развитие':'Black Sea Center enters a new stage of development',
 'Black Sea Center като ново поколение градско пространство':'Black Sea Center as a new-generation urban space'
 };
+Object.assign(M,{"Спрямо предходното измерване":"Compared with the previous measurement"});
 Object.assign(M,{
 "Радио Варна · Delta Planet Mall":"Radio Varna · Delta Planet Mall",
 "Варна Онлайн · Delta Planet Mall":"Varna Online · Delta Planet Mall",
