@@ -31,6 +31,7 @@ jobs:
       - name: Build and start Navigator gateway
         run: |
           set -euxo pipefail
+          go test ./...
           go build -tags netgo -ldflags '-s -w' -o app .
           PORT=10000 ./app >/tmp/blis-smoke-server.log 2>&1 &
           for i in $(seq 1 40); do
@@ -45,7 +46,7 @@ jobs:
       - name: Verify canonical visible catalogue
         run: |
           set -euo pipefail
-          grep -Fq "const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello'];" static/navigator-client-ui.js
+          grep -Fq "const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello','varna-towers','astor-garden','everbet'];" static/navigator-client-ui.js
           echo CANONICAL_VISIBLE_CATALOGUE_OK
 
       - name: Verify public read-only gateway contracts

@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
-	"io"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -34,7 +34,7 @@ func validNavigatorClient(slug string) bool {
 
 func canonicalNavigatorPage(page string) string {
 	switch strings.TrimSpace(strings.ToLower(page)) {
-	case "overview", "social", "market", "digital", "reputation", "competition", "opportunities", "history", "reports":
+	case "overview", "social", "market", "digital", "reputation", "competition", "opportunities", "history", "reports", "hub", "calendar":
 		return strings.TrimSpace(strings.ToLower(page))
 	case "signals":
 		return "social"
@@ -49,8 +49,10 @@ func canonicalNavigatorPage(page string) string {
 
 func navigatorDashboardTarget(r *http.Request) string {
 	slug := strings.TrimSpace(r.URL.Query().Get("client"))
-	if slug == icardSlug { return "/icard" }
-	if isBscScope(r) {
+	if slug == icardSlug {
+		return "/icard"
+	}
+	if !validNavigatorClient(slug) && isBscScope(r) {
 		slug = "black-sea-center"
 	}
 	if !validNavigatorClient(slug) {
@@ -199,7 +201,9 @@ func redirectToClientLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func navigatorGateway(w http.ResponseWriter, r *http.Request) {
-	if serveICardPublic(w, r) { return }
+	if serveICardPublic(w, r) {
+		return
+	}
 	path := r.URL.Path
 
 	// Readiness must reflect the internal Navigator backend, not only the
@@ -219,11 +223,22 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			h.Set("Cache-Control", "no-cache")
 			h.Set("X-BLIS-Language-Asset-Origin", "gateway")
 			resp := &http.Response{StatusCode: http.StatusOK, Header: h, Body: io.NopCloser(bytes.NewReader(b)), ContentLength: int64(len(b)), Request: r}
-			if authProxy.ModifyResponse != nil { if err := authProxy.ModifyResponse(resp); err != nil { http.Error(w, "Language asset unavailable", http.StatusServiceUnavailable); return } }
+			if authProxy.ModifyResponse != nil {
+				if err := authProxy.ModifyResponse(resp); err != nil {
+					http.Error(w, "Language asset unavailable", http.StatusServiceUnavailable)
+					return
+				}
+			}
 			defer resp.Body.Close()
-			for k, values := range resp.Header { for _, v := range values { w.Header().Add(k, v) } }
+			for k, values := range resp.Header {
+				for _, v := range values {
+					w.Header().Add(k, v)
+				}
+			}
 			w.WriteHeader(resp.StatusCode)
-			if r.Method != http.MethodHead { _, _ = io.Copy(w, resp.Body) }
+			if r.Method != http.MethodHead {
+				_, _ = io.Copy(w, resp.Body)
+			}
 			return
 		}
 	}
@@ -273,10 +288,8 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	// keeps Dashboard -> Home navigation available even while the backend is
 	// briefly busy, restoring persistence, or being replaced by the provider.
 	if (path == "/" || path == "/index.html" || path == "/home" || path == "/home/" || path == "/home.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("client")), "black-sea-center") {
-			http.Redirect(w, r, "/dashboard.html?client=black-sea-center&page=overview", http.StatusFound)
-			return
-		}
+		clearTopRentScopeCookie(w, r)
+		clearBscScopeCookie(w, r)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		w.Header().Set("X-BLIS-Home-Origin", "gateway")
@@ -285,12 +298,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		body := injectBLISI18N([]byte(indexHTML))
-		homeClient := strings.TrimSpace(r.URL.Query().Get("client"))
-		if homeClient == "delta-planet" || homeClient == "top-rent-a-car" || homeClient == "icard" {
-			target := "/" + homeClient
-			ctx := []byte(`<script id="blis-home-client-context">(function(){var K='`+homeClient+`',T='`+target+`';try{localStorage.setItem('blis-client-ui',K)}catch(e){}function isNav(h){return h==='/dashboard.html'||h.indexOf('/dashboard.html?')===0||h==='/navigator'||h==='/navigator/'||h.indexOf('/navigator?')===0||h.indexOf('/client-login?generic=1')===0||h.indexOf('/client-access.html')===0}function bind(){document.querySelectorAll('a[href]').forEach(function(a){var h=a.getAttribute('href')||'';if(isNav(h))a.setAttribute('href',T)})}function click(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var h=a.getAttribute('href')||'';if(isNav(h)){e.preventDefault();location.href=T}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();document.addEventListener('click',click,true);new MutationObserver(bind).observe(document.documentElement,{childList:true,subtree:true});})();</script>`)
-			body = []byte(strings.Replace(string(body), "</body>", string(ctx)+"</body>", 1))
-		}
 		_, _ = w.Write(body)
 		return
 	}
@@ -354,7 +361,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// Public Varna Towers profile. The client stays hidden from the shared
 	// selector, while this canonical route opens the existing Navigator profile
 	// without authentication and locks the rendered dashboard to Varna Towers.
@@ -389,7 +395,9 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		q := url.Values{}
 		q.Set("client", "delta-planet")
 		q.Set("page", canonicalNavigatorPage(r.URL.Query().Get("page")))
-		if strings.EqualFold(r.URL.Query().Get("lang"), "en") { q.Set("lang", "en") }
+		if strings.EqualFold(r.URL.Query().Get("lang"), "en") {
+			q.Set("lang", "en")
+		}
 		http.Redirect(w, r, "/dashboard.html?"+q.Encode(), http.StatusFound)
 		return
 	}
@@ -455,7 +463,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		r2.URL.Path = "/dashboard.html"
 		q := r2.URL.Query()
 		requested := strings.TrimSpace(q.Get("client"))
-		if requested == "top-rent-a-car" || isTopRentScope(r) {
+		if requested == "top-rent-a-car" {
 			setTopRentScopeCookie(w, r)
 			q.Set("client", "top-rent-a-car")
 			if q.Get("page") == "" {
@@ -467,6 +475,7 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			authProxy.ServeHTTP(w, r2)
 			return
 		}
+		clearTopRentScopeCookie(w, r)
 		if !validNavigatorClient(requested) {
 			q.Set("client", "aroma")
 		}
@@ -479,18 +488,32 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 			// The public dashboard shell is embedded; render through the same
 			// response assembly chain without waiting for the data backend.
 			body, err := staticFS.ReadFile("static/dashboard.html")
-			if err != nil { http.Error(w, "Delta profile unavailable", http.StatusServiceUnavailable); return }
+			if err != nil {
+				http.Error(w, "Delta profile unavailable", http.StatusServiceUnavailable)
+				return
+			}
 			body = injectBLISI18N(body)
 			resp := &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(body)), ContentLength: int64(len(body)), Request: r2}
 			resp.Header.Set("Content-Type", "text/html; charset=utf-8")
 			if authProxy.ModifyResponse != nil {
-				if err := authProxy.ModifyResponse(resp); err != nil { resp.Body.Close(); http.Error(w, "Delta profile assembly unavailable", http.StatusServiceUnavailable); return }
+				if err := authProxy.ModifyResponse(resp); err != nil {
+					resp.Body.Close()
+					http.Error(w, "Delta profile assembly unavailable", http.StatusServiceUnavailable)
+					return
+				}
 			}
 			defer resp.Body.Close()
-			for key, values := range resp.Header { for _, value := range values { w.Header().Add(key, value) } }
+			for key, values := range resp.Header {
+				for _, value := range values {
+					w.Header().Add(key, value)
+				}
+			}
 			w.Header().Set("X-BLIS-Delta-Shell-Origin", "gateway")
 			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-			if r.Method == http.MethodHead { w.WriteHeader(http.StatusOK); return }
+			if r.Method == http.MethodHead {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			_, _ = io.Copy(w, resp.Body)
 			return
 		}
@@ -504,20 +527,6 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 	if path == "/api/public/home-tape" {
 		publicHomeTape(w, r)
 		return
-	}
-	if isTopRentScope(r) && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		if path == "/api/clients" {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.Header().Set("Cache-Control", "no-store")
-			_, _ = w.Write([]byte(`[{"slug":"top-rent-a-car","name":"TOP Rent A Car","sector":"Коли под наем · мобилност · туризъм","note":"Заключен клиентски профил"}]`))
-			return
-		}
-		if strings.HasPrefix(path, "/api/clients/") && !strings.HasPrefix(path, "/api/clients/top-rent-a-car/") {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusForbidden)
-			_, _ = w.Write([]byte(`{"error":"Профилът е ограничен до TOP Rent A Car"}`))
-			return
-		}
 	}
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && (path == "/api/clients" || strings.HasPrefix(path, "/api/clients/")) {
 		if authProxy == nil {

@@ -99,7 +99,7 @@ jobs:
 
             curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
               "$BASE/dashboard.html?client=aroma&page=overview&soak=$i&ts=$TS" -o "/tmp/soak-aroma-$i.html"
-            grep -Fq 'blisDashboardPrepaintV5' "/tmp/soak-aroma-$i.html"
+            grep -Fq 'blisDashboardPrepaintLean' "/tmp/soak-aroma-$i.html"
 
             curl --fail --silent --show-error --connect-timeout 10 --max-time 25 \
               "$BASE/kub-home.html?soak=$i&ts=$TS" -o "/tmp/soak-kub-$i.html"
