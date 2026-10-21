@@ -433,7 +433,9 @@ func runtimeDataStatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	if backgroundNetworkLoopsDisabled() { return }
+	// Persistence restore is a one-shot recovery after HTTP readiness, not a
+	// recurring collector. Production disables network loops to bound memory,
+	// but must still recover the durable client history after each restart.
 	http.HandleFunc("/api/runtime-data/status", runtimeDataStatusHandler)
 	startRuntimeDataRestore()
 }
