@@ -1,0 +1,1 @@
+Proposal: remove ambiguous standalone КУБ query; expand legal-risk phrases; extend eligible client list; dedupe across all stored observations. This is not a production correction.
