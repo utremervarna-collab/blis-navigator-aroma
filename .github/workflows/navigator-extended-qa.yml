@@ -70,7 +70,7 @@ jobs:
           const clients=['aroma','bolyarka','mollox','varna-towers','delta-planet','black-sea-center','everbet','astor-garden'];
           const pages=['overview','social','market','competition','history','hub','calendar'];
           const expected={aroma:'Aroma',bolyarka:'Болярка',mollox:'MOLLOX','varna-towers':'Varna Towers','delta-planet':'Delta Planet Mall','black-sea-center':'Black Sea Center',everbet:'Everbet','astor-garden':'Astor Garden'};
-          const visible=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello'];
+          const visible=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello','varna-towers','astor-garden','everbet'];
           let phase='startup';
           const watchdog=setTimeout(()=>{const msg=`watchdog timeout at ${phase}`;try{fs.writeFileSync('/tmp/extended-error.txt',msg)}catch(_){};console.error(msg);process.exit(2)},150000);
 
@@ -173,9 +173,8 @@ jobs:
               await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:20000});
               assert(await bsc.locator('.dashboard-home-link').count()===0,'BSC Home link must not exist');
               await bsc.goto(origin+'/?client=black-sea-center',{waitUntil:'domcontentloaded',timeout:30000});
-              await bsc.waitForURL(/dashboard\.html\?.*client=black-sea-center/,{timeout:10000});
-              await bsc.waitForFunction(()=>document.body?.dataset?.client==='black-sea-center',null,{timeout:20000});
-              assert(await bsc.locator('.dashboard-home-link').count()===0,'BSC Home route must resolve to dashboard only');
+              assert(new URL(bsc.url()).pathname==='/', 'shared Home must remain Home');
+              assert(await bsc.locator('a[href="/dashboard.html"]').count()>0,'shared Home must offer the client catalogue');
               await bsc.close();
 
               phase='done';

@@ -3,6 +3,7 @@
 (function(){'use strict';
 if(!/delta-planet/i.test(location.pathname+location.search) && !document.documentElement.innerHTML.includes('Delta Planet Mall')) return;
 const M={
+'Ключов измерен показател се промени':'A key measured indicator changed',
 'Търговски център / retailtainment / развлечения':'Shopping centre / retailtainment / entertainment',
 'Пълен публичен профил · live monitoring · конкурентни досиета':'Full public profile · live monitoring · competitor dossiers',
 'Общ изглед':'Overview','Мониторинг':'Monitoring','Среда':'Environment','Конкуренти':'Competitors','Развитие/Доклади':'Development / Reports',
