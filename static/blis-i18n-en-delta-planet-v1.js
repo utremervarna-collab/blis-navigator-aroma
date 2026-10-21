@@ -3,6 +3,18 @@
 (function(){'use strict';
 if(!/delta-planet/i.test(location.pathname+location.search) && !document.documentElement.innerHTML.includes('Delta Planet Mall')) return;
 const M={
+"Няма потвърдено ново конкурентно движение над прага за значимост.":"No confirmed new competitor development exceeds the significance threshold.",
+"Black Sea Center Offices – Модерни офиси и бизнес пространство в сърцето на град Варна":"Black Sea Center Offices – Modern offices and business space in central Varna",
+"iSTYLE поддържа първия си специализиран магазин във Варна в Grand Black Sea Center":"iSTYLE operates its first dedicated store in Varna at Grand Black Sea Center",
+"Няма потвърдено ново конкурентно действие за периода. Абсолютни follower броеве не се показват без сравнителна промяна.":"No new competitor action is confirmed for this period. Absolute follower counts are not shown without a comparative change.",
+"„Мол Варна“ с нов собственик, вече ще се казва Black Sea Center - Будна Варна":"Mall Varna has a new owner and will be renamed Black Sea Center - Budna Varna",
+"конкурентни споменавания през последните 3 месеца":"competitor mentions in the past three months",
+"Black Sea Center Offices – Модерни офиси и бизнес пространство в сърцето на град Варна Skip to content Свържете се с нас: 0889 88 55 98 Home Офиси Контакти СВОБОДНИ ОФИСИ СВОБОДНИ ОФИСИ Home Офиси Контакти Не купувате просто офис.":"Black Sea Center Offices – Modern offices and business space in central Varna. Contact: 0889 88 55 98. Offices, contacts and available offices. You are buying more than an office.",
+"Публичният календар за 12–18 октомври 2026 показва ежедневни групови занимания, а клубът предлага активни платени":"The public calendar for 12–18 October 2026 lists daily group classes, and the club offers paid activities",
+"Актуалният профил на iSTYLE посочва магазин на партер в Grand Black Sea Center с работно време 10:00–21:00 ч.; обектът е първата специализирана iSTYLE локация във":"The current iSTYLE listing places the store on the ground floor of Grand Black Sea Center, open 10:00–21:00; it is the first dedicated iSTYLE location in",
+"„Мол Варна“ с нов собственик, вече ще се казва Black Sea Center Будна":"Mall Varna has a new owner and will be renamed Black Sea Center - Budna",
+"Георги Самуилов купи \"Мол Варна\", който вече ще се казва Black Sea":"Georgi Samuilov acquired Mall Varna, which will be renamed Black Sea",
+
 "Подарък за ЦВЕТНИЦА - Тениски Варна - Делта Планет Мол - YouTube":"Palm Sunday gift - T-shirts Varna - Delta Planet Mall - YouTube",
 "Радио Варна":"Radio Varna",
 "открито":"detected",
