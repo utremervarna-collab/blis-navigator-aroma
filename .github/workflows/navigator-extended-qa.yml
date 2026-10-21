@@ -149,7 +149,7 @@ jobs:
               const option=p.locator('.client-option[data-client-key="bolyarka"]');
               assert(await option.count()===1,'Bolyarka visible option missing or duplicated');
               await option.click();
-              await p.waitForFunction(()=>document.body.dataset.client==='bolyarka'&&document.body.dataset.blisLoading!=='true'&&(document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'').includes('Болярка'),null,{timeout:15000});
+              await p.waitForFunction(()=>document.body?.dataset.client==='bolyarka'&&document.body?.dataset.blisLoading!=='true'&&(document.querySelector('.bch3-name')?.textContent||document.querySelector('.client-brand-name')?.textContent||'').includes('Болярка'),null,{timeout:15000});
               const switched=await ready(p,'bolyarka');
               assert(switched.menu.join(',')===visible.join(','),'client switch changed visible registry');
               assert(errs.length===0,`desktop runtime errors ${errs.join(' | ')}`);

@@ -3,6 +3,14 @@
 (function(){'use strict';
 if(!/delta-planet/i.test(location.pathname+location.search) && !document.documentElement.innerHTML.includes('Delta Planet Mall')) return;
 const M={
+"Радио Варна":"Radio Varna",
+"открито":"detected",
+"School Expo 2026 в Delta Planet Mall Варна събира в един уикенд знания, творчество, спорт и нови възможности - СайтЪТ":"School Expo 2026 at Delta Planet Mall Varna brings learning, creativity, sport and new opportunities together over one weekend - Saytat",
+"School Expo 2026 в Delta Planet Mall Варна събира в един уикенд знания, творчество, спорт и нови възможности":"School Expo 2026 at Delta Planet Mall Varna brings learning, creativity, sport and new opportunities together over one weekend",
+"На 31 октомври от 15:00 ч. търговският център планира игри, загадки и мисии за деца, с лакомства и награда Kodak":"On 31 October at 15:00, the shopping centre plans games, riddles and missions for children, with treats and a Kodak prize",
+"Актуалната програма показва специални прожекции в Cinema City Delta Planet Mall от 23 до 31 октомври 2026":"The current programme lists special screenings at Cinema City Delta Planet Mall from 23 to 31 October 2026",
+"Асоциацията на студентите медици във Варна и SCORA провеждат информационна и благотворителна кампания в Delta Planet Mall на 17 и 18 октомври от 12:00 до 15:00":"The Association of Medical Students in Varna and SCORA are holding an information and charity campaign at Delta Planet Mall on 17 and 18 October, from 12:00 to 15:00",
+
 'Ключов измерен показател се промени':'A key measured indicator changed',
 'Търговски център / retailtainment / развлечения':'Shopping centre / retailtainment / entertainment',
 'Пълен публичен профил · live monitoring · конкурентни досиета':'Full public profile · live monitoring · competitor dossiers',
@@ -140,6 +148,8 @@ R.push(
  [/^(\d+) (потвърдени|конкурентни) споменавания през последните 3 месеца$/,(_,n,k)=>n+' '+(k==='конкурентни'?'competitor':'verified')+' mentions in the past three months'],
  [/^(\d+) споменавания · проверка на (\d+) сек\.$/,'$1 mentions · checked every $2 seconds'],
  [/^На живо · проверка на (\d+) сек\. · (.+)$/,(_,n,d)=>'Live · checked every '+n+' seconds · '+d.replace(/\s*г\./g,'')],
+ [/^(.*) · Открито (.*)$/,(_,s,d)=>(M[s]||s)+' · Detected '+d],
+ [/^(.*) · Published (.*)$/,(_,s,d)=>(M[s]||s)+' · Published '+d],
  [/^(.*) · Публикувано (.*)$/,(_,s,d)=>(M[s]||s)+' · Published '+d],
  [/^(.*) · (Пазарно движение|Публична активност|Цена \/ оферта|Кампания)$/,(_,s,k)=>s+' · '+(M[k]||k)],
  [/^Има (\d+) свързани сигнала за пазарно движение\.$/,'There are $1 related signals of market developments.'],
