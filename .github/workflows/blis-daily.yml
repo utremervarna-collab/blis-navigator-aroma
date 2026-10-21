@@ -109,6 +109,19 @@ jobs:
                       restored += 1
               print('KUB_RUNTIME_HISTORY_PRESERVED', restored)
 
+          # A cold-start snapshot must never overwrite richer durable client history.
+          if os.path.exists('/tmp/runtime-data-before.json'):
+              previous_all=json.load(open('/tmp/runtime-data-before.json',encoding='utf-8')).get('clients',{})
+              current_all=candidate.get('clients',{})
+              for slug, old_client in previous_all.items():
+                  if slug not in current_all:
+                      raise SystemExit(f'snapshot refused: durable client {slug} missing')
+                  for field in ('snapshots','observations'):
+                      old_count=len(old_client.get(field,[]))
+                      new_count=len(current_all[slug].get(field,[]))
+                      if new_count < old_count:
+                          raise SystemExit(f'snapshot regression refused: {slug} {field} {old_count}->{new_count}')
+
           with open(path,'w',encoding='utf-8') as f:
               json.dump(candidate,f,ensure_ascii=False,separators=(',',':'))
           print('DAILY_RUNTIME_DATA_READY')

@@ -3,6 +3,7 @@
 (function(){'use strict';
 if(!/delta-planet/i.test(location.pathname+location.search) && !document.documentElement.innerHTML.includes('Delta Planet Mall')) return;
 const M={
+"Подарък за ЦВЕТНИЦА - Тениски Варна - Делта Планет Мол - YouTube":"Palm Sunday gift - T-shirts Varna - Delta Planet Mall - YouTube",
 "Радио Варна":"Radio Varna",
 "открито":"detected",
 "School Expo 2026 в Delta Planet Mall Варна събира в един уикенд знания, творчество, спорт и нови възможности - СайтЪТ":"School Expo 2026 at Delta Planet Mall Varna brings learning, creativity, sport and new opportunities together over one weekend - Saytat",
