@@ -64,3 +64,16 @@ func TestPublicKUBChronologyIdentityFilter(t *testing.T) {
         t.Fatal("relevant Baba Alino judicial development was filtered")
     }
 }
+
+
+func TestKUBCrisisCollectorRejectsCubicUnits(t *testing.T) {
+    client := &Client{Slug: "kub", Name: "Корпорация КУБ"}
+    _, ok := kubCrisisSignalV2(client, "Новини", "https://example.org/water", "Над 5 милиона куб. метра вода", "", "Thu, 22 Oct 2026 16:39:35 GMT")
+    if ok {
+        t.Fatal("crisis collector accepted an unrelated cubic-metre article")
+    }
+    signal, ok := kubCrisisSignalV2(client, "Новини", "https://example.org/court", "Ново дело за Forest Club в Баба Алино", "", "Thu, 22 Oct 2026 16:39:35 GMT")
+    if !ok || signal.Client != "kub" {
+        t.Fatal("crisis collector rejected a relevant Forest Club judicial mention")
+    }
+}
