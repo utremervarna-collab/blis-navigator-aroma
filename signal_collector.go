@@ -191,11 +191,28 @@ func signalSentimentAndRisk(text string) (string, float64) {
 	return "neutral", 20
 }
 
+// KUB is also the Bulgarian abbreviation for cubic units. Require a company
+// or project context before accepting a search result as a client mention.
+var kubStandaloneRE = regexp.MustCompile(`(^|[^\p{L}])куб([^\p{L}]|$)`)
+
+func kubSignalContextValid(low string) bool {
+	if collectorContainsAny(low, "корпорация куб", "куб корпорация", "баба алино", "forest club", "форест клуб", "невзоров") {
+		return true
+	}
+	if !kubStandaloneRE.MatchString(low) || strings.Contains(low, "куб.") {
+		return false
+	}
+	return collectorContainsAny(low, "инвеститор", "строител", "имот", "жилищ", "сгради", "събар", "административен съд", "днск", "комплекс")
+}
+
 func signalRelevance(c *Client, title, text string) float64 {
 	if c == nil {
 		return 0
 	}
 	low := strings.ToLower(title + " " + text)
+	if c.Slug == "kub" && !kubSignalContextValid(low) {
+		return 0
+	}
 	score := 0.0
 	for i, term := range signalBrandTerms(c) {
 		term = strings.ToLower(strings.TrimSpace(term))
@@ -482,14 +499,14 @@ func signalClientSnapshot(slug string) *Client {
 }
 
 func signalEligibleSlugs() []string {
-	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "delta-planet", "kub", "black-sea-center", "top-rent-a-car"}
+	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "delta-planet", "kub", "black-sea-center", "top-rent-a-car", "astor-garden"}
 }
 
 func signalObservationExists(c *Client, metric string) bool {
 	if c == nil {
 		return false
 	}
-	for i := len(c.Observations) - 1; i >= 0 && i >= len(c.Observations)-2000; i-- {
+	for i := len(c.Observations) - 1; i >= 0; i-- {
 		o := c.Observations[i]
 		if o.SourceKey == "signal_collector" && o.MetricKey == metric {
 			return true
