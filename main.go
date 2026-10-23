@@ -1522,8 +1522,12 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return runUniversalClientEngineV34(c, snapshot)
 	case "black-sea-center":
 		return runUniversalClientEngineV34(c, snapshot)
-	default:
+	case "aroma":
 		return runAromaEngine(c, snapshot)
+	default:
+		// Unknown or signal-only clients must not run the Aroma metric engine.
+		// Doing so stores Aroma competitor metrics under unrelated client slugs.
+		return EngineStatus{Version: "2.9-portal-finalqa", Failed: 1}
 	}
 }
 
@@ -2073,6 +2077,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		case "refresh":
 			if r.Method != "POST" {
 				http.Error(w, "method", 405)
+				return
+			}
+			if !liveMetricClient(c.Slug) {
+				http.Error(w, "no metric engine configured for this client", http.StatusConflict)
 				return
 			}
 			st := runClientEngine(c, true)
