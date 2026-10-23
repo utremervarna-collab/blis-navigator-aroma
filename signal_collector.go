@@ -758,6 +758,11 @@ func init() {
 	http.HandleFunc("/api/signals", signalListHandler)
 	http.HandleFunc("/api/signals/refresh", signalRefreshHandler)
 	http.HandleFunc("/api/signals/health", signalHealthHandler)
+	// Honor the same background-network switch as the other collectors.
+	// API routes remain registered for explicit checks and refreshes.
+	if backgroundNetworkLoopsDisabled() {
+		return
+	}
 	go func() {
 		// Fast first run after the application is ready, then continuous polling.
 		time.Sleep(15 * time.Second)
