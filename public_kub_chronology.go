@@ -38,6 +38,11 @@ func publicKUBChronologySignalValid(s Signal) bool {
 	if _, ok := parseCompetitorPublished(strings.TrimSpace(s.PublishedAt)); !ok {
 		return false
 	}
+	// Apply the same identity check to durable and live KUB entries.
+	// Invalid historical cubic-unit matches remain stored for audit but are not displayed.
+	if !kubSignalContextValid(strings.ToLower(s.Title + " " + s.Text)) {
+		return false
+	}
 	u, err := url.Parse(strings.TrimSpace(s.URL))
 	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
