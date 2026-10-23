@@ -49,3 +49,18 @@ func TestAstorGardenIncludedInCollector(t *testing.T) {
     }
     t.Fatal("astor-garden missing from collector")
 }
+
+
+func TestPublicKUBChronologyIdentityFilter(t *testing.T) {
+    base := Signal{Client: "kub", Source: "Публична медия", URL: "https://example.org/story", PublishedAt: "2026-10-22T15:00:00Z"}
+    bad := base
+    bad.Title = "Над 5 милиона куб. метра вода"
+    if publicKUBChronologySignalValid(bad) {
+        t.Fatal("cubic-unit historical item leaked into KUB chronology")
+    }
+    good := base
+    good.Title = "Съдът разглежда ново дело за Баба Алино"
+    if !publicKUBChronologySignalValid(good) {
+        t.Fatal("relevant Baba Alino judicial development was filtered")
+    }
+}
