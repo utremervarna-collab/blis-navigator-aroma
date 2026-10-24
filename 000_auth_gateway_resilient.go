@@ -302,6 +302,16 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ariel Fish is a Navigator client profile, served from the same embedded application.
+	if (path == "/ariel-fish" || path == "/ariel-fish/" || path == "/ariel-fish.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+		body, err := staticFS.ReadFile("static/ariel-fish.html")
+		if err != nil { http.NotFound(w, r); return }
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store, max-age=0")
+		if r.Method != http.MethodHead { _, _ = w.Write(body) }
+		return
+	}
+
 	// Public Aroma presentation used for direct sharing with Aroma Cosmetics.
 	// It has its own landing page and an API namespace that is hard-scoped to
 	// Aroma, so the shared Navigator can keep serving the other client profiles
