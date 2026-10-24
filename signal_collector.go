@@ -82,6 +82,8 @@ func signalBrandTerms(c *Client) []string {
 		return []string{"Болярка", "Bolyarka", "Boliarka", "Болярка ВТ"}
 	case "mollox":
 		return []string{"MOLLOX", "MOLLOX България", "Mollox Bulgaria", "Молокс"}
+	case "ariel-fish":
+		return []string{"Ариел Фиш", "Ariel Fish"}
 	case "varna-towers":
 		return []string{"Varna Towers", "Варна Тауърс", "Варна Тауърс"}
 	case "delta-planet":
@@ -252,6 +254,15 @@ func buildSignal(c *Client, source, sourceType, rawURL, title, text, published s
 	text = cleanPostSnippet(text)
 	if text == "" {
 		text = title
+	}
+	// "Ariel Fish" is also the name of an unrelated photographer.
+	// English-only matches need a business/seafood context before ingestion.
+	if c != nil && c.Slug == "ariel-fish" {
+		low := strings.ToLower(title + " " + text)
+		if strings.Contains(low, "ariel fish") && !strings.Contains(low, "ариел фиш") &&
+			!collectorContainsAny(low, "seafood", "fish processing", "fish products", "fish distribution", "fish manufacturer", "риба", "рибни", "въглен", "varna", "bulgaria") {
+			return Signal{}, false
+		}
 	}
 	relevance := signalRelevance(c, title, text)
 	if relevance < 35 || rawURL == "" {
@@ -482,7 +493,7 @@ func signalClientSnapshot(slug string) *Client {
 }
 
 func signalEligibleSlugs() []string {
-	return []string{"aroma", "bolyarka", "mollox", "varna-towers", "delta-planet", "kub", "black-sea-center", "top-rent-a-car"}
+	return []string{"aroma", "bolyarka", "mollox", "ariel-fish", "varna-towers", "delta-planet", "kub", "black-sea-center", "top-rent-a-car"}
 }
 
 func signalObservationExists(c *Client, metric string) bool {

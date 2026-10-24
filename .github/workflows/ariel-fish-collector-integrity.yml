@@ -1,0 +1,22 @@
+name: Ariel Fish Collector Integrity
+on:
+  push:
+    branches:
+      - fix/ariel-fish-signal-coverage-20261024
+  pull_request:
+    branches: [main]
+    paths:
+      - 'signal_collector.go'
+      - 'ariel_fish_collector_test.go'
+      - '.github/workflows/ariel-fish-collector-integrity.yml'
+jobs:
+  collector-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Verify Ariel Fish ingestion and attribution
+        run: go test ./... -run '^TestArielFish' -count=1 -v
