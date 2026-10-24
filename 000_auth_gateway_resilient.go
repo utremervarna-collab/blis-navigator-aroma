@@ -302,13 +302,9 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ariel Fish is a Navigator client profile, served from the same embedded application.
+	// Route the Ariel Fish vanity URL into the canonical shared Navigator dashboard.
 	if (path == "/ariel-fish" || path == "/ariel-fish/" || path == "/ariel-fish.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		body, err := staticFS.ReadFile("static/ariel-fish.html")
-		if err != nil { http.NotFound(w, r); return }
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-store, max-age=0")
-		if r.Method != http.MethodHead { _, _ = w.Write(body) }
+		http.Redirect(w,r,"/dashboard.html?client=ariel-fish&page=overview",http.StatusFound)
 		return
 	}
 
