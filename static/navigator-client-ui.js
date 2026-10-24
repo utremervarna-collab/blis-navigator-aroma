@@ -19,7 +19,7 @@ const clients={
   'top-rent-a-car':{bg:'TOP Rent A Car',en:'TOP Rent A Car',typeBg:'Коли под наем · мобилност · туризъм',typeEn:'Car rental · mobility · tourism',visible:true},
   'black-sea-center':{bg:'Black Sea Center',en:'Black Sea Center',typeBg:'Бизнес и офис комплекс',typeEn:'Business & office complex',visible:true}
 };
-const ownerVisibleOrder=['kub','mollox','aroma','bolyarka','delta-planet','black-sea-center','top-rent-a-car','wirello','varna-towers','astor-garden','everbet'];
+const ownerVisibleOrder=['mollox','aroma','bolyarka','delta-planet'];
 const valid=k=>!!clients[k];
 let ownerMode=false;
 let sessionClient='';
