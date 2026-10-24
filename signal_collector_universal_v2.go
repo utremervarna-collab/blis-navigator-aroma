@@ -34,6 +34,11 @@ func kubCrisisSignalV2(c *Client, source, rawURL, title, text, published string)
 		text = title
 	}
 	low := strings.ToLower(title + " " + text)
+	// The crisis-specific collector must honor the same KUB identity gate as
+	// the general collector; a lone "куб" also means cubic units.
+	if !kubSignalContextValid(low) {
+		return Signal{}, false
+	}
 	terms := []string{"куб", "kyb", "баба алино", "baba alino", "forest club", "форест клуб"}
 	hits := 0
 	for _, term := range terms {
