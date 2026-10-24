@@ -728,6 +728,8 @@ func dashboard(c *Client) map[string]interface{} {
 	switch c.Slug {
 	case icardSlug:
 		return icardDashboard(c)
+	case "ariel-fish":
+		return arielFishDashboard(c)
 	case "astor-garden":
 		return astorDashboard(c)
 	case "bolyarka":
@@ -1981,7 +1983,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "api/clients" {
 		out := []map[string]string{}
-		for _, slug := range []string{"aroma", "bolyarka", "astor-garden", "mollox", "delta-planet", "black-sea-center", "top-rent-a-car", "wirello"} {
+		for _, slug := range []string{"aroma", "bolyarka", "ariel-fish", "astor-garden", "mollox", "delta-planet", "black-sea-center", "top-rent-a-car", "wirello"} {
 			if c := store.Clients[slug]; c != nil {
 				out = append(out, map[string]string{"slug": c.Slug, "name": c.Name, "sector": c.Sector, "note": c.Note})
 			}
@@ -2086,6 +2088,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 func main() {
 	ensureStore()
+	ensureArielFishClient()
 	ensureTopRentClient()
 	ensureICardClient()
 	setEngineStatus(EngineStatus{Version: "2.9-portal-finalqa", NextRun: time.Now().Add(24 * time.Hour).Format(time.RFC3339)})
