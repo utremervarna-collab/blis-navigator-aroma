@@ -18,6 +18,7 @@ func TestKUBSignalContextValid(t *testing.T) {
         {"cubic metres", "Над 5 милиона куб. метра вода", false},
         {"cubic word", "Кубически метри в строителния сектор", false},
         {"ambiguous short name", "КУБ обяви новина", false},
+        {"unrelated gallery Kub BTA 25 Oct", "Галерия „Куб“ в „Топлоцентрала“ обяви конкурс за изложбен проект, който ще бъде реализиран през 2027 г.", false},
         {"unrelated", "Друг строителен инвеститор във Варна", false},
     }
     for _, tc := range cases {
@@ -57,6 +58,11 @@ func TestPublicKUBChronologyIdentityFilter(t *testing.T) {
     bad.Title = "Над 5 милиона куб. метра вода"
     if publicKUBChronologySignalValid(bad) {
         t.Fatal("cubic-unit historical item leaked into KUB chronology")
+    }
+    gallery := base
+    gallery.Title = "Галерия „Куб“ в „Топлоцентрала“ обяви конкурс за изложбен проект, който ще бъде реализиран през 2027 г."
+    if publicKUBChronologySignalValid(gallery) {
+        t.Fatal("unrelated Sofia art-gallery article leaked into KUB chronology")
     }
     good := base
     good.Title = "Съдът разглежда ново дело за Баба Алино"
