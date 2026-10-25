@@ -11,7 +11,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -32,7 +32,8 @@ jobs:
       - name: Verify interactive profile at desktop and mobile widths
         run: |
           npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          # Ubuntu hosted runner already provides Chromium runtime libraries; avoid slow apt mirrors.
+          npx playwright install chromium
           PORT=11000 BLIS_ENABLE_INPROCESS_SCHEDULER=0 BLIS_DISABLE_BACKGROUND_NETWORK_LOOPS=1 BLIS_ENABLE_STARTUP_DIAGNOSTIC=0 /tmp/icard-app >/tmp/icard.log 2>&1 &
           for i in $(seq 1 30); do
             curl -fsS http://127.0.0.1:11000/icard/data >/dev/null && break

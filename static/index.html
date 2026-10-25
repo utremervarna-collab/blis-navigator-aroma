@@ -70,4 +70,16 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadTape(false)});
 })();
 </script>
+<script id="blis-contextual-client-return">
+(function(){
+  // Preserve the scoped client return route without replacing the generic client login.
+  var client = new URLSearchParams(window.location.search).get('client');
+  if (client !== 'top-rent-a-car') return;
+  var returnLink = document.querySelector('.heroBtns a.btn.login[href="/dashboard.html"]');
+  if (!returnLink) return;
+  returnLink.href = '/top-rent-a-car';
+  returnLink.textContent = 'Към TOP Rent A Car →';
+  returnLink.setAttribute('aria-label', 'Върни се към профила на TOP Rent A Car');
+})();
+</script>
 <!-- Navigator home links stay generic; client selection is explicit inside the dashboard. --></body></html>
