@@ -1510,6 +1510,8 @@ func runClientEngine(c *Client, snapshot bool) EngineStatus {
 		return EngineStatus{Version: "2.9-portal-finalqa"}
 	}
 	switch c.Slug {
+	case "ariel-fish":
+		return runArielFishEngine(c, snapshot)
 	case "bolyarka":
 		return runBolyarkaEngine(c, snapshot)
 	case "astor-garden":
