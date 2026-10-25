@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 // Ariel Fish uses the canonical Navigator dashboard data contract.
 // Only publicly evidenced facts are displayed. Unknown signals are explicitly unmeasured.
 func ensureArielFishClient() {
@@ -21,16 +23,32 @@ func ensureArielFishClient() {
 }
 
 func arielFishDashboard(c *Client) map[string]interface{} {
+    site:=molloxObservedScore(c,"official_site")
+    products:=molloxObservedScore(c,"products")
+    competitorsScores:=[]float64{molloxObservedScore(c,"cmp_michik"),molloxObservedScore(c,"cmp_odesos"),molloxObservedScore(c,"cmp_sever"),molloxObservedScore(c,"cmp_fishland")}
+    benchmark:=meanPositive(competitorsScores)
+    digital:=meanPositive([]float64{site,products})
+    coverage:=molloxCoverage(c,"official_site","products","cmp_michik","cmp_odesos","cmp_sever","cmp_fishland")
+    var blis interface{}
+    var bench interface{}
+    var digitalScore interface{}
+    if digital>0 {blis=digital;digitalScore=digital}
+    if benchmark>0 {bench=benchmark}
+    inds:=[]interface{}{}
+    if digital>0 {inds=append(inds,idx("digital","Измерена дигитална видимост",digital,"Техническо измерване на достъпността и текстовото съдържание на официалните страници; не е оценка на продажбите.",[]interface{}{comp("Сайт",site,"измерено"),comp("Продукти",products,"измерено")},"",[]string{"Ариел Фиш – официален сайт","Ариел Фиш – продукти"}))}
+    if benchmark>0 {inds=append(inds,idx("competitive","Конкурентна дигитална среда",benchmark,"Средно от измерени публични страници на четири конкурента; показателят не измерва пазарен дял.",[]interface{}{comp("Мичик",competitorsScores[0],"измерено"),comp("Одесос",competitorsScores[1],"измерено"),comp("Север Експорт",competitorsScores[2],"измерено"),comp("Fishland",competitorsScores[3],"измерено")},"",[]string{"Мичик","Одесос","Север Експорт","Fishland / Атлантик"}))}
+    _=digitalScore
+
 	competitors := []interface{}{
-		map[string]interface{}{"name":"Ариел Фиш","score":nil,"source":"https://arielfish.com/"},
-		map[string]interface{}{"name":"Мичик","score":nil,"source":"https://www.michik.bg/products"},
-		map[string]interface{}{"name":"Одесос","score":nil,"source":"https://food-exhibitions.bg/main/odesos/"},
-		map[string]interface{}{"name":"Север Експорт","score":nil,"source":"https://severexport.com/"},
-		map[string]interface{}{"name":"Fishland / Атлантик","score":nil,"source":"https://fishland.bg/about-us"},
+		map[string]interface{}{"name":"Ариел Фиш","score":site,"source":"https://arielfish.com/"},
+		map[string]interface{}{"name":"Мичик","score":competitorsScores[0],"source":"https://www.michik.bg/products"},
+		map[string]interface{}{"name":"Одесос","score":competitorsScores[1],"source":"https://food-exhibitions.bg/main/odesos/"},
+		map[string]interface{}{"name":"Север Експорт","score":competitorsScores[2],"source":"https://severexport.com/"},
+		map[string]interface{}{"name":"Fishland / Атлантик","score":competitorsScores[3],"source":"https://fishland.bg/about-us"},
 	}
 	return map[string]interface{}{
 		"client":c.Slug,"name":c.Name,"sector":c.Sector,"note":c.Note,
-		"blis_index":nil,"benchmark":nil,"relative":nil,"trend":nil,"confidence":nil,"data_updated":nil,
+		"blis_index":blis,"benchmark":bench,"relative":nil,"trend":nil,"confidence":coverage,"data_updated":latestObservedAt(c),
 		"nav":[]interface{}{
 			map[string]interface{}{"key":"overview","label":"Общ изглед","icon":"⌂"},
 			map[string]interface{}{"key":"live","label":"Мониторинг","icon":"◉"},
@@ -42,7 +60,7 @@ func arielFishDashboard(c *Client) map[string]interface{} {
 			map[string]interface{}{"key":"reports","label":"Доклади","icon":"▣"},
 			map[string]interface{}{"key":"sources","label":"Източници","icon":"↗"},
 		},
-		"indices":[]interface{}{},
+		"indices":inds,
 		"metrics":[]interface{}{
 			met("Основана","2010 г."),
 			met("Основни продуктови групи","Мариновани, пушени и веяни продукти · филета · хайвер"),
@@ -57,4 +75,28 @@ func arielFishDashboard(c *Client) map[string]interface{} {
 		},
 		"competitors":competitors,
 	}
+}
+
+func runArielFishEngine(c *Client, snapshot bool) EngineStatus {
+    keys:=[]struct{ key string; terms []string }{
+       {"official_site",[]string{"арие","риба","fish"}},
+       {"products",[]string{"риба","хайвер","марин","пуш"}},
+       {"cmp_michik",[]string{"риба","хайвер","скумрия"}},
+       {"cmp_odesos",[]string{"риба","хайвер","пуш"}},
+       {"cmp_sever",[]string{"fish","риба","хайвер"}},
+       {"cmp_fishland",[]string{"fish","риба","products"}},
+    }
+    results:=[]ConnectorResult{}
+    success,failed:=0,0
+    for _,spec:=range keys {
+        r:=probeGenericSource(c,spec.key,spec.terms)
+        results=append(results,r)
+        if r.OK {success++} else {failed++}
+    }
+    if snapshot {
+        c.Snapshots=append(c.Snapshots,Snapshot{CreatedAt:nowISO(),Payload:arielFishDashboard(c)})
+        if len(c.Snapshots)>180 {c.Snapshots=c.Snapshots[len(c.Snapshots)-180:]}
+        saveStore()
+    }
+    return EngineStatus{Version:"2.9-ariel",LastRun:nowISO(),NextRun:time.Now().Add(24*time.Hour).Format(time.RFC3339),Successful:success,Failed:failed,Results:results}
 }
