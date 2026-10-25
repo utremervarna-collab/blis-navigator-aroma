@@ -156,8 +156,20 @@ jobs:
                   if slug not in current_all:
                       raise SystemExit(f'snapshot refused: durable client {slug} missing')
                   for field in ('snapshots','observations'):
-                      old_count=len(old_client.get(field,[]))
-                      new_count=len(current_all[slug].get(field,[]))
+                      old_rows=old_client.get(field)
+                      new_rows=current_all[slug].get(field)
+                      # Null means no recorded history, not a Python sequence.
+                      # Preserve the regression guard when durable rows exist.
+                      if old_rows is None:
+                          old_rows=[]
+                      if new_rows is None:
+                          if old_rows:
+                              raise SystemExit(f'snapshot refused: {slug} {field} is null while durable history exists')
+                          new_rows=[]
+                      if not isinstance(old_rows,list) or not isinstance(new_rows,list):
+                          raise SystemExit(f'snapshot refused: {slug} {field} must be an array or null')
+                      old_count=len(old_rows)
+                      new_count=len(new_rows)
                       if new_count < old_count:
                           raise SystemExit(f'snapshot regression refused: {slug} {field} {old_count}->{new_count}')
 
