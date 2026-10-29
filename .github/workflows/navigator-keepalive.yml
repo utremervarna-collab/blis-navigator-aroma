@@ -29,7 +29,8 @@ jobs:
       - name: Verify exact production migration and Navigator health
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+          trap 'rc=$?; echo "PROBE_FAILED line=${LINENO} exit=${rc}" >&2' ERR
           BASE="${NAVIGATOR_ORIGIN%/}"
           test -n "$BASE"
           echo "Probing production origin: $BASE"
