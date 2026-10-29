@@ -31,6 +31,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           trap 'rc=$?; echo "PROBE_FAILED line=${LINENO} exit=${rc}" >&2' ERR
+          echo 'PROBE_DIAGNOSTICS_VERSION=2026-10-29-fresh-run-v1'
           BASE="${NAVIGATOR_ORIGIN%/}"
           test -n "$BASE"
           echo "Probing production origin: $BASE"
@@ -44,6 +45,7 @@ jobs:
               "$url" -o "$out"
           }
 
+          echo 'PROBE_STAGE=public_entry_points'
           # Public entry points must render actual HTML, not only API health.
           request "$BASE/?probe=1&ts=$(date +%s)" /tmp/home.html
           test -s /tmp/home.html
@@ -59,6 +61,7 @@ jobs:
           request "$BASE/api/health?probe=1&ts=$(date +%s)" /tmp/app-health.json
           grep -q '"ok":true' /tmp/app-health.json
 
+          echo 'PROBE_STAGE=store_metadata'
           # Availability monitoring must never download/encode the full multi-MB
           # store. Use the lightweight production metadata route instead.
           request "$BASE/api/store/meta?probe=1&ts=$(date +%s)" /tmp/store-meta.json
@@ -70,6 +73,7 @@ jobs:
               assert slug in d.get('clients',{}), f'{slug} missing from production store metadata'
           PY
 
+          echo 'PROBE_STAGE=kub_protected_routes'
           # KUB's crisis surface is reachable, but signal data is intentionally protected.
           request "$BASE/kub-home.html?probe=1&ts=$(date +%s)" /tmp/kub-home.html
           grep -q 'Корпорация КУБ' /tmp/kub-home.html
@@ -84,6 +88,7 @@ jobs:
             "$BASE/api/signals?client=kub&limit=3&probe=1&ts=$(date +%s)")
           test "$code" = "401" -o "$code" = "403"
 
+          echo 'PROBE_STAGE=sustained_health_soak'
           # Sustained-health soak. Do not retry these requests: a single 503 is a
           # real availability failure and must not be hidden by curl retries.
           for i in $(seq 1 8); do
