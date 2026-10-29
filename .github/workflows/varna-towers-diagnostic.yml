@@ -1,0 +1,54 @@
+name: Varna Towers Diagnostic
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+      - name: Start Navigator
+        run: |
+          PORT=10000 go run . >/tmp/blis.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:10000/dashboard.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/blis.log
+          exit 1
+      - name: Install browser driver
+        run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify Varna Towers profile
+        run: |
+          cat > vt-check.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1500,height:1000}});
+            const errs=[];page.on('pageerror',e=>errs.push(e.message));
+            await page.goto('http://127.0.0.1:10000/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded'});
+            await page.waitForTimeout(3500);
+            const state=await page.evaluate(()=>({slug:typeof slug==='undefined'?null:slug,name:typeof D==='undefined'?null:D?.name,blis:D?.blis_index,indices:D?.indices?.length,comps:D?.competitors?.length,sources:typeof S==='undefined'?0:S.length,activity:typeof A==='undefined'?0:A.length,clientName:document.querySelector('.client-brand-name')?.textContent,theme:document.body.dataset.client,overview:!!document.querySelector('#overviewPremium'),liveNav:!!document.querySelector('#nav button[data-page="live"]')}));
+            console.log('STATE',JSON.stringify(state,null,2));
+            if(state.slug!=='varna-towers'||state.name!=='Varna Towers')throw new Error('Varna Towers data not loaded');
+            if(state.blis!==81||state.indices<7||state.comps<5||state.sources<25||state.activity<20)throw new Error('Incomplete Varna Towers metrics');
+            if(state.clientName!=='Varna Towers'||state.theme!=='varna-towers')throw new Error('Varna Towers client UI not applied');
+            const pages=['competition','sources','profile','live'];
+            for(const id of pages){const btn=page.locator(`#nav button[data-page="${id}"]`).first();if(!await btn.count())throw new Error('Missing nav '+id);await btn.click({force:true});await page.waitForTimeout(700);if(!(await page.locator(`#${id}.active`).count()))throw new Error('Page not active '+id);}
+            const profileText=await page.locator('#profileBody').innerText();
+            if(!profileText.includes('81 506')||!profileText.includes('47 604')||!profileText.includes('600'))throw new Error('Profile facts missing');
+            await page.locator('#nav button[data-page="competition"]').click({force:true});await page.waitForTimeout(500);
+            const compText=await page.locator('#competitionBody').innerText();
+            if(!compText.includes('Business Park Varna')||!compText.includes('Varna 115')||!compText.includes('Landmark Centre'))throw new Error('Competitors missing');
+            await page.locator('#nav button[data-page="live"]').click({force:true});await page.waitForTimeout(800);
+            const liveOk=await page.evaluate(()=>!!document.querySelector('.lm-live-card .lm-live-stage')&&!!document.querySelector('.lm-geo-card'));
+            if(!liveOk)throw new Error('Live Monitoring visual regression');
+            if(errs.length)throw new Error('Page errors: '+errs.join(' | '));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node vt-check.cjs
