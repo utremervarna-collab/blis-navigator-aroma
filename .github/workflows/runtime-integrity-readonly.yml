@@ -1,0 +1,32 @@
+name: Navigator Archive Integrity Readonly
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/runtime_integrity_readonly.py'
+      - '.github/workflows/runtime-integrity-readonly.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout audit script from proposed change
+        uses: actions/checkout@v4
+        with:
+          path: auditor
+      - name: Checkout durable archive without modifying it
+        uses: actions/checkout@v4
+        with:
+          ref: runtime-data
+          path: archive
+      - name: Check client isolation and history counts (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd archive
+          python ../auditor/scripts/runtime_integrity_readonly.py
