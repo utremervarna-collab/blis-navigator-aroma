@@ -7,6 +7,8 @@ It does not modify production or archived records.
 import collections
 import json
 import re
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 PATH = "data/live_store.json"
 with open(PATH, encoding="utf-8") as stream:
@@ -35,6 +37,22 @@ def as_object(raw):
         except (ValueError, TypeError):
             return {}
     return {}
+
+def signal_published_time(row):
+    payload = as_object(row.get("value"))
+    raw = str(payload.get("published_at") or payload.get("PublishedAt") or "").strip()
+    if not raw:
+        return None
+    try:
+        dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            dt = parsedate_to_datetime(raw)
+        except (ValueError, TypeError):
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 for slug in expected:
     if slug not in clients:
@@ -81,7 +99,11 @@ for slug, client in sorted(clients.items()):
             if cubic_units.search(title) and not identity_terms.search(title):
                 kub_cubic_false_positives += 1
 
+    published_times = [dt for dt in (signal_published_time(row) for row in signals)
+                       if dt is not None]
     summary[slug] = {
+        "newest_signal_published_utc": max(published_times).isoformat()
+            if published_times else None,
         "snapshots": len(snapshots),
         "observations": len(observations),
         "signal_events": len(signals),
