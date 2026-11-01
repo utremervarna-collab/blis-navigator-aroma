@@ -1,20 +1,18 @@
-const CACHE = 'blis-navigator-pwa-v2';
-const APP_SHELL = [
-  '/dashboard.html',
-  '/manifest.webmanifest',
-  '/blis-app-icon.svg'
-];
+// BLIS Navigator: network-only client dashboards.
+// A previous offline fallback served the cached Aroma dashboard when a requested
+// client route was unavailable. Never substitute one client's cached HTML for another.
+const CACHE = 'blis-navigator-pwa-v3-no-client-fallback';
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).catch(() => undefined));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key.startsWith('blis-navigator-pwa-')).map(key => caches.delete(key))
+    )).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
@@ -22,21 +20,7 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req).catch(() => caches.match('/dashboard.html'))
-    );
-    return;
-  }
-
-  event.respondWith(
-    fetch(req)
-      .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => undefined);
-        return res;
-      })
-      .catch(() => caches.match(req))
-  );
+  // Never cache or fall back for navigation, API data, or application assets.
+  // Network failure must be visible, not silently replaced by Aroma.
+  if (req.mode === 'navigate' || url.pathname.startsWith('/api/')) return;
 });
