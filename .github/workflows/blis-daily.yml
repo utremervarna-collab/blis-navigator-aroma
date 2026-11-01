@@ -47,7 +47,7 @@ jobs:
           for slug in ('aroma','bolyarka','astor-garden','mollox','kub'):
               assert slug in clients, f'{slug} missing from production store'
           print('DAILY_PRODUCTION_STORE_OK', {
-              k:(len(v.get('snapshots',[])),len(v.get('observations',[])))
+              k:(len(v.get('snapshots') or []),len(v.get('observations') or []))
               for k,v in clients.items()
           })
           PY
@@ -89,17 +89,22 @@ jobs:
 
               for slug in ('aroma','bolyarka','astor-garden','mollox'):
                   if slug in pc:
-                      old=len(pc[slug].get('snapshots',[]))
-                      new=len(clients[slug].get('snapshots',[]))
+                      old=len(pc[slug].get('snapshots') or [])
+                      new=len(clients[slug].get('snapshots') or [])
                       if new < old:
                           raise SystemExit(f'daily snapshot regression refused: {slug} snapshots {old}->{new}')
 
               prev_kub=pc.get('kub',{})
               cand_kub=clients['kub']
-              cand_obs=cand_kub.setdefault('observations',[])
+              cand_obs=cand_kub.get('observations')
+              if cand_obs is None:
+                  cand_obs=[]
+                  cand_kub['observations']=cand_obs
+              if not isinstance(cand_obs,list):
+                  raise SystemExit('daily snapshot refused: kub observations must be a list')
               keys={o.get('metric_key') for o in cand_obs if is_kub_signal(o)}
               restored=0
-              for o in prev_kub.get('observations',[]):
+              for o in (prev_kub.get('observations') or []):
                   if not is_kub_signal(o):
                       continue
                   key=o.get('metric_key')
@@ -117,8 +122,18 @@ jobs:
                   if slug not in current_all:
                       raise SystemExit(f'snapshot refused: durable client {slug} missing')
                   for field in ('snapshots','observations'):
-                      old_count=len(old_client.get(field,[]))
-                      new_count=len(current_all[slug].get(field,[]))
+                      old_rows=old_client.get(field)
+                      new_rows=current_all[slug].get(field)
+                      if old_rows is None:
+                          old_rows=[]
+                      if new_rows is None:
+                          if old_rows:
+                              raise SystemExit(f'daily snapshot refused: {slug} {field} null while durable history exists')
+                          new_rows=[]
+                      if not isinstance(old_rows,list) or not isinstance(new_rows,list):
+                          raise SystemExit(f'daily snapshot refused: {slug} {field} must be an array or null')
+                      old_count=len(old_rows)
+                      new_count=len(new_rows)
                       if new_count < old_count:
                           raise SystemExit(f'snapshot regression refused: {slug} {field} {old_count}->{new_count}')
 
