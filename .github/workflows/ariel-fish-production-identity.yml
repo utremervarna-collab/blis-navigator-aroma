@@ -1,0 +1,40 @@
+name: Ariel Fish Production Identity
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  ariel-route:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+      - name: Verify scoped Ariel Fish route in Go tests
+        run: go test ./... -run TestArielFishDirectRouteDoesNotFallBackToAroma -count=1 -v
+      - name: Probe production Ariel Fish and data identity
+        env:
+          ORIGIN: https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run
+        run: |
+          set -euo pipefail
+          curl -fLsS --connect-timeout 10 --max-time 25 "$ORIGIN/ariel-fish" -o /tmp/ariel.html
+          grep -q 'BLIS_CLIENT_SCOPE="ariel-fish"' /tmp/ariel.html
+          grep -q 'BLIS_INITIAL_CLIENT="ariel-fish"' /tmp/ariel.html
+          if grep -q 'BLIS_CLIENT_SCOPE="aroma"' /tmp/ariel.html; then
+            echo 'ERROR: Production is incorrectly Aroma scoped'
+            exit 1
+          fi
+          curl -fLsS --connect-timeout 10 --max-time 25 "$ORIGIN/api/clients/ariel-fish/dashboard" -o /tmp/ariel-dashboard.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/ariel-dashboard.json'))
+          raw=json.dumps(d,ensure_ascii=False).lower()
+          if 'ariel' not in raw and 'ариел' not in raw:
+              raise SystemExit('ERROR: Ariel Fish dashboard response lacks Ariel identity')
+          print('ARIEL_FISH_PRODUCTION_IDENTITY_OK')
+          PY
