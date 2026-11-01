@@ -25,7 +25,7 @@ const navigatorMagicHash = "570e6c3609ca756feee15aabe6cb6f9a3d26607a4f279611f4bb
 
 func validNavigatorClient(slug string) bool {
 	switch strings.TrimSpace(slug) {
-	case "aroma", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center", "top-rent-a-car", "icard":
+	case "aroma", "ariel-fish", "bolyarka", "astor-garden", "varna-towers", "delta-planet", "mollox", "wirello", "everbet", "kub", "black-sea-center", "top-rent-a-car", "icard":
 		return true
 	default:
 		return false
