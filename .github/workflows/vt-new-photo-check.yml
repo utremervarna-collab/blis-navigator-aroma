@@ -1,0 +1,57 @@
+name: Varna Towers New Photo Check
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install --no-save playwright-core@1.55.0 >/dev/null 2>&1
+      - name: Verify new Varna Towers photo on production
+        run: |
+          cat > check.cjs <<'NODE'
+          const { chromium }=require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+            let last='';
+            for(let i=1;i<=20;i++){
+              const page=await browser.newPage({viewport:{width:1680,height:720},deviceScaleFactor:1});
+              try{
+                await page.goto('https://blis-navigator-aroma.onrender.com/dashboard.html?client=varna-towers',{waitUntil:'domcontentloaded',timeout:30000});
+                await page.waitForTimeout(2200);
+                const state=await page.evaluate(async()=>{
+                  const el=document.querySelector('.topbar .client-photo-bg');
+                  if(!el)return {ok:false,reason:'no hero element'};
+                  const cs=getComputedStyle(el), r=el.getBoundingClientRect();
+                  const partLens=[];
+                  for(let n=1;n<=5;n++){
+                    const resp=await fetch(`/varna-towers-hero-v9-${n}.js?v=20260818-vt10`,{cache:'no-store'});
+                    const txt=await resp.text();
+                    if(!resp.ok)return {ok:false,reason:`part ${n} ${resp.status}`};
+                    partLens.push(txt.trim().length);
+                  }
+                  let nw=0,nh=0,decoded=false;
+                  try{
+                    const m=cs.backgroundImage.match(/^url\(["']?(data:image\/jpeg;base64,[^"')]+)["']?\)$/);
+                    if(m){const im=new Image();im.src=m[1];await im.decode();nw=im.naturalWidth;nh=im.naturalHeight;decoded=true;}
+                  }catch(e){}
+                  return {ok:true,ready:el.dataset.varnaTowersHero||'',bg:cs.backgroundImage.slice(0,70),partLens,w:r.width,h:r.height,nw,nh,decoded};
+                });
+                console.log('ATTEMPT',i,JSON.stringify(state));
+                const good=state.ok&&state.ready==='ready-v10'&&JSON.stringify(state.partLens)==='[6000,6000,6000,6000,5548]'&&state.decoded&&state.nw===1456&&state.nh===167&&state.w>1200&&state.h>150;
+                if(!good)throw new Error('new hero not active yet');
+                await page.locator('.topbar').screenshot({path:'varna-towers-new-photo.png'});
+                await page.close();await browser.close();return;
+              }catch(e){last=e.message;console.log('RETRY',i,last);await page.close();if(i<20)await new Promise(r=>setTimeout(r,8000));}
+            }
+            await browser.close();throw new Error(last||'verification failed');
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node check.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: varna-towers-new-photo
+          path: varna-towers-new-photo.png
