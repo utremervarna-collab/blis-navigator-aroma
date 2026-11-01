@@ -71,3 +71,32 @@ func TestNavigatorExplicitClientAndResourceRoutes(t *testing.T) {
 		}
 	}
 }
+
+
+func TestArielFishDirectRouteDoesNotFallBackToAroma(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("X-Test-Client", r.URL.Query().Get("client"))
+		_, _ = w.Write([]byte("<html><head></head><body>Ariel Fish Navigator</body></html>"))
+	}))
+	defer backend.Close()
+	target, _ := url.Parse(backend.URL)
+	previous := authProxy
+	authProxy = httputil.NewSingleHostReverseProxy(target)
+	authProxy.ModifyResponse = scopeDashboardResponse
+	defer func() { authProxy = previous }()
+	for _, route := range []string{"/ariel-fish", "/ariel-fish.html", "/ariel-fish/?page=competition"} {
+		rec := httptest.NewRecorder()
+		navigatorGateway(rec, httptest.NewRequest(http.MethodGet, route, nil))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s returned %d (expected dashboard, not redirect)", route, rec.Code)
+		}
+		if rec.Header().Get("X-Test-Client") != "ariel-fish" {
+			t.Fatalf("%s selected client %q, not ariel-fish", route, rec.Header().Get("X-Test-Client"))
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, `window.BLIS_CLIENT_SCOPE="ariel-fish"`) || !strings.Contains(body, `window.BLIS_INITIAL_CLIENT="ariel-fish"`) {
+			t.Fatalf("%s missing enforced Ariel Fish identity: %s", route, body)
+		}
+	}
+}
