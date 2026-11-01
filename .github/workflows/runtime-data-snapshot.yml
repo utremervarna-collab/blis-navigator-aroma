@@ -164,7 +164,13 @@ jobs:
                           old_rows=[]
                       if new_rows is None:
                           if old_rows:
-                              raise SystemExit(f'snapshot refused: {slug} {field} is null while durable history exists')
+                              # A production null is not an instruction to delete
+                              # this same client's previously archived history.
+                              # Keep the durable rows, but flag that production
+                              # has not supplied fresh history for this field.
+                              current_all[slug][field]=old_rows
+                              print(f'SNAPSHOT_STALE_PRODUCTION_HISTORY_RETAINED: {slug} {field} rows={len(old_rows)}')
+                              continue
                           new_rows=[]
                       if not isinstance(old_rows,list) or not isinstance(new_rows,list):
                           raise SystemExit(f'snapshot refused: {slug} {field} must be an array or null')
