@@ -1,0 +1,1 @@
+Trigger exact v10 hero checksum diagnostic.
