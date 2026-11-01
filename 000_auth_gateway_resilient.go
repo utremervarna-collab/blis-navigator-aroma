@@ -302,9 +302,23 @@ func navigatorGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Route the Ariel Fish vanity URL into the canonical shared Navigator dashboard.
+	// Serve Ariel Fish through the canonical Navigator dashboard without an
+	// intervening redirect. The explicit client scope prevents older browser
+	// state or client-selector scripts from restoring Aroma on first paint.
 	if (path == "/ariel-fish" || path == "/ariel-fish/" || path == "/ariel-fish.html") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-		http.Redirect(w,r,"/dashboard.html?client=ariel-fish&page=overview",http.StatusFound)
+		if authProxy == nil {
+			http.Error(w, "Navigator gateway unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/dashboard.html"
+		q := r2.URL.Query()
+		q.Set("client", "ariel-fish")
+		q.Set("page", canonicalNavigatorPage(q.Get("page")))
+		r2.URL.RawQuery = q.Encode()
+		r2.Header.Set("X-BLIS-Client-Scope", "ariel-fish")
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		authProxy.ServeHTTP(w, r2)
 		return
 	}
 
