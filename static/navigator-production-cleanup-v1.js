@@ -10,7 +10,7 @@ if(location.pathname==='/services.html')return;
 // All shared-dashboard clients are valid here, including hidden legacy profiles.
 // Visibility is controlled exclusively by navigator-client-ui.js; this allowlist must
 // never rewrite a valid direct owner route to another client identity.
-const CLIENTS=new Set(['aroma','bolyarka','astor-garden','varna-towers','mollox','wirello','everbet','black-sea-center']);
+const CLIENTS=new Set(['aroma','ariel-fish','bolyarka','astor-garden','varna-towers','delta-planet','top-rent-a-car','mollox','wirello','everbet','black-sea-center']);
 const PAGES=new Set(['overview','live','social','digital','reputation','market','competition','reports','history','profile','settings','help']);
 
 function currentClient(){
