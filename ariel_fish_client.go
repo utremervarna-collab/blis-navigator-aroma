@@ -31,20 +31,33 @@ func arielFishDashboard(c *Client) map[string]interface{} {
     coverage:=molloxCoverage(c,"official_site","products","cmp_michik","cmp_odesos","cmp_sever","cmp_fishland")
     var blis interface{}
     var bench interface{}
-    var digitalScore interface{}
-    if digital>0 {blis=digital;digitalScore=digital}
+    if digital>0 {blis=digital}
     if benchmark>0 {bench=benchmark}
+    // A missing observation must remain null, never a fabricated zero.
+    scoreOrNil := func(key string) interface{} {
+        raw := latest(c,key,"score")
+        if raw == nil { return nil }
+        return f(raw)
+    }
+    digitalComponents:=[]interface{}{}
+    if scoreOrNil("official_site") != nil { digitalComponents=append(digitalComponents,comp("Сайт",site,"измерено")) }
+    if scoreOrNil("products") != nil { digitalComponents=append(digitalComponents,comp("Продукти",products,"измерено")) }
+    competitorKeys:=[]string{"cmp_michik","cmp_odesos","cmp_sever","cmp_fishland"}
+    competitorNames:=[]string{"Мичик","Одесос","Север Експорт","Fishland"}
+    competitiveComponents:=[]interface{}{}
+    for i,key:=range competitorKeys {
+        if scoreOrNil(key) != nil { competitiveComponents=append(competitiveComponents,comp(competitorNames[i],competitorsScores[i],"измерено")) }
+    }
     inds:=[]interface{}{}
-    if digital>0 {inds=append(inds,idx("digital","Измерена дигитална видимост",digital,"Техническо измерване на достъпността и текстовото съдържание на официалните страници; не е оценка на продажбите.",[]interface{}{comp("Сайт",site,"измерено"),comp("Продукти",products,"измерено")},"",[]string{"Ариел Фиш – официален сайт","Ариел Фиш – продукти"}))}
-    if benchmark>0 {inds=append(inds,idx("competitive","Конкурентна дигитална среда",benchmark,"Средно от измерени публични страници на четири конкурента; показателят не измерва пазарен дял.",[]interface{}{comp("Мичик",competitorsScores[0],"измерено"),comp("Одесос",competitorsScores[1],"измерено"),comp("Север Експорт",competitorsScores[2],"измерено"),comp("Fishland",competitorsScores[3],"измерено")},"",[]string{"Мичик","Одесос","Север Експорт","Fishland / Атлантик"}))}
-    _=digitalScore
+    if digital>0 {inds=append(inds,idx("digital","Измерена дигитална видимост",digital,"Техническо измерване на достъпността и текстовото съдържание на официалните страници; не е оценка на продажбите.",digitalComponents,"",[]string{"Ариел Фиш – официален сайт","Ариел Фиш – продукти"}))}
+    if benchmark>0 {inds=append(inds,idx("competitive","Конкурентна дигитална среда",benchmark,"Средно от измерени публични страници на четири конкурента; показателят не измерва пазарен дял.",competitiveComponents,"",[]string{"Мичик","Одесос","Север Експорт","Fishland / Атлантик"}))}
 
 	competitors := []interface{}{
-		map[string]interface{}{"name":"Ариел Фиш","score":site,"source":"https://arielfish.com/"},
-		map[string]interface{}{"name":"Мичик","score":competitorsScores[0],"source":"https://www.michik.bg/products"},
-		map[string]interface{}{"name":"Одесос","score":competitorsScores[1],"source":"https://food-exhibitions.bg/main/odesos/"},
-		map[string]interface{}{"name":"Север Експорт","score":competitorsScores[2],"source":"https://severexport.com/"},
-		map[string]interface{}{"name":"Fishland / Атлантик","score":competitorsScores[3],"source":"https://fishland.bg/about-us"},
+		map[string]interface{}{"name":"Ариел Фиш","score":scoreOrNil("official_site"),"source":"https://arielfish.com/"},
+		map[string]interface{}{"name":"Мичик","score":scoreOrNil("cmp_michik"),"source":"https://www.michik.bg/products"},
+		map[string]interface{}{"name":"Одесос","score":scoreOrNil("cmp_odesos"),"source":"https://food-exhibitions.bg/main/odesos/"},
+		map[string]interface{}{"name":"Север Експорт","score":scoreOrNil("cmp_sever"),"source":"https://severexport.com/"},
+		map[string]interface{}{"name":"Fishland / Атлантик","score":scoreOrNil("cmp_fishland"),"source":"https://fishland.bg/about-us"},
 	}
 	return map[string]interface{}{
 		"client":c.Slug,"name":c.Name,"sector":c.Sector,"note":c.Note,
