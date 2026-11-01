@@ -2,11 +2,11 @@ package main
 
 import "time"
 
-// Extends the public-signal collector to the remaining active Navigator profiles
-// that are not part of signalEligibleSlugs() yet. This is intentionally additive
-// so existing client-specific collectors and renderers remain untouched.
+// Fallback public-signal collection for the active Everbet profile, which is
+// not in signalEligibleSlugs(). Astor Garden is already in the primary collector;
+// Wirello is a synthetic demo and must never be treated as a real client.
 func collectAdditionalActiveClientSignals() {
-	for _, slug := range []string{"everbet", "wirello", "astor-garden"} {
+	for _, slug := range []string{"everbet"} {
 		c := signalClientSnapshot(slug)
 		if c == nil {
 			continue
