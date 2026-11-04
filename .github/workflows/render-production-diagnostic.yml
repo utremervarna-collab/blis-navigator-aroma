@@ -1,0 +1,97 @@
+name: Render Production Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  inspect-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch production dashboard and assets
+        run: |
+          set -euxo pipefail
+          BASE='https://blis-navigator-aroma.onrender.com'
+          curl -L --retry 6 --retry-delay 5 --connect-timeout 20 --max-time 120 -D /tmp/dashboard.headers "$BASE/dashboard.html?client=bolyarka&diag=$(date +%s)" -o /tmp/dashboard.html
+          echo '=== DASHBOARD HEADERS ==='
+          cat /tmp/dashboard.headers
+          echo '=== DASHBOARD CSS/JS REFERENCES ==='
+          grep -oE '/[^" ]+\.(css|js)\?v=[^" ]+' /tmp/dashboard.html || true
+          grep -q 'navigator-real-ui.css?v=20260818-photo5' /tmp/dashboard.html
+          grep -q 'navigator-bolyarka-hero-fix.js?v=20260818-hero3' /tmp/dashboard.html
+          curl -L --retry 6 --retry-delay 5 --connect-timeout 20 --max-time 120 "$BASE/navigator-real-ui.css?v=20260818-photo5&diag=$(date +%s)" -o /tmp/navigator-real-ui.css
+          curl -L --retry 6 --retry-delay 5 --connect-timeout 20 --max-time 120 "$BASE/home-bolyarka.svg?v=20260818-direct-css1&diag=$(date +%s)" -o /tmp/home-bolyarka.svg
+          grep -q '20260818-direct-css1' /tmp/navigator-real-ui.css
+          grep -q 'body\[data-client="bolyarka"\] .topbar' /tmp/navigator-real-ui.css
+          test -s /tmp/home-bolyarka.svg
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install chromium
+
+      - name: Inspect production in browser
+        run: |
+          cat > /tmp/render-diag.cjs <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const page=await browser.newPage({viewport:{width:1440,height:1000}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push('PAGEERROR '+e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push('CONSOLE '+m.text())});
+            const url='https://blis-navigator-aroma.onrender.com/dashboard.html?client=bolyarka&diag='+Date.now();
+            await page.goto(url,{waitUntil:'networkidle',timeout:120000});
+            await page.waitForTimeout(3000);
+            const result=await page.evaluate(()=>{
+              const top=document.querySelector('.topbar');
+              const hard=document.querySelector('.bolyarka-hard-hero');
+              const bg=document.querySelector('.client-photo-bg');
+              const cs=top?getComputedStyle(top):null;
+              return {
+                href:location.href,
+                title:document.title,
+                bodyClient:document.body.dataset.client||null,
+                heading:document.querySelector('.topbar .title h1')?.textContent||null,
+                cssHref:[...document.styleSheets].map(x=>x.href).filter(Boolean).find(x=>x.includes('navigator-real-ui.css'))||null,
+                topBackgroundImage:cs?.backgroundImage||null,
+                topBackgroundColor:cs?.backgroundColor||null,
+                topWidth:top?.getBoundingClientRect().width||0,
+                topHeight:top?.getBoundingClientRect().height||0,
+                hardHeroExists:!!hard,
+                hardHeroDisplay:hard?getComputedStyle(hard).display:null,
+                hardHeroOpacity:hard?getComputedStyle(hard).opacity:null,
+                hardHeroSrc:hard?.getAttribute('src')||null,
+                legacyBgExists:!!bg,
+                legacyBgImage:bg?getComputedStyle(bg).backgroundImage:null
+              };
+            });
+            result.errors=errors;
+            console.log(JSON.stringify(result,null,2));
+            fs.writeFileSync('/tmp/render-result.json',JSON.stringify(result,null,2));
+            await page.locator('.topbar').screenshot({path:'/tmp/bolyarka-header.png'});
+            await page.screenshot({path:'/tmp/bolyarka-dashboard.png',fullPage:true});
+            if(result.bodyClient!=='bolyarka') throw new Error('Production body client is not bolyarka');
+            if(!result.cssHref?.includes('20260818-photo5')) throw new Error('Production is not loading latest navigator-real-ui.css');
+            if(!String(result.topBackgroundImage).includes('home-bolyarka.svg')) throw new Error('Production topbar has no Bolyarka CSS background');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          node /tmp/render-diag.cjs
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-production-diagnostic
+          path: |
+            /tmp/dashboard.headers
+            /tmp/dashboard.html
+            /tmp/navigator-real-ui.css
+            /tmp/render-result.json
+            /tmp/bolyarka-header.png
+            /tmp/bolyarka-dashboard.png
+          if-no-files-found: ignore

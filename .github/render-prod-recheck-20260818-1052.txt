@@ -1,0 +1,1 @@
+Production recheck after commit 072abb7: use static/home-bolyarka.b64 as Bolyarka profile hero.
