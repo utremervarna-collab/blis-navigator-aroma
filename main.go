@@ -774,7 +774,7 @@ func fetchURL(raw string, limit int64) (int, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; BLIS-Navigator/2.1; +https://blis-navigator-aroma.onrender.com)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; BLIS-Navigator/2.1; +https://p01--blis-navigator-aroma--2rnk9hqsd2bc.code.run)")
 	req.Header.Set("Accept-Language", "bg-BG,bg;q=0.9,en;q=0.7")
 	resp, err := cli.Do(req)
 	if err != nil {

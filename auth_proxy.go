@@ -192,7 +192,7 @@ func sessionFromRequest(r *http.Request) (clientSession, bool) {
 }
 
 func secureRequest(r *http.Request) bool {
-	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") || strings.HasSuffix(strings.ToLower(r.Host), ".onrender.com")
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 func setSessionCookie(w http.ResponseWriter, r *http.Request, s clientSession) {
@@ -257,7 +257,7 @@ func clientGateway(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/client-login", "/client-login/", "/login":
 		// Visiting the login URL must not destroy an already valid session.
-		// This protects normal browser tab restore and Render deploy/restart flows.
+		// This protects normal browser tab restore and deployment and restart flows.
 		if s, ok := sessionFromRequest(r); ok {
 			if s.Admin {
 				http.Redirect(w, r, "/dashboard.html?client=aroma&page=overview", http.StatusFound)
